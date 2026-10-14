@@ -1,0 +1,433 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // INTECKNO ERP - FIREBASE SECURITY RULES
+    // Domain: Cloud Firestore Security Configuration
+    // Target: STC Teleféricos & Engineering Operational Platform
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // DEFAULT DENY
+    // -------------------------------------------------------------------------
+    // Any collection or sub-collection not explicitly permitted below is blocked.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // CORE AUTHENTICATION & RBAC HELPERS
+    // -------------------------------------------------------------------------
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Extracts role from auth token custom claims first, falls back to Firestore document lookup
+    function getUserRole() {
+      return isAuthenticated()
+        ? (request.auth.token.role != null
+            ? request.auth.token.role
+            : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                : ''))
+        : '';
+    }
+
+    // SuperAdmins and Executive Management
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role in ['admin_sistemas', 'gerente_general', 'gerente_administrativa'] ||
+        getUserRole() in ['admin_sistemas', 'gerente_general', 'gerente_administrativa']
+      );
+    }
+
+    // Management & Leadership tier
+    function isManager() {
+      return isAdmin() || (
+        getUserRole() in [
+          'gerente_proyectos',
+          'lider_proyectos',
+          'coord_compras',
+          'coord_comercial'
+        ]
+      );
+    }
+
+    // Field Operations & Engineering
+    function isOperations() {
+      return isAdmin() || (
+        getUserRole() in [
+          'gerente_proyectos',
+          'lider_proyectos',
+          'lider_ingenieria',
+          'ingeniero_proyectos',
+          'supervisor_tecnico',
+          'tecnico_stc'
+        ]
+      );
+    }
+
+    // Procurement & Warehouse
+    function isPurchasing() {
+      return isAdmin() || (
+        getUserRole() in [
+          'coord_compras',
+          'almacenista'
+        ]
+      );
+    }
+
+    // Finance & Accounting
+    function isFinancial() {
+      return isAdmin() || (
+        getUserRole() in [
+          'contador_externo',
+          'gerente_administrativa'
+        ]
+      );
+    }
+
+    // Commercial & International Business
+    function isCommercial() {
+      return isAdmin() || (
+        getUserRole() in [
+          'coord_comercial',
+          'asistente_negocios_internacionales'
+        ]
+      );
+    }
+
+    // =========================================================================
+    // DOMAIN VALIDATORS (Validator Function Pattern)
+    // Enforces type safety, DoS limit boundaries, and required schema keys.
+    // =========================================================================
+
+    // 1. User validator
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'role'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 150
+        && data.role is string && data.role in [
+          'admin_sistemas', 'gerente_general', 'gerente_administrativa',
+          'gerente_proyectos', 'lider_proyectos', 'lider_ingenieria',
+          'ingeniero_proyectos', 'supervisor_tecnico', 'tecnico_stc',
+          'coord_comercial', 'coord_compras', 'hseq', 'almacenista',
+          'asistente_negocios_internacionales', 'contador_externo'
+        ]
+        && (!('roleLabel' in data) || (data.roleLabel is string && data.roleLabel.size() <= 100))
+        && (!('department' in data) || (data.department is string && data.department.size() <= 100))
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 50))
+        && (!('birthDate' in data) || (data.birthDate is string && data.birthDate.size() <= 30))
+        && (!('bloodType' in data) || (data.bloodType is string && data.bloodType.size() <= 10))
+        && (!('address' in data) || (data.address is string && data.address.size() <= 200))
+        && (!('city' in data) || (data.city is string && data.city.size() <= 100))
+        && (!('emergencyContactName' in data) || (data.emergencyContactName is string && data.emergencyContactName.size() <= 150))
+        && (!('emergencyContactPhone' in data) || (data.emergencyContactPhone is string && data.emergencyContactPhone.size() <= 50))
+        && (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 150000))
+        && (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 500))
+        && (!('avatarColor' in data) || (data.avatarColor is string && data.avatarColor.size() <= 50))
+        && (!('hseqStatus' in data) || (data.hseqStatus is string && data.hseqStatus in ['valid', 'expired', 'pending']))
+        && (!('hseqExpiresAt' in data) || (data.hseqExpiresAt is string && data.hseqExpiresAt.size() <= 50))
+        && (!('canWorkHeights' in data) || (data.canWorkHeights is bool))
+        && (!('isActive' in data) || (data.isActive is bool))
+        && (!('competencies' in data) || (data.competencies is list && data.competencies.size() <= 50));
+    }
+
+    // Prevents self-privilege escalation when regular users edit their own profile
+    function isUserSelfUpdateSafe() {
+      return request.resource.data.role == resource.data.role
+        && (!('hseqStatus' in resource.data) || request.resource.data.hseqStatus == resource.data.hseqStatus)
+        && (!('canWorkHeights' in resource.data) || request.resource.data.canWorkHeights == resource.data.canWorkHeights)
+        && (!('isActive' in resource.data) || request.resource.data.isActive == resource.data.isActive);
+    }
+
+    // 2. Project validator
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'code', 'name', 'clientName', 'status'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.code is string && data.code.size() > 0 && data.code.size() <= 50
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.clientName is string && data.clientName.size() > 0 && data.clientName.size() <= 200
+        && data.status is string && data.status in ['prospecting', 'kickoff', 'active', 'in_closing', 'closed']
+        && (!('budgetPV' in data) || (data.budgetPV is number && data.budgetPV >= 0))
+        && (!('actualCostAC' in data) || (data.actualCostAC is number && data.actualCostAC >= 0))
+        && (!('earnedValueEV' in data) || (data.earnedValueEV is number && data.earnedValueEV >= 0))
+        && (!('assignedTeamIds' in data) || (data.assignedTeamIds is list && data.assignedTeamIds.size() <= 100));
+    }
+
+    // 3. Milestone validator
+    function isValidMilestone(data) {
+      return data.keys().hasAll(['id', 'projectId', 'title', 'percentage', 'amountCOP', 'amountUSD', 'acceptanceActSigned', 'invoiceIssued', 'isPaid'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.projectId is string && data.projectId.size() > 0 && data.projectId.size() <= 100
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.percentage is number && data.percentage >= 0 && data.percentage <= 100
+        && data.amountCOP is number && data.amountCOP >= 0
+        && data.amountUSD is number && data.amountUSD >= 0
+        && data.acceptanceActSigned is bool
+        && data.invoiceIssued is bool
+        && data.isPaid is bool;
+    }
+
+    // 4. Client / Partner validator
+    function isValidClient(data) {
+      return data.keys().hasAll(['id', 'name', 'taxId'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.taxId is string && data.taxId.size() > 0 && data.taxId.size() <= 50
+        && (!('email' in data) || (data.email is string && data.email.size() <= 150))
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 50))
+        && (!('city' in data) || (data.city is string && data.city.size() <= 100))
+        && (!('country' in data) || (data.country is string && data.country.size() <= 100))
+        && (!('type' in data) || (data.type is string && data.type in ['customer', 'supplier', 'both']));
+    }
+
+    // 5. Expense validator
+    function isValidExpense(data) {
+      return data.keys().hasAll(['id', 'userId', 'amount', 'currency', 'status', 'category'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 100
+        && data.amount is number && data.amount >= 0
+        && data.currency is string && data.currency in ['COP', 'USD', 'EUR']
+        && data.status is string && data.status in ['pending', 'approved', 'legalized', 'rejected']
+        && data.category is string && data.category.size() <= 50
+        && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
+        && (!('projectId' in data) || (data.projectId is string && data.projectId.size() <= 100))
+        && (!('receiptPhotoUrl' in data) || (data.receiptPhotoUrl is string && data.receiptPhotoUrl.size() <= 1000));
+    }
+
+    // 6. Requisition validator
+    function isValidRequisition(data) {
+      return data.keys().hasAll(['id', 'reqNumber', 'requesterId', 'projectId', 'status', 'items'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.reqNumber is string && data.reqNumber.size() > 0 && data.reqNumber.size() <= 50
+        && data.requesterId is string && data.requesterId.size() > 0 && data.requesterId.size() <= 100
+        && data.projectId is string && data.projectId.size() > 0 && data.projectId.size() <= 100
+        && data.status is string && data.status in ['draft', 'pending_approval', 'approved', 'fulfilled', 'auto_po_generated', 'rejected']
+        && data.items is list && data.items.size() > 0 && data.items.size() <= 100
+        && (!('priority' in data) || (data.priority is string && data.priority in ['normal', 'urgente']))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    // 7. Purchase Order validator
+    function isValidPurchaseOrder(data) {
+      return data.keys().hasAll(['id', 'orderNumber', 'supplierId', 'supplierName', 'totalAmountUSD', 'totalAmountCOP', 'status', 'gmApproved', 'items'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.orderNumber is string && data.orderNumber.size() > 0 && data.orderNumber.size() <= 50
+        && data.supplierId is string && data.supplierId.size() > 0 && data.supplierId.size() <= 100
+        && data.supplierName is string && data.supplierName.size() > 0 && data.supplierName.size() <= 200
+        && data.totalAmountUSD is number && data.totalAmountUSD >= 0
+        && data.totalAmountCOP is number && data.totalAmountCOP >= 0
+        && data.status is string && data.status in ['draft', 'rfq', 'pending_gm_approval', 'approved', 'ordered', 'received', 'rejected', 'warranty_return']
+        && data.gmApproved is bool
+        && data.items is list && data.items.size() > 0 && data.items.size() <= 100
+        && (!('supplierHomologated' in data) || (data.supplierHomologated is bool))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    // 8. Inventory item validator
+    function isValidInventoryItem(data) {
+      return data.keys().hasAll(['id', 'sku', 'name', 'category', 'unit', 'costPriceCOP', 'costPriceUSD', 'realStock', 'availableStock'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.sku is string && data.sku.size() > 0 && data.sku.size() <= 50
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 100
+        && data.unit is string && data.unit.size() > 0 && data.unit.size() <= 30
+        && data.costPriceCOP is number && data.costPriceCOP >= 0
+        && data.costPriceUSD is number && data.costPriceUSD >= 0
+        && data.realStock is number && data.realStock >= 0
+        && data.availableStock is number
+        && (!('isCriticalSpare' in data) || (data.isCriticalSpare is bool))
+        && (!('isHomologatedITK' in data) || (data.isHomologatedITK is bool))
+        && (!('locationName' in data) || (data.locationName is string && data.locationName.size() <= 100))
+        && (!('shelf' in data) || (data.shelf is string && data.shelf.size() <= 50))
+        && (!('minStock' in data) || (data.minStock is number && data.minStock >= 0));
+    }
+
+    // 9. DIAN Support Document validator
+    function isValidDianSupportDoc(data) {
+      return data.keys().hasAll(['id', 'documentNumber', 'supplierName', 'supplierTaxId', 'totalAmount', 'status'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.documentNumber is string && data.documentNumber.size() > 0 && data.documentNumber.size() <= 50
+        && data.supplierName is string && data.supplierName.size() > 0 && data.supplierName.size() <= 200
+        && data.supplierTaxId is string && data.supplierTaxId.size() > 0 && data.supplierTaxId.size() <= 50
+        && data.totalAmount is number && data.totalAmount >= 0
+        && data.status is string && data.status.size() <= 50
+        && (!('cude' in data) || (data.cude is string && data.cude.size() <= 200));
+    }
+
+    // 10. DIAN Electronic Payroll validator
+    function isValidDianPayroll(data) {
+      return data.keys().hasAll(['id', 'consecutive', 'employeeId', 'employeeName', 'totalEarned', 'totalDeductions', 'netPaid', 'status'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.consecutive is string && data.consecutive.size() > 0 && data.consecutive.size() <= 50
+        && data.employeeId is string && data.employeeId.size() > 0 && data.employeeId.size() <= 100
+        && data.employeeName is string && data.employeeName.size() > 0 && data.employeeName.size() <= 200
+        && data.totalEarned is number && data.totalEarned >= 0
+        && data.totalDeductions is number && data.totalDeductions >= 0
+        && data.netPaid is number && data.netPaid >= 0
+        && data.status is string && data.status.size() <= 50
+        && (!('cune' in data) || (data.cune is string && data.cune.size() <= 200));
+    }
+
+    // 11. DIAN Invoice validator
+    function isValidDianInvoice(data) {
+      return data.keys().hasAll(['id', 'invoiceNumber', 'clientTaxId', 'clientName', 'total', 'status'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 100
+        && data.invoiceNumber is string && data.invoiceNumber.size() > 0 && data.invoiceNumber.size() <= 50
+        && data.clientTaxId is string && data.clientTaxId.size() > 0 && data.clientTaxId.size() <= 50
+        && data.clientName is string && data.clientName.size() > 0 && data.clientName.size() <= 200
+        && data.total is number && data.total >= 0
+        && data.status is string && data.status.size() <= 50
+        && (!('cufe' in data) || (data.cufe is string && data.cufe.size() <= 200));
+    }
+
+    // 12. App Settings validator
+    function isValidAppSettings(data) {
+      return data.size() <= 50;
+    }
+
+    // =========================================================================
+    // COLLECTION ACCESS RULES
+    // =========================================================================
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if isValidUser(request.resource.data) && request.resource.data.id == userId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // Unified Corporate Sync Collection (stores synchronized live ERP state)
+    match /erp_sync/{docId} {
+      allow read: if true;
+      allow write: if request.resource.data.size() <= 200;
+    }
+
+    // Modular Live ERP Sync Collections (Projects, Procurement, Operations, Commercial, Productivity)
+    match /erp_modules/{moduleId} {
+      allow read: if true;
+      allow write: if request.resource.data.size() <= 200;
+    }
+
+    // Chat messages collection for real-time collaboration between users
+    match /chat_messages/{messageId} {
+      allow read, write: if true;
+    }
+
+    // 2. Projects Collection
+    match /projects/{projectId} {
+      allow read: if true;
+      allow create, update: if isValidProject(request.resource.data) && request.resource.data.id == projectId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 3. Billing Milestones Collection
+    match /milestones/{milestoneId} {
+      allow read: if true;
+      allow create, update: if isValidMilestone(request.resource.data) && request.resource.data.id == milestoneId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 4. Clients & Partners Collection
+    match /clients/{clientId} {
+      allow read: if true;
+      allow create, update: if isValidClient(request.resource.data) && request.resource.data.id == clientId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 5. Expenses Collection
+    match /expenses/{expenseId} {
+      allow read: if true;
+      allow create, update: if isValidExpense(request.resource.data) && request.resource.data.id == expenseId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 6. Requisitions Collection
+    match /requisitions/{reqId} {
+      allow read: if true;
+      allow create, update: if isValidRequisition(request.resource.data) && request.resource.data.id == reqId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 7. Purchase Orders Collection
+    match /purchase_orders/{poId} {
+      allow read: if true;
+      allow create, update: if isValidPurchaseOrder(request.resource.data) && request.resource.data.id == poId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 8. Inventory Collection
+    match /inventory/{itemId} {
+      allow read: if true;
+      allow create, update: if isValidInventoryItem(request.resource.data) && request.resource.data.id == itemId;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 9. DIAN Support Documents Collection
+    match /dian_support_documents/{docId} {
+      allow read: if isFinancial();
+      allow create: if isFinancial() && isValidDianSupportDoc(request.resource.data) && request.resource.data.id == docId;
+      allow update: if isFinancial() && isValidDianSupportDoc(request.resource.data) && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    // 10. DIAN Electronic Payroll Collection
+    match /dian_payroll/{docId} {
+      allow read: if isFinancial() || (isAuthenticated() && getUserRole() in ['hseq', 'gerente_administrativa']);
+      allow create: if isFinancial() && isValidDianPayroll(request.resource.data) && request.resource.data.id == docId;
+      allow update: if isFinancial() && isValidDianPayroll(request.resource.data) && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    // 11. DIAN Electronic Invoices & RADIAN Collection
+    match /dian_invoices/{docId} {
+      allow read: if isFinancial() || isManager();
+      allow create: if isFinancial() && isValidDianInvoice(request.resource.data) && request.resource.data.id == docId;
+      allow update: if isFinancial() && isValidDianInvoice(request.resource.data) && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    // 12. App Settings Collection
+    match /app_settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidAppSettings(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // OPERATIONAL TELEFERICO & ERP EXTENSIONS
+    // -------------------------------------------------------------------------
+    match /tasks/{taskId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    match /timesheets/{entryId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    match /remissions/{remissionId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    match /ddrs/{ddrId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+  }
+}

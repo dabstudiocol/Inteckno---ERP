@@ -1,0 +1,46 @@
+# Dependencias
+node_modules
+.pnpm-store
+
+# Producción
+dist
+dist-ssr
+*.local
+
+# Variables de entorno y secretos (SEGURIDAD CRÍTICA)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Logs y temporales
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Editor y sistema
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+_backup_conflict_resolution/
+
+# Exclusiones de IA y Workspace (¡CRÍTICO PARA ANTIGRAVITY/CLAUDE CODE!)
+.gemini/
+antigravity-ide/
+artifacts/
+.antigravity/
+public/storage/
+public/uploads/
+.next/
+build/
+vendor/
+venv/
