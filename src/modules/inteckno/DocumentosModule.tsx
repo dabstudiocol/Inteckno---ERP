@@ -1188,14 +1188,14 @@ export const DocumentosModule: React.FC = () => {
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
         
         {/* Selector de Ámbito Principal y Acciones */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl w-full lg:w-auto">
+        <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3 w-full min-w-0 pb-1">
+          <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-x-auto max-w-full min-w-0">
             <button
               onClick={() => {
                 setActiveTab('todos');
                 setSelectedFolderId(null);
               }}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center shrink-0 ${
                 activeTab === 'todos'
                   ? 'bg-white dark:bg-slate-900 text-[#00668F] dark:text-sky-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1210,7 +1210,7 @@ export const DocumentosModule: React.FC = () => {
                 setActiveTab('empresa');
                 setSelectedFolderId(null);
               }}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center shrink-0 ${
                 activeTab === 'empresa'
                   ? 'bg-white dark:bg-slate-900 text-[#00668F] dark:text-sky-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1225,7 +1225,7 @@ export const DocumentosModule: React.FC = () => {
                 setActiveTab('mi_unidad');
                 setSelectedFolderId(null);
               }}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center shrink-0 ${
                 activeTab === 'mi_unidad'
                   ? 'bg-white dark:bg-slate-900 text-[#00668F] dark:text-sky-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1240,7 +1240,7 @@ export const DocumentosModule: React.FC = () => {
                 setActiveTab('compartido');
                 setSelectedFolderId(null);
               }}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center shrink-0 ${
                 activeTab === 'compartido'
                   ? 'bg-white dark:bg-slate-900 text-[#00668F] dark:text-sky-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1250,20 +1250,20 @@ export const DocumentosModule: React.FC = () => {
               <span className="truncate">COMPARTIDO</span>
             </button>
 
-            {/* PESTAÑA: SEMÁFORO DE VENCIMIENTOS CRÍTICOS Y HSEQ */}
+            {/* PESTAÑA: SEMÁFORO DE VENCIMIENTOS CRÍTICOS Y SST */}
             <button
               onClick={() => {
                 setActiveTab('vencimientos_hseq');
                 setSelectedFolderId(null);
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-center relative ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-center relative shrink-0 ${
                 activeTab === 'vencimientos_hseq'
                   ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs border border-amber-200 dark:border-amber-900/50'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Shield size={14} className="text-amber-500 shrink-0" />
-              <span className="truncate">VENCIMIENTOS & HSEQ</span>
+              <span className="truncate">VENCIMIENTOS & SST</span>
               {expiringDocsCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shrink-0 animate-pulse">
                   {expiringDocsCount}
@@ -1273,7 +1273,7 @@ export const DocumentosModule: React.FC = () => {
           </div>
 
           {/* BARRA BUSCADORA Y ACCIONES COMPACTAS */}
-          <div className="flex items-center gap-2 w-full lg:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 w-full 2xl:w-auto shrink-0 flex-wrap sm:flex-nowrap">
             <div className="relative flex-1 sm:w-64">
               <Search size={15} className="absolute left-3.5 top-3 text-slate-400" />
               <input

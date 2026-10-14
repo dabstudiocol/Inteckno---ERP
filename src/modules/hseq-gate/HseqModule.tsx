@@ -25,13 +25,13 @@ export const HseqModule: React.FC = () => {
   return (
     <div className="space-y-4 animate-in fade-in duration-200">
       
-      {/* Banner de Política de Cero Tolerancia HSEQ (Manual 2.3) */}
+      {/* Banner de Política de Cero Tolerancia de Seguridad y Salud (SST) */}
       <div className="p-3.5 rounded-xl bg-rose-50/90 border border-rose-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-rose-900">
         <div className="flex items-center gap-2.5">
           <ShieldAlert size={18} className="text-rose-600 shrink-0" />
           <div>
-            <strong className="block font-bold">Compuerta HSEQ / SST (Procedimiento 2.3):</strong>
-            <span>Ningún técnico operativo puede ser asignado a campo ni iniciar labores en alturas sin certificado digital de liberación HSEQ vigente (ARL, EPS y curso de alturas certificado).</span>
+            <strong className="block font-bold">Compuerta de Seguridad y Salud en el Trabajo (SST):</strong>
+            <span>Ningún técnico operativo puede ser asignado a campo ni iniciar labores en alturas sin certificado digital de liberación de Seguridad y Salud (SST) vigente (ARL, EPS y curso de alturas certificado).</span>
           </div>
         </div>
         <div className="px-2.5 py-0.5 rounded-lg bg-white font-bold text-rose-800 border border-rose-300 self-start sm:self-auto shrink-0 text-[11px]">

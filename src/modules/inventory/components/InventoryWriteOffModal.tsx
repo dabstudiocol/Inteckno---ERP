@@ -149,7 +149,7 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
           <div>
             <strong className="font-bold">Regla de Aprobación de Gerencia:</strong>
             <p className="text-[11px] mt-0.5 text-amber-800">
-              Esta solicitud se registrará en estado <strong>PENDIENTE DE APROBACIÓN POR GERENCIA</strong> y afectará contablemente al Centro de Costos seleccionado. El stock físico no será descontado hasta la aprobación formal de la Dirección.
+              Esta solicitud se registrará en estado <strong>PENDIENTE DE APROBACIÓN POR GERENCIA</strong> y afectará contablemente al Centro de Costos seleccionado. Las existencias físicas no serán descontadas hasta la aprobación formal de la Dirección.
             </p>
           </div>
         </div>

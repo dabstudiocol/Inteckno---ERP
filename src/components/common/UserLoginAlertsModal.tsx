@@ -351,7 +351,7 @@ export const UserLoginAlertsModal: React.FC<UserLoginAlertsModalProps> = ({
   const highPriorityCount = userActions.filter((a) => a.urgency === 'HIGH').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/65 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] p-3 sm:p-6 overflow-y-auto flex items-center justify-center bg-slate-900/65 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
         
         {/* Cabecera del Pop-up con Colores Sólidos Corporativos */}

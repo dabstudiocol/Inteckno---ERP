@@ -847,7 +847,7 @@ export const CalendarioModule: React.FC = () => {
   return (
     <div className="space-y-3 pb-8 md:pb-4">
       {/* Barra Superior Compacta de Control del Calendario - Cero bordes */}
-      <div className="bg-white rounded-2xl px-4 py-3 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl px-4 py-3 shadow-xs flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3 w-full min-w-0">
         {/* Selector de Mes / Semana y Navegación Rápida */}
         <div className="flex items-center gap-2.5 flex-wrap">
           <div className="w-9 h-9 rounded-xl bg-[#00668F] text-white flex items-center justify-center shadow-xs shrink-0">
