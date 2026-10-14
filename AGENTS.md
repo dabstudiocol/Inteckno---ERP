@@ -87,6 +87,13 @@ Para evitar eso y trabajar rápido, DEBES obedecer estrictamente las siguientes 
    git push origin master
    ```
    *Nota técnica para el agente:* Si el comando `git` no se reconoce de forma directa en la sesión de terminal, usa la ruta completa del ejecutable: `& "C:\Program Files\Git\cmd\git.exe" add .` y `& "C:\Program Files\Git\cmd\git.exe" push origin master`.
+10. **BLINDAJE POKA-YOKE Y CERO ERROR HUMANO / MANUAL:**
+   El ERP debe hacer que cometer un error humano o de dedo sea físicamente imposible:
+   - **Detector de anomalías de precio/cantidad:** Si un precio o cantidad difiere >25% del promedio histórico de 12 meses (ej. un cero de más), resaltar en advertencia y exigir confirmación explícita antes de guardar.
+   - **Semáforo y tope presupuestal:** Bloquear automáticamente órdenes si el proyecto supera el 100% de su presupuesto sin excepción de Gerencia.
+   - **Prevención de duplicados:** Bloquear facturas repetidas por NIT + N° Factura fiscal y órdenes dobles para la misma requisición.
+   - **Recepción con foto obligatoria:** En compras de repuestos críticos de teleférico, exigir adjuntar foto de la pieza recibida y remisión firmada.
+   - **Vencimiento de proveedores:** Inhabilitar proveedores con documentación (RUT/pólizas) vencida.
 
 Si necesitas leer un archivo, lee EXACTAMENTE ese archivo. **NO HAGAS BÚSQUEDAS EN BUCLE NI ESCANEOS COMPLETOS DE DIRECTORIO.**
 
