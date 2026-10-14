@@ -266,6 +266,7 @@ export interface ErpContextType extends ErpState {
   receivePurchaseOrder: (poId: string) => { success: boolean; error?: string };
   receivePurchaseOrderPartial: (poId: string, itemReceipts: { sku: string; receivedQty: number }[]) => { success: boolean; error?: string };
   deletePurchaseOrder: (id: string) => void;
+  updatePurchaseOrder: (id: string, data: Partial<PurchaseOrder>) => void;
   createRequisition: (req: Omit<InternalRequisition, 'id' | 'reqNumber' | 'createdAt' | 'status'> & { status?: InternalRequisition['status'] }) => {
     success: boolean;
     autoPoCreated: boolean;
@@ -1226,6 +1227,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         purchaseOrders: prev.purchaseOrders.filter((po) => po.id !== id),
       }));
       notify('info', 'Orden de Compra Eliminada', 'La orden de compra ha sido retirada.');
+    },
+    [notify]
+  );
+
+  const updatePurchaseOrder = useCallback(
+    (id: string, data: Partial<PurchaseOrder>) => {
+      setState((prev) => ({
+        ...prev,
+        purchaseOrders: prev.purchaseOrders.map((po) =>
+          po.id === id ? { ...po, ...data } : po
+        ),
+      }));
+      notify('success', 'Orden de Compra Actualizada', 'Los datos de la orden han sido sincronizados.');
     },
     [notify]
   );
@@ -3652,6 +3666,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approveTimesheet,
         rejectTimesheet,
         createPurchaseOrder,
+        updatePurchaseOrder,
         approvePurchaseOrderGM,
         receivePurchaseOrder,
         receivePurchaseOrderPartial,

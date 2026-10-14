@@ -61,6 +61,9 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
   // Control de bloqueo de salida si hay cambios sin guardar
   const [showExitWarning, setShowExitWarning] = useState<boolean>(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  // Blindaje Poka-Yoke: Foto obligatoria de la pieza y remisión firmada
+  const [receiptPhotoAttached, setReceiptPhotoAttached] = useState<boolean>(false);
+  const [signedRemissionAttached, setSignedRemissionAttached] = useState<boolean>(false);
 
   // Inicializar ítems al seleccionar orden
   useEffect(() => {
@@ -168,9 +171,18 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
       const state = itemsState[it.sku];
       if (!state) continue;
       if ((state.status === 'partial' || state.status === 'error') && !state.notes.trim()) {
-        alert(`Debes especificar la novedad u observación para el ítem "${it.name}" (SKU: ${it.sku})`);
+        alert(`Debes especificar la novedad u observación para el ítem "${it.name}" (Referencia: ${it.sku})`);
         return;
       }
+    }
+
+    // Blindaje Poka-Yoke: Foto obligatoria de la pieza y remisión firmada
+    const isCriticalOrMajor = selectedPO.qualityCertificateRequired || (selectedPO.totalAmountCOP || 0) > 2000000;
+    if (isCriticalOrMajor && (!receiptPhotoAttached || !signedRemissionAttached)) {
+      alert(
+        'Blindaje Poka-Yoke Anti-Error Humano:\nPara repuestos críticos de teleférico o compras superiores a $2.000.000 COP, es OBLIGATORIO confirmar la fotografía física de la pieza recibida y la remisión física debidamente firmada.'
+      );
+      return;
     }
 
     const receiptsPayload = selectedPO.items.map((it) => {
@@ -429,6 +441,50 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
             ) : (
               <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-slate-500">
                 Selecciona una orden de compra para iniciar la recepción.
+              </div>
+            )}
+
+            {/* BLINDAJE POKA-YOKE: RECEPCIÓN CON FOTO OBLIGATORIA Y REMISIÓN FIRMADA */}
+            {selectedPO && (
+              <div className="p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/40 space-y-2 text-xs">
+                <div className="font-bold text-indigo-950 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={15} className="text-indigo-600" /> Control Poka-Yoke de Almacén: Verificación Física
+                  </span>
+                  {(selectedPO.qualityCertificateRequired || (selectedPO.totalAmountCOP || 0) > 2000000) && (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded bg-rose-100 text-rose-800 uppercase tracking-wide">
+                      Obligatorio por Repuesto Crítico / Monto Mayor
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={receiptPhotoAttached}
+                      onChange={(e) => setReceiptPhotoAttached(e.target.checked)}
+                      className="rounded text-[#00668F] cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 block text-xs">1. Foto Física de la Pieza Recibida</span>
+                      <span className="text-[10px] text-slate-500">Inspección visual de estado y sin golpes</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={signedRemissionAttached}
+                      onChange={(e) => setSignedRemissionAttached(e.target.checked)}
+                      className="rounded text-[#00668F] cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 block text-xs">2. Remisión Física Firmada por Almacén</span>
+                      <span className="text-[10px] text-slate-500">Soporte físico con firma del transportador</span>
+                    </div>
+                  </label>
+                </div>
               </div>
             )}
 

@@ -25,6 +25,7 @@ interface RequisitionItemDraft {
   qty: number;
   unit: string;
   estimatedPriceCOP?: number;
+  availableStockInWarehouse?: number;
 }
 
 export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
@@ -46,6 +47,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
     new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString().split('T')[0]
   );
   const [justification, setJustification] = useState<string>('');
+  const [drawingVersion, setDrawingVersion] = useState<string>('Rev-02 (Aprobado)');
 
   // Sincronizar selección inicial de catálogos dinámicos
   useEffect(() => {
@@ -116,6 +118,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
             sku: prod.sku,
             unit: prod.unit || 'unid',
             estimatedPriceCOP: prod.costPriceCOP || 0,
+            availableStockInWarehouse: prod.availableStock,
           };
         }
         return it;
@@ -456,16 +459,55 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                         />
                       </div>
                     </div>
+
+                    {/* Alerta Poka-Yoke: Chequeo Previo de Bodega (Canibalización de Stock) */}
+                    {item.availableStockInWarehouse !== undefined && item.availableStockInWarehouse > 0 && (
+                      <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <AlertCircle size={14} className="text-amber-600 shrink-0" />
+                          <span>
+                            Hay <strong>{item.availableStockInWarehouse} {item.unit || 'unid'}</strong> disponibles en bodega principal. ¿Deseas solicitar transferencia en vez de comprar?
+                          </span>
+                        </div>
+                        <span className="font-bold text-amber-950 uppercase text-[9px] bg-amber-200 px-2 py-0.5 rounded">
+                          Existencias Disponibles
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Justificación de la Petición */}
-            <div>
-              <label className="font-bold text-slate-800 block mb-1">
-                Justificación / Motivo de la Petición:
+            {/* Versión de Plano de Ingeniería (BOM Drift Control) */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <label className="font-bold text-slate-800 block text-xs">
+                Versión del Plano / Lista de Materiales (BOM Version)
               </label>
+              <input
+                type="text"
+                value={drawingVersion}
+                onChange={(e) => setDrawingVersion(e.target.value)}
+                placeholder="Ej: Rev-03 (Plano Mecánico Teleférico aprobado por Wilson Alzate)"
+                className="w-full h-9 px-2.5 rounded-lg border border-slate-300 bg-white text-xs font-mono font-medium"
+              />
+              <p className="text-[10px] text-slate-500">
+                Se asocia a la solicitud para prevenir compras con planos u hojas de despiece desactualizadas.
+              </p>
+            </div>
+
+            {/* Justificación de la Petición y Alerta Dead-Man Switch */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-slate-800 block">
+                  Justificación / Motivo de la Petición:
+                </label>
+                {priority.toLowerCase().includes('urgente') && (
+                  <span className="text-[10px] font-bold text-rose-600 flex items-center gap-1">
+                    ⚡ Escalamiento Automático: Si no se aprueba en 24h escala a Gerencia General
+                  </span>
+                )}
+              </div>
               <textarea
                 rows={2}
                 value={justification}

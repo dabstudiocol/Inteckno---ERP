@@ -65,21 +65,23 @@ export const RequisitionsModule: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-200">
       
       {/* Encabezado y Principio Humano (Lenguaje sin burocracia) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3 pb-2 w-full min-w-0">
+        <div className="min-w-0">
           <h2 className="text-xl font-bold text-gray-900 tracking-tight">Pedir Materiales y Repuestos</h2>
           <p className="text-xs text-gray-500 font-medium mt-0.5">
-            Si hay existencias en bodega se autoriza la salida; si no hay stock, el sistema crea solo la solicitud de compra.
+            Si hay existencias en bodega se autoriza la salida; si no hay existencias disponibles, el sistema genera la solicitud de compra.
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-5 py-2.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"
-        >
-          <Plus size={16} />
-          <span>Pedir Materiales Ahora</span>
-        </button>
+        <div className="flex items-center flex-wrap gap-2 shrink-0">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-5 py-2.5 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 active:scale-95 cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>Pedir Materiales Ahora</span>
+          </button>
+        </div>
       </div>
 
       {/* Trazabilidad de Requisiciones */}

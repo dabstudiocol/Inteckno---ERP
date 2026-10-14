@@ -700,6 +700,43 @@ export interface PurchaseOrder {
   notes?: string;
   deliveryBatchesCount?: number; // Contador de recepciones parciales
   estimatedArrivalDate?: string; // Fecha estimada de llegada de los items
+  // Logística y Trazabilidad de Transporte
+  carrierName?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  // Calidad y No Conformidades
+  qualityCertificateUrl?: string;
+  qualityCertificateNumber?: string;
+  conformingReceivedQty?: number;
+  nonConformingReceivedQty?: number;
+  nonConformingReason?: string;
+  returnNoteNumber?: string;
+  // Finanzas, Anticipos y Cruce de 3 Vías
+  advancePaymentPercentage?: number;
+  advancePaymentAmountCOP?: number;
+  advancePaymentProofUrl?: string;
+  paymentStatus?: 'pending' | 'advance_paid' | 'authorized_for_payment' | 'paid';
+  threeWayMatchStatus?: 'pending' | 'matched' | 'discrepancy';
+  threeWayMatchApprovedAt?: string;
+  threeWayMatchApprovedBy?: string;
+  fiscalInvoiceNumber?: string;
+  fiscalInvoiceNit?: string;
+  // Historial de Enmiendas Auditables
+  amendments?: {
+    id: string;
+    date: string;
+    user: string;
+    reason: string;
+    changes: string;
+  }[];
+  // TRM y Control Cambiario
+  budgetProjectTrm?: number;
+  currentTrmAtOrder?: number;
+  exchangeRateAlert?: boolean;
+  exchangeRateOvercostPercent?: number;
+  // Blindajes de Ingeniería y Homologación
+  isFastTrackEmergency?: boolean;
+  drawingVersion?: string;
 }
 
 export interface InternalRequisitionItem {

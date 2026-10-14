@@ -37,6 +37,9 @@ import { AiDocumentUploader } from '../../components/ui/AiDocumentUploader';
 import { CreateRequisitionModal } from './components/CreateRequisitionModal';
 import { RequisitionDetailModal } from './components/RequisitionDetailModal';
 import { ProcurementReportsDashboard } from './components/ProcurementReportsDashboard';
+import { PurchaseOrderDetailDrawer } from './components/PurchaseOrderDetailDrawer';
+import { QuoteComparisonModal, VendorQuoteCandidate } from './components/QuoteComparisonModal';
+import { RegisterPurchaseOrderModal } from './components/RegisterPurchaseOrderModal';
 import { getStoredTRM, formatCOP, formatUSD, formatTRM } from '../../core/services/trmService';
 
 interface PoItemRow {
@@ -59,6 +62,7 @@ export const ProcurementModule: React.FC = () => {
     requisitions,
     currentUser,
     createPurchaseOrder,
+    updatePurchaseOrder,
     deletePurchaseOrder,
     approvePurchaseOrderGM,
     receivePurchaseOrderPartial,
@@ -70,11 +74,14 @@ export const ProcurementModule: React.FC = () => {
 
   const currentTrm = getStoredTRM();
 
-  // Pestañas (Órdenes, Peticiones, Proveedores, Reportes)
-  const [activeTab, setActiveTab] = useState<'orders' | 'requisitions' | 'suppliers' | 'reports'>('orders');
+  // Pestañas (Órdenes, Peticiones, Cotizaciones, Proveedores, Reportes)
+  const [activeTab, setActiveTab] = useState<'orders' | 'requisitions' | 'quotes' | 'suppliers' | 'reports'>('orders');
 
-  // Modales
+  // Modales y Paneles
   const [isRegisterPoModalOpen, setIsRegisterPoModalOpen] = useState(false);
+  const [selectedPoForDetail, setSelectedPoForDetail] = useState<PurchaseOrder | null>(null);
+  const [isQuoteComparisonOpen, setIsQuoteComparisonOpen] = useState(false);
+  const [isCreateReqModalOpen, setIsCreateReqModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
   const [isReqDetailModalOpen, setIsReqDetailModalOpen] = useState(false);
   const [isNewSupplierModalOpen, setIsNewSupplierModalOpen] = useState(false);
@@ -356,6 +363,43 @@ export const ProcurementModule: React.FC = () => {
     });
   };
 
+  const handleAwardQuote = (awardedQuote: VendorQuoteCandidate, projectId: string) => {
+    const proj = projects.find((p) => p.id === projectId);
+    createPurchaseOrder({
+      supplierId: `PROV-ADJ-${Date.now()}`,
+      supplierName: awardedQuote.supplierName,
+      supplierHomologated: awardedQuote.isHomologated,
+      projectId: proj?.id,
+      projectCode: proj?.code,
+      date: new Date().toISOString().split('T')[0],
+      currency: 'COP',
+      totalAmountCOP: awardedQuote.totalCOP,
+      totalAmountUSD: awardedQuote.totalUSD,
+      qualityCertificateRequired: awardedQuote.technicalCompliance,
+      qualityCertificateAttached: false,
+      physicalReceiptDone: false,
+      technicalQualityInspectionDone: false,
+      estimatedArrivalDate: new Date(Date.now() + awardedQuote.deliveryDays * 24 * 3600 * 1000).toISOString().split('T')[0],
+      notes: `Adjudicado desde Cuadro Comparativo de Ofertas. Plazo: ${awardedQuote.paymentTerms}. Notas: ${awardedQuote.notes}`,
+      paymentStatus: 'pending',
+      threeWayMatchStatus: 'pending',
+      items: [
+        {
+          productId: 'PRD-AWARDED',
+          sku: 'MAT-STC-AWARD',
+          name: `Suministro Adjudicado a ${awardedQuote.supplierName}`,
+          qty: 1,
+          orderedQty: 1,
+          receivedQty: 0,
+          unitPriceCOP: awardedQuote.totalCOP,
+          unitPriceUSD: awardedQuote.totalUSD,
+          subtotalCOP: awardedQuote.totalCOP,
+          subtotalUSD: awardedQuote.totalUSD,
+        },
+      ],
+    });
+  };
+
   return (
     <div className="space-y-4 animate-in fade-in duration-200">
       
@@ -379,7 +423,17 @@ export const ProcurementModule: React.FC = () => {
             }`}
           >
             <FileText size={14} />
-            <span>Peticiones de Compra ({safeReqs.length})</span>
+            <span>Solicitudes de Material ({safeReqs.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('quotes')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'quotes' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+            }`}
+          >
+            <Scale size={14} />
+            <span>Cuadro Comparativo</span>
           </button>
 
           <button
@@ -403,18 +457,43 @@ export const ProcurementModule: React.FC = () => {
           </button>
         </div>
 
-        {/* Acciones Contextuales según la Pestaña Activa */}
+        {/* Acciones Elásticas Universales (Cero Botones Cortados) */}
         <div className="flex items-center flex-wrap gap-2 shrink-0">
-          {activeTab === 'orders' && (
-            <button
-              type="button"
-              onClick={() => setIsRegisterPoModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-[#003650] hover:bg-[#00283c] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer"
-            >
-              <Plus size={14} />
-              <span>Registrar OC</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsRegisterPoModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-[#003650] hover:bg-[#00283c] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>+ Nueva Orden de Compra</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsCreateReqModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>+ Nueva Solicitud</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsQuoteComparisonOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#00668F] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Scale size={14} />
+            <span>Comparar Ofertas</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsConfigModalOpen(true)}
+            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+            title="Configurar Parámetros del Módulo de Compras"
+          >
+            <Settings size={14} />
+          </button>
         </div>
       </div>
 
@@ -431,17 +510,25 @@ export const ProcurementModule: React.FC = () => {
         <LightTable
             data={safePOs}
             keyExtractor={(po) => po.id}
+            onRowClick={(po) => setSelectedPoForDetail(po)}
             columns={[
               {
                 key: 'orderNumber',
-                header: 'N° Orden / Fecha',
+                header: 'N° Orden (OC) / Fecha',
                 render: (po) => (
                   <div>
-                    <div className="font-bold text-xs text-[#003650] font-mono">{po.orderNumber}</div>
+                    <div className="font-bold text-xs text-[#003650] font-mono flex items-center gap-1.5">
+                      <span>{po.orderNumber}</span>
+                      {po.exchangeRateAlert && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold" title="Alerta TRM">
+                          TRM
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-slate-400">Emisión: {po.date}</div>
                     {po.estimatedArrivalDate && (
                       <div className="text-[10px] text-emerald-700 font-medium">
-                        Llegada est: {po.estimatedArrivalDate}
+                        Prometida: {po.estimatedArrivalDate}
                       </div>
                     )}
                   </div>
@@ -452,16 +539,21 @@ export const ProcurementModule: React.FC = () => {
                 header: 'Proveedor',
                 render: (po) => (
                   <div>
-                    <div className="font-semibold text-xs text-slate-900 line-clamp-1">{po.supplierName}</div>
+                    <div className="font-semibold text-xs text-slate-900 line-clamp-1 flex items-center gap-1">
+                      <span>{po.supplierName}</span>
+                      {po.supplierHomologated && (
+                        <ShieldCheck size={12} className="text-emerald-600 shrink-0" title="Homologado" />
+                      )}
+                    </div>
                     <div className="text-[11px] text-slate-500">
-                      {po.projectCode ? `Destino: ${po.projectCode}` : 'Gasto General / Oficina'}
+                      {po.projectCode ? `Centro Costos: ${po.projectCode}` : 'Gasto General / Oficina'}
                     </div>
                   </div>
                 ),
               },
               {
                 key: 'totalAmountCOP',
-                header: 'Monto Total (COP)',
+                header: 'Monto Total (COP / USD)',
                 align: 'right',
                 render: (po) => (
                   <div className="text-right">
@@ -476,14 +568,14 @@ export const ProcurementModule: React.FC = () => {
               },
               {
                 key: 'status',
-                header: 'Estado / Recepción',
+                header: 'Entrega Física (Semáforo)',
                 align: 'center',
                 render: (po) => {
                   if (po.status === 'received') {
                     return (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
                         <CheckCircle2 size={11} />
-                        Ingreso 100% en Almacén
+                        100% en Almacén
                       </span>
                     );
                   }
@@ -491,34 +583,95 @@ export const ProcurementModule: React.FC = () => {
                     return (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
                         <Clock size={11} />
-                        Entrega Parcial en Bodega
+                        Entrega Parcial
                       </span>
                     );
                   }
                   return (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-[#003650] border border-sky-200">
-                      En Tránsito con Proveedor
+                      En Tránsito
                     </span>
                   );
                 },
+              },
+              {
+                key: 'paymentStatus',
+                header: 'Estado de Pago & Cruce',
+                align: 'center',
+                render: (po) => {
+                  if (po.paymentStatus === 'paid') {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900">
+                        Pagado 100%
+                      </span>
+                    );
+                  }
+                  if (po.threeWayMatchStatus === 'matched' || po.paymentStatus === 'authorized_for_payment') {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-900 border border-indigo-200">
+                        Cruce 3 Vías OK
+                      </span>
+                    );
+                  }
+                  if (po.paymentStatus === 'advance_paid') {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900">
+                        Anticipo {po.advancePaymentPercentage || 30}%
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                      Pendiente
+                    </span>
+                  );
+                },
+              },
+              {
+                key: 'logistics',
+                header: 'Guía / Transportadora',
+                render: (po) => (
+                  <div className="text-xs">
+                    <div className="font-semibold text-slate-800 line-clamp-1">{po.carrierName || 'Envía Colvanes'}</div>
+                    {po.trackingNumber ? (
+                      <div className="font-mono text-[10px] text-[#00668F]">
+                        Guía: {po.trackingNumber}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-slate-400">Sin guía registrada</div>
+                    )}
+                  </div>
+                ),
               },
               {
                 key: 'actions',
                 header: 'Acción',
                 align: 'right',
                 render: (po) => (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`¿Estás seguro de eliminar la orden ${po.orderNumber}?`)) {
-                        deletePurchaseOrder(po.id);
-                      }
-                    }}
-                    title="Eliminar Orden de Compra"
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPoForDetail(po);
+                      }}
+                      title="Ver Detalle y Cruce de 3 Vías"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-[#003650] hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      <Eye size={13} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`¿Estás seguro de eliminar la orden ${po.orderNumber}?`)) {
+                          deletePurchaseOrder(po.id);
+                        }
+                      }}
+                      title="Eliminar Orden de Compra"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 ),
               },
             ]}
@@ -682,6 +835,48 @@ export const ProcurementModule: React.FC = () => {
         </div>
       )}
 
+      {/* PESTAÑA 3: CUADRO COMPARATIVO DE OFERTAS */}
+      {activeTab === 'quotes' && (
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Cuadro Comparativo de Ofertas & Licitación de Insumos</h3>
+              <p className="text-xs text-slate-500">Evaluación de 2 a 3 cotizaciones de proveedores: Precio total, plazos de entrega y certificados técnicos</p>
+            </div>
+            <button
+              onClick={() => setIsQuoteComparisonOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#003650] hover:bg-[#00283c] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              <Scale size={14} />
+              <span>Abrir Comparador y Adjudicar</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 text-xs">
+              <span className="font-bold text-slate-700 block uppercase tracking-wider text-[10px]">1. Cumplimiento Técnico Estricto</span>
+              <p className="text-slate-600">
+                Ninguna oferta puede adjudicarse para teleféricos a menos que el proveedor garantice Certificado de Calidad del Fabricante (Mill Test).
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 text-xs">
+              <span className="font-bold text-slate-700 block uppercase tracking-wider text-[10px]">2. Impacto Cambiario en USD</span>
+              <p className="text-slate-600">
+                El comparador liquida en tiempo real la TRM oficial para identificar sobrecostos ocultos por importaciones en moneda extranjera.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 text-xs">
+              <span className="font-bold text-slate-700 block uppercase tracking-wider text-[10px]">3. Generación Inmediata de OC</span>
+              <p className="text-slate-600">
+                Al seleccionar la oferta ganadora, el sistema genera la Orden de Compra oficial amarrada al Centro de Costos correspondiente.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PESTAÑA 4: PROVEEDORES HOMOLOGADOS */}
       {activeTab === 'suppliers' && (
         <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200 shadow-2xs space-y-3.5">
@@ -769,376 +964,49 @@ export const ProcurementModule: React.FC = () => {
         />
       )}
 
-      {/* MODAL: REGISTRAR ORDEN DE COMPRA (EMITIDA AL PROVEEDOR) */}
-      {isRegisterPoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 max-h-[88vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
-            
-            {/* Header del Modal */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-[#003650] text-white gap-3 shrink-0">
-              <div>
-                <h3 className="text-base font-bold text-white">
-                  Registrar Orden de Compra (Proveedor)
-                </h3>
-                <p className="text-xs text-slate-300">
-                  Carga la orden emitida al proveedor para control presupuestal, trazabilidad y fechas de llegada.
-                </p>
-              </div>
+      {/* MODAL BLINDADO POKA-YOKE: REGISTRAR ORDEN DE COMPRA */}
+      <RegisterPurchaseOrderModal
+        isOpen={isRegisterPoModalOpen}
+        onClose={() => setIsRegisterPoModalOpen(false)}
+        partners={partners}
+        projects={projects}
+        products={products}
+        requisitions={requisitions}
+        existingPurchaseOrders={safePOs}
+        currentTrm={currentTrm}
+        onCreatePo={createPurchaseOrder}
+      />
 
-              <div className="flex items-center gap-2">
-                <AiDocumentUploader
-                  docType="factura_cotizacion"
-                  onExtracted={handleAiExtracted}
-                  title="Auto-llenar con Documento (IA)"
-                  description="Extrae proveedor, NIT e ítems de la orden o cotización con Gemini"
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsRegisterPoModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                  title="Cerrar"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
+      {/* MODAL BLINDADO POKA-YOKE: CUADRO COMPARATIVO MULTICRITERIO */}
+      <QuoteComparisonModal
+        isOpen={isQuoteComparisonOpen}
+        onClose={() => setIsQuoteComparisonOpen(false)}
+        projects={projects}
+        partners={partners}
+        currentTrm={currentTrm}
+        onAwardQuote={handleAwardQuote}
+      />
 
-            <form onSubmit={handleRegisterPo} className="flex flex-col flex-1 min-h-0 overflow-hidden text-xs">
-              
-              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
-                
-                {/* Fechas de Emisión y Llegada (Trazabilidad) */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Fecha de Emisión de la Orden:
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={poDate}
-                      onChange={(e) => setPoDate(e.target.value)}
-                      className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Fecha Estimada de Llegada (Almacén):
-                    </label>
-                    <input
-                      type="date"
-                      value={poEstimatedArrivalDate}
-                      onChange={(e) => setPoEstimatedArrivalDate(e.target.value)}
-                      className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                    />
-                  </div>
-                </div>
-
-                {/* Datos del Proveedor y Destino */}
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-xs">
-                      1. Proveedor y Destino de la Compra
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
-                        <input
-                          type="radio"
-                          name="supplierType"
-                          checked={poSupplierType === 'registered'}
-                          onChange={() => setPoSupplierType('registered')}
-                          className="text-[#003650]"
-                        />
-                        <span>Proveedor Registrado</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
-                        <input
-                          type="radio"
-                          name="supplierType"
-                          checked={poSupplierType === 'custom'}
-                          onChange={() => setPoSupplierType('custom')}
-                          className="text-[#003650]"
-                        />
-                        <span>Escribir Proveedor Libre</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {poSupplierType === 'registered' ? (
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          Proveedor Homologado
-                        </label>
-                        <select
-                          value={selectedSupplierId}
-                          onChange={(e) => setSelectedSupplierId(e.target.value)}
-                          className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                        >
-                          {suppliers.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name} (NIT: {s.taxId})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block font-bold text-slate-700 mb-1">Razón Social Libre</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="Ej: Ferretería Central SAS"
-                            value={customSupplierName}
-                            onChange={(e) => setCustomSupplierName(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white text-xs focus:outline-hidden focus:border-[#003650]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-bold text-slate-700 mb-1">NIT / Tax ID</label>
-                          <input
-                            type="text"
-                            placeholder="900.123.456-7"
-                            value={customSupplierTaxId}
-                            onChange={(e) => setCustomSupplierTaxId(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white text-xs focus:outline-hidden focus:border-[#003650]"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Imputación */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="font-bold text-slate-700">Imputar Costo a:</label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setDestinationType('project')}
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${destinationType === 'project' ? 'bg-[#003650] text-white' : 'text-slate-500 hover:text-slate-900'}`}
-                          >
-                            Proyecto STC
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDestinationType('general')}
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${destinationType === 'general' ? 'bg-[#003650] text-white' : 'text-slate-500 hover:text-slate-900'}`}
-                          >
-                            Oficina / General
-                          </button>
-                        </div>
-                      </div>
-
-                      {destinationType === 'project' ? (
-                        <select
-                          value={selectedProjectId}
-                          onChange={(e) => setSelectedProjectId(e.target.value)}
-                          className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                        >
-                          {projects.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.code} — {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <select
-                          value={generalArea}
-                          onChange={(e) => setGeneralArea(e.target.value)}
-                          className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                        >
-                          <option value="Administración & Oficina">Administración & Oficina</option>
-                          <option value="Sistemas & TI">Sistemas & TI</option>
-                          <option value="Taller & Herramientas">Taller & Herramientas</option>
-                          <option value="Gestión Humana & SST">Gestión Humana & SST</option>
-                          <option value="Operaciones Generales">Operaciones Generales</option>
-                        </select>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ítems y Renglones de la Orden */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-xs">
-                        2. Ítems Comprados al Proveedor ({poItems.length})
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Ingresa las cantidades y precios acordados en <strong>COP</strong>.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={addItemRow}
-                      className="px-3 py-1.5 rounded-xl bg-sky-50 text-[#003650] font-bold hover:bg-sky-100 transition-colors flex items-center gap-1.5 cursor-pointer text-xs"
-                    >
-                      <Plus size={13} />
-                      <span>Agregar Renglón</span>
-                    </button>
-                  </div>
-
-                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-                    <div className="grid grid-cols-12 bg-slate-50 p-2.5 font-bold text-slate-700 text-[11px] border-b border-slate-200">
-                      <div className="col-span-3">Código / SKU</div>
-                      <div className="col-span-4">Descripción del Repuesto o Insumo</div>
-                      <div className="col-span-1 text-center">Unid.</div>
-                      <div className="col-span-1 text-center">Cant.</div>
-                      <div className="col-span-2 text-right">Precio Unit. (COP)</div>
-                      <div className="col-span-1 text-center">Quitar</div>
-                    </div>
-
-                    <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
-                      {poItems.map((item) => (
-                        <div key={item.id} className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-slate-50/50">
-                          <div className="col-span-3 space-y-1">
-                            <input
-                              type="text"
-                              required
-                              placeholder="SKU / Referencia"
-                              value={item.sku}
-                              onChange={(e) => updateItemRow(item.id, 'sku', e.target.value)}
-                              className="w-full h-8 px-2 text-xs font-mono font-bold rounded-lg border border-slate-300 bg-white"
-                            />
-                            {safeProducts.length > 0 && (
-                              <select
-                                onChange={(e) => {
-                                  if (e.target.value) handleSelectCatalogItem(item.id, e.target.value);
-                                }}
-                                defaultValue=""
-                                className="w-full h-6 px-1.5 text-[10px] text-slate-500 rounded-lg bg-slate-100 border border-slate-200"
-                              >
-                                <option value="" disabled>Cargar de catálogo...</option>
-                                {safeProducts.slice(0, 40).map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.sku} - {p.name.substring(0, 25)}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-
-                          <div className="col-span-4">
-                            <input
-                              type="text"
-                              required
-                              placeholder="Descripción del material"
-                              value={item.name}
-                              onChange={(e) => updateItemRow(item.id, 'name', e.target.value)}
-                              className="w-full h-8 px-2 text-xs font-medium rounded-lg border border-slate-300 bg-white"
-                            />
-                          </div>
-
-                          <div className="col-span-1">
-                            <input
-                              type="text"
-                              value={item.unit}
-                              onChange={(e) => updateItemRow(item.id, 'unit', e.target.value)}
-                              className="w-full h-8 px-1 text-center font-bold rounded-lg border border-slate-300 bg-white text-xs"
-                            />
-                          </div>
-
-                          <div className="col-span-1">
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.qty}
-                              onChange={(e) => updateItemRow(item.id, 'qty', Number(e.target.value) || 1)}
-                              className="w-full h-8 px-1 text-center font-mono font-bold rounded-lg border border-slate-300 bg-white text-xs"
-                            />
-                          </div>
-
-                          <div className="col-span-2">
-                            <input
-                              type="number"
-                              min="0"
-                              step="100"
-                              value={item.unitPriceCOP}
-                              onChange={(e) => updateItemRow(item.id, 'unitPriceCOP', Number(e.target.value) || 0)}
-                              className="w-full h-8 px-2 text-right font-mono font-bold rounded-lg border border-slate-300 bg-white text-xs"
-                              placeholder="$ COP"
-                            />
-                          </div>
-
-                          <div className="col-span-1 text-center">
-                            <button
-                              type="button"
-                              onClick={() => removeItemRow(item.id)}
-                              disabled={poItems.length <= 1}
-                              className="text-slate-400 hover:text-rose-600 disabled:opacity-30 p-1 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Justificación y TOTALES EN COP (DESTACADO Y PRINCIPAL) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start pt-2">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Soporte de la Orden y Notas:
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={poNotes}
-                      onChange={(e) => setPoNotes(e.target.value)}
-                      placeholder="Observaciones de entrega, plazo acordado con el proveedor..."
-                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs focus:outline-hidden focus:border-[#003650]"
-                    />
-                  </div>
-
-                  {/* CAJA DE LIQUIDACIÓN CON COP PRINCIPAL */}
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-600">
-                      <span>Renglones Totales:</span>
-                      <span className="font-bold text-slate-900">{poItems.length} ítems</span>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200">
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                        TOTAL DE LA ORDEN DE COMPRA (COP):
-                      </span>
-                      <div className="text-xl font-black text-slate-950 font-mono mt-0.5">
-                        {formatCOP(totalPoCOP)}
-                      </div>
-                      <div className="text-xs text-slate-500 font-mono mt-0.5">
-                        ≈ {formatUSD(totalPoUSD)} USD (TRM Hoy: ${formatTRM(currentTrm)} COP)
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Botones Fijos */}
-              <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsRegisterPoModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-600 font-bold hover:bg-slate-200 text-xs cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-[#003650] hover:bg-[#00283c] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <CheckCircle2 size={15} />
-                  <span>Registrar Orden de Compra</span>
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
+      {/* PANEL LATERAL DE DETALLE MAESTRO-DETALLE (4 PESTAÑAS) */}
+      {selectedPoForDetail && (
+        <PurchaseOrderDetailDrawer
+          po={selectedPoForDetail}
+          project={projects.find((p) => p.id === selectedPoForDetail.projectId)}
+          supplier={partners.find((p) => p.id === selectedPoForDetail.supplierId)}
+          currentTrm={currentTrm}
+          onClose={() => setSelectedPoForDetail(null)}
+          onUpdatePo={(updatedFields) => {
+            updatePurchaseOrder(selectedPoForDetail.id, updatedFields);
+            setSelectedPoForDetail((prev) => (prev ? { ...prev, ...updatedFields } : null));
+          }}
+        />
       )}
+
+      {/* MODAL: CREAR SOLICITUD DE COMPRA */}
+      <CreateRequisitionModal
+        isOpen={isCreateReqModalOpen}
+        onClose={() => setIsCreateReqModalOpen(false)}
+      />
 
       {/* MODAL: VER / MODIFICAR PETICIÓN DE COMPRA & NOTIFICAR A WILSON ALZATE */}
       <RequisitionDetailModal
@@ -1152,7 +1020,7 @@ export const ProcurementModule: React.FC = () => {
 
       {/* MODAL: HOMOLOGAR NUEVO PROVEEDOR CON CATÁLOGOS DINÁMICOS */}
       {isNewSupplierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-5 py-3.5 bg-[#003650] text-white">
               <div className="flex items-center gap-2">
