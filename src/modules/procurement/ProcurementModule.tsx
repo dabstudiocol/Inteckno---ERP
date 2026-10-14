@@ -24,6 +24,7 @@ import {
   X,
   Eye,
   BarChart3,
+  Scale,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { PurchaseOrder, Partner, PurchaseOrderItem, InternalRequisition } from '../../types';
