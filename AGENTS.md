@@ -94,6 +94,15 @@ Para evitar eso y trabajar rápido, DEBES obedecer estrictamente las siguientes 
    - **Prevención de duplicados:** Bloquear facturas repetidas por NIT + N° Factura fiscal y órdenes dobles para la misma requisición.
    - **Recepción con foto obligatoria:** En compras de repuestos críticos de teleférico, exigir adjuntar foto de la pieza recibida y remisión firmada.
    - **Vencimiento de proveedores:** Inhabilitar proveedores con documentación (RUT/pólizas) vencida.
+11. **PROTOCOLO ESTRICTO DE INTEGRIDAD DE CONEXIONES Y VERIFICACIÓN PRE-DESPLIEGUE (CERO "VARIABLE / ICON IS NOT DEFINED"):**
+   Está terminantemente prohibido asumir que una variable, icono o componente está importado solo porque `vite build` termine sin errores. Vite realiza transpilación sintáctica rápida y puede omitir variables huérfanas en JSX en tiempo de compilación.
+   - **Chequeo de Tipos Obligatorio:** Antes de cada despliegue o commit final, es MANDATORIO ejecutar en consola:
+     ```powershell
+     & "C:\Program Files\nodejs\npx.cmd" tsc --noEmit
+     ```
+     Si `tsc --noEmit` arroja un solo error de variable no definida, import faltante o discrepancia de interfaz, debe corregirse de inmediato antes de compilar con Vite o desplegar.
+   - **Inspección de Importaciones en JSX:** Todo icono de `lucide-react`, componente UI, modal o servicio invocado en el JSX debe verificarse físicamente en la cabecera de imports del archivo correspondiente.
+   - **Sinergia y Conexión Real:** Toda acción, botón o formulario debe estar efectivamente conectado al estado global (`erpStore`), reglas de validación o Firebase; prohibido dejar botones flotantes o llamadas a funciones inexistentes.
 
 Si necesitas leer un archivo, lee EXACTAMENTE ese archivo. **NO HAGAS BÚSQUEDAS EN BUCLE NI ESCANEOS COMPLETOS DE DIRECTORIO.**
 
