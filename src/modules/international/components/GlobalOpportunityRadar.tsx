@@ -709,8 +709,8 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
       {/* MODAL LIMPIO & DIRECTO: FICHA TÉCNICA, PLIEGO & ENLACE OFICIAL */}
       {/* ========================================================================= */}
       {verifyingOpportunity && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="max-w-xl w-full bg-white rounded-t-2xl sm:rounded-xl shadow-xl p-5 sm:p-6 max-h-[88vh] overflow-y-auto space-y-4 animate-in slide-in-from-bottom sm:zoom-in-95 duration-150 font-sans">
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto space-y-4 animate-in zoom-in-95 duration-150 font-sans">
             {/* Header del Modal */}
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="space-y-1">

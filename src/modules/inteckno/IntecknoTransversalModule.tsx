@@ -535,7 +535,7 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
 
       {/* MODAL: SUBIR DOCUMENTO */}
       {isNewDocModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
@@ -609,7 +609,7 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
 
       {/* MODAL: AGENDAR EVENTO */}
       {isNewEventModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2 text-sm font-bold text-gray-900">

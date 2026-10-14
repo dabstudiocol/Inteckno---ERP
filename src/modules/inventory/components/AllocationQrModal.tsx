@@ -116,8 +116,8 @@ export const AllocationQrModal: React.FC<AllocationQrModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col overflow-y-auto animate-in zoom-in-95 duration-150">
         {/* Cabecera */}
         <div className="flex items-center justify-between px-5 py-4 bg-slate-50 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -126,7 +126,7 @@ export const AllocationQrModal: React.FC<AllocationQrModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-900">QR de Asignación por Proyecto</h3>
-              <p className="text-[11px] text-gray-500">Cross-Docking & Stock Comprometido 4.0</p>
+              <p className="text-[11px] text-gray-500">Cruce de Andén y Material Reservado</p>
             </div>
           </div>
           <button

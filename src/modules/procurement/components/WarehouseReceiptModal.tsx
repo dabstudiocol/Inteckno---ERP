@@ -193,7 +193,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-150">
       <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Cabecera Sólida Corporativa Inteckno */}
@@ -481,7 +481,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
 
       {/* MODAL BLOQUEANTE DE ADVERTENCIA DE SALIDA */}
       {showExitWarning && (
-        <div className="fixed inset-0 z-60 bg-black/70 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[99999] bg-black/70 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
           <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-rose-200 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-rose-600">
               <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200">

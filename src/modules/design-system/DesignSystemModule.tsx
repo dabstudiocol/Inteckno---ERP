@@ -29,10 +29,10 @@ export const DesignSystemModule: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-full self-start">
+        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-full self-start overflow-x-auto max-w-full min-w-0">
           <button
             onClick={() => setActiveTab('tokens')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`px-4 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
               activeTab === 'tokens' ? 'bg-white text-[#00668F] shadow-xs' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -40,7 +40,7 @@ export const DesignSystemModule: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('components')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`px-4 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
               activeTab === 'components' ? 'bg-white text-[#00668F] shadow-xs' : 'text-gray-600 hover:text-gray-900'
             }`}
           >

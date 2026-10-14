@@ -215,7 +215,7 @@ export const DianSupportDocumentManager: React.FC = () => {
 
       {/* Modal Emisión de Documento Soporte */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
           <div className="w-full max-w-lg bg-white rounded-t-2xl sm:rounded-xl p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -330,7 +330,7 @@ export const DianSupportDocumentManager: React.FC = () => {
 
       {/* Modal Previsualización de XML UBL 2.1 */}
       {selectedXmlDoc && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
           <div className="w-full max-w-2xl bg-white rounded-t-2xl sm:rounded-xl p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>

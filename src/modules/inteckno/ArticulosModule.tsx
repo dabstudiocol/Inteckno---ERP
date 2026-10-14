@@ -1113,7 +1113,7 @@ export const ArticulosModule: React.FC = () => {
       {/* MODAL 1: LECTOR PROFESIONAL TIPO "PAPER TÉCNICO" O MANUAL DE OPERACIONES */}
       {/* ========================================================================= */}
       {readingArticle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-8 shadow-2xl max-h-[92vh] flex flex-col justify-between animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
             
             {/* Header del Lector */}
@@ -1386,7 +1386,7 @@ export const ArticulosModule: React.FC = () => {
       {/* MODAL 2: REDACTAR ARTÍCULO CON ASISTENCIA DE LUC-IA-NA */}
       {/* ========================================================================= */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
             <div className="flex items-start justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
@@ -1686,7 +1686,7 @@ export const ArticulosModule: React.FC = () => {
       {/* MODAL 3: SINTETIZAR LECCIÓN APRENDIDA DE CAMPO CON LUC-IA-NA */}
       {/* ========================================================================= */}
       {isLessonModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
             <div className="flex items-start justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
@@ -1774,7 +1774,7 @@ export const ArticulosModule: React.FC = () => {
       {/* MODAL 4: ZOOM DE EVIDENCIA VISUAL EN ALTA RESOLUCIÓN */}
       {/* ========================================================================= */}
       {zoomMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
           <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-3 max-h-[92vh] overflow-y-auto animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div>

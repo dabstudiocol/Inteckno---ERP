@@ -496,8 +496,8 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
 
       {/* MODAL REGISTRAR HORAS */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg shadow-2xl p-6">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg max-h-[90vh] flex flex-col overflow-y-auto shadow-2xl p-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-[#00668F]" />
@@ -511,7 +511,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
             <form onSubmit={handleSaveEntry} className="mt-4 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Tarea de la WBS *
+                  Actividad del Plan de Trabajo *
                 </label>
                 <select
                   required

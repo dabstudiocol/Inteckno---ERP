@@ -312,7 +312,7 @@ export const DashboardModule: React.FC = () => {
 
             <div className="space-y-1.5 text-xs">
               <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">
-                <span className="text-slate-600 font-medium">Compuerta HSEQ Personal</span>
+                <span className="text-slate-600 font-medium">Compuerta de Seguridad y Salud (SST) Personal</span>
                 <span className="font-bold text-emerald-600">10 / 11 Vigentes</span>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">

@@ -130,7 +130,7 @@ export const SmartRfqConsolidatorModal: React.FC<SmartRfqConsolidatorModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
         
         {/* Cabecera Sólida Corporativa */}
@@ -141,7 +141,7 @@ export const SmartRfqConsolidatorModal: React.FC<SmartRfqConsolidatorModalProps>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-white">Smart RFQ: Agrupación por Volumen & Detector de Inflación</h3>
+                <h3 className="font-bold text-base text-white">Cotización Inteligente a Proveedores: Agrupación por Volumen</h3>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#F39200] text-slate-950 uppercase tracking-wider">
                   Estilo SAP Ariba / Odoo
                 </span>

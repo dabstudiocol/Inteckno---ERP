@@ -79,6 +79,14 @@ Para evitar eso y trabajar rápido, DEBES obedecer estrictamente las siguientes 
        - `Tooltip` ➔ **Mensaje de Ayuda**
        - `Audit Log` / `History` ➔ **Registro de Cambios / Historial de Movimientos**
        - *Términos de software en UI:* Prohibido mostrar "Campos Dinámicos", "Data Schema", "Payload" o "Mutación". Usa siempre: **"Parámetros Técnicos del Servicio"**, **"Especificaciones Técnicas"** o **"Detalles del Proyecto"**.
+9. **OBLIGACIÓN DE AUTO-COMMIT Y PUSH A GITHUB TRAS CADA TAREA (¡MANDATORIO!):**
+   Cada vez que termines de implementar una funcionalidad, corregir un diseño, limpiar textos o hacer cualquier cambio en los archivos del ERP, DEBES ejecutar de forma obligatoria en la terminal los siguientes comandos antes de dar por finalizada la respuesta:
+   ```bash
+   git add .
+   git commit -m "Actualización del ERP: [resumen claro en español de lo modificado]"
+   git push origin master
+   ```
+   *Nota técnica para el agente:* Si el comando `git` no se reconoce de forma directa en la sesión de terminal, usa la ruta completa del ejecutable: `& "C:\Program Files\Git\cmd\git.exe" add .` y `& "C:\Program Files\Git\cmd\git.exe" push origin master`.
 
 Si necesitas leer un archivo, lee EXACTAMENTE ese archivo. **NO HAGAS BÚSQUEDAS EN BUCLE NI ESCANEOS COMPLETOS DE DIRECTORIO.**
 

@@ -1243,7 +1243,7 @@ export const CalendarioModule: React.FC = () => {
       {/* MODAL DETALLES DEL EVENTO EXISTENTE - Cero bordes */}
       {/* ========================================================================= */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
             {/* Cabecera */}
             <div className="flex items-start justify-between gap-3">
@@ -1535,7 +1535,7 @@ export const CalendarioModule: React.FC = () => {
       {/* MODAL CREAR NUEVO EVENTO - Cero bordes */}
       {/* ========================================================================= */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-xl bg-white rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
             {/* Cabecera limpia y directa */}
             <div className="flex items-center justify-between pb-1">
@@ -2104,7 +2104,7 @@ export const CalendarioModule: React.FC = () => {
       {/* MODAL ASISTENTE DE CONFIRMACIÓN Y SINCRONIZACIÓN CON MICROSOFT 365 */}
       {/* ========================================================================= */}
       {syncSuccessModalEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -2222,7 +2222,7 @@ export const CalendarioModule: React.FC = () => {
       {/* MODAL CONFIGURACIÓN MICROSOFT 365 (CONSOLA SISTEMAS & TI) */}
       {/* ========================================================================= */}
       {isM365SettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center gap-2.5">

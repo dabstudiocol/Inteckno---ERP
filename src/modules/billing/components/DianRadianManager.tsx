@@ -244,8 +244,8 @@ export const DianRadianManager: React.FC = () => {
 
       {/* Modal para Registrar Evento RADIAN */}
       {selectedInvoice && actionEventCode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in zoom-in-95 duration-150">
-          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-gray-100 space-y-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-in zoom-in-95 duration-150">
+          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-gray-100 max-h-[90vh] flex flex-col overflow-y-auto space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <span className="p-2 rounded-xl bg-sky-100 text-[#00668F]">

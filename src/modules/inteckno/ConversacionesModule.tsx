@@ -3440,7 +3440,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL DE CÁMARA Y VIDEO EN PANTALLA COMPLETA ESTILO WHATSAPP/MÓVIL */}
       {isCameraModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between overflow-hidden select-none animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col justify-between overflow-hidden select-none animate-in fade-in duration-200">
           {/* BARRA SUPERIOR OVERLAY */}
           <div className="relative z-20 bg-black/90 p-4 sm:p-5 flex items-center justify-between">
             <div className="flex items-center gap-3 text-white">
@@ -3631,7 +3631,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL NUEVO CHAT DIRECTO */}
       {isNewDirectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between pb-1">
               <div>
@@ -3679,7 +3679,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL CREAR NUEVO GRUPO */}
       {isNewGroupModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between pb-1">
               <div>
@@ -3802,7 +3802,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL DETALLES DEL GRUPO, MULTIMEDIA Y AÑADIR PARTICIPANTES (ESTILO WHATSAPP) */}
       {isGroupInfoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-xl bg-white rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
             {/* Cabecera del Grupo */}
             <div className="flex items-start justify-between pb-1">
@@ -4146,7 +4146,7 @@ export const ConversacionesModule: React.FC = () => {
       {previewImageModal && (
         <div
           onClick={() => setPreviewImageModal(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 cursor-pointer"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 cursor-pointer"
         >
           <div className="relative max-w-4xl max-h-[90vh]">
             <img
@@ -4166,7 +4166,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL: RESUMEN EJECUTIVO CON GOOGLE GEMINI (CON FILTRO POR PERÍODO Y MULTIMODAL) */}
       {isSummarizeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-xl w-full p-5 shadow-2xl flex flex-col max-h-[88vh] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -4356,7 +4356,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL: CONVERTIR MENSAJE EN ACCIÓN OPERATIVA (ASISTIDA POR LUC-IA-NA) */}
       {actionModalMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl flex flex-col max-h-[90vh] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -4646,7 +4646,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL CONFIGURACIÓN API KEY GOOGLE GEMINI */}
       {isApiKeyModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
@@ -4817,7 +4817,7 @@ export const ConversacionesModule: React.FC = () => {
 
       {/* MODAL PARA REENVIAR MENSAJE A OTRO CHAT O COMPAÑERO */}
       {forwardModalMsg && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
             {/* Header del Modal */}
             <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
@@ -4960,7 +4960,7 @@ export const ConversacionesModule: React.FC = () => {
       )}
 
       {deleteConfirmMsg && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden p-5 animate-in zoom-in-95 duration-150 text-center">
             <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3.5 shadow-xs">
               <Trash2 size={26} />
@@ -5001,7 +5001,7 @@ export const ConversacionesModule: React.FC = () => {
       )}
 
       {deleteForMeConfirmMsg && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden p-5 animate-in zoom-in-95 duration-150 text-center">
             <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto mb-3.5 shadow-xs">
               <Trash2 size={26} />

@@ -85,8 +85,8 @@ export const DianRutUploaderModal: React.FC<DianRutUploaderModalProps> = ({
   const isDvValid = extractedData ? isValidNitWithDv(extractedData.nit, extractedData.dv) : false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-      <div className="w-full max-w-4xl bg-white rounded-2xl p-6 shadow-2xl border border-gray-100 space-y-5 my-8">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
+      <div className="w-full max-w-4xl bg-white rounded-2xl p-6 shadow-2xl border border-gray-100 space-y-5 my-8 max-h-[90vh] flex flex-col overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-gray-100">
           <div>

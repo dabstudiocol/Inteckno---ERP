@@ -1868,7 +1868,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* PANEL LATERAL / DRAWER: ASISTENTE TÉCNICO "PREGUNTAR AL DOCUMENTO" CON GEMINI */}
       {chatDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-end bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-xl h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-200 border-l border-slate-200 dark:border-slate-800">
             {/* Header del Chat */}
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between bg-slate-50/70 dark:bg-slate-800/50">
@@ -2017,7 +2017,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL CONTROL DE REVISIONES Y VERSIONES DE INGENIERÍA */}
       {isVersionModalOpen && versionTargetDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">
             <div className="flex items-start justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
@@ -2107,7 +2107,7 @@ export const DocumentosModule: React.FC = () => {
           previewDoc.code && !previewDoc.code.startsWith('SP-') && !previewDoc.code.startsWith('DOC-SP-');
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
             <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto border border-slate-200 dark:border-slate-800">
               {/* Cabecera */}
               <div className="flex items-start justify-between">
@@ -2406,7 +2406,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL CLÁSICO: SUBIDA MANUAL / LOTES */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">
             <div className="flex items-start justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
               <div>
@@ -2488,7 +2488,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL CREAR NUEVA CARPETA */}
       {isNewFolderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">
             <div className="flex items-start justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
               <div>
@@ -2555,7 +2555,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL CONFIGURACIÓN SHAREPOINT & SOLUCIÓN AADSTS50011 */}
       {isSharePointInfoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
@@ -2769,7 +2769,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL: EDITAR CARPETA */}
       {editingFolder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2826,7 +2826,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL: EDITAR DOCUMENTO */}
       {editingDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2899,7 +2899,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL: ADJUNTAR CARPETA A PROYECTO */}
       {assignProjectFolder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2960,7 +2960,7 @@ export const DocumentosModule: React.FC = () => {
 
       {/* MODAL: ADJUNTAR DOCUMENTO A PROYECTO */}
       {assignProjectDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">

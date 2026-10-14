@@ -1664,8 +1664,8 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
 
       {/* MODAL CONFIGURACIÓN API KEY GOOGLE GEMINI */}
       {isApiKeyModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2 font-bold text-sm text-gray-900">
                 <Sparkles size={18} className="text-[#00668F]" />
