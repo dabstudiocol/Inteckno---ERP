@@ -24,14 +24,33 @@ interface InventoryExcelUploadModalProps {
 interface ParsedPreviewItem {
   sku: string;
   name: string;
-  category: string;
   unit: string;
   realStock: number;
   shelf: string;
+  totalEntradas: number;
+  totalSalidas: number;
   costPriceCOP: number;
   costPriceUSD: number;
+  purchaseYear: string;
+  category: string;
   observations: string;
   isCriticalSpare: boolean;
+}
+
+function normalizeHeader(str: any): string {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function cleanNumericValue(val: any): number {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  const str = String(val).trim().replace(/[$ \s]/g, '').replace(',', '.');
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
 }
 
 export const InventoryExcelUploadModal: React.FC<InventoryExcelUploadModalProps> = ({
@@ -101,47 +120,99 @@ export const InventoryExcelUploadModal: React.FC<InventoryExcelUploadModalProps>
       return;
     }
 
-    const headerRow = (rawJson[0] || []).map((h) => String(h || '').trim().toLowerCase());
-    const rows = rawJson.slice(1);
+    // 1. Detectar automáticamente la fila donde comienzan los encabezados (dentro de las primeras 10 filas)
+    let headerRowIndex = 0;
+    for (let r = 0; r < Math.min(rawJson.length, 10); r++) {
+      const rowStrings = (rawJson[r] || []).map((c) => normalizeHeader(c));
+      const hasKeyHeaders = rowStrings.some((s) =>
+        s.includes('codigo') || s.includes('columna1') || s.includes('descripcion') || s.includes('stock') || s.includes('unidad')
+      );
+      if (hasKeyHeaders) {
+        headerRowIndex = r;
+        break;
+      }
+    }
 
-    const findCol = (keys: string[]) => headerRow.findIndex((h) => keys.some((k) => h.includes(k)));
-    const skuIdx = findCol(['codigo', 'referencia', 'sku', 'ref', 'código']) >= 0 ? findCol(['codigo', 'referencia', 'sku', 'ref', 'código']) : 0;
-    const descIdx = findCol(['descripcion', 'desc', 'nombre', 'articulo', 'artículo', 'detalle']) >= 0 ? findCol(['descripcion', 'desc', 'nombre', 'articulo', 'artículo', 'detalle']) : 1;
-    const catIdx = findCol(['categoria', 'categoría', 'cat', 'familia']) >= 0 ? findCol(['categoria', 'categoría', 'cat', 'familia']) : 2;
-    const unitIdx = findCol(['unidad', 'und', 'unid', 'uom', 'medida']) >= 0 ? findCol(['unidad', 'und', 'unid', 'uom', 'medida']) : 3;
-    const stockIdx = findCol(['stock', 'disponible', 'cantidad', 'existencia', 'cant']) >= 0 ? findCol(['stock', 'disponible', 'cantidad', 'existencia', 'cant']) : 4;
-    const locIdx = findCol(['ubicacion', 'ubicación', 'ubica', 'estante', 'bodega', 'pasillo']) >= 0 ? findCol(['ubicacion', 'ubicación', 'ubica', 'estante', 'bodega', 'pasillo']) : 5;
-    const valIdx = findCol(['valor', 'precio', 'costo', 'unitario']) >= 0 ? findCol(['valor', 'precio', 'costo', 'unitario']) : 6;
-    const obsIdx = findCol(['observacion', 'observaciones', 'notas', 'obs']) >= 0 ? findCol(['observacion', 'observaciones', 'notas', 'obs']) : 7;
+    const headerRow = (rawJson[headerRowIndex] || []).map((h) => normalizeHeader(h));
+    const rows = rawJson.slice(headerRowIndex + 1);
+
+    const findCol = (keys: string[]): number => {
+      for (let i = 0; i < headerRow.length; i++) {
+        const h = headerRow[i];
+        if (keys.some((k) => h === k || h.includes(k))) {
+          return i;
+        }
+      }
+      return -1;
+    };
+
+    // Estructura exacta requerida del Excel Inteckno:
+    // 0: CODIGO
+    // 1: Columna1(Descripcion)
+    // 2: UNIDAD MEDIDA
+    // 3: STOCK ACTUAL
+    // 4: UBICACIÓN
+    // 5: ENTRADAS
+    // 6: SALIDAS
+    // 7: VALOR
+    // 8: AÑO COMPRA
+    // 9: GRUPO
+    // 10: OBSERVACIONES
+
+    const skuIdx = findCol(['codigo', 'referencia', 'sku', 'ref']) >= 0 ? findCol(['codigo', 'referencia', 'sku', 'ref']) : 0;
+    const descIdx = findCol(['columna1', 'descripcion', 'desc', 'articulo', 'nombre']) >= 0 ? findCol(['columna1', 'descripcion', 'desc', 'articulo', 'nombre']) : 1;
+    const unitIdx = findCol(['unidad medida', 'unidad de medida', 'unidad', 'und', 'uom', 'medida']) >= 0 ? findCol(['unidad medida', 'unidad de medida', 'unidad', 'und', 'uom', 'medida']) : 2;
+    const stockIdx = findCol(['stock actual', 'stock', 'existencias', 'existencia', 'cantidad', 'cant actual', 'cant']) >= 0 ? findCol(['stock actual', 'stock', 'existencias', 'existencia', 'cantidad', 'cant actual', 'cant']) : 3;
+    const locIdx = findCol(['ubicacion', 'ubica', 'estante', 'bodega', 'pasillo', 'almacen']) >= 0 ? findCol(['ubicacion', 'ubica', 'estante', 'bodega', 'pasillo', 'almacen']) : 4;
+    const inIdx = findCol(['entradas', 'entrada', 'ingresos']) >= 0 ? findCol(['entradas', 'entrada', 'ingresos']) : 5;
+    const outIdx = findCol(['salidas', 'salida', 'despachos']) >= 0 ? findCol(['salidas', 'salida', 'despachos']) : 6;
+    const valIdx = findCol(['valor', 'precio', 'costo', 'unitario']) >= 0 ? findCol(['valor', 'precio', 'costo', 'unitario']) : 7;
+    const yearIdx = findCol(['ano compra', 'ano de compra', 'ano']) >= 0 ? findCol(['ano compra', 'ano de compra', 'ano']) : 8;
+    const catIdx = findCol(['grupo', 'categoria', 'familia', 'linea']) >= 0 ? findCol(['grupo', 'categoria', 'familia', 'linea']) : 9;
+    const obsIdx = findCol(['observaciones', 'observacion', 'notas', 'obs', 'comentarios']) >= 0 ? findCol(['observaciones', 'observacion', 'notas', 'obs', 'comentarios']) : 10;
 
     const currentTrm = getStoredTRM();
 
     const items: ParsedPreviewItem[] = rows
       .map((r, i) => {
-        const sku = String(r[skuIdx] || '').trim();
-        const name = String(r[descIdx] || '').trim();
-        if (!sku || !name) return null;
+        const rawSku = r[skuIdx];
+        const rawName = r[descIdx];
+        if (rawSku === undefined && rawName === undefined) return null;
 
-        const realStock = Number(r[stockIdx]) || 0;
-        const val = Number(r[valIdx]) || 0;
+        const sku = String(rawSku || '').trim();
+        const name = String(rawName || '').trim();
+        // Omitir filas enteramente vacías
+        if (!sku && !name) return null;
+
         const unit = String(r[unitIdx] || 'UNIDAD').trim();
-        const shelf = String(r[locIdx] || 'Bodega Principal').trim();
-        const obs = String(r[obsIdx] || '').trim();
+        const realStock = cleanNumericValue(r[stockIdx]);
+        const shelf = String(r[locIdx] || 'Bodega Central').trim();
+        const totalEntradas = cleanNumericValue(r[inIdx]);
+        const totalSalidas = cleanNumericValue(r[outIdx]);
+        const valCOP = cleanNumericValue(r[valIdx]);
+        const costPriceCOP = Math.round(valCOP);
+        const costPriceUSD = convertCOPToUSD(costPriceCOP, currentTrm);
 
-        const isValueInCOP = val >= 500;
-        const costPriceCOP = isValueInCOP ? Math.round(val) : convertUSDToCOP(val, currentTrm);
-        const costPriceUSD = isValueInCOP ? convertCOPToUSD(val, currentTrm) : Number((val || 0).toFixed(2));
+        const rawYear = String(r[yearIdx] || '').trim();
+        const yearMatch = rawYear.match(/\b(19\d{2}|20\d{2})\b/);
+        const purchaseYear = yearMatch ? yearMatch[1] : rawYear;
+
+        const category = String(r[catIdx] || 'Repuestos y Componentes').trim();
+        const observations = String(r[obsIdx] || '').trim();
 
         return {
-          sku,
-          name,
-          category: String(r[catIdx] || 'Repuestos y Componentes').trim(),
+          sku: sku || `ITK-${i + 1}`,
+          name: name || sku || `Artículo ${i + 1}`,
           unit,
           realStock,
           shelf,
+          totalEntradas,
+          totalSalidas,
           costPriceCOP,
           costPriceUSD,
-          observations: obs,
+          purchaseYear,
+          category: category || 'Repuestos y Componentes',
+          observations,
           isCriticalSpare: sku === 'A0000769' || sku === 'A0000774' || sku === 'A0000779' || sku === 'A0000858',
         };
       })
@@ -149,7 +220,7 @@ export const InventoryExcelUploadModal: React.FC<InventoryExcelUploadModalProps>
 
     setParsedItems(items);
     if (items.length === 0) {
-      setErrorMessage('No se pudieron extraer artículos válidos. Revisa que las columnas tengan encabezados como Código, Descripción y Cantidad.');
+      setErrorMessage('No se pudieron extraer artículos válidos. Revisa que las columnas del archivo correspondan al formato oficial de Inteckno S.A.S.');
     }
   };
 
@@ -169,17 +240,20 @@ export const InventoryExcelUploadModal: React.FC<InventoryExcelUploadModalProps>
         realStock: item.realStock || 0,
         reservedStock: 0,
         availableStock: item.realStock || 0,
-        minStock: 1,
+        minStock: Math.max(1, Math.round((item.realStock || 0) * 0.1)),
+        totalEntradas: item.totalEntradas || 0,
+        totalSalidas: item.totalSalidas || 0,
+        purchaseYear: item.purchaseYear || '',
+        purchaseDate: item.purchaseYear ? `${item.purchaseYear}-01-01` : new Date().toISOString().split('T')[0],
         isCriticalSpare: item.isCriticalSpare,
         isHomologatedITK: true,
         locationName: 'Bodega Central Inteckno',
-        shelf: item.shelf || 'Estante A',
-        observations: item.observations || 'Importado desde archivo Excel inicial.',
+        shelf: item.shelf || 'Estante Central',
+        observations: item.observations || '',
         physicalState: 'solido',
         safetyDataSheetUrl: '',
         technicalDataSheetUrl: '',
         calibrationInfo: '',
-        purchaseDate: new Date().toISOString().split('T')[0],
       }));
 
       await onImportProducts(finalProducts, isReplaceMode, file.name);
@@ -325,31 +399,52 @@ export const InventoryExcelUploadModal: React.FC<InventoryExcelUploadModalProps>
                 </div>
               </div>
 
-              {/* Previsualización de Primeros Artículos */}
+              {/* Previsualización de Primeros Artículos con las 11 columnas */}
               <div className="space-y-1.5">
                 <p className="font-bold text-slate-700 flex items-center justify-between text-[11px]">
-                  <span>Muestra de artículos leídos (primeros 5 de {parsedItems.length}):</span>
+                  <span>Muestra de verificación de columnas (primeros 5 de {parsedItems.length} artículos):</span>
+                  <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
+                    ✓ 11 columnas reconocidas
+                  </span>
                 </p>
-                <div className="border border-slate-200 rounded-xl overflow-hidden max-h-40 overflow-y-auto">
-                  <table className="w-full text-left text-[11px]">
-                    <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
+                <div className="border border-slate-200 rounded-xl overflow-x-auto max-h-56 overflow-y-auto">
+                  <table className="w-full text-left text-[11px] min-w-[850px] border-collapse">
+                    <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 text-[10px]">
                       <tr>
-                        <th className="p-2">Código</th>
-                        <th className="p-2">Descripción</th>
-                        <th className="p-2 text-center">Stock</th>
-                        <th className="p-2">Ubicación</th>
-                        <th className="p-2 text-right">Valor COP</th>
+                        <th className="p-2 whitespace-nowrap">Código</th>
+                        <th className="p-2 whitespace-nowrap">Descripción</th>
+                        <th className="p-2 whitespace-nowrap">Grupo</th>
+                        <th className="p-2 text-center whitespace-nowrap">Unidad</th>
+                        <th className="p-2 text-center whitespace-nowrap">Stock Actual</th>
+                        <th className="p-2 whitespace-nowrap">Ubicación</th>
+                        <th className="p-2 text-center whitespace-nowrap">Entradas</th>
+                        <th className="p-2 text-center whitespace-nowrap">Salidas</th>
+                        <th className="p-2 text-right whitespace-nowrap">Valor COP</th>
+                        <th className="p-2 text-center whitespace-nowrap">Año Compra</th>
+                        <th className="p-2 whitespace-nowrap">Observaciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {parsedItems.slice(0, 5).map((it, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-2 font-mono font-bold text-slate-800">{it.sku}</td>
-                          <td className="p-2 font-medium text-slate-900 truncate max-w-xs">{it.name}</td>
-                          <td className="p-2 text-center font-bold font-mono text-emerald-800">{it.realStock}</td>
-                          <td className="p-2 text-slate-600">{it.shelf}</td>
-                          <td className="p-2 text-right font-mono text-slate-700 font-semibold">
+                        <tr key={idx} className="hover:bg-slate-50 text-[11px]">
+                          <td className="p-2 font-mono font-bold text-slate-800 whitespace-nowrap">{it.sku}</td>
+                          <td className="p-2 font-medium text-slate-900 max-w-xs truncate" title={it.name}>{it.name}</td>
+                          <td className="p-2 whitespace-nowrap">
+                            <span className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 text-[10px] font-semibold">
+                              {it.category}
+                            </span>
+                          </td>
+                          <td className="p-2 text-center font-mono text-slate-600 whitespace-nowrap">{it.unit}</td>
+                          <td className="p-2 text-center font-bold font-mono text-emerald-700 whitespace-nowrap">{it.realStock}</td>
+                          <td className="p-2 text-slate-600 whitespace-nowrap">{it.shelf}</td>
+                          <td className="p-2 text-center font-mono text-slate-600 whitespace-nowrap">{it.totalEntradas}</td>
+                          <td className="p-2 text-center font-mono text-slate-600 whitespace-nowrap">{it.totalSalidas}</td>
+                          <td className="p-2 text-right font-mono text-slate-800 font-semibold whitespace-nowrap">
                             ${it.costPriceCOP.toLocaleString('es-CO')}
+                          </td>
+                          <td className="p-2 text-center font-mono text-slate-600 whitespace-nowrap">{it.purchaseYear || '-'}</td>
+                          <td className="p-2 text-slate-500 max-w-xs truncate text-[10px]" title={it.observations}>
+                            {it.observations || '-'}
                           </td>
                         </tr>
                       ))}

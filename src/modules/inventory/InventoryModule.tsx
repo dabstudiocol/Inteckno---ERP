@@ -1758,7 +1758,12 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       )}
                     </th>
 
-                    {/* 7. Estado (Semáforo) */}
+                    {/* 7. Valor COP */}
+                    <th className="p-2 text-right relative select-none">
+                      <span>Valor (COP)</span>
+                    </th>
+
+                    {/* 8. Estado (Semáforo) */}
                     <th className="p-2 text-center select-none">
                       <span>Estado (Semáforo)</span>
                     </th>
@@ -1844,6 +1849,11 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                             title="Físico: existencia en almacén | Res: apartado para proyectos activos"
                           >
                             Físico: <strong>{p.realStock ?? p.availableStock}</strong> | Res: <strong>{p.reservedStock || 0}</strong>
+                            {(p.totalEntradas !== undefined || p.totalSalidas !== undefined) && (
+                              <div className="text-[8px] text-slate-400">
+                                Ent: {p.totalEntradas || 0} • Sal: {p.totalSalidas || 0}
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -1857,7 +1867,19 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         {/* 6. Ubicación */}
                         <td className="p-3 text-[11px]">
                           <div className="font-bold text-gray-800">{p.locationName}</div>
-                          <div className="text-gray-400 font-mono">{p.shelf}</div>
+                          <div className="text-gray-400 font-mono">
+                            {p.shelf} {p.purchaseYear ? `• Año: ${p.purchaseYear}` : ''}
+                          </div>
+                        </td>
+
+                        {/* 7. Valor COP */}
+                        <td className="p-3 text-right whitespace-nowrap">
+                          <div className="font-mono font-bold text-gray-900 text-xs">
+                            {formatCOP(p.costPriceCOP)}
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-mono">
+                            ≈ {formatUSD(p.costPriceUSD)} USD
+                          </div>
                         </td>
 
                         {/* 7. Estado (Semáforo de Disponibilidad & HSEQ) */}

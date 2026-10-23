@@ -318,6 +318,12 @@ service cloud.firestore {
       allow write: if request.resource.data.size() <= 200;
     }
 
+    // Partitioned Bulk Inventory Sync Collection (stores chunked inventory: meta, chunk_0, chunk_1, etc.)
+    match /erp_inventory/{docId} {
+      allow read: if true;
+      allow write: if request.resource.data.size() <= 200;
+    }
+
     // Chat messages collection for real-time collaboration between users
     match /chat_messages/{messageId} {
       allow read, write: if true;

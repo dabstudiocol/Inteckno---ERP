@@ -525,6 +525,9 @@ export interface Product {
   physicalState?: 'liquido' | 'solido' | 'gas_vapor' | 'otro' | string; // Estado de la materia
   calibrationInfo?: string; // Calibración (vigencia, fecha o requerimiento)
   purchaseDate?: string; // Fecha de compra
+  purchaseYear?: string; // Año de compra registrado en Excel oficial
+  totalEntradas?: number; // Total acumulado de entradas históricas
+  totalSalidas?: number; // Total acumulado de salidas históricas
   providerName?: string;
   serialNumber?: string;
 

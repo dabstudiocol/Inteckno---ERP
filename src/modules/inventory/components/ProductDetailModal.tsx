@@ -317,6 +317,40 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-gray-400 font-medium block text-[11px]">Grupo / Familia de Repuesto:</span>
+                    <span className="font-bold text-[#00668F] text-sm mt-0.5 block">
+                      {product.category || 'General'}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-gray-400 font-medium block text-[11px] flex items-center gap-1">
+                      <Calendar size={12} /> Año de Compra / Adquisición:
+                    </span>
+                    <span className="font-bold text-gray-800 text-sm mt-0.5 block">
+                      {product.purchaseYear || (product.purchaseDate ? product.purchaseDate.split('-')[0] : 'No registrado')}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-gray-400 font-medium block text-[11px] flex items-center gap-1">
+                      <Truck size={12} className="text-emerald-600" /> Histórico de Entradas a Bodega:
+                    </span>
+                    <span className="font-bold font-mono text-emerald-700 text-sm mt-0.5 block">
+                      {product.totalEntradas !== undefined ? `${product.totalEntradas} ${product.unit}` : 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-gray-400 font-medium block text-[11px] flex items-center gap-1">
+                      <RotateCcw size={12} className="text-amber-600" /> Histórico de Salidas / Despachos:
+                    </span>
+                    <span className="font-bold font-mono text-amber-700 text-sm mt-0.5 block">
+                      {product.totalSalidas !== undefined ? `${product.totalSalidas} ${product.unit}` : 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
                     <span className="text-gray-400 font-medium block text-[11px]">Proveedor Registrado:</span>
                     <span className="font-bold text-gray-800 text-sm mt-0.5 block">
                       {product.providerName || 'Proveedor homologado Inteckno'}
@@ -330,16 +364,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-gray-400 font-medium block text-[11px] flex items-center gap-1">
-                      <Calendar size={12} /> Fecha de Compra / Adquisición:
-                    </span>
-                    <span className="font-bold text-gray-800 text-sm mt-0.5 block">
-                      {product.purchaseDate || 'No registrada'}
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 sm:col-span-2">
                     <span className="text-gray-400 font-medium block text-[11px]">Regla de Conversión de Unidad de Medida:</span>
                     <span className="font-semibold text-gray-800 text-sm mt-0.5 block">
                       {product.uomConversion ? (
