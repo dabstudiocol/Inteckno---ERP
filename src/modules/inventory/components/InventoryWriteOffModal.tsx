@@ -54,12 +54,12 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
     e.preventDefault();
 
     if (cantidad <= 0) {
-      notify?.('La cantidad a dar de baja debe ser mayor a 0', 'warning');
+      notify?.('warning', 'Cantidad Inválida', 'La cantidad a dar de baja debe ser mayor a 0');
       return;
     }
 
     if (!descripcion.trim()) {
-      notify?.('Debes ingresar una justificación técnica detallada para la baja', 'warning');
+      notify?.('warning', 'Justificación Requerida', 'Debes ingresar una justificación técnica detallada para la baja');
       return;
     }
 
@@ -98,15 +98,16 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
       window.dispatchEvent(new CustomEvent('inteckno:inventory-write-off-created', { detail: nuevaSolicitud }));
 
       notify?.(
-        `Solicitud ${nuevaSolicitud.codigoSolicitud} enviada. Queda en estado PENDIENTE DE APROBACIÓN POR GERENCIA y no afectará el stock hasta su visto bueno.`,
-        'success'
+        'success',
+        'Solicitud Enviada',
+        `Solicitud ${nuevaSolicitud.codigoSolicitud} enviada. Queda en estado PENDIENTE DE APROBACIÓN POR GERENCIA y no afectará el stock hasta su visto bueno.`
       );
 
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       console.error('Error registrando baja de inventario:', err);
-      notify?.('Error al registrar la solicitud de baja de inventario', 'error');
+      notify?.('urgent', 'Error en Solicitud', 'Error al registrar la solicitud de baja de inventario');
     } finally {
       setIsSubmitting(false);
     }

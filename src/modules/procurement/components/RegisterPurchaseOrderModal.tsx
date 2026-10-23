@@ -103,8 +103,8 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   );
 
   // Presupuesto del Proyecto y Semáforo en Vivo (Regla 10.B)
-  const projectTotalBudget = selectedProject?.budget || 200000000;
-  const projectCurrentExpenses = selectedProject?.expenses || 120000000;
+  const projectTotalBudget = selectedProject?.budgetPV || (selectedProject as any)?.budget || 200000000;
+  const projectCurrentExpenses = selectedProject?.actualCostAC || (selectedProject as any)?.expenses || 0;
   const availableBudget = projectTotalBudget - projectCurrentExpenses;
   const newProjectExpenseRatio = ((projectCurrentExpenses + totalAmountCOP) / projectTotalBudget) * 100;
   const isBudgetOverdrawn = newProjectExpenseRatio > 100;
@@ -114,7 +114,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
     if (amountCOP < 2000000) {
       return {
         level: 'Director de Proyecto',
-        person: selectedProject?.manager || 'Director de Proyecto Asignado',
+        person: selectedProject?.supervisorName || (selectedProject as any)?.manager || 'Director de Proyecto Asignado',
         badgeColor: 'bg-emerald-100 text-emerald-800',
       };
     }
@@ -294,7 +294,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       estimatedArrivalDate: estimatedArrivalDate || undefined,
       notes: notes + (gmOverrideGranted ? ` [EXCEPCIÓN GERENCIA PRESUPUESTO: ${gmOverrideNotes}]` : ''),
       isFastTrackEmergency,
-      budgetProjectTrm,
+      budgetProjectTrm: projectBudgetTrm,
       currentTrmAtOrder: currentTrm,
       exchangeRateAlert: hasExchangeAlert,
       exchangeRateOvercostPercent: hasExchangeAlert ? trmDiffPercent : 0,

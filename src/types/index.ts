@@ -3,6 +3,22 @@
 // Especializado en Sistemas de Transporte por Cable (STC / Teleféricos)
 // ============================================================================
 
+import {
+  PhysicalCableSegment,
+  KitComponentItem,
+  UnitConversionRule,
+  ChemicalLotFEFO,
+  EquipmentCheckEvent,
+} from './InventorySchema';
+
+export type {
+  PhysicalCableSegment,
+  KitComponentItem,
+  UnitConversionRule,
+  ChemicalLotFEFO,
+  EquipmentCheckEvent,
+};
+
 export type UserRole =
   | 'admin_sistemas'
   | 'gerente_general'
@@ -339,6 +355,21 @@ export interface Project {
   projectCategory?: string;
   contractAmount?: number;
   currency?: 'COP' | 'USD' | 'EUR';
+  quoteCode?: string; // Código de Cotización Comercial ITK-AAAAMM-XXX
+  contractCode?: string; // Código de Contrato / Orden de Compra Cliente
+  clientCountry?: string; // País de Ejecución de la Obra / Servicio
+  contractAddendums?: {
+    id: string;
+    code: string; // ej. AD-ITEM 01, OTRO SI 01
+    name: string;
+    amount: number;
+    date: string;
+    description?: string;
+  }[];
+  advancePaymentAmount?: number; // Valor de anticipo pactado
+  advancePaymentPercentage?: number; // % de anticipo
+  paymentTermsDescription?: string; // Condiciones de pago textuales
+  retentionGuaranteePercentage?: number; // Retención de garantía (ej. 5% - 10%)
   billingMethod?: 'fixed_price' | 'time_and_materials';
   paymentMilestones?: {
     id: string;

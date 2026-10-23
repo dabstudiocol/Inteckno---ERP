@@ -544,7 +544,9 @@ export const ProcurementModule: React.FC = () => {
                     <div className="font-semibold text-xs text-slate-900 line-clamp-1 flex items-center gap-1">
                       <span>{po.supplierName}</span>
                       {po.supplierHomologated && (
-                        <ShieldCheck size={12} className="text-emerald-600 shrink-0" title="Homologado" />
+                        <span title="Homologado">
+                          <ShieldCheck size={12} className="text-emerald-600 shrink-0" />
+                        </span>
                       )}
                     </div>
                     <div className="text-[11px] text-slate-500">

@@ -121,8 +121,110 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     ? costItems
     : costItems.filter((i) => i.category === activeCategoryFilter);
 
+  // Cálculos financieros contractuales basados en la realidad de Inteckno S.A.S.
+  const rawContractAmount = project.contractAmount || project.budgetPV || 0;
+  const currency = project.currency || 'COP';
+  const contractAmountCOP = currency === 'USD' 
+    ? rawContractAmount * currentTrm 
+    : currency === 'EUR' 
+    ? rawContractAmount * (currentTrm * 1.08) 
+    : rawContractAmount;
+
+  const totalIncurred = totalActual;
+  const grossProfitCOP = contractAmountCOP - totalIncurred;
+  const grossMarginPct = contractAmountCOP > 0 ? (grossProfitCOP / contractAmountCOP) * 100 : 0;
+
+  const totalInvoiced = project.totalInvoiced || 0;
+  const pendingToInvoice = Math.max(0, contractAmountCOP - totalInvoiced);
+  const advanceAmount = project.advancePaymentAmount || (
+    project.advancePaymentPercentage ? (contractAmountCOP * project.advancePaymentPercentage / 100) : 0
+  );
+
   return (
     <div className="space-y-4">
+      {/* 0. PANEL EJECUTIVO DE CONTROL DE PROYECTO (ADN FINANCIERO INTECKNO) */}
+      <div className="bg-gradient-to-r from-slate-900 to-sky-950 p-4 rounded-2xl border border-sky-900 text-white shadow-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-sky-800/60">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-cyan-300 border border-sky-400/30 px-2 py-0.5 rounded">
+                Control de Proyecto • Kardex Financiero
+              </span>
+              <span className="text-xs text-sky-200 font-mono">
+                {project.code}
+              </span>
+            </div>
+            <h2 className="text-sm font-bold text-white mt-1">
+              {project.name}
+            </h2>
+            <div className="text-[11px] text-sky-300 mt-0.5 flex flex-wrap gap-x-3">
+              <span>Cliente: <strong className="text-white">{project.clientName}</strong></span>
+              {project.contractCode && <span>Contrato / OC: <strong className="text-white">{project.contractCode}</strong></span>}
+              {project.quoteCode && <span>Cotización: <strong className="text-white">{project.quoteCode}</strong></span>}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <span className="text-[10px] text-sky-300 block uppercase">Margen de Rentabilidad</span>
+              <span className={`text-base font-black ${
+                grossMarginPct >= 30 ? 'text-emerald-400' : grossMarginPct >= 15 ? 'text-amber-400' : 'text-rose-400'
+              }`}>
+                {grossMarginPct.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3.5">
+          {/* Valor Contractual */}
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Valor Contractual Vigente</span>
+            <div className="text-sm font-bold text-white mt-0.5">
+              {currency === 'COP' ? formatCOP(contractAmountCOP) : `${currency} $${rawContractAmount.toLocaleString('en-US')}`}
+            </div>
+            {currency !== 'COP' && (
+              <div className="text-[10px] text-cyan-300 mt-0.5">
+                ≈ {formatCOP(contractAmountCOP)} (TRM {currentTrm.toLocaleString('es-CO')})
+              </div>
+            )}
+          </div>
+
+          {/* Costos Reales Incurridos */}
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Costos Totales Incurridos</span>
+            <div className="text-sm font-bold text-rose-300 mt-0.5">
+              {formatCOP(totalIncurred)}
+            </div>
+            <div className="text-[10px] text-slate-300 mt-0.5">
+              Presupuesto Plan: {formatCOP(totalPlanned)}
+            </div>
+          </div>
+
+          {/* Utilidad Bruta */}
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Utilidad Bruta Proyectada</span>
+            <div className={`text-sm font-bold mt-0.5 ${grossProfitCOP >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
+              {formatCOP(grossProfitCOP)}
+            </div>
+            <div className="text-[10px] text-slate-300 mt-0.5">
+              Estado: {grossMarginPct >= 30 ? 'Excelente' : grossMarginPct >= 15 ? 'Aceptable' : 'Alerta de Margen'}
+            </div>
+          </div>
+
+          {/* Facturación y Saldo */}
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Facturación & Saldos</span>
+            <div className="text-sm font-bold text-cyan-200 mt-0.5">
+              Facturado: {formatCOP(totalInvoiced)}
+            </div>
+            <div className="text-[10px] text-sky-300 mt-0.5">
+              Pendiente por Facturar: {formatCOP(pendingToInvoice)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 1. TARJETAS DE CATEGORÍAS FINANCIERAS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Mano de Obra */}

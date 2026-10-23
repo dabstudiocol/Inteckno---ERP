@@ -706,7 +706,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                 const newProgress = Math.min(100, Math.round((updatedActual / planned) * 100));
                 updates.progressPct = newProgress;
                 if (newProgress === 0) {
-                  updates.status = 'no_iniciado';
+                  updates.status = 'pending';
                 }
               }
               onUpdateTask(task.id, updates);

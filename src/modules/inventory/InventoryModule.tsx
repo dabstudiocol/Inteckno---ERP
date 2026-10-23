@@ -118,6 +118,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     createDispatchRemission,
     processReturnRemission,
     createRequisition,
+    receivePurchaseOrderPartial,
     recordInventoryAuditLog,
     clearInventory,
     notify,

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Project, Opportunity, User, Partner } from '../../../types';
 import { INTECKNO_PORTFOLIO } from '../../../core/config/portfolioCatalog';
+import { INTECKNO_CLIENTES_REALES } from '../../../core/config/intecknoDomainCatalog';
 import { formatUSD } from '../../../core/services/trmService';
 
 interface ProjectDynamicFormProps {
@@ -46,7 +47,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   const [selectedOppId, setSelectedOppId] = useState<string>('');
   
   // 1. Código de Proyecto y Centro de Costos (1 Proyecto = 1 Centro de Costos)
-  const defaultCode = initialData?.code || `PRJ-${new Date().getFullYear()}-STC-01`;
+  const defaultCode = initialData?.code || `P${new Date().getFullYear().toString().slice(-2)}-01`;
   const [code, setCode] = useState(defaultCode);
   const [costCenter, setCostCenter] = useState(initialData?.costCenter || defaultCode);
 
@@ -57,11 +58,24 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
 
   const [name, setName] = useState(initialData?.name || '');
 
-  // 2. Clientes conectados con la base de datos de Terceros/CRM con opción de escribir libremente
+  // 2. Clientes conectados con catálogo real de Inteckno + Terceros/CRM
   const knownClients = useMemo(() => {
     const map = new Map<string, { name: string; taxId?: string; city?: string }>();
 
-    // Terceros registrados tipo cliente o ambos
+    // 2.1 Clientes oficiales de Inteckno S.A.S. (extraídos de los 195 proyectos reales)
+    INTECKNO_CLIENTES_REALES.forEach(c => {
+      map.set(c.name.trim().toLowerCase(), {
+        name: c.name.trim(),
+        city: `${c.city}, ${c.country}`,
+        taxId: c.country === 'Colombia' ? '900.000.000-1' : undefined
+      });
+      map.set(c.shortName.trim().toLowerCase(), {
+        name: c.shortName.trim(),
+        city: `${c.city}, ${c.country}`
+      });
+    });
+
+    // 2.2 Terceros registrados tipo cliente o ambos
     partners.forEach(p => {
       if (p.name && (p.type === 'customer' || p.type === 'both' || !p.type)) {
         map.set(p.name.trim().toLowerCase(), {
@@ -72,7 +86,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
       }
     });
 
-    // Clientes de oportunidades previas
+    // 2.3 Clientes de oportunidades previas
     opportunities.forEach(opp => {
       if (opp.clientName) {
         const key = opp.clientName.trim().toLowerCase();
@@ -98,11 +112,22 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
     }
   };
 
-  // 3. Líder o Director de Proyecto: menú desplegable del personal de la empresa + escribir libremente
+  // 3. Parámetros Contractuales y Financieros Oficiales (ADN Inteckno)
+  const [quoteCode, setQuoteCode] = useState(initialData?.quoteCode || '');
+  const [contractCode, setContractCode] = useState(initialData?.contractCode || '');
+  const [currency, setCurrency] = useState<'COP' | 'USD' | 'EUR'>(initialData?.currency || 'COP');
+  const [contractAmount, setContractAmount] = useState<number>(initialData?.contractAmount || initialData?.budgetPV || 0);
+  const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(initialData?.advancePaymentPercentage || 0);
+  const [retentionGuaranteePercentage, setRetentionGuaranteePercentage] = useState<number>(initialData?.retentionGuaranteePercentage || 0);
+  const [paymentTermsDescription, setPaymentTermsDescription] = useState<string>(
+    initialData?.paymentTermsDescription || 'Contra entrega de informe final aprobado a satisfacción'
+  );
+
+  // 4. Líder o Director de Proyecto: menú desplegable del personal de la empresa + escribir libremente
   const defaultLeader = initialData?.supervisorName || erpUsers[0]?.name || '';
   const [supervisorName, setSupervisorName] = useState(defaultLeader);
 
-  // 4. Selector en Cascada basado en el Portafolio Oficial Inteckno
+  // 5. Selector en Cascada basado en el Portafolio Oficial Inteckno
   const defaultCategory = INTECKNO_PORTFOLIO[4].category; // "MANTENIMIENTO Y MONTAJE ESPECIALIZADO"
   const [selectedCategory, setSelectedCategory] = useState<string>(
     initialData?.categoryId || (initialData as any)?.serviceCategory || defaultCategory
@@ -234,6 +259,13 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
       startDate,
       endDate: endDate || startDate,
       budgetPV: Number(budgetCOP) || 0,
+      contractAmount: Number(contractAmount) || Number(budgetCOP) || 0,
+      currency,
+      quoteCode: quoteCode.trim(),
+      contractCode: contractCode.trim(),
+      advancePaymentPercentage: Number(advancePaymentPercentage) || 0,
+      retentionGuaranteePercentage: Number(retentionGuaranteePercentage) || 0,
+      paymentTermsDescription: paymentTermsDescription.trim(),
       actualCostAC: 0,
       earnedValueEV: 0,
       spi: 1.0,
@@ -517,6 +549,104 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
             <span className="text-[11px] text-slate-400 mt-0.5 block">
               Equivalente: {formatUSD(budgetCOP > 0 ? Math.round(budgetCOP / currentTrm) : 0)} USD (TRM {currentTrm.toLocaleString('es-CO')})
             </span>
+          </div>
+        </div>
+
+        {/* Bloque Contractual, Facturación y Multidivisa Oficial Inteckno */}
+        <div className="p-4 bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-900/60 rounded-xl space-y-3.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-[#00668F] flex items-center gap-1.5">
+            <DollarSign className="w-4 h-4 text-[#00668F]" />
+            Control Contractual, Facturación y Moneda (ADN Inteckno)
+          </h4>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Código de Cotización Comercial
+              </label>
+              <input
+                type="text"
+                value={quoteCode}
+                onChange={(e) => setQuoteCode(e.target.value)}
+                placeholder="Ej. ITK-202411-003"
+                className="w-full text-xs font-mono px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                N° Contrato / Orden de Compra Cliente
+              </label>
+              <input
+                type="text"
+                value={contractCode}
+                onChange={(e) => setContractCode(e.target.value)}
+                placeholder="Ej. ADM-TL-086-2022 / OC 6243"
+                className="w-full text-xs font-mono px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Moneda Contractual
+              </label>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as any)}
+                className="w-full text-xs font-bold px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#00668F]"
+              >
+                <option value="COP">COP ($ Pesos Colombianos)</option>
+                <option value="USD">USD ($ Dólares Americanos)</option>
+                <option value="EUR">EUR (€ Euros)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                % Anticipo Pactado
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={advancePaymentPercentage}
+                  onChange={(e) => setAdvancePaymentPercentage(Number(e.target.value) || 0)}
+                  placeholder="Ej. 30"
+                  className="w-full text-xs font-mono px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                />
+                <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                % Retención de Garantía
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  value={retentionGuaranteePercentage}
+                  onChange={(e) => setRetentionGuaranteePercentage(Number(e.target.value) || 0)}
+                  placeholder="Ej. 5"
+                  className="w-full text-xs font-mono px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                />
+                <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Condición / Forma de Pago
+              </label>
+              <input
+                type="text"
+                value={paymentTermsDescription}
+                onChange={(e) => setPaymentTermsDescription(e.target.value)}
+                placeholder="Ej. Anticipo 30% + 70% contra entrega de informe"
+                className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -22,6 +22,7 @@ import { generateWBSWithLuciana } from '../../../../core/services/lucianaService
 import { UniversalModuleConfigModal } from '../../../../components/common/UniversalModuleConfigModal';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
+import { INTECKNO_WBS_TEMPLATES_5_FAMILIAS } from '../../../../core/config/intecknoDomainCatalog';
 
 interface TabWbsGanttProps {
   project: Project;
@@ -129,6 +130,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<'gantt' | 'arbol'>('gantt');
   const [isGeneratingWBS, setIsGeneratingWBS] = useState(false);
+  const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<WBSTask | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<WBSTask | null>(null);
@@ -772,6 +774,31 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
     }
   };
 
+  const handleApplyOfficialTemplate = (templateId: string) => {
+    const tpl = INTECKNO_WBS_TEMPLATES_5_FAMILIAS.find(t => t.id === templateId);
+    if (!tpl) return;
+
+    for (const item of tpl.tasks) {
+      onAddTask({
+        projectId: project.id,
+        code: item.code,
+        name: item.name,
+        plannedHours: item.plannedHours,
+        actualHours: 0,
+        progressPct: 0,
+        isCriticalPath: item.isCriticalPath,
+        predecessors: item.predecessors,
+        status: 'pending',
+        priority: item.isCriticalPath ? 'alta' : 'media',
+        deliverable: item.deliverable,
+        assignedToName: item.assignedRole,
+        durationDays: Math.max(1, Math.round(item.plannedHours / 8)),
+        dependencyType: 'FC',
+        lagDays: 0,
+      });
+    }
+  };
+
   const handleSaveTaskForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskForm.name) return;
@@ -885,7 +912,56 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Selector de Plantillas Oficiales Inteckno (Basado en 195 Proyectos Reales) */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsTemplateDropdownOpen(!isTemplateDropdownOpen)}
+              className="px-3 py-1.5 rounded-xl border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-[#00668F] dark:text-cyan-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Cargar cronograma preconfigurado de ingeniería STC"
+            >
+              <Sparkles size={14} className="text-[#00668F] dark:text-cyan-300 animate-pulse" />
+              <span>Plantillas Oficiales Inteckno</span>
+            </button>
+
+            {isTemplateDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-2.5 space-y-1.5">
+                <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#00668F] block">
+                    Cronogramas WBS Especializados
+                  </span>
+                  <p className="text-[11px] text-slate-500">
+                    Carga automática de fases, roles, entregables y horas extraídas de los proyectos reales de la empresa.
+                  </p>
+                </div>
+                <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
+                  {INTECKNO_WBS_TEMPLATES_5_FAMILIAS.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => {
+                        handleApplyOfficialTemplate(tpl.id);
+                        setIsTemplateDropdownOpen(false);
+                      }}
+                      className="w-full text-left p-2.5 rounded-xl hover:bg-sky-50/70 dark:hover:bg-slate-800/80 transition-colors group cursor-pointer border border-transparent hover:border-sky-200 dark:hover:border-slate-700"
+                    >
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#00668F] transition-colors">
+                        {tpl.title}
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">{tpl.normativeStandard}</span> • {tpl.tasks.length} Actividades
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">
+                        {tpl.description}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={openNewTaskModal}

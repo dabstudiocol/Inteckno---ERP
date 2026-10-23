@@ -72,7 +72,6 @@ export const InventoryWriteOffsTab: React.FC<InventoryWriteOffsTabProps> = ({ on
 
         if (recordInventoryAuditLog) {
           recordInventoryAuditLog({
-            id: `LOG-BAJA-${Date.now()}`,
             productId: targetProd.id,
             productSku: targetProd.sku,
             productName: targetProd.name,
@@ -85,15 +84,14 @@ export const InventoryWriteOffsTab: React.FC<InventoryWriteOffsTabProps> = ({ on
             delta: -solicitud.cantidad,
             reason: `Baja Aprobada (${solicitud.codigoSolicitud}): ${solicitud.motivo} - Proyecto ${solicitud.centroCostosProyectoCodigo}`,
             projectCode: solicitud.centroCostosProyectoCodigo,
-            timestamp: new Date().toISOString(),
           });
         }
       }
 
-      notify?.(`Solicitud ${solicitud.codigoSolicitud} APROBADA con éxito. Stock descontado del inventario.`, 'success');
+      notify?.('success', 'Baja Aprobada', `Solicitud ${solicitud.codigoSolicitud} APROBADA con éxito. Stock descontado del inventario.`);
     } catch (err) {
       console.error('Error aprobando baja:', err);
-      notify?.('Error al procesar la aprobación de la baja', 'error');
+      notify?.('urgent', 'Error en Aprobación', 'Error al procesar la aprobación de la baja');
     }
   };
 
@@ -118,10 +116,10 @@ export const InventoryWriteOffsTab: React.FC<InventoryWriteOffsTabProps> = ({ on
 
       localStorage.setItem('inteckno_inventory_write_offs', JSON.stringify(updatedList));
       setWriteOffs(updatedList);
-      notify?.(`Solicitud ${solicitud.codigoSolicitud} RECHAZADA. El stock no fue modificado.`, 'info');
+      notify?.('info', 'Baja Rechazada', `Solicitud ${solicitud.codigoSolicitud} RECHAZADA. El stock no fue modificado.`);
     } catch (err) {
       console.error('Error rechazando baja:', err);
-      notify?.('Error al registrar el rechazo de la baja', 'error');
+      notify?.('urgent', 'Error en Rechazo', 'Error al registrar el rechazo de la baja');
     }
   };
 

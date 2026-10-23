@@ -247,66 +247,66 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
   };
 
     const getVisibleTabs = (category: string): { id: InternalTab; label: string; icon: React.ReactNode }[] => {
-    // 1. MANTENIMIENTO Y MONTAJE ESPECIALIZADO o IMPLEMENTACIÓN DE PROYECTOS EN SISTEMAS DE TRANSPORTE POR CABLE: Mostrar TODAS
-    if (
-      category === 'MANTENIMIENTO Y MONTAJE ESPECIALIZADO' || 
-      category === 'IMPLEMENTACIÓN DE PROYECTOS EN SISTEMAS DE TRANSPORTE POR CABLE'
-    ) {
-      return [
+      const baseTabs: { id: InternalTab; label: string; icon: React.ReactNode }[] = [
         { id: 'dashboard', label: 'Panel de Control', icon: <BarChart3 className="w-4 h-4" /> },
         { id: 'wbs', label: 'Plan y Cronograma', icon: <Layers className="w-4 h-4" /> },
         { id: 'costos', label: 'Costos y Presupuesto', icon: <DollarSign className="w-4 h-4" /> },
+        { id: 'horas', label: 'Hojas de Horas / Turnos', icon: <Clock className="w-4 h-4" /> },
+      ];
+
+      // 1. MANTENIMIENTO Y MONTAJE ESPECIALIZADO / IMPLEMENTACIÓN STC
+      if (
+        category === 'MANTENIMIENTO Y MONTAJE ESPECIALIZADO' || 
+        category === 'IMPLEMENTACIÓN DE PROYECTOS EN SISTEMAS DE TRANSPORTE POR CABLE'
+      ) {
+        return [
+          ...baseTabs,
+          { id: 'suministros', label: 'Suministros y Equipos QC', icon: <CheckCircle2 className="w-4 h-4" /> },
+          { id: 'hseq', label: 'Seguridad y Salud (SST)', icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'cambios', label: 'Órdenes de Cambio (Otro Sí)', icon: <FileText className="w-4 h-4" /> },
+        ];
+      }
+
+      // 2. INSPECCIONES Y MANTENIMIENTO PREDICTIVO (MRT / END / Vibraciones)
+      if (category === 'INSPECCIONES Y MANTENIMIENTO PREDICTIVO') {
+        return [
+          ...baseTabs,
+          { id: 'suministros', label: 'Equipos MRT y Ensayos END', icon: <CheckCircle2 className="w-4 h-4" /> },
+          { id: 'hseq', label: 'Seguridad y Salud (SST)', icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'cambios', label: 'Órdenes de Cambio (Otro Sí)', icon: <FileText className="w-4 h-4" /> },
+        ];
+      }
+
+      // 3. CONSULTORIA / PROYECTOS ESPECIALES DE HERRAMIENTAS Y EQUIPOS
+      if (
+        category === 'CONSULTORIA' || 
+        category === 'PROYECTOS ESPECIALES DE HERRAMIENTAS Y EQUIPOS'
+      ) {
+        return [
+          ...baseTabs,
+          { id: 'documentos', label: 'Entregables y Documentos', icon: <BookOpen className="w-4 h-4" /> },
+          { id: 'suministros', label: 'Equipos y Herramientas', icon: <CheckCircle2 className="w-4 h-4" /> },
+          { id: 'cambios', label: 'Órdenes de Cambio (Otro Sí)', icon: <FileText className="w-4 h-4" /> },
+        ];
+      }
+
+      // 4. FORMACIÓN TÉCNICA ESPECIALIZADA
+      if (category === 'FORMACIÓN TÉCNICA ESPECIALIZADA') {
+        return [
+          ...baseTabs,
+          { id: 'asistentes', label: 'Lista de Asistentes', icon: <GraduationCap className="w-4 h-4" /> },
+          { id: 'cambios', label: 'Órdenes de Cambio (Otro Sí)', icon: <FileText className="w-4 h-4" /> },
+        ];
+      }
+
+      // Fallback universal
+      return [
+        ...baseTabs,
         { id: 'suministros', label: 'Suministros y Equipos', icon: <CheckCircle2 className="w-4 h-4" /> },
-        { id: 'horas', label: 'Hoja de Horas y Control END', icon: <Clock className="w-4 h-4" /> },
         { id: 'hseq', label: 'Seguridad y Salud (SST)', icon: <ShieldCheck className="w-4 h-4" /> },
-        { id: 'cambios', label: 'Órdenes de Cambio', icon: <FileText className="w-4 h-4" /> },
+        { id: 'cambios', label: 'Órdenes de Cambio (Otro Sí)', icon: <FileText className="w-4 h-4" /> },
       ];
-    }
-
-    // 2. INSPECCIONES Y MANTENIMIENTO PREDICTIVO: Dashboard, WBS, Calidad/Reportes, Hoja de Horas, HSEQ. (Ocultar Costos y Suministros)
-    if (category === 'INSPECCIONES Y MANTENIMIENTO PREDICTIVO') {
-      return [
-        { id: 'dashboard', label: 'Panel de Control', icon: <BarChart3 className="w-4 h-4" /> },
-        { id: 'wbs', label: 'Plan y Cronograma', icon: <Layers className="w-4 h-4" /> },
-        { id: 'suministros', label: 'Control de Calidad y Reportes', icon: <CheckCircle2 className="w-4 h-4" /> },
-        { id: 'horas', label: 'Hoja de Horas y Control END', icon: <Clock className="w-4 h-4" /> },
-        { id: 'hseq', label: 'Seguridad y Salud (SST)', icon: <ShieldCheck className="w-4 h-4" /> },
-      ];
-    }
-
-    // 3. CONSULTORIA / PROYECTOS ESPECIALES DE HERRAMIENTAS Y EQUIPOS: Dashboard, WBS simplificado, Entregables (Documentación), Hoja de Horas. (Ocultar HSEQ y Suministros)
-    if (
-      category === 'CONSULTORIA' || 
-      category === 'PROYECTOS ESPECIALES DE HERRAMIENTAS Y EQUIPOS'
-    ) {
-      return [
-        { id: 'dashboard', label: 'Panel de Control', icon: <BarChart3 className="w-4 h-4" /> },
-        { id: 'wbs', label: 'Plan de Trabajo Simplificado', icon: <Layers className="w-4 h-4" /> },
-        { id: 'documentos', label: 'Entregables y Documentos', icon: <BookOpen className="w-4 h-4" /> },
-        { id: 'horas', label: 'Hoja de Horas', icon: <Clock className="w-4 h-4" /> },
-      ];
-    }
-
-    // 4. FORMACIÓN TÉCNICA ESPECIALIZADA: Dashboard, Hoja de Horas, Lista de Asistentes.
-    if (category === 'FORMACIÓN TÉCNICA ESPECIALIZADA') {
-      return [
-        { id: 'dashboard', label: 'Panel de Control', icon: <BarChart3 className="w-4 h-4" /> },
-        { id: 'horas', label: 'Hoja de Horas', icon: <Clock className="w-4 h-4" /> },
-        { id: 'asistentes', label: 'Lista de Asistentes', icon: <GraduationCap className="w-4 h-4" /> },
-      ];
-    }
-
-    // Fallback
-    return [
-      { id: 'dashboard', label: 'Panel de Control', icon: <BarChart3 className="w-4 h-4" /> },
-      { id: 'wbs', label: 'Plan y Cronograma', icon: <Layers className="w-4 h-4" /> },
-      { id: 'costos', label: 'Costos y Presupuesto', icon: <DollarSign className="w-4 h-4" /> },
-      { id: 'suministros', label: 'Suministros y Equipos', icon: <CheckCircle2 className="w-4 h-4" /> },
-      { id: 'horas', label: 'Hoja de Horas y Control END', icon: <Clock className="w-4 h-4" /> },
-      { id: 'hseq', label: 'Seguridad y Salud (SST)', icon: <ShieldCheck className="w-4 h-4" /> },
-      { id: 'cambios', label: 'Órdenes de Cambio', icon: <FileText className="w-4 h-4" /> },
-    ];
-  };
+    };
 
   // If a project is selected, render the dynamic internal tabs detail view
   if (selectedProject) {
@@ -331,6 +331,21 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                 <span className="font-mono text-xs font-bold text-[#00668F] bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded">
                   {selectedProject.code}
                 </span>
+                {selectedProject.currency && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    {selectedProject.currency}
+                  </span>
+                )}
+                {selectedProject.contractCode && (
+                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    Contrato: {selectedProject.contractCode}
+                  </span>
+                )}
+                {selectedProject.quoteCode && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                    Cotización: {selectedProject.quoteCode}
+                  </span>
+                )}
                 <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                   {selectedProject.name}
                 </h1>
@@ -348,11 +363,12 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                   <option value="archived">Archivado</option>
                 </select>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Cliente: <span className="font-medium text-slate-700 dark:text-slate-300">{selectedProject.clientName}</span> | 
-                Categoría: <span className="font-medium text-slate-700 dark:text-slate-300">{projectCategory}</span> | 
-                Servicio: <span className="font-medium text-slate-700 dark:text-slate-300">{selectedProject.serviceId || selectedProject.serviceType}</span> | 
-                Líder / Director del Proyecto: <span className="font-medium text-slate-700 dark:text-slate-300">{selectedProject.supervisorName || 'Sin asignar'}</span>
+              <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>Cliente: <strong className="text-slate-700 dark:text-slate-300">{selectedProject.clientName}</strong></span>
+                {selectedProject.location && <span>• Ubicación: <strong className="text-slate-700 dark:text-slate-300">{selectedProject.location}</strong></span>}
+                <span>• Categoría: <strong className="text-slate-700 dark:text-slate-300">{projectCategory}</strong></span>
+                <span>• Servicio: <strong className="text-slate-700 dark:text-slate-300">{selectedProject.serviceId || selectedProject.serviceType}</strong></span>
+                <span>• Líder: <strong className="text-slate-700 dark:text-slate-300">{selectedProject.supervisorName || 'Sin asignar'}</strong></span>
               </p>
             </div>
           </div>

@@ -203,6 +203,7 @@ export interface ProjectTimesheetEntry {
   projectId: string;
   taskId: string;
   taskName: string;
+  taskCode?: string;
   userId: string;
   userName: string;
   userRole: string;
