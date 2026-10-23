@@ -26,6 +26,8 @@ import {
   BarChart3,
   Scale,
   ShieldCheck,
+  CreditCard,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { PurchaseOrder, Partner, PurchaseOrderItem, InternalRequisition } from '../../types';
@@ -42,6 +44,9 @@ import { ProcurementReportsDashboard } from './components/ProcurementReportsDash
 import { PurchaseOrderDetailDrawer } from './components/PurchaseOrderDetailDrawer';
 import { QuoteComparisonModal, VendorQuoteCandidate } from './components/QuoteComparisonModal';
 import { RegisterPurchaseOrderModal } from './components/RegisterPurchaseOrderModal';
+import { ProcurementPayablesTab } from './components/ProcurementPayablesTab';
+import { ProcurementPendingDeliveryTab } from './components/ProcurementPendingDeliveryTab';
+import { ProcurementCorporateMatrixTab } from './components/ProcurementCorporateMatrixTab';
 import { getStoredTRM, formatCOP, formatUSD, formatTRM } from '../../core/services/trmService';
 
 interface PoItemRow {
@@ -76,8 +81,10 @@ export const ProcurementModule: React.FC = () => {
 
   const currentTrm = getStoredTRM();
 
-  // Pestañas (Órdenes, Peticiones, Cotizaciones, Proveedores, Reportes)
-  const [activeTab, setActiveTab] = useState<'orders' | 'requisitions' | 'quotes' | 'suppliers' | 'reports'>('orders');
+  // Pestañas Matriz Corporativa Inteckno
+  const [activeTab, setActiveTab] = useState<
+    'orders' | 'requisitions' | 'payables' | 'pending_delivery' | 'matriz_compras' | 'quotes' | 'suppliers' | 'reports'
+  >('orders');
 
   // Modales y Paneles
   const [isRegisterPoModalOpen, setIsRegisterPoModalOpen] = useState(false);
@@ -161,6 +168,14 @@ export const ProcurementModule: React.FC = () => {
   const pendingReceiptPOs = safePOs.filter(
     (po) => po && po.status !== 'rejected' && po.status !== 'received'
   );
+
+  // Cuentas por Pagar y Entregas Pendientes (Matriz Corporativa)
+  const payablesCount = safePOs.filter((po) => po && po.status !== 'rejected' && po.paymentStatus !== 'paid').length;
+  const pendingDeliveryCount = safePOs.filter((po) => {
+    if (!po || po.status === 'rejected' || po.status === 'received') return false;
+    if (po.deliveryStatus === 'entregado') return false;
+    return true;
+  }).length;
 
   const addItemRow = () => {
     const newRow: PoItemRow = {
@@ -410,7 +425,7 @@ export const ProcurementModule: React.FC = () => {
         <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto max-w-full min-w-0">
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'orders' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
@@ -420,17 +435,47 @@ export const ProcurementModule: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('requisitions')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'requisitions' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
             <FileText size={14} />
-            <span>Solicitudes de Material ({safeReqs.length})</span>
+            <span># SOLPED ({safeReqs.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('payables')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'payables' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+            }`}
+          >
+            <CreditCard size={14} />
+            <span>Cuentas x Pagar ({payablesCount})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('pending_delivery')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'pending_delivery' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+            }`}
+          >
+            <Truck size={14} />
+            <span>Pendiente x Entrega ({pendingDeliveryCount})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('matriz_compras')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'matriz_compras' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+            }`}
+          >
+            <FileSpreadsheet size={14} />
+            <span>Matriz BD Compras</span>
           </button>
 
           <button
             onClick={() => setActiveTab('quotes')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'quotes' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
@@ -440,7 +485,7 @@ export const ProcurementModule: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('suppliers')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'suppliers' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
@@ -450,7 +495,7 @@ export const ProcurementModule: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('reports')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-center flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'reports' ? 'bg-[#003650] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
@@ -476,7 +521,7 @@ export const ProcurementModule: React.FC = () => {
             className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Plus size={14} />
-            <span>+ Nueva Solicitud</span>
+            <span>+ Nueva SOLPED</span>
           </button>
 
           <button
@@ -837,6 +882,50 @@ export const ProcurementModule: React.FC = () => {
             ]}
           />
         </div>
+      )}
+
+      {/* PESTAÑA: CUENTAS POR PAGAR (MATRIZ CORPORATIVA) */}
+      {activeTab === 'payables' && (
+        <ProcurementPayablesTab
+          purchaseOrders={safePOs}
+          partners={safePartners}
+          projects={projects}
+          currentTrm={currentTrm}
+          onSelectPo={(po) => setSelectedPoForDetail(po)}
+          onUpdatePo={(poId, updates) => {
+            updatePurchaseOrder(poId, updates);
+            if (selectedPoForDetail && selectedPoForDetail.id === poId) {
+              setSelectedPoForDetail((prev) => (prev ? { ...prev, ...updates } : null));
+            }
+          }}
+        />
+      )}
+
+      {/* PESTAÑA: PENDIENTES POR ENTREGA (SEGUIMIENTO LOGÍSTICO) */}
+      {activeTab === 'pending_delivery' && (
+        <ProcurementPendingDeliveryTab
+          purchaseOrders={safePOs}
+          partners={safePartners}
+          projects={projects}
+          onSelectPo={(po) => setSelectedPoForDetail(po)}
+          onUpdatePo={(poId, updates) => {
+            updatePurchaseOrder(poId, updates);
+            if (selectedPoForDetail && selectedPoForDetail.id === poId) {
+              setSelectedPoForDetail((prev) => (prev ? { ...prev, ...updates } : null));
+            }
+          }}
+        />
+      )}
+
+      {/* PESTAÑA: MATRIZ CONSOLIDADA BD COMPRAS (25 COLUMNAS CORPORATIVAS) */}
+      {activeTab === 'matriz_compras' && (
+        <ProcurementCorporateMatrixTab
+          purchaseOrders={safePOs}
+          partners={safePartners}
+          projects={projects}
+          currentTrm={currentTrm}
+          onSelectPo={(po) => setSelectedPoForDetail(po)}
+        />
       )}
 
       {/* PESTAÑA 3: CUADRO COMPARATIVO DE OFERTAS */}

@@ -36,6 +36,7 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
   const { projects, currentUser, notify } = useErp();
 
   const [motivo, setMotivo] = useState<InventoryWriteOffReason>('RETAZO_INUTILIZABLE');
+  const [destinacion, setDestinacion] = useState<'BAJA_DEFINITIVA' | 'REASIGNAR_ESLINGAS_IZAJE'>('BAJA_DEFINITIVA');
   const [cantidad, setCantidad] = useState<number>(tramo?.longitudMetros || 1);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [descripcion, setDescripcion] = useState<string>('');
@@ -81,7 +82,7 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
         unidad: tramo ? 'metros' : product.unit,
         valorEstimadoCOP: valorTotalCOP,
         motivo,
-        descripcionDetallada: descripcion.trim(),
+        descripcionDetallada: `[DESTINO: ${destinacion === 'REASIGNAR_ESLINGAS_IZAJE' ? 'REASIGNACIÓN PARA ESLINGAS / ESTROBOS DE IZAJE EN MONTAJE DE TELEFÉRICOS' : 'BAJA DEFINITIVA / CHATARRA'}] ${descripcion.trim()}`,
         centroCostosProyectoId: selectedProj?.id,
         centroCostosProyectoCodigo: projectCode,
         estado: 'PENDIENTE_APROBACION_GERENCIA',
@@ -187,6 +188,26 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
               <option value="OBSOLESCENCIA">Obsolescencia Técnica / Cambio de Norma</option>
               <option value="DESGASTE_NORMAL">Desgaste Excesivo Fuera de Tolerancia Técnica</option>
             </select>
+          </div>
+
+          {/* Destino Final del Material */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Destino / Tratamiento del Material:
+            </label>
+            <select
+              value={destinacion}
+              onChange={(e) => setDestinacion(e.target.value as any)}
+              className="w-full p-2.5 border border-gray-300 rounded-xl font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#00668F]"
+            >
+              <option value="BAJA_DEFINITIVA">Baja Definitiva (Disposición Final / Merma / Chatarra)</option>
+              <option value="REASIGNAR_ESLINGAS_IZAJE">Reasignar como Eslingas / Estrobos de Izaje (Reutilización en Obra de Teleféricos)</option>
+            </select>
+            {destinacion === 'REASIGNAR_ESLINGAS_IZAJE' && (
+              <p className="text-[10px] text-emerald-700 mt-1 font-semibold">
+                ✓ Aprovechamiento técnico: El cable será reclasificado para confección de estrobos de izaje bajo norma ASME B30.9 para montajes electromecánicos.
+              </p>
+            )}
           </div>
 
           {/* Cantidad y Unidad */}

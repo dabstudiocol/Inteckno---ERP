@@ -12,12 +12,51 @@ import {
   Briefcase,
   Trash2,
   Info,
+  Activity,
+  ShieldCheck,
+  Gauge,
+  Flame,
+  Wrench,
+  Clock,
 } from 'lucide-react';
 import { Project } from '../../../../types';
 import { CostMatrixItem } from '../../../../types/ProjectSchema';
 import { formatCOP, formatUSD } from '../../../../core/services/trmService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
+
+export const INTECKNO_OFFICIAL_CATEGORIES: {
+  key: CostMatrixItem['category'];
+  label: string;
+  shortLabel: string;
+  color: string;
+}[] = [
+  { key: 'mano_obra_itk', label: 'Mano de Obra ITK (Horas-Hombre)', shortLabel: 'Mano de Obra ITK', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { key: 'mano_obra_externa', label: 'Mano de Obra Externa / Especialistas', shortLabel: 'MO Externa', color: 'bg-sky-50 text-sky-700 border-sky-200' },
+  { key: 'viaticos_transporte', label: 'Transporte, Pasajes & Viáticos', shortLabel: 'Viáticos & Movilidad', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { key: 'consumibles_taller', label: 'Consumibles de Taller & EPP', shortLabel: 'Consumibles', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { key: 'inspeccion_mrt', label: 'Inspección Electromagnética Cables (MRT)', shortLabel: 'MRT Cables', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+  { key: 'ensayos_end', label: 'Ensayos No Destructivos (END / NDT)', shortLabel: 'Ensayos END', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { key: 'analisis_vibraciones', label: 'Análisis de Vibraciones & Tribología', shortLabel: 'Vibraciones', color: 'bg-teal-50 text-teal-700 border-teal-200' },
+  { key: 'termografia', label: 'Termografía Infrarroja', shortLabel: 'Termografía', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { key: 'repuestos_fabricacion', label: 'Materiales, Repuestos & Fabricación', shortLabel: 'Repuestos & Piezas', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { key: 'subcontratos_gruas', label: 'Subcontratos Especializados / Grúas', shortLabel: 'Subcontratos / Grúas', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  { key: 'imprevistos_contingencia', label: 'Imprevistos & Contingencia de Obra', shortLabel: 'Imprevistos', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+];
+
+export function getCategoryMeta(cat: string) {
+  const normalized = 
+    cat === 'mano_obra' ? 'mano_obra_itk' :
+    cat === 'repuestos_materiales' ? 'repuestos_fabricacion' :
+    cat === 'subcontratos' ? 'subcontratos_gruas' :
+    cat === 'viaticos' ? 'viaticos_transporte' : cat;
+  return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === normalized) || {
+    key: normalized as any,
+    label: normalized.replace('_', ' ').toUpperCase(),
+    shortLabel: normalized.replace('_', ' ').toUpperCase(),
+    color: 'bg-slate-100 text-slate-700 border-slate-200',
+  };
+}
 
 interface TabCostosPresupuestoProps {
   project: Project;
@@ -35,7 +74,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     return (project as any).costMatrix || [];
   });
 
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState<'todos' | CostMatrixItem['category']>('todos');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('todos');
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<CostMatrixItem | null>(null);
   const [selectedCostDetail, setSelectedCostDetail] = useState<CostMatrixItem | null>(null);
@@ -50,7 +89,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     actualQuantity: number;
     actualUnitCost: number;
   }>({
-    category: 'mano_obra',
+    category: 'mano_obra_itk',
     concept: '',
     unit: 'Horas',
     plannedQuantity: 40,
@@ -89,7 +128,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     } as any);
 
     setItemForm({
-      category: 'mano_obra',
+      category: 'mano_obra_itk',
       concept: '',
       unit: 'Horas',
       plannedQuantity: 40,
@@ -100,26 +139,58 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setIsAddItemModalOpen(false);
   };
 
+  // Cálculo de Horas Reportadas en Campo (Timesheet)
+  const timesheetList = (project as any)?.timesheetEntries || [];
+  const totalTimesheetHours = timesheetList.reduce((acc: number, entry: any) => acc + (Number(entry.hours) || 0), 0);
+  const estimatedTimesheetCostCOP = totalTimesheetHours * 65000; // Tarifa base promedio HH Inteckno
+
   // Totales acumulados
   const totalPlanned = costItems.reduce((sum, i) => sum + i.plannedTotal, 0);
   const totalActual = costItems.reduce((sum, i) => sum + i.actualTotal, 0);
   const totalVariance = totalPlanned - totalActual;
 
-  const getCategoryStats = (cat: CostMatrixItem['category']) => {
-    const list = costItems.filter((i) => i.category === cat);
+  const getCategoryStats = (cat: string) => {
+    const list = costItems.filter((i) => {
+      if (i.category === cat) return true;
+      if (cat === 'mano_obra_itk' && (i.category === 'mano_obra' || i.category === 'mano_obra_itk')) return true;
+      if (cat === 'repuestos_fabricacion' && (i.category === 'repuestos_materiales' || i.category === 'repuestos_fabricacion')) return true;
+      if (cat === 'subcontratos_gruas' && (i.category === 'subcontratos' || i.category === 'subcontratos_gruas')) return true;
+      if (cat === 'viaticos_transporte' && (i.category === 'viaticos' || i.category === 'viaticos_transporte')) return true;
+      return false;
+    });
     const planned = list.reduce((sum, i) => sum + i.plannedTotal, 0);
     const actual = list.reduce((sum, i) => sum + i.actualTotal, 0);
     return { count: list.length, planned, actual };
   };
 
-  const manoObra = getCategoryStats('mano_obra');
-  const materiales = getCategoryStats('repuestos_materiales');
-  const subcontratos = getCategoryStats('subcontratos');
-  const viaticos = getCategoryStats('viaticos');
+  const manoObra = {
+    count: getCategoryStats('mano_obra_itk').count + getCategoryStats('mano_obra_externa').count,
+    planned: getCategoryStats('mano_obra_itk').planned + getCategoryStats('mano_obra_externa').planned,
+    actual: getCategoryStats('mano_obra_itk').actual + getCategoryStats('mano_obra_externa').actual,
+  };
+  const ensayosEndMrt = {
+    count: getCategoryStats('inspeccion_mrt').count + getCategoryStats('ensayos_end').count + getCategoryStats('analisis_vibraciones').count + getCategoryStats('termografia').count,
+    planned: getCategoryStats('inspeccion_mrt').planned + getCategoryStats('ensayos_end').planned + getCategoryStats('analisis_vibraciones').planned + getCategoryStats('termografia').planned,
+    actual: getCategoryStats('inspeccion_mrt').actual + getCategoryStats('ensayos_end').actual + getCategoryStats('analisis_vibraciones').actual + getCategoryStats('termografia').actual,
+  };
+  const repuestos = getCategoryStats('repuestos_fabricacion');
+  const viaticosSub = {
+    count: getCategoryStats('viaticos_transporte').count + getCategoryStats('subcontratos_gruas').count,
+    planned: getCategoryStats('viaticos_transporte').planned + getCategoryStats('subcontratos_gruas').planned,
+    actual: getCategoryStats('viaticos_transporte').actual + getCategoryStats('subcontratos_gruas').actual,
+  };
 
   const filteredItems = activeCategoryFilter === 'todos'
     ? costItems
-    : costItems.filter((i) => i.category === activeCategoryFilter);
+    : costItems.filter((i) => {
+        if (i.category === activeCategoryFilter) return true;
+        if (activeCategoryFilter === 'mano_obra_itk' && (i.category === 'mano_obra' || i.category === 'mano_obra_externa')) return true;
+        if (activeCategoryFilter === 'repuestos_fabricacion' && i.category === 'repuestos_materiales') return true;
+        if (activeCategoryFilter === 'subcontratos_gruas' && i.category === 'subcontratos') return true;
+        if (activeCategoryFilter === 'viaticos_transporte' && i.category === 'viaticos') return true;
+        if (activeCategoryFilter === 'end_mrt' && ['inspeccion_mrt', 'ensayos_end', 'analisis_vibraciones', 'termografia'].includes(i.category)) return true;
+        return false;
+      });
 
   // Cálculos financieros contractuales basados en la realidad de Inteckno S.A.S.
   const rawContractAmount = project.contractAmount || project.budgetPV || 0;
@@ -225,19 +296,19 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         </div>
       </div>
 
-      {/* 1. TARJETAS DE CATEGORÍAS FINANCIERAS */}
+      {/* 1. TARJETAS DE CATEGORÍAS FINANCIERAS PRINCIPALES */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Mano de Obra */}
         <div
-          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'mano_obra' ? 'todos' : 'mano_obra')}
+          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'mano_obra_itk' ? 'todos' : 'mano_obra_itk')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            activeCategoryFilter === 'mano_obra'
+            activeCategoryFilter === 'mano_obra_itk'
               ? 'border-[#00668F] bg-sky-50/50 shadow-xs ring-2 ring-[#00668F]'
               : 'border-slate-200/80 bg-white hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between pb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase">Mano de Obra</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase">Mano de Obra ITK / Ext.</span>
             <span className="p-1.5 rounded-lg bg-blue-50 text-blue-700">
               <Users size={14} />
             </span>
@@ -246,61 +317,61 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           <div className="text-[10px] text-slate-400">Plan: {formatCOP(manoObra.planned)} ({manoObra.count} rubros)</div>
         </div>
 
-        {/* Repuestos y Materiales */}
+        {/* Ensayos END & MRT */}
         <div
-          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'repuestos_materiales' ? 'todos' : 'repuestos_materiales')}
+          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'end_mrt' ? 'todos' : 'end_mrt')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            activeCategoryFilter === 'repuestos_materiales'
+            activeCategoryFilter === 'end_mrt'
+              ? 'border-[#00668F] bg-purple-50/50 shadow-xs ring-2 ring-[#00668F]'
+              : 'border-slate-200/80 bg-white hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between pb-2">
+            <span className="text-[11px] font-bold text-slate-500 uppercase">END, MRT & Diagnóstico</span>
+            <span className="p-1.5 rounded-lg bg-purple-50 text-purple-700">
+              <Activity size={14} />
+            </span>
+          </div>
+          <div className="text-base font-black text-slate-900 truncate">{formatCOP(ensayosEndMrt.actual)}</div>
+          <div className="text-[10px] text-slate-400">Plan: {formatCOP(ensayosEndMrt.planned)} ({ensayosEndMrt.count} rubros)</div>
+        </div>
+
+        {/* Repuestos y Fabricación */}
+        <div
+          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'repuestos_fabricacion' ? 'todos' : 'repuestos_fabricacion')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+            activeCategoryFilter === 'repuestos_fabricacion'
               ? 'border-[#00668F] bg-sky-50/50 shadow-xs ring-2 ring-[#00668F]'
               : 'border-slate-200/80 bg-white hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between pb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase">Repuestos / Materiales</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase">Repuestos & Fabricación</span>
             <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
               <Package size={14} />
             </span>
           </div>
-          <div className="text-base font-black text-slate-900 truncate">{formatCOP(materiales.actual)}</div>
-          <div className="text-[10px] text-slate-400">Plan: {formatCOP(materiales.planned)} ({materiales.count} rubros)</div>
+          <div className="text-base font-black text-slate-900 truncate">{formatCOP(repuestos.actual)}</div>
+          <div className="text-[10px] text-slate-400">Plan: {formatCOP(repuestos.planned)} ({repuestos.count} rubros)</div>
         </div>
 
-        {/* Subcontratos */}
+        {/* Viáticos & Logística */}
         <div
-          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'subcontratos' ? 'todos' : 'subcontratos')}
+          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'viaticos_transporte' ? 'todos' : 'viaticos_transporte')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            activeCategoryFilter === 'subcontratos'
+            activeCategoryFilter === 'viaticos_transporte'
               ? 'border-[#00668F] bg-sky-50/50 shadow-xs ring-2 ring-[#00668F]'
               : 'border-slate-200/80 bg-white hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between pb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase">Subcontratos</span>
-            <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700">
-              <Briefcase size={14} />
-            </span>
-          </div>
-          <div className="text-base font-black text-slate-900 truncate">{formatCOP(subcontratos.actual)}</div>
-          <div className="text-[10px] text-slate-400">Plan: {formatCOP(subcontratos.planned)} ({subcontratos.count} rubros)</div>
-        </div>
-
-        {/* Viáticos */}
-        <div
-          onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'viaticos' ? 'todos' : 'viaticos')}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            activeCategoryFilter === 'viaticos'
-              ? 'border-[#00668F] bg-sky-50/50 shadow-xs ring-2 ring-[#00668F]'
-              : 'border-slate-200/80 bg-white hover:border-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase">Viáticos & Logística</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase">Viáticos & Subcontratos</span>
             <span className="p-1.5 rounded-lg bg-amber-50 text-amber-700">
               <Truck size={14} />
             </span>
           </div>
-          <div className="text-base font-black text-slate-900 truncate">{formatCOP(viaticos.actual)}</div>
-          <div className="text-[10px] text-slate-400">Plan: {formatCOP(viaticos.planned)} ({viaticos.count} rubros)</div>
+          <div className="text-base font-black text-slate-900 truncate">{formatCOP(viaticosSub.actual)}</div>
+          <div className="text-[10px] text-slate-400">Plan: {formatCOP(viaticosSub.planned)} ({viaticosSub.count} rubros)</div>
         </div>
       </div>
 
@@ -355,9 +426,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                   >
                     <td className="py-2.5 px-4">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-700">
-                        {item.category.replace('_', ' ')}
-                      </span>
+                      {(() => {
+                        const meta = getCategoryMeta(item.category);
+                        return (
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border ${meta.color}`}>
+                            {meta.shortLabel}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-2.5 px-4 font-bold text-slate-800 group-hover:text-[#00668F] transition-colors">{item.concept}</td>
                     <td className="py-2.5 px-4 text-center text-slate-500 font-mono text-[11px]">{item.unit}</td>
@@ -417,10 +493,11 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   onChange={(e) => setItemForm({ ...itemForm, category: e.target.value as any })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
                 >
-                  <option value="mano_obra">Mano de Obra Especializada</option>
-                  <option value="repuestos_materiales">Repuestos y Materiales STC</option>
-                  <option value="subcontratos">Subcontratos Especializados</option>
-                  <option value="viaticos">Viáticos, Pasajes & Alojamiento</option>
+                  {INTECKNO_OFFICIAL_CATEGORIES.map((cat) => (
+                    <option key={cat.key} value={cat.key}>
+                      {cat.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>

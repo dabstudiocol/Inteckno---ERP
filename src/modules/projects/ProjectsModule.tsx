@@ -90,6 +90,8 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pmFilter, setPmFilter] = useState<string>('all');
+  const [clientFilter, setClientFilter] = useState<string>('all');
+  const [countryFilter, setCountryFilter] = useState<string>('all');
 
   const selectedProject = projects.find(p => p.id === selectedProjectId) || null;
   const rawProjectTasks = selectedProject ? tasks.filter(t => t.projectId === selectedProject.id) : [];
@@ -144,8 +146,10 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
     });
   }, [selectedProject, rawProjectTasks]);
 
-  // Unique PMs for filter
-  const uniquePMs = Array.from(new Set(projects.map(p => p.supervisorName).filter(Boolean)));
+  // Unique lists for filters
+  const uniquePMs = Array.from(new Set(projects.map(p => p.supervisorName).filter(Boolean))).sort();
+  const uniqueClients = Array.from(new Set(projects.map(p => p.clientName).filter(Boolean))).sort();
+  const uniqueCountries = Array.from(new Set(projects.map(p => p.clientCountry || 'Colombia').filter(Boolean))).sort();
 
   // Filtered projects
   const filteredProjects = projects.filter(p => {
@@ -156,8 +160,10 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
 
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
     const matchesPM = pmFilter === 'all' || p.supervisorName === pmFilter;
+    const matchesClient = clientFilter === 'all' || p.clientName === clientFilter;
+    const matchesCountry = countryFilter === 'all' || (p.clientCountry || 'Colombia') === countryFilter;
 
-    return matchesSearch && matchesStatus && matchesPM;
+    return matchesSearch && matchesStatus && matchesPM && matchesClient && matchesCountry;
   });
 
   const getStatusBadge = (status: string) => {
@@ -671,15 +677,15 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         {/* Search */}
-        <div className="relative col-span-1 sm:col-span-2">
+        <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por código, nombre de proyecto o cliente..."
+            placeholder="Buscar código, nombre o cliente..."
             className="w-full pl-9 pr-3 py-2 text-xs border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
           />
         </div>
@@ -711,6 +717,34 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             <option value="all">Todos los Responsables</option>
             {uniquePMs.map(pm => (
               <option key={pm} value={pm}>{pm}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Cliente Filter */}
+        <div>
+          <select
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="w-full text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+          >
+            <option value="all">Todos los Clientes ({uniqueClients.length})</option>
+            {uniqueClients.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* País / Jurisdicción Filter */}
+        <div>
+          <select
+            value={countryFilter}
+            onChange={(e) => setCountryFilter(e.target.value)}
+            className="w-full text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+          >
+            <option value="all">Todos los Países ({uniqueCountries.length})</option>
+            {uniqueCountries.map(cty => (
+              <option key={cty} value={cty}>{cty}</option>
             ))}
           </select>
         </div>

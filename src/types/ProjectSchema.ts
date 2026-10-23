@@ -307,7 +307,22 @@ export interface ProjectChangeOrder {
 
 export interface CostMatrixItem {
   id: string;
-  category: 'mano_obra' | 'repuestos_materiales' | 'subcontratos' | 'viaticos';
+  category: 
+    | 'mano_obra' 
+    | 'repuestos_materiales' 
+    | 'subcontratos' 
+    | 'viaticos'
+    | 'mano_obra_itk'
+    | 'mano_obra_externa'
+    | 'viaticos_transporte'
+    | 'consumibles_taller'
+    | 'inspeccion_mrt'
+    | 'ensayos_end'
+    | 'analisis_vibraciones'
+    | 'termografia'
+    | 'repuestos_fabricacion'
+    | 'subcontratos_gruas'
+    | 'imprevistos_contingencia';
   concept: string;
   unit: string;
   plannedQuantity: number;

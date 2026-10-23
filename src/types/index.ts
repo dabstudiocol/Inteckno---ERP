@@ -421,6 +421,11 @@ export interface WBSTask {
   costCenter?: string;
   costEstimate?: number; // Presupuesto estimado en COP
   progressMethod?: 'percent' | 'hours'; // Método de cálculo de avance
+  // Atributos de planificación real Inteckno
+  stage?: 'inicial' | 'desarrollo' | 'ejecucion' | 'cierre';
+  weightPct?: number; // Peso % ponderado en la WBS del proyecto
+  executionControlPct?: number; // % de avance real registrado en control semanal
+  weeklyPlanning?: Record<string, number>; // Horas o avance programado por semana
   // Atributos de cálculo CPM
   earlyStart?: string;
   earlyFinish?: string;
@@ -771,6 +776,20 @@ export interface PurchaseOrder {
   // Blindajes de Ingeniería y Homologación
   isFastTrackEmergency?: boolean;
   drawingVersion?: string;
+  // Campos Oficiales de la Matriz Corporativa de Compras (BD COMPRAS)
+  solpedNumber?: string; // Número de SOLPED (# de Solicitud de Pedido)
+  requesterName?: string; // Solicitante técnico original
+  supplierTaxId?: string; // NIT / RUT del proveedor de la orden
+  costCategory?: string; // Rubro o categoría de costo (de los 11 rubros oficiales)
+  paymentTerms?: string; // Términos pactados (ej. 30 días F/F)
+  paymentTermType?: 'contado' | 'credito' | 'anticipo'; // Condición de pago de la matriz
+  paymentDueDate?: string; // Fecha de pago programada
+  paidAmountCOP?: number; // Valor efectivamente desembolsado
+  deliveryStatus?: 'entregado' | 'pendiente' | 'parcial' | 'en_transito'; // Estado físico de entrega
+  deliveryDate?: string; // Fecha real de entrega
+  invoiceStatus?: 'ok_factura' | 'pendiente_factura'; // Estado de radicación de factura
+  invoiceDate?: string; // Fecha de radicación / ingreso de factura
+  weekOfYear?: number; // Semana ISO del año para programación de caja
 }
 
 export interface InternalRequisitionItem {
