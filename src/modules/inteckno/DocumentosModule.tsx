@@ -1516,7 +1516,7 @@ export const DocumentosModule: React.FC = () => {
                 title="Crear una nueva carpeta personalizada para el ERP y SharePoint"
               >
                 <FolderPlus size={14} className="text-[#00668F]" />
-                <span>+ Nueva Carpeta</span>
+                <span>Nueva Carpeta</span>
               </button>
 
               <button

@@ -96,12 +96,12 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         </div>
 
         {/* Acciones */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="px-4 py-2 text-xs font-medium rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer"
           >
             {cancelText}
           </button>
@@ -110,7 +110,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={!isWordMatch || isLoading}
-            className="px-4 py-2 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-xs disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{isLoading ? 'Eliminando...' : confirmText}</span>

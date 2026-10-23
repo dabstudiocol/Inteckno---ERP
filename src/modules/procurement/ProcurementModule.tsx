@@ -515,7 +515,7 @@ export const ProcurementModule: React.FC = () => {
             className="px-3.5 py-2 rounded-xl bg-[#003650] hover:bg-[#00283c] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <Plus size={14} />
-            <span>+ Nueva Orden de Compra</span>
+            <span>Nueva Orden de Compra</span>
           </button>
 
           <button
@@ -524,7 +524,7 @@ export const ProcurementModule: React.FC = () => {
             className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Plus size={14} />
-            <span>+ Nueva SOLPED</span>
+            <span>Nueva SOLPED</span>
           </button>
 
           <button

@@ -2150,7 +2150,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                   className="px-3.5 py-1.5 rounded-xl bg-sky-50 text-[#00668F] font-bold hover:bg-sky-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus size={14} />
-                  <span>+ Agregar Artículo</span>
+                  <span>Agregar Artículo</span>
                 </button>
               </div>
 
@@ -3008,9 +3008,10 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       ]);
                       setActiveTab('dispatch');
                     }}
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 cursor-pointer flex items-center gap-1.5 text-xs shadow-xs"
                   >
-                    + Cargar a Remisión de Salida
+                    <Plus size={14} />
+                    <span>Cargar a Remisión de Salida</span>
                   </button>
                 </div>
               </div>

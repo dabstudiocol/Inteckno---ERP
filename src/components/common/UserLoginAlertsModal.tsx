@@ -420,7 +420,7 @@ export const UserLoginAlertsModal: React.FC<UserLoginAlertsModalProps> = ({
                       : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/70'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="space-y-1 flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${action.badgeColor}`}>
@@ -446,7 +446,7 @@ export const UserLoginAlertsModal: React.FC<UserLoginAlertsModalProps> = ({
                         onClose();
                         onNavigateToAction(action.moduleId, action.actionType, action.payload);
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-[#003650] hover:bg-[#00283c] text-white text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-2xs active:scale-95 cursor-pointer"
+                      className="w-full sm:w-auto justify-center px-3.5 py-2 rounded-xl bg-[#003650] hover:bg-[#00283c] text-white text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-2xs active:scale-95 cursor-pointer"
                     >
                       <span>{action.actionLabel}</span>
                       <ArrowRight size={13} />
@@ -459,15 +459,15 @@ export const UserLoginAlertsModal: React.FC<UserLoginAlertsModalProps> = ({
         </div>
 
         {/* Footer del Modal */}
-        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
-          <span className="text-[11px] text-slate-500">
+        <div className="px-4 sm:px-5 py-3 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+          <span className="text-[11px] text-slate-500 text-center sm:text-left">
             Inteckno ERP • Sesión iniciada como <strong>{currentUser?.email}</strong>
           </span>
 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer text-center"
           >
             Continuar al ERP
           </button>

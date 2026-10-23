@@ -378,7 +378,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                   className="px-3 py-1.5 rounded-xl bg-sky-50 text-[#003650] font-bold hover:bg-sky-100 transition-colors flex items-center gap-1.5 cursor-pointer text-xs"
                 >
                   <Plus size={13} />
-                  <span>+ Agregar Ítem</span>
+                  <span>Agregar Ítem</span>
                 </button>
               </div>
 
