@@ -457,7 +457,13 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
         else if (col === 'name') itemVal = p.name;
         else if (col === 'category') itemVal = p.category;
         else if (col === 'unit') itemVal = p.unit;
-        else if (col === 'locationName') itemVal = p.locationName;
+        else if (col === 'locationName') {
+          itemVal = p.shelf && !p.shelf.toLowerCase().includes('bodega central')
+            ? p.shelf
+            : (p.locationName && !p.locationName.toLowerCase().includes('bodega central')
+                ? p.locationName
+                : (p.shelf || p.locationName || 'Sin ubicación'));
+        }
         else if (col === 'availableStock') itemVal = String(p.availableStock);
         else if (col === 'minStock') itemVal = String(p.minStock);
 
@@ -1253,8 +1259,13 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-400 block font-medium">Ubicación:</span>
-                      <span className="font-semibold text-gray-800 text-[11px] block">{p.locationName}</span>
-                      <span className="text-gray-400 text-[10px] font-mono block">{p.shelf}</span>
+                      <span className="font-mono font-bold text-gray-900 text-xs block mt-0.5">
+                        {p.shelf && !p.shelf.toLowerCase().includes('bodega central')
+                          ? p.shelf
+                          : (p.locationName && !p.locationName.toLowerCase().includes('bodega central')
+                              ? p.locationName
+                              : (p.shelf || p.locationName || 'Sin ubicación'))}
+                      </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-400 block font-medium">Valor Unitario:</span>
@@ -1716,7 +1727,13 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                           </div>
                           <div className="pt-2">
                             <div className="max-h-36 overflow-y-auto space-y-1">
-                              {Array.from(new Set(products.map((p) => p.locationName))).map((locVal) => {
+                              {Array.from(new Set(products.map((p) => (
+                                p.shelf && !p.shelf.toLowerCase().includes('bodega central')
+                                  ? p.shelf
+                                  : (p.locationName && !p.locationName.toLowerCase().includes('bodega central')
+                                      ? p.locationName
+                                      : (p.shelf || p.locationName || 'Sin ubicación'))
+                              )).filter(Boolean))).map((locVal) => {
                                 const isChecked = colFilters['locationName']?.includes(locVal) ?? false;
                                 return (
                                   <label key={locVal} className="flex items-center gap-2 px-1 py-0.5 hover:bg-slate-50 rounded cursor-pointer text-slate-700">
@@ -1864,12 +1881,20 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                           </span>
                         </td>
 
-                        {/* 6. Ubicación */}
-                        <td className="p-3 text-[11px]">
-                          <div className="font-bold text-gray-800">{p.locationName}</div>
-                          <div className="text-gray-400 font-mono">
-                            {p.shelf} {p.purchaseYear ? `• Año: ${p.purchaseYear}` : ''}
-                          </div>
+                        {/* 6. Ubicación Real */}
+                        <td className="p-3 text-[11px] whitespace-nowrap">
+                          <span className="font-mono font-bold text-gray-900 bg-slate-100 px-2 py-0.5 rounded-md inline-block">
+                            {p.shelf && !p.shelf.toLowerCase().includes('bodega central')
+                              ? p.shelf
+                              : (p.locationName && !p.locationName.toLowerCase().includes('bodega central')
+                                  ? p.locationName
+                                  : (p.shelf || p.locationName || 'Sin ubicación'))}
+                          </span>
+                          {p.purchaseYear && (
+                            <div className="text-[10px] text-gray-400 mt-0.5 font-mono">
+                              Año: {p.purchaseYear}
+                            </div>
+                          )}
                         </td>
 
                         {/* 7. Valor COP */}

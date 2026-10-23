@@ -147,11 +147,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <span>
                 Unidad: <strong className="text-white font-mono">{product.unit}</strong>
               </span>
-              {product.locationName && (
-                <span className="flex items-center gap-1 text-slate-300">
-                  <MapPin size={12} /> {product.locationName} {product.shelf ? `(${product.shelf})` : ''}
-                </span>
-              )}
+              {(() => {
+                const loc = product.shelf && !product.shelf.toLowerCase().includes('bodega central')
+                  ? product.shelf
+                  : (product.locationName && !product.locationName.toLowerCase().includes('bodega central')
+                      ? product.locationName
+                      : (product.shelf || product.locationName));
+                if (!loc) return null;
+                return (
+                  <span className="flex items-center gap-1 text-slate-300">
+                    <MapPin size={12} className="text-sky-300" />
+                    <span>Ubicación:</span>
+                    <strong className="text-white font-mono bg-white/10 px-1.5 py-0.5 rounded">{loc}</strong>
+                  </span>
+                );
+              })()}
             </div>
           </div>
           <button
