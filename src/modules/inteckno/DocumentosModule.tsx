@@ -1334,11 +1334,12 @@ export const DocumentosModule: React.FC = () => {
                 className="bg-transparent font-bold text-slate-800 dark:text-slate-200 text-xs outline-none cursor-pointer"
               >
                 <option value="todos">Todos los Proyectos STC</option>
-                <option value="PRJ-2026-MED-K">PRJ-2026-MED-K (Línea K Medellín)</option>
-                <option value="PRJ-2026-BOG-TMC">PRJ-2026-BOG-TMC (TransMiCable)</option>
-                <option value="PRJ-2026-CDMX-L3">PRJ-2026-CDMX-L3 (Cablebús L3)</option>
-                <option value="PRJ-2026-GYE-AER">PRJ-2026-GYE-AER (Aerovía Guayaquil)</option>
                 <option value="DOCS-CORP">DOCS-CORP (Normativa STC)</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.code}>
+                    {p.code} ({p.name})
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -2463,6 +2464,61 @@ export const DocumentosModule: React.FC = () => {
                     onChange={(e) => setUploadForm({ ...uploadForm, version: e.target.value })}
                     className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-mono"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Carpeta de Destino:
+                  </label>
+                  <select
+                    value={uploadForm.folderName}
+                    onChange={(e) => setUploadForm({ ...uploadForm, folderName: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  >
+                    {allFolders.map((f) => (
+                      <option key={f.id} value={f.name}>
+                        📁 {f.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Categoría Documental:
+                  </label>
+                  <select
+                    value={uploadForm.category}
+                    onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value as any })}
+                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  >
+                    <option value="planos">Planos CAD & As-Built</option>
+                    <option value="certificados">Certificados de Calidad & Cables</option>
+                    <option value="protocolos">Protocolos de Prueba & END</option>
+                    <option value="manuales">Manuales OEM & Fabricante</option>
+                    <option value="sst">Informes HSEQ & Alturas</option>
+                    <option value="actas">Actas de Recibo & Contratos</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Proyecto STC Asociado:
+                  </label>
+                  <select
+                    value={uploadForm.projectCode}
+                    onChange={(e) => setUploadForm({ ...uploadForm, projectCode: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  >
+                    <option value="DOCS-CORP">Normativa Corporativa STC</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.code}>
+                        {p.code} ({p.name})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

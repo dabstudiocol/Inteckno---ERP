@@ -41,7 +41,13 @@ export const TimesheetModule: React.FC = () => {
     }
   }, [catalogLaborTypes, taskName]);
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+  const internalProjectsMap: Record<string, { id: string; code: string; name: string }> = {
+    'PRJ-INTERNAL-TALLER': { id: 'PRJ-INTERNAL-TALLER', code: 'ITK-TALLER', name: 'Taller Central Guayabal (Banco de Ensayos & Maquinado)' },
+    'PRJ-INTERNAL-SST': { id: 'PRJ-INTERNAL-SST', code: 'ITK-SST', name: 'Capacitación y Certificación en Alturas / SST' },
+    'PRJ-INTERNAL-SEDE': { id: 'PRJ-INTERNAL-SEDE', code: 'ITK-ADMIN', name: 'Soporte Operativo y Logística de Sede' },
+  };
+
+  const selectedProject = projects.find((p) => p.id === selectedProjectId) || internalProjectsMap[selectedProjectId] || projects[0];
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +63,7 @@ export const TimesheetModule: React.FC = () => {
       taskName: taskName || 'Labores en Teleférico',
       date: new Date().toISOString().split('T')[0],
       hours: Number(hours),
-      isBillable: true,
+      isBillable: !selectedProjectId.startsWith('PRJ-INTERNAL'),
       description: description || 'Labores técnicas en Sistema de Transporte por Cable según programación.',
     });
 
@@ -102,13 +108,20 @@ export const TimesheetModule: React.FC = () => {
               <select
                 value={selectedProjectId}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 bg-white text-xs font-semibold text-gray-800 focus:outline-hidden focus:border-[#00668F]"
+                className="w-full p-2.5 rounded-xl border border-gray-200 bg-white text-xs font-semibold text-gray-800 focus:outline-hidden focus:border-[#00668F] cursor-pointer"
               >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.code} — {p.name}
-                  </option>
-                ))}
+                <optgroup label="Proyectos STC con Clientes">
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.code} — {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Taller Central & Labores Internas">
+                  <option value="PRJ-INTERNAL-TALLER">ITK-TALLER — Taller Guayabal (Banco de Ensayos & Maquinado)</option>
+                  <option value="PRJ-INTERNAL-SST">ITK-SST — Capacitación y Certificación en Alturas</option>
+                  <option value="PRJ-INTERNAL-SEDE">ITK-ADMIN — Soporte Operativo y Logística de Sede</option>
+                </optgroup>
               </select>
             </div>
 

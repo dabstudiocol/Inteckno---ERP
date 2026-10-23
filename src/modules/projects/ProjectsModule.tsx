@@ -38,6 +38,7 @@ import { TabAsistentesCapacitacion } from './components/tabs/TabAsistentesCapaci
 import { INTECKNO_PORTFOLIO } from '../../core/config/portfolioCatalog';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../components/common/DetailModal';
+import { TemplateManagerModal } from '../../components/common/TemplateManagerModal';
 import { formatCOP, getStoredTRM } from '../../core/services/trmService';
 
 type GlobalViewMode = 'table' | 'kanban' | 'gantt';
@@ -79,6 +80,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
   const [isModuleConfigOpen, setIsModuleConfigOpen] = useState<boolean>(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [detailProject, setDetailProject] = useState<Project | null>(null);
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (initialView === 'gantt') setViewMode('gantt');
@@ -406,6 +408,15 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             </button>
 
             <button
+              onClick={() => setIsTemplateManagerOpen(true)}
+              className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+              title="Gestionar plantillas WBS especializadas (Ver, Editar, Duplicar)"
+            >
+              <FolderKanban className="w-4 h-4 text-[#00668F]" />
+              <span className="hidden lg:inline">Plantillas WBS</span>
+            </button>
+
+            <button
               onClick={() => setIsModuleConfigOpen(true)}
               className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1.5 text-xs font-semibold"
               title="Configurar catálogos y opciones del módulo"
@@ -667,8 +678,17 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
           </div>
 
           <button
+            onClick={() => setIsTemplateManagerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-xl transition-colors shadow-2xs cursor-pointer"
+            title="Gestionar plantillas WBS oficiales (Ver, Editar, Duplicar)"
+          >
+            <FolderKanban className="w-4 h-4 text-[#00668F]" />
+            <span className="hidden sm:inline">Plantillas WBS</span>
+          </button>
+
+          <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#00668F] hover:bg-[#005273] rounded-xl transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#00668F] hover:bg-[#005273] rounded-xl transition-colors shadow-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Nuevo Proyecto STC</span>
@@ -1126,6 +1146,35 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
           ...(detailProject.dynamicData?.trainingTopic ? [{ label: 'Tema de Capacitación', value: detailProject.dynamicData.trainingTopic }] : []),
           { label: 'Descripción / Alcance', value: detailProject.description || detailProject.dynamicData?.scopeSummary || 'Sin descripción registrada.', colSpan: 2 },
         ] : []}
+      />
+
+      {/* Modal Avanzado de Gestión de Plantillas (Ver, Editar, Duplicar WBS) */}
+      <TemplateManagerModal
+        isOpen={isTemplateManagerOpen}
+        onClose={() => setIsTemplateManagerOpen(false)}
+        activeProjectName={selectedProject ? `${selectedProject.code} - ${selectedProject.name}` : undefined}
+        onApplyTemplate={(tpl) => {
+          if (selectedProject) {
+            for (const item of tpl.tasks) {
+              addWbsTask({
+                projectId: selectedProject.id,
+                code: item.code,
+                name: item.name,
+                plannedHours: item.plannedHours,
+                progressPct: 0,
+                isCriticalPath: item.isCriticalPath,
+                predecessors: item.predecessors,
+                status: 'pending',
+                priority: item.isCriticalPath ? 'alta' : 'media',
+                deliverable: item.deliverable,
+                assignedToName: item.assignedRole || 'Equipo de Ingeniería STC',
+                durationDays: Math.max(1, Math.round(item.plannedHours / 8)),
+                dependencyType: 'FC',
+                lagDays: 0,
+              });
+            }
+          }
+        }}
       />
     </div>
   );

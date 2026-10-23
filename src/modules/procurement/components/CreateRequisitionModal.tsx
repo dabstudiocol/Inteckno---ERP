@@ -281,13 +281,17 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                     <select
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
+                      className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650] cursor-pointer"
                     >
-                      <option value="Administración & Gerencia">Administración & Gerencia</option>
+                      <option value="Administración & Gerencia">Dirección General & Gerencia</option>
+                      <option value="Ingeniería & Proyectos">Ingeniería & Proyectos STC</option>
+                      <option value="Operaciones & Mantenimiento">Operaciones & Mantenimiento</option>
+                      <option value="Taller Central Guayabal">Taller Central Guayabal (Banco de Ensayos & Maquinado)</option>
                       <option value="Sistemas & TI">Sistemas & TI (Equipos, licencias, consumibles)</option>
-                      <option value="Taller & Mantenimiento">Taller & Mantenimiento (Herramientas, consumibles)</option>
                       <option value="Gestión Humana & SST">Gestión Humana & SST (Dotaciones, botiquín, aseo)</option>
-                      <option value="Operaciones Generales">Operaciones Generales & Logística</option>
+                      <option value="Comercial & Licitaciones">Comercial & Licitaciones</option>
+                      <option value="Cadena de Suministro">Cadena de Suministro & Almacén</option>
+                      <option value="Negocios Internacionales">Negocios Internacionales & Exportación</option>
                     </select>
                   </div>
                 )}

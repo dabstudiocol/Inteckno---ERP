@@ -2078,13 +2078,21 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 <select
                   value={dispatchProjectId}
                   onChange={(e) => setDispatchProjectId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F]"
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F] cursor-pointer"
                 >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code} — {p.name}
-                    </option>
-                  ))}
+                  <optgroup label="Proyectos STC Activos">
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.code} — {p.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Sedes, Bodegas y Taller Interno">
+                    <option value="SEDE-MED-01">BOD-MED-01 — Almacén Central Medellín (Poblado)</option>
+                    <option value="TAL-GBL-02">TAL-GBL-02 — Taller Central Guayabal (Banco de Ensayos)</option>
+                    <option value="BOD-METRO-03">BOD-METRO-03 — Bodega de Campo Metro Medellín</option>
+                    <option value="BOD-MOV-06">BOD-MOV-06 — Contenedor Móvil de Obra STC</option>
+                  </optgroup>
                 </select>
               </div>
 

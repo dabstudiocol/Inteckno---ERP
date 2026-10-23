@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   User,
   Project,
@@ -80,6 +80,7 @@ import {
   subscribeToCloudInventory,
 } from '../services/firestoreSyncService';
 import { recordAuditEvent } from '../services/auditService';
+import { undoRedoService, UserUndoAction, SupportedCollection } from '../services/undoRedoService';
 
 const STORAGE_KEY = 'ITK_ERP_STATE_V2';
 const SESSION_KEY = 'ITK_ERP_SESSION_V2';
@@ -367,6 +368,14 @@ export interface ErpContextType extends ErpState {
   updateEmployee: (id: string, data: Partial<EmployeeRecord>) => void;
   deleteEmployee: (id: string) => void;
   completeMaintenance: (id: string) => void;
+
+  // SISTEMA DESHACER / REHACER (MULTI-USUARIO AISLADO)
+  canUndo: boolean;
+  canRedo: boolean;
+  getLastUndoAction: () => UserUndoAction | null;
+  getNextRedoAction: () => UserUndoAction | null;
+  executeUndo: () => { success: boolean; message: string };
+  executeRedo: () => { success: boolean; message: string };
 }
 
 const ErpContext = createContext<ErpContextType | undefined>(undefined);
@@ -592,6 +601,30 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       document.documentElement.setAttribute('data-font-size', fontSize);
     }
   }, [state.currentUser?.preferences?.visualDensity, state.currentUser?.preferences?.fontSize]);
+
+  // Re-renderizado reactivo cuando se añade, deshace o rehace una acción en el stack del usuario
+  const [undoVersion, setUndoVersion] = useState(0);
+  useEffect(() => {
+    const handleUndoRedoUpdate = () => setUndoVersion((v) => v + 1);
+    window.addEventListener('inteckno:undoredo-updated', handleUndoRedoUpdate);
+    return () => window.removeEventListener('inteckno:undoredo-updated', handleUndoRedoUpdate);
+  }, []);
+
+  const canUndo = useMemo(() => {
+    return undoRedoService.canUndo(state.currentUser?.id || '');
+  }, [state.currentUser?.id, undoVersion]);
+
+  const canRedo = useMemo(() => {
+    return undoRedoService.canRedo(state.currentUser?.id || '');
+  }, [state.currentUser?.id, undoVersion]);
+
+  const getLastUndoAction = useCallback(() => {
+    return undoRedoService.getLastUndoAction(state.currentUser?.id || '');
+  }, [state.currentUser?.id, undoVersion]);
+
+  const getNextRedoAction = useCallback(() => {
+    return undoRedoService.getNextRedoAction(state.currentUser?.id || '');
+  }, [state.currentUser?.id, undoVersion]);
 
   // Registro persistente en memoria y almacenamiento local de IDs de mensajes eliminados
   const deletedChatIdsRef = useRef<Set<string>>((() => {
@@ -1210,6 +1243,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // MÉTODOS DE BORRADO INDIVIDUAL
   const deleteProject = useCallback(
     (id: string) => {
+      const target = state.projects.find((p) => p.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'projects',
+          entityName: `Proyecto ${target.code}`,
+          description: `Eliminación del proyecto ${target.code} (${target.name})`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         projects: prev.projects.filter((p) => p.id !== id),
@@ -1217,40 +1262,76 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
       notify('info', 'Proyecto Eliminado', 'El proyecto y sus actividades asociadas han sido retirados.');
     },
-    [notify]
+    [state.projects, state.currentUser, notify]
   );
 
   const deleteOpportunity = useCallback(
     (id: string) => {
+      const target = state.opportunities.find((o) => o.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'opportunities',
+          entityName: `Oportunidad ${target.code}`,
+          description: `Eliminación de cotización ${target.code} (${target.title})`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         opportunities: prev.opportunities.filter((o) => o.id !== id),
       }));
       notify('info', 'Oportunidad Eliminada', 'La cotización/oportunidad ha sido retirada.');
     },
-    [notify]
+    [state.opportunities, state.currentUser, notify]
   );
 
   const deleteContact = useCallback(
     (id: string) => {
+      const target = state.contacts.find((c) => c.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'contacts',
+          entityName: `Contacto ${target.name}`,
+          description: `Eliminación del contacto ${target.name} (${target.company})`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         contacts: prev.contacts.filter((c) => c.id !== id),
       }));
       notify('info', 'Contacto Eliminado', 'El cliente/contacto ha sido retirado del CRM.');
     },
-    [notify]
+    [state.contacts, state.currentUser, notify]
   );
 
   const deletePurchaseOrder = useCallback(
     (id: string) => {
+      const target = state.purchaseOrders.find((po) => po.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'purchaseOrders',
+          entityName: `Orden de Compra ${target.orderNumber || target.id}`,
+          description: `Eliminación de la orden ${target.orderNumber || target.id}`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         purchaseOrders: prev.purchaseOrders.filter((po) => po.id !== id),
       }));
       notify('info', 'Orden de Compra Eliminada', 'La orden de compra ha sido retirada.');
     },
-    [notify]
+    [state.purchaseOrders, state.currentUser, notify]
   );
 
   const updatePurchaseOrder = useCallback(
@@ -1268,24 +1349,48 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteRequisition = useCallback(
     (id: string) => {
+      const target = state.requisitions.find((r) => r.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'requisitions',
+          entityName: `Requisición ${target.reqNumber || target.id}`,
+          description: `Eliminación de requisición ${target.reqNumber || target.id}`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         requisitions: prev.requisitions.filter((r) => r.id !== id),
       }));
       notify('info', 'Requisición Eliminada', 'La requisición interna ha sido retirada.');
     },
-    [notify]
+    [state.requisitions, state.currentUser, notify]
   );
 
   const deleteProduct = useCallback(
     (id: string) => {
+      const target = state.products.find((p) => p.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'products',
+          entityName: `Artículo ${target.sku || target.name}`,
+          description: `Eliminación del artículo ${target.sku}: ${target.name}`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         products: prev.products.filter((p) => p.id !== id),
       }));
       notify('info', 'Artículo Eliminado', 'El artículo ha sido retirado del inventario.');
     },
-    [notify]
+    [state.products, state.currentUser, notify]
   );
 
   const deletePartner = useCallback(
@@ -1301,24 +1406,48 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteExpense = useCallback(
     (id: string) => {
+      const target = state.expenses.find((e) => e.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'expenses',
+          entityName: `Gasto: ${target.description || target.category || target.id}`,
+          description: `Eliminación de comprobante de gasto por $${target.amount?.toLocaleString()} COP`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         expenses: prev.expenses.filter((e) => e.id !== id),
       }));
       notify('info', 'Gasto Eliminado', 'El comprobante de gasto ha sido retirado.');
     },
-    [notify]
+    [state.expenses, state.currentUser, notify]
   );
 
   const deleteTimesheet = useCallback(
     (id: string) => {
+      const target = state.timesheets.find((t) => t.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'timesheets',
+          entityName: `Horas en ${target.projectCode}`,
+          description: `Eliminación de ${target.hours}h de trabajo`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         timesheets: prev.timesheets.filter((t) => t.id !== id),
       }));
       notify('info', 'Horas Eliminadas', 'El registro de horas de trabajo ha sido retirado.');
     },
-    [notify]
+    [state.timesheets, state.currentUser, notify]
   );
 
   const deleteDDR = useCallback(
@@ -1557,13 +1686,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...contactData,
         id: `CNT-${Date.now()}`,
       };
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'contacts',
+          entityName: `Contacto ${newContact.name}`,
+          description: `Creación del contacto ${newContact.name} (${newContact.company})`,
+          newData: newContact,
+        });
+      }
       setState((prev) => ({
         ...prev,
         contacts: [newContact, ...prev.contacts],
       }));
       notify('success', 'Contacto Creado', `${contactData.name} (${contactData.company}) guardado.`);
     },
-    [notify]
+    [state.currentUser, notify]
   );
 
   // ============================================================================
@@ -1580,6 +1720,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cpi: 1.0,
         cv: 0,
       };
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'projects',
+          entityName: `Proyecto ${newProject.code}`,
+          description: `Creación del proyecto ${newProject.code} (${newProject.name})`,
+          newData: newProject,
+        });
+      }
       setState((prev) => ({
         ...prev,
         projects: [newProject, ...prev.projects],
@@ -1587,7 +1738,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notify('success', 'Proyecto Registrado', `${newProject.code}: ${newProject.name} activo.`);
       return newProject;
     },
-    [notify]
+    [state.currentUser, notify]
   );
 
   const addWbsTask = useCallback(
@@ -1694,13 +1845,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `TS-${Date.now()}`,
         status: 'submitted',
       };
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'timesheets',
+          entityName: `Horas en ${entry.projectCode} (${entry.hours}h)`,
+          description: `Radicación de ${entry.hours}h de trabajo en ${entry.projectCode}`,
+          newData: newEntry,
+        });
+      }
       setState((prev) => ({
         ...prev,
         timesheets: [newEntry, ...prev.timesheets],
       }));
       notify('success', 'Horas Registradas', `Se radicaron ${entry.hours} horas en el proyecto ${entry.projectCode}.`);
     },
-    [notify]
+    [state.currentUser, notify]
   );
 
   const approveTimesheet = useCallback(
@@ -1848,6 +2010,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         details: `Creación de orden de compra ${orderNumber} para proveedor ${poData.supplierName || 'General'} por COP $${(poData.totalAmountCOP || 0).toLocaleString()}.`,
         newValue: `${orderNumber} | Total COP: $${(poData.totalAmountCOP || 0).toLocaleString()} | Estado: ${newPo.status}`,
       }).catch(() => {});
+
+      // Registrar en el historial de deshacer aislado por usuario
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'purchaseOrders',
+          entityName: `Orden de Compra ${orderNumber}`,
+          description: `Creación de orden de compra ${orderNumber}`,
+          newData: newPo,
+        });
+      }
 
       notify('success', 'Orden de Compra Registrada', `${orderNumber} registrada y lista para seguimiento de entrega.`);
 
@@ -2116,10 +2291,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         requisitions: [newReq, ...prev.requisitions],
       }));
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'requisitions',
+          entityName: `Requisición ${reqNumber}`,
+          description: `Creación de requisición ${reqNumber}`,
+          newData: newReq,
+        });
+      }
       notify('success', 'Requisición Creada', `${reqNumber} registrada en el embudo de compras.`);
       return { success: true, autoPoCreated: false, requisition: newReq };
     },
-    [state.requisitions.length, notify]
+    [state.requisitions.length, state.currentUser, notify]
   );
 
   const updateRequisition = useCallback(
@@ -2656,6 +2842,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         details: `Radicación de gasto ${entry.category || 'Operativo'} por ${entry.currency} $${(entry.amount || 0).toLocaleString()} (Concepto: ${entry.description || 'Gasto'}).`,
         newValue: `${entry.currency} $${(entry.amount || 0).toLocaleString()} | Estado: pending`,
       }).catch(() => {});
+
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'expenses',
+          entityName: `Gasto: ${entry.description || entry.category || 'Operativo'}`,
+          description: `Registro de gasto por ${entry.currency} $${(entry.amount || 0).toLocaleString()}`,
+          newData: newEntry,
+        });
+      }
 
       notify('success', 'Gasto Reportado', `Se radicó el comprobante por ${entry.currency} $${entry.amount.toLocaleString()}.`);
     },
@@ -3377,13 +3575,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `DOC-${Date.now()}`,
         date: new Date().toISOString().split('T')[0],
       };
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'documents',
+          entityName: `Documento: ${newDoc.title}`,
+          description: `Subida de documento técnico ${newDoc.title}`,
+          newData: newDoc,
+        });
+      }
       setState((prev) => ({
         ...prev,
         documents: [newDoc, ...prev.documents],
       }));
       notify('success', 'Documento en Repositorio', `${newDoc.title} archivado en el repositorio técnico.`);
     },
-    [notify]
+    [state.currentUser, notify]
   );
 
   const deleteDocument = useCallback(
@@ -3391,6 +3600,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState((prev) => {
         const docToDelete = prev.documents.find((d) => d.id === id);
         if (docToDelete) {
+          if (state.currentUser) {
+            undoRedoService.recordAction({
+              userId: state.currentUser.id,
+              userName: state.currentUser.name,
+              actionType: 'delete',
+              collection: 'documents',
+              entityName: `Documento: ${docToDelete.title}`,
+              description: `Eliminación de documento técnico ${docToDelete.title}`,
+              previousData: docToDelete,
+            });
+          }
           try {
             const raw = localStorage.getItem('inteckno_deleted_documents_history');
             const history = raw ? JSON.parse(raw) : [];
@@ -3405,7 +3625,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       notify('info', 'Documento Eliminado', 'El archivo fue retirado del ERP (sigue guardado en SharePoint).');
     },
-    [notify]
+    [state.currentUser, notify]
   );
 
   const updateDocument = useCallback(
@@ -3450,6 +3670,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         todos: [newTodo, ...prev.todos],
       }));
+      if (state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'create',
+          collection: 'todos',
+          entityName: `Tarea: ${title}`,
+          description: `Creación de tarea personal "${title}"`,
+          newData: newTodo,
+        });
+      }
       // Notificación automática al responsable asignado
       notify(
         'urgent',
@@ -3507,13 +3738,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteTodo = useCallback(
     (id: string) => {
+      const target = state.todos.find((t) => t.id === id);
+      if (target && state.currentUser) {
+        undoRedoService.recordAction({
+          userId: state.currentUser.id,
+          userName: state.currentUser.name,
+          actionType: 'delete',
+          collection: 'todos',
+          entityName: `Tarea: ${target.title}`,
+          description: `Eliminación de la tarea "${target.title}"`,
+          previousData: target,
+        });
+      }
       setState((prev) => ({
         ...prev,
         todos: prev.todos.filter((t) => t.id !== id),
       }));
       notify('info', 'Actividad Eliminada', 'La tarea fue eliminada de compromisos operativos.');
     },
-    [notify]
+    [state.todos, state.currentUser, notify]
   );
 
   const createCalendarEvent = useCallback(
@@ -3743,6 +3986,318 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [notify]
   );
 
+  const executeUndo = useCallback((): { success: boolean; message: string } => {
+    if (!state.currentUser?.id) {
+      return { success: false, message: 'Usuario no autenticado.' };
+    }
+    const action = undoRedoService.popUndo(state.currentUser.id);
+    if (!action) {
+      return { success: false, message: 'No hay acciones previas para deshacer.' };
+    }
+
+    setState((prev) => {
+      switch (action.collection) {
+        case 'requisitions': {
+          if (action.actionType === 'create') {
+            return { ...prev, requisitions: prev.requisitions.filter((r) => r.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, requisitions: [action.previousData, ...prev.requisitions] };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              requisitions: prev.requisitions.map((r) => (r.id === action.previousData.id ? action.previousData : r)),
+            };
+          }
+          break;
+        }
+        case 'purchaseOrders': {
+          if (action.actionType === 'create') {
+            return { ...prev, purchaseOrders: prev.purchaseOrders.filter((po) => po.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, purchaseOrders: [action.previousData, ...prev.purchaseOrders] };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              purchaseOrders: prev.purchaseOrders.map((po) => (po.id === action.previousData.id ? action.previousData : po)),
+            };
+          }
+          break;
+        }
+        case 'expenses': {
+          if (action.actionType === 'create') {
+            return { ...prev, expenses: prev.expenses.filter((e) => e.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, expenses: [action.previousData, ...prev.expenses] };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              expenses: prev.expenses.map((e) => (e.id === action.previousData.id ? action.previousData : e)),
+            };
+          }
+          break;
+        }
+        case 'timesheets': {
+          if (action.actionType === 'create') {
+            return { ...prev, timesheets: prev.timesheets.filter((t) => t.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, timesheets: [action.previousData, ...prev.timesheets] };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              timesheets: prev.timesheets.map((t) => (t.id === action.previousData.id ? action.previousData : t)),
+            };
+          }
+          break;
+        }
+        case 'projects': {
+          if (action.actionType === 'create') {
+            return {
+              ...prev,
+              projects: prev.projects.filter((p) => p.id !== action.newData.id),
+              tasks: prev.tasks.filter((t) => t.projectId !== action.newData.id),
+            };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, projects: [action.previousData, ...prev.projects] };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              projects: prev.projects.map((p) => (p.id === action.previousData.id ? action.previousData : p)),
+            };
+          }
+          break;
+        }
+        case 'todos': {
+          if (action.actionType === 'create') {
+            return { ...prev, todos: prev.todos.filter((t) => t.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, todos: prev.todos.filter((t) => t.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              todos: prev.todos.map((t) => (t.id === action.previousData.id ? action.previousData : t)),
+            };
+          }
+          break;
+        }
+        case 'documents': {
+          if (action.actionType === 'create') {
+            return { ...prev, documents: prev.documents.filter((d) => d.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, documents: prev.documents.filter((d) => d.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              documents: prev.documents.map((d) => (d.id === action.previousData.id ? action.previousData : d)),
+            };
+          }
+          break;
+        }
+        case 'products': {
+          if (action.actionType === 'create') {
+            return { ...prev, products: prev.products.filter((p) => p.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, products: prev.products.filter((p) => p.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              products: prev.products.map((p) => (p.id === action.previousData.id ? action.previousData : p)),
+            };
+          }
+          break;
+        }
+        case 'opportunities': {
+          if (action.actionType === 'create') {
+            return { ...prev, opportunities: prev.opportunities.filter((o) => o.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, opportunities: prev.opportunities.filter((o) => o.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              opportunities: prev.opportunities.map((o) => (o.id === action.previousData.id ? action.previousData : o)),
+            };
+          }
+          break;
+        }
+        case 'contacts': {
+          if (action.actionType === 'create') {
+            return { ...prev, contacts: prev.contacts.filter((c) => c.id !== action.newData.id) };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, contacts: prev.contacts.filter((c) => c.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              contacts: prev.contacts.map((c) => (c.id === action.previousData.id ? action.previousData : c)),
+            };
+          }
+          break;
+        }
+        default:
+          return prev;
+      }
+      return prev;
+    });
+
+    const msg = `Se deshizo: ${action.description}`;
+    notify('info', 'Acción Deshecha', msg);
+    return { success: true, message: msg };
+  }, [state.currentUser?.id, notify]);
+
+  const executeRedo = useCallback((): { success: boolean; message: string } => {
+    if (!state.currentUser?.id) {
+      return { success: false, message: 'Usuario no autenticado.' };
+    }
+    const action = undoRedoService.popRedo(state.currentUser.id);
+    if (!action) {
+      return { success: false, message: 'No hay acciones para rehacer.' };
+    }
+
+    setState((prev) => {
+      switch (action.collection) {
+        case 'requisitions': {
+          if (action.actionType === 'create') {
+            return { ...prev, requisitions: [action.newData, ...prev.requisitions] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, requisitions: prev.requisitions.filter((r) => r.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              requisitions: prev.requisitions.map((r) => (r.id === action.newData.id ? action.newData : r)),
+            };
+          }
+          break;
+        }
+        case 'purchaseOrders': {
+          if (action.actionType === 'create') {
+            return { ...prev, purchaseOrders: [action.newData, ...prev.purchaseOrders] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, purchaseOrders: prev.purchaseOrders.filter((po) => po.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              purchaseOrders: prev.purchaseOrders.map((po) => (po.id === action.newData.id ? action.newData : po)),
+            };
+          }
+          break;
+        }
+        case 'expenses': {
+          if (action.actionType === 'create') {
+            return { ...prev, expenses: [action.newData, ...prev.expenses] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, expenses: prev.expenses.filter((e) => e.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              expenses: prev.expenses.map((e) => (e.id === action.newData.id ? action.newData : e)),
+            };
+          }
+          break;
+        }
+        case 'timesheets': {
+          if (action.actionType === 'create') {
+            return { ...prev, timesheets: [action.newData, ...prev.timesheets] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, timesheets: prev.timesheets.filter((t) => t.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              timesheets: prev.timesheets.map((t) => (t.id === action.newData.id ? action.newData : t)),
+            };
+          }
+          break;
+        }
+        case 'projects': {
+          if (action.actionType === 'create') {
+            return { ...prev, projects: [action.newData, ...prev.projects] };
+          } else if (action.actionType === 'delete') {
+            return {
+              ...prev,
+              projects: prev.projects.filter((p) => p.id !== action.previousData.id),
+              tasks: prev.tasks.filter((t) => t.projectId !== action.previousData.id),
+            };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              projects: prev.projects.map((p) => (p.id === action.newData.id ? action.newData : p)),
+            };
+          }
+          break;
+        }
+        case 'todos': {
+          if (action.actionType === 'create') {
+            return { ...prev, todos: [action.newData, ...prev.todos] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, todos: prev.todos.filter((t) => t.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              todos: prev.todos.map((t) => (t.id === action.newData.id ? action.newData : t)),
+            };
+          }
+          break;
+        }
+        case 'documents': {
+          if (action.actionType === 'create') {
+            return { ...prev, documents: [action.newData, ...prev.documents] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, documents: prev.documents.filter((d) => d.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              documents: prev.documents.map((d) => (d.id === action.newData.id ? action.newData : d)),
+            };
+          }
+          break;
+        }
+        case 'products': {
+          if (action.actionType === 'create') {
+            return { ...prev, products: [action.newData, ...prev.products] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, products: prev.products.filter((p) => p.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              products: prev.products.map((p) => (p.id === action.newData.id ? action.newData : p)),
+            };
+          }
+          break;
+        }
+        case 'opportunities': {
+          if (action.actionType === 'create') {
+            return { ...prev, opportunities: [action.newData, ...prev.opportunities] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, opportunities: prev.opportunities.filter((o) => o.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              opportunities: prev.opportunities.map((o) => (o.id === action.newData.id ? action.newData : o)),
+            };
+          }
+          break;
+        }
+        case 'contacts': {
+          if (action.actionType === 'create') {
+            return { ...prev, contacts: [action.newData, ...prev.contacts] };
+          } else if (action.actionType === 'delete') {
+            return { ...prev, contacts: prev.contacts.filter((c) => c.id !== action.previousData.id) };
+          } else if (action.actionType === 'update') {
+            return {
+              ...prev,
+              contacts: prev.contacts.map((c) => (c.id === action.newData.id ? action.newData : c)),
+            };
+          }
+          break;
+        }
+        default:
+          return prev;
+      }
+      return prev;
+    });
+
+    const msg = `Se rehizo: ${action.description}`;
+    notify('info', 'Acción Rehecha', msg);
+    return { success: true, message: msg };
+  }, [state.currentUser?.id, notify]);
+
   return (
     <ErpContext.Provider
       value={{
@@ -3845,6 +4400,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createEmployee,
         updateEmployee,
         completeMaintenance,
+        canUndo,
+        canRedo,
+        getLastUndoAction,
+        getNextRedoAction,
+        executeUndo,
+        executeRedo,
       }}
     >
       {children}

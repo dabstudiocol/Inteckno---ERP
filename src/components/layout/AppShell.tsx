@@ -28,11 +28,15 @@ import {
   DollarSign,
   Smartphone,
   Edit3,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { useErp, normalizeChannelId } from '../../core/storage/erpStore';
 import { SpotlightModal } from '../ui/SpotlightModal';
 import { UniversalModuleConfigModal } from '../common/UniversalModuleConfigModal';
 import { UserLoginAlertsModal } from '../common/UserLoginAlertsModal';
+import { UndoRedoConfirmModal } from '../common/UndoRedoConfirmModal';
+import { UserUndoAction } from '../../core/services/undoRedoService';
 import { getUserAccessibleAreas, ALL_AREAS, MODULE_ICONS } from '../../core/auth/rbac';
 import { AreaId } from '../../types';
 import { LucianaFloatingWidget } from '../ai/LucianaFloatingWidget';
@@ -65,6 +69,12 @@ export const AppShell: React.FC<AppShellProps> = ({
     setActiveChatChannel,
     markChatAsRead,
     updateUserPreferences,
+    canUndo,
+    canRedo,
+    getLastUndoAction,
+    getNextRedoAction,
+    executeUndo,
+    executeRedo,
   } = useErp();
 
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
@@ -73,6 +83,38 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [isModuleConfigOpen, setIsModuleConfigOpen] = useState(false);
   const [isUserAlertsModalOpen, setIsUserAlertsModalOpen] = useState(false);
   const lastNotifiedUserRef = useRef<string | null>(null);
+
+  // Estados de Deshacer / Rehacer Aislado por Usuario
+  const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
+  const [undoModalMode, setUndoModalMode] = useState<'undo' | 'redo'>('undo');
+  const [undoModalAction, setUndoModalAction] = useState<UserUndoAction | null>(null);
+
+  const handleOpenUndo = () => {
+    const action = getLastUndoAction();
+    if (action) {
+      setUndoModalAction(action);
+      setUndoModalMode('undo');
+      setIsUndoModalOpen(true);
+    }
+  };
+
+  const handleOpenRedo = () => {
+    const action = getNextRedoAction();
+    if (action) {
+      setUndoModalAction(action);
+      setUndoModalMode('redo');
+      setIsUndoModalOpen(true);
+    }
+  };
+
+  const handleConfirmUndoRedo = () => {
+    if (undoModalMode === 'undo') {
+      executeUndo();
+    } else {
+      executeRedo();
+    }
+    setIsUndoModalOpen(false);
+  };
 
   const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -912,15 +954,45 @@ export const AppShell: React.FC<AppShellProps> = ({
               </div>
             )}
 
-            {/* Botón Universal Configuración del Módulo Activo (Desktop) */}
+            {/* Botones Deshacer y Rehacer (Undo / Redo) Aislados por Usuario */}
+            <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 shadow-2xs">
+              <button
+                type="button"
+                onClick={handleOpenUndo}
+                disabled={!canUndo}
+                title={canUndo ? 'Deshacer tu último cambio (Solicita confirmación)' : 'No hay cambios recientes tuyos para deshacer'}
+                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
+                  canUndo
+                    ? 'text-slate-700 hover:text-[#00668F] hover:bg-white active:scale-95 cursor-pointer shadow-2xs'
+                    : 'text-slate-300 cursor-not-allowed opacity-40'
+                }`}
+              >
+                <Undo2 size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenRedo}
+                disabled={!canRedo}
+                title={canRedo ? 'Rehacer tu último cambio deshecho' : 'No hay cambios para rehacer'}
+                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
+                  canRedo
+                    ? 'text-slate-700 hover:text-[#00668F] hover:bg-white active:scale-95 cursor-pointer shadow-2xs'
+                    : 'text-slate-300 cursor-not-allowed opacity-40'
+                }`}
+              >
+                <Redo2 size={15} />
+              </button>
+            </div>
+
+            {/* Botón Universal Configuración del Módulo Activo (Icono en móvil, con texto en Desktop) */}
             <button
               type="button"
               onClick={() => setIsModuleConfigOpen(true)}
               title={`Configurar opciones desplegables y catálogos de ${activeTitle}`}
-              className="hidden md:flex items-center gap-1.5 h-9 px-3 rounded-lg bg-slate-100 hover:bg-[#EBF5FA] hover:text-[#00668F] text-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer group"
+              className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg bg-slate-100 hover:bg-[#EBF5FA] hover:text-[#00668F] text-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer group"
             >
               <Settings size={15} className="text-[#00668F] group-hover:rotate-90 transition-transform duration-500 shrink-0" />
-              <span>Configurar Módulo</span>
+              <span className="hidden sm:inline">Configurar Módulo</span>
             </button>
 
             {/* Buscador Spotlight (Móvil y Escritorio) */}
@@ -1401,6 +1473,15 @@ export const AppShell: React.FC<AppShellProps> = ({
         isOpen={isUserAlertsModalOpen}
         onClose={() => setIsUserAlertsModalOpen(false)}
         onNavigateToAction={handleNavigateFromAlert}
+      />
+
+      {/* Modal de Confirmación para Deshacer / Rehacer Aislado */}
+      <UndoRedoConfirmModal
+        isOpen={isUndoModalOpen}
+        mode={undoModalMode}
+        action={undoModalAction}
+        onClose={() => setIsUndoModalOpen(false)}
+        onConfirm={handleConfirmUndoRedo}
       />
 
       {/* Widget Global Flotante de LUC-IA-NA (Accesible en todo el ERP) */}

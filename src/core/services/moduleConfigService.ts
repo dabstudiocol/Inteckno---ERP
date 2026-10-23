@@ -1074,27 +1074,94 @@ export const DEFAULT_MODULE_CONFIGS: Record<string, ModuleConfigGroup> = {
       },
     },
   },
+
+  // 19. CARGOS, ORGANIGRAMA Y RECLUTAMIENTO IA
+  cargos: {
+    moduleId: 'cargos',
+    moduleName: 'Gestión de Cargos, Vacantes & Reclutamiento IA',
+    catalogs: {
+      departments: {
+        key: 'departments',
+        title: 'Departamentos Organizacionales',
+        description: 'Áreas de la estructura corporativa de Inteckno.',
+        hasCode: true,
+        codeLabel: 'Sigla',
+        items: [
+          { id: 'cd-1', name: 'Dirección General', code: 'DG', isActive: true },
+          { id: 'cd-2', name: 'Ingeniería y Proyectos', code: 'ING', isActive: true },
+          { id: 'cd-3', name: 'Operaciones y Mantenimiento', code: 'OPS', isActive: true },
+          { id: 'cd-4', name: 'Comercial y Licitaciones', code: 'COM', isActive: true },
+          { id: 'cd-5', name: 'Cadena de Suministro', code: 'SUM', isActive: true },
+          { id: 'cd-6', name: 'Administración y Finanzas', code: 'ADM', isActive: true },
+          { id: 'cd-7', name: 'Talento Humano y SST', code: 'TH', isActive: true },
+          { id: 'cd-8', name: 'Sistemas y TI', code: 'TI', isActive: true },
+        ],
+      },
+      vacancyStatuses: {
+        key: 'vacancyStatuses',
+        title: 'Estados de Vacante',
+        description: 'Condición del puesto en el proceso de reclutamiento.',
+        hasCode: false,
+        items: [
+          { id: 'vs-1', name: 'Cargo Ocupado', isActive: true },
+          { id: 'vs-2', name: 'Vacante Abierta', isActive: true },
+          { id: 'vs-3', name: 'En Convocatoria / Reclutamiento', isActive: true },
+          { id: 'vs-4', name: 'Congelado / Futura Expansión', isActive: true },
+        ],
+      },
+      salaryBands: {
+        key: 'salaryBands',
+        title: 'Bandas Salariales y Niveles',
+        description: 'Jerarquía de compensación para estructuración de nómina.',
+        hasCode: true,
+        codeLabel: 'Nivel',
+        items: [
+          { id: 'sb-1', name: 'Directivo / Gerencial ($12M - $18M COP)', code: 'NIVEL-1', isActive: true },
+          { id: 'sb-2', name: 'Profesional Senior / Especialista ($6M - $10M COP)', code: 'NIVEL-2', isActive: true },
+          { id: 'sb-3', name: 'Técnico Especialista STC / Inspector END ($3.5M - $5.5M COP)', code: 'NIVEL-3', isActive: true },
+          { id: 'sb-4', name: 'Asistencial / Operativo de Campo ($2M - $3M COP)', code: 'NIVEL-4', isActive: true },
+        ],
+      },
+    },
+  },
 };
 
 // Aliases para submódulos relacionados que comparten configuración
 export const MODULE_ALIASES: Record<string, string> = {
+  // Proyectos e Ingeniería
   planeacion: 'proyectos',
+  projects: 'proyectos',
+  // Inventario & Abastecimiento
   'codigo-barras': 'inventario',
+  inventory: 'inventario',
+  procurement: 'compras',
+  // CRM & Comercial
   contactos: 'crm',
   ventas: 'crm',
   whatsapp: 'crm',
+  commercial: 'crm',
+  // Talento Humano & Personal
   vacaciones: 'empleados',
   encuestas: 'empleados',
   nomina: 'empleados',
+  // Administración & Financiera
   'firma-electronica': 'contabilidad',
   tableros: 'contabilidad',
+  billing: 'contabilidad',
+  facturacion: 'contabilidad',
+  expenses: 'gastos',
+  timesheet: 'registro-horas',
+  dashboard: 'contabilidad',
+  // Mantenimiento & Operaciones
   reparacion: 'mantenimiento',
   manufactura: 'mantenimiento',
   taller: 'mantenimiento',
   plm: 'mantenimiento',
+  // Internacional
   'calculadora-precios': 'international',
   'leads-internacionales': 'radar-oportunidades',
   'radar-oportunidades': 'radar-oportunidades',
+  // Transversales
   perfil: 'usuarios-ti',
   hseq: 'hseq-gate',
   requisiciones: 'requisitions',

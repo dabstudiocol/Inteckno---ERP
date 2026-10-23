@@ -15,6 +15,8 @@ import {
   Edit2,
   Check,
   X,
+  FolderKanban,
+  Copy,
 } from 'lucide-react';
 import { Project, WBSTask, DependencyType } from '../../../../types';
 import { useModuleCatalog } from '../../../../core/services/moduleConfigService';
@@ -22,6 +24,7 @@ import { generateWBSWithLuciana } from '../../../../core/services/lucianaService
 import { UniversalModuleConfigModal } from '../../../../components/common/UniversalModuleConfigModal';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
+import { TemplateManagerModal } from '../../../../components/common/TemplateManagerModal';
 import { INTECKNO_WBS_TEMPLATES_5_FAMILIAS } from '../../../../core/config/intecknoDomainCatalog';
 
 interface TabWbsGanttProps {
@@ -131,6 +134,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
   const [viewMode, setViewMode] = useState<'gantt' | 'arbol'>('gantt');
   const [isGeneratingWBS, setIsGeneratingWBS] = useState(false);
   const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<WBSTask | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<WBSTask | null>(null);
@@ -958,9 +962,34 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                     </button>
                   ))}
                 </div>
+                <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 rounded-b-xl flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-medium">¿Deseas editar o duplicar una plantilla?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTemplateDropdownOpen(false);
+                      setIsTemplateManagerOpen(true);
+                    }}
+                    className="text-[10px] font-bold text-[#00668F] hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Abrir Gestor Completo</span>
+                    <FolderKanban size={11} />
+                  </button>
+                </div>
               </div>
             )}
           </div>
+
+          {/* Botón Gestor de Plantillas (Ver, Editar en Detalle, Duplicar) */}
+          <button
+            type="button"
+            onClick={() => setIsTemplateManagerOpen(true)}
+            className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Ver en detalle, editar actividades/horas o duplicar plantillas WBS para adaptarlas a este proyecto"
+          >
+            <FolderKanban size={14} className="text-[#00668F]" />
+            <span>Gestionar Plantillas</span>
+          </button>
 
           <button
             type="button"
@@ -1842,6 +1871,34 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
           { label: 'Recursos y Equipos', value: selectedTaskDetail.assignedResources?.join(', ') || customRecursos[0], colSpan: 2 },
           { label: 'Descripción / Alcance', value: selectedTaskDetail.description || 'Sin observaciones adicionales.', colSpan: 2 },
         ] : []}
+      />
+
+      {/* Modal Avanzado de Gestión de Plantillas (Ver, Editar, Duplicar WBS) */}
+      <TemplateManagerModal
+        isOpen={isTemplateManagerOpen}
+        onClose={() => setIsTemplateManagerOpen(false)}
+        activeProjectName={`${project.code} - ${project.name}`}
+        onApplyTemplate={(tpl) => {
+          for (const item of tpl.tasks) {
+            onAddTask({
+              projectId: project.id,
+              code: item.code,
+              name: item.name,
+              plannedHours: item.plannedHours,
+              actualHours: 0,
+              progressPct: 0,
+              isCriticalPath: item.isCriticalPath,
+              predecessors: item.predecessors,
+              status: 'pending',
+              priority: item.isCriticalPath ? 'alta' : 'media',
+              deliverable: item.deliverable,
+              assignedToName: item.assignedRole || 'Equipo de Ingeniería STC',
+              durationDays: Math.max(1, Math.round(item.plannedHours / 8)),
+              dependencyType: 'FC',
+              lagDays: 0,
+            });
+          }
+        }}
       />
     </div>
   );
