@@ -9,6 +9,7 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
   deleteDoc,
   getDocs,
   onSnapshot,
@@ -18,7 +19,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from './firebaseClient';
-import { User, ChatMessage } from '../../types';
+import { User, ChatMessage, Product } from '../../types';
 
 // Sanitize string to prevent basic script injection (XSS defense)
 export function sanitizeText(input: string | undefined): string {
@@ -384,6 +385,140 @@ export function subscribeToCloudModule(
     );
   } catch (err) {
     console.warn(`[FirestoreSync] No se pudo suscribir al módulo ${moduleKey}:`, err);
+    return null;
+  }
+}
+
+// =============================================================================
+// INVENTARIO MASIVO PARTICIONADO (Soporta 10.000+ artículos sin superar el límite de 1MB de Firestore)
+// =============================================================================
+
+const INVENTORY_CHUNK_SIZE = 300;
+let lastLocalInventoryTimestamp = '';
+
+/**
+ * Sincroniza el inventario completo particionado en bloques (chunks) seguros de 300 productos.
+ * Resuelve definitivamente el límite de 1MB por documento de Firestore y evita la pérdida o borrado de datos.
+ */
+export async function syncInventoryToCloud(
+  products: Product[],
+  userId?: string
+): Promise<boolean> {
+  const db = getFirebaseDb();
+  if (!db) return false;
+
+  try {
+    const now = new Date().toISOString();
+    lastLocalInventoryTimestamp = now;
+
+    if (!products || products.length === 0) {
+      const metaRef = doc(db, 'erp_inventory', 'meta');
+      await setDoc(metaRef, {
+        totalProducts: 0,
+        chunkCount: 0,
+        lastUpdated: now,
+        updatedBy: userId || 'system',
+      });
+      return true;
+    }
+
+    // Dividir en trozos seguros de 300 productos
+    const chunks: Product[][] = [];
+    for (let i = 0; i < products.length; i += INVENTORY_CHUNK_SIZE) {
+      chunks.push(products.slice(i, i + INVENTORY_CHUNK_SIZE));
+    }
+
+    // Guardar cada chunk en paralelo
+    const chunkPromises = chunks.map((chunk, idx) => {
+      const chunkRef = doc(db, 'erp_inventory', `chunk_${idx}`);
+      return setDoc(chunkRef, {
+        chunkIndex: idx,
+        itemCount: chunk.length,
+        items: chunk,
+        lastUpdated: now,
+      });
+    });
+
+    await Promise.all(chunkPromises);
+
+    // Guardar documento maestro de metadatos
+    const metaRef = doc(db, 'erp_inventory', 'meta');
+    await setDoc(metaRef, {
+      totalProducts: products.length,
+      chunkCount: chunks.length,
+      lastUpdated: now,
+      updatedBy: userId || 'system',
+    });
+
+    return true;
+  } catch (err) {
+    console.warn('[FirestoreSync] Error sincronizando inventario particionado:', err);
+    return false;
+  }
+}
+
+/**
+ * Escucha cambios en tiempo real del inventario particionado en Firestore
+ */
+export function subscribeToCloudInventory(
+  onUpdate: (products: Product[]) => void
+): Unsubscribe | null {
+  const db = getFirebaseDb();
+  if (!db) return null;
+
+  try {
+    const metaRef = doc(db, 'erp_inventory', 'meta');
+    return onSnapshot(
+      metaRef,
+      async (snap) => {
+        if (!snap.exists()) return;
+        const meta = snap.data();
+        if (!meta) return;
+
+        // Ignora el eco si fue emitido por este mismo cliente
+        if (meta.lastUpdated && meta.lastUpdated === lastLocalInventoryTimestamp) {
+          return;
+        }
+
+        const chunkCount = Number(meta.chunkCount) || 0;
+        if (chunkCount === 0) {
+          onUpdate([]);
+          return;
+        }
+
+        // Descargar los chunks en paralelo
+        try {
+          const chunkReads = [];
+          for (let i = 0; i < chunkCount; i++) {
+            const cRef = doc(db, 'erp_inventory', `chunk_${i}`);
+            chunkReads.push(getDoc(cRef));
+          }
+
+          const chunkSnaps = await Promise.all(chunkReads);
+          const reconstructed: Product[] = [];
+
+          chunkSnaps.forEach((cs) => {
+            if (cs.exists()) {
+              const cData = cs.data();
+              if (Array.isArray(cData?.items)) {
+                reconstructed.push(...cData.items);
+              }
+            }
+          });
+
+          if (reconstructed.length > 0 || meta.totalProducts === 0) {
+            onUpdate(reconstructed);
+          }
+        } catch (readErr) {
+          console.warn('[FirestoreSync] Error leyendo chunks de inventario:', readErr);
+        }
+      },
+      (error) => {
+        console.warn('[FirestoreSync] Error en listener de inventario:', error);
+      }
+    );
+  } catch (err) {
+    console.warn('[FirestoreSync] No se pudo suscribir al inventario:', err);
     return null;
   }
 }

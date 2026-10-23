@@ -71,6 +71,7 @@ import {
   convertUSDToCOP,
   convertCOPToUSD,
 } from '../../core/services/trmService';
+import { syncInventoryToCloud } from '../../core/services/firestoreSyncService';
 
 // Base de datos de cédulas de identidad oficiales de Inteckno S.A.S.
 const PERSON_CEDULAS: Record<string, string> = {
@@ -210,6 +211,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     const previousCount = products.length;
     clearInventory();
     baselineProductsRef.current.clear();
+    syncInventoryToCloud([], currentUser?.id).catch(console.warn);
 
     await recordInventoryAuditLog({
       productId: 'CATALOG-ALL',
@@ -245,6 +247,11 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     const newMap = new Map<string, number>();
     finalProducts.forEach((p) => newMap.set(p.id, p.availableStock));
     baselineProductsRef.current = newMap;
+
+    // Sincronizar de inmediato a Cloud Firestore con particionamiento seguro
+    await syncInventoryToCloud(finalProducts, currentUser?.id).catch((err) => {
+      console.warn('[Inventario] Error persistiendo catálogo particionado:', err);
+    });
 
     await recordInventoryAuditLog({
       productId: 'CATALOG-ALL',

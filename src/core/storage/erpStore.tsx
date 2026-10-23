@@ -76,6 +76,8 @@ import {
   syncLocalCustomUsersToCloud,
   syncModuleToCloud,
   subscribeToCloudModule,
+  syncInventoryToCloud,
+  subscribeToCloudInventory,
 } from '../services/firestoreSyncService';
 import { recordAuditEvent } from '../services/auditService';
 
@@ -632,6 +634,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...prev,
             users: mergedUsers,
             currentUser: updatedCurrent,
+            products: (Array.isArray(idbState.products) && idbState.products.length > (prev.products?.length || 0))
+              ? idbState.products
+              : prev.products,
+          };
+        } else if (Array.isArray(idbState.products) && idbState.products.length > (prev.products?.length || 0)) {
+          return {
+            ...prev,
+            products: idbState.products,
           };
         }
         return prev;
@@ -787,7 +797,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
     });
 
-    // 5. Suscribirse a Abastecimiento, Compras, Requisiciones e Inventario en tiempo real
+    // 5. Suscribirse a Abastecimiento, Compras y Requisiciones en tiempo real (excluyendo inventario pesado)
     const unsubProcurement = subscribeToCloudModule('procurement', (data) => {
       if (!isMounted || !data) return;
       isRemoteUpdateRef.current = true;
@@ -795,10 +805,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         purchaseOrders: Array.isArray(data.purchaseOrders) ? data.purchaseOrders : prev.purchaseOrders,
         requisitions: Array.isArray(data.requisitions) ? data.requisitions : prev.requisitions,
-        products: Array.isArray(data.products) ? data.products : prev.products,
         equipment: Array.isArray(data.equipment) ? data.equipment : prev.equipment,
         partners: Array.isArray(data.partners) ? data.partners : prev.partners,
         inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) && data.inventoryAuditLogs.length > 0 ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
+      }));
+    });
+
+    // 5.1 Suscribirse al Catálogo de Inventario en Cloud Firestore (particionado por lotes seguros)
+    const unsubInventory = subscribeToCloudInventory((remoteProducts) => {
+      if (!isMounted || !remoteProducts || remoteProducts.length === 0) return;
+      isRemoteUpdateRef.current = true;
+      setState((prev) => ({
+        ...prev,
+        products: remoteProducts,
       }));
     });
 
@@ -847,6 +866,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubChat) unsubChat();
       if (unsubProjects) unsubProjects();
       if (unsubProcurement) unsubProcurement();
+      if (unsubInventory) unsubInventory();
       if (unsubOperations) unsubOperations();
       if (unsubCommercial) unsubCommercial();
       if (unsubProductivity) unsubProductivity();
@@ -874,11 +894,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       syncModuleToCloud('procurement', {
         purchaseOrders: state.purchaseOrders,
         requisitions: state.requisitions,
-        products: state.products,
         equipment: state.equipment,
         partners: state.partners,
         inventoryAuditLogs: state.inventoryAuditLogs,
       }, currentUserId);
+
+      // Sincronización del catálogo de inventario con particionamiento seguro de Firestore (<1MB por chunk)
+      syncInventoryToCloud(state.products, currentUserId);
 
       syncModuleToCloud('operations', {
         timesheets: state.timesheets,
