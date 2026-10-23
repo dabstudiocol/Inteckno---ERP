@@ -48,12 +48,12 @@ import { LightTable } from '../../components/ui/LightTable';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
-import { writeEntireInventoryToExcelOnline } from '../../core/services/m365Sync';
 import { getCalibrationStatus } from '../../utils/calibrationUtils';
 
 import { BiometricSignatureModal } from './components/BiometricSignatureModal';
 import { AllocationQrModal } from './components/AllocationQrModal';
-import { ExcelOnlineSyncBar } from './components/ExcelOnlineSyncBar';
+import { ClearInventoryModal } from './components/ClearInventoryModal';
+import { InventoryExcelUploadModal } from './components/InventoryExcelUploadModal';
 import { BomExtractorModal } from './components/BomExtractorModal';
 import { NameplateVisionModal } from './components/NameplateVisionModal';
 import { InventoryForensicsTab } from './components/InventoryForensicsTab';
@@ -117,7 +117,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     processReturnRemission,
     createRequisition,
     recordInventoryAuditLog,
-    receivePurchaseOrderPartial,
+    clearInventory,
     notify,
     currentUser,
     activeModuleId,
@@ -125,6 +125,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
   } = useErp();
 
   const [isWarehouseReceiptModalOpen, setIsWarehouseReceiptModalOpen] = useState(false);
+  const [isClearInventoryModalOpen, setIsClearInventoryModalOpen] = useState(false);
+  const [isExcelUploadModalOpen, setIsExcelUploadModalOpen] = useState(false);
   const [isWriteOffModalOpen, setIsWriteOffModalOpen] = useState(false);
   const [productForWriteOff, setProductForWriteOff] = useState<Product | null>(null);
   const [tramoForWriteOff, setTramoForWriteOff] = useState<PhysicalCableSegment | null>(null);
@@ -191,12 +193,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     return () => window.removeEventListener('inteckno_trm_updated', handleTrmUpdate);
   }, []);
 
-  // Rastreo de Cambios Pendientes por Transcribir al Excel Online
   const baselineProductsRef = React.useRef<Map<string, number>>(new Map());
-  const [pendingChanges, setPendingChanges] = useState<{ id: string; sku: string; name: string; oldStock: number; newStock: number }[]>([]);
-  const [pendingTargetTab, setPendingTargetTab] = useState<string | null>(null);
-  const [isConfirmLeaveOpen, setIsConfirmLeaveOpen] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
 
   // Inicializar o sincronizar el baseline cuando no haya cambios pendientes y tengamos productos
   React.useEffect(() => {
@@ -207,104 +204,71 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     }
   }, [products]);
 
-  // Recalcular lista de cambios cada vez que cambie products
-  React.useEffect(() => {
-    if (baselineProductsRef.current.size === 0) return;
-    const diffs: { id: string; sku: string; name: string; oldStock: number; newStock: number }[] = [];
-    products.forEach((p) => {
-      const baseStock = baselineProductsRef.current.get(p.id);
-      if (baseStock !== undefined && baseStock !== p.availableStock) {
-        diffs.push({
-          id: p.id,
-          sku: p.sku,
-          name: p.name,
-          oldStock: baseStock,
-          newStock: p.availableStock,
-        });
-      }
+  // Manejador blindado para Vaciar Todo el Inventario
+  const handleConfirmClear = async () => {
+    const previousCount = products.length;
+    clearInventory();
+    baselineProductsRef.current.clear();
+
+    await recordInventoryAuditLog({
+      productId: 'CATALOG-ALL',
+      productSku: 'CLEAR-ALL',
+      productName: `Vaciado Total de Catálogo (${previousCount} artículos eliminados)`,
+      userId: currentUser?.id || 'USR-001',
+      userName: currentUser?.name || 'Administrador',
+      userEmail: currentUser?.email || 'almacen@inteckno.com',
+      source: 'erp_web',
+      previousStock: previousCount,
+      newStock: 0,
+      delta: -previousCount,
+      reason: 'Vaciado total del inventario autorizado mediante verificación de seguridad Poka-Yoke.',
     });
-    setPendingChanges(diffs);
-  }, [products]);
 
-  // Alertar al usuario si intenta cerrar la ventana o recargar la página con cambios sin transcribir
-  React.useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (pendingChanges.length > 0) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [pendingChanges.length]);
-
-  // Manejador centralizado para Transcribir al Excel Online
-  const handleTranscribeBatch = async () => {
-    setIsTranscribing(true);
-    try {
-      await writeEntireInventoryToExcelOnline(products, 'Inventario');
-      // Registrar un solo movimiento consolidado por cada artículo que cambió
-      for (const chg of pendingChanges) {
-        await recordInventoryAuditLog({
-          productId: chg.id,
-          productSku: chg.sku,
-          productName: chg.name,
-          userId: currentUser?.id || 'USR-001',
-          userName: currentUser?.name || 'Administrador de Almacén',
-          userEmail: currentUser?.email || 'almacen@inteckno.com',
-          source: 'erp_web',
-          previousStock: chg.oldStock,
-          newStock: chg.newStock,
-          delta: chg.newStock - chg.oldStock,
-          reason: 'Transcripción directa y consolidada a Excel Online',
-        });
-      }
-      // Actualizar el baseline para que pendingChanges quede en 0
-      const newMap = new Map<string, number>();
-      products.forEach((p) => newMap.set(p.id, p.availableStock));
-      baselineProductsRef.current = newMap;
-      setPendingChanges([]);
-      notify('success', 'Transcripción Exitosa', `Se transcribieron ${pendingChanges.length} cambios directamente al Excel Online.`);
-      
-      if (pendingTargetTab) {
-        setActiveTab(pendingTargetTab as any);
-        setPendingTargetTab(null);
-      }
-    } catch (err: any) {
-      notify('urgent', 'Error en Transcripción', err.message || 'No se pudo escribir en el Excel Online.');
-    } finally {
-      setIsTranscribing(false);
-      setIsConfirmLeaveOpen(false);
-    }
+    notify('success', 'Inventario Vaciado', 'Se han eliminado correctamente todos los artículos del catálogo.');
   };
 
-  // Manejador para Descartar cambios pendientes
-  const handleDiscardPendingChanges = () => {
-    if (baselineProductsRef.current.size > 0) {
-      setAllProducts(
-        products.map((p) => {
-          const base = baselineProductsRef.current.get(p.id);
-          return base !== undefined ? { ...p, realStock: base, availableStock: base } : p;
-        })
-      );
-    }
-    setPendingChanges([]);
-    setIsConfirmLeaveOpen(false);
-    if (pendingTargetTab) {
-      setActiveTab(pendingTargetTab as any);
-      setPendingTargetTab(null);
-    }
-    notify('info', 'Cambios Descartados', 'Se restauraron los valores anteriores sin modificar el Excel.');
-  };
-
-  // Interceptar cambio de pestañas cuando hay cambios pendientes
-  const handleTabChangeWithCheck = (targetTab: 'unified' | 'dispatch' | 'return' | 'history' | 'barcode' | 'audit') => {
-    if (pendingChanges.length > 0 && activeTab === 'unified' && targetTab !== 'unified') {
-      setPendingTargetTab(targetTab);
-      setIsConfirmLeaveOpen(true);
+  // Manejador para Importar Archivo Excel al ERP
+  const handleImportProducts = async (newProducts: Product[], isReplace: boolean, fileName: string) => {
+    let finalProducts: Product[];
+    if (isReplace) {
+      finalProducts = newProducts;
     } else {
-      setActiveTab(targetTab);
+      const existingSkuMap = new Map(products.map((p) => [p.sku.toUpperCase(), p]));
+      newProducts.forEach((np) => {
+        existingSkuMap.set(np.sku.toUpperCase(), np);
+      });
+      finalProducts = Array.from(existingSkuMap.values());
     }
+
+    setAllProducts(finalProducts);
+    const newMap = new Map<string, number>();
+    finalProducts.forEach((p) => newMap.set(p.id, p.availableStock));
+    baselineProductsRef.current = newMap;
+
+    await recordInventoryAuditLog({
+      productId: 'CATALOG-ALL',
+      productSku: 'IMPORT-EXCEL',
+      productName: `Carga de Excel (${finalProducts.length} artículos totales)`,
+      userId: currentUser?.id || 'USR-001',
+      userName: currentUser?.name || 'Administrador',
+      userEmail: currentUser?.email || 'almacen@inteckno.com',
+      source: 'erp_web',
+      previousStock: products.length,
+      newStock: finalProducts.length,
+      delta: finalProducts.length - products.length,
+      reason: `Importación directa de archivo Excel "${fileName}" (${newProducts.length} filas procesadas)`,
+    });
+
+    notify(
+      'success',
+      'Catálogo Actualizado',
+      `Se incorporaron exitosamente ${newProducts.length} artículos al inventario del ERP.`
+    );
+  };
+
+  // Cambio fluido de pestañas sin bloqueos de SharePoint
+  const handleTabChangeWithCheck = (targetTab: 'unified' | 'dispatch' | 'return' | 'history' | 'barcode' | 'audit' | 'writeoffs') => {
+    setActiveTab(targetTab as any);
   };
 
   // Catálogos dinámicos editables por Inteckno
@@ -901,6 +865,30 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
 
           {/* Botones de Acción Rápida con Flex-Wrap Seguro */}
           <div className="flex items-center flex-wrap gap-2 shrink-0">
+            {/* Botón Cargar Archivo Excel Inicial */}
+            <button
+              type="button"
+              onClick={() => setIsExcelUploadModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              title="Cargar archivo Excel (.xlsx / .xls) para inicializar o actualizar el inventario"
+            >
+              <FileSpreadsheet size={14} className="text-emerald-400" />
+              <span>Subir Archivo Excel</span>
+            </button>
+
+            {/* Botón Vaciar Inventario con Verificación Estricta Poka-Yoke */}
+            {products.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsClearInventoryModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                title="Eliminar todos los datos del inventario con verificación rigurosa de seguridad"
+              >
+                <Trash2 size={13} className="text-rose-600" />
+                <span>Vaciar Inventario</span>
+              </button>
+            )}
+
             {/* Botón Ingreso al Almacén (Recepción de OC por el Almacenista) */}
             <button
               type="button"
@@ -954,116 +942,63 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       {activeTab === 'unified' && (
         <div className="space-y-3.5">
           {/* Barra de Sincronización M365 Excel Online */}
-          <ExcelOnlineSyncBar
-            products={products}
-            remissions={remissions}
-            purchaseOrders={purchaseOrders}
-            onApplyStockAdjustment={(productIdOrSku, newStock, reason, source) => {
-              const targetProd = products.find((p) => p.id === productIdOrSku || p.sku.toLowerCase() === productIdOrSku.toLowerCase());
-              if (targetProd) {
-                const prev = targetProd.realStock;
-                updateProductStockDirect(targetProd.id, newStock, reason, undefined, source);
-                // Registrar el movimiento proveniente de Excel Online
-                recordInventoryAuditLog({
-                  productId: targetProd.id,
-                  productSku: targetProd.sku,
-                  productName: targetProd.name,
-                  userId: 'USR-M365',
-                  userName: 'Excel Online (Sincronización)',
-                  userEmail: 'sharepoint@inteckno.com',
-                  source: 'm365_excel_online',
-                  previousStock: prev,
-                  newStock,
-                  delta: newStock - prev,
-                  reason: reason || 'Sincronización bidireccional desde Excel Online',
-                });
-                baselineProductsRef.current.set(targetProd.id, newStock);
-              }
-            }}
-            onReplaceEntireInventory={(importedRows) => {
-              if (importedRows && importedRows.length > 0) {
-                const newProducts: Product[] = importedRows.map((row, idx) => ({
-                  id: `PRD-EXCEL-${row.sku || idx}`,
-                  sku: row.sku,
-                  name: row.name,
-                  category: row.category || '',
-                  unit: row.unit || '',
-                  costPriceUSD: row.costPriceUSD || 0,
-                  costPriceCOP: row.costPriceCOP || 0,
-                  realStock: row.realStock || 0,
-                  reservedStock: 0,
-                  availableStock: row.availableStock !== undefined ? row.availableStock : row.realStock || 0,
-                  minStock: row.minStock || 0,
-                  isCriticalSpare: Boolean(row.isCriticalSpare),
-                  isHomologatedITK: true,
-                  locationName: row.locationName || '',
-                  shelf: row.shelf || '',
-                  observations: row.observations || '',
-                  safetyDataSheetUrl: row.safetyDataSheetUrl || '',
-                  technicalDataSheetUrl: row.technicalDataSheetUrl || '',
-                  physicalState: row.physicalState || 'solido',
-                  calibrationInfo: row.calibrationInfo || '',
-                  purchaseDate: row.purchaseDate || '',
-                }));
-                setAllProducts(newProducts);
-                // Sincronizar el baseline de forma inmediata y registrar un único evento consolidado para evitar saturación de memoria
-                const newMap = new Map<string, number>();
-                newProducts.forEach((p) => {
-                  newMap.set(p.id, p.availableStock);
-                });
-                baselineProductsRef.current = newMap;
-                setPendingChanges([]);
-
-                recordInventoryAuditLog({
-                  productId: 'CATALOG-ALL',
-                  productSku: 'SYNC-EXCEL',
-                  productName: `Catálogo Completo (${newProducts.length} ítems)`,
-                  userId: 'USR-M365',
-                  userName: 'Excel Online (Sincronización)',
-                  userEmail: 'sharepoint@inteckno.com',
-                  source: 'm365_excel_online',
-                  previousStock: products.length,
-                  newStock: newProducts.length,
-                  delta: newProducts.length - products.length,
-                  reason: `Alineación masiva de catálogo desde Excel Online (${newProducts.length} productos procesados)`,
-                });
-              }
-            }}
-            onImportProductsFromExcel={(importedRows) => {
-              if (importedRows && importedRows.length > 0) {
-                const newProducts: Product[] = importedRows.map((row, idx) => ({
-                  id: `PRD-EXCEL-${row.sku || idx}`,
-                  sku: row.sku,
-                  name: row.name,
-                  category: row.category || '',
-                  unit: row.unit || '',
-                  costPriceUSD: row.costPriceUSD || 0,
-                  costPriceCOP: row.costPriceCOP || 0,
-                  realStock: row.realStock || 0,
-                  reservedStock: 0,
-                  availableStock: row.availableStock !== undefined ? row.availableStock : row.realStock || 0,
-                  minStock: row.minStock || 0,
-                  isCriticalSpare: Boolean(row.isCriticalSpare),
-                  isHomologatedITK: true,
-                  locationName: row.locationName || '',
-                  shelf: row.shelf || '',
-                  observations: row.observations || '',
-                  safetyDataSheetUrl: row.safetyDataSheetUrl || '',
-                  technicalDataSheetUrl: row.technicalDataSheetUrl || '',
-                  physicalState: row.physicalState || 'solido',
-                  calibrationInfo: row.calibrationInfo || '',
-                  purchaseDate: row.purchaseDate || '',
-                }));
-                setAllProducts(newProducts);
-              }
-            }}
-            onImportRemissionsFromExcel={(newRems) => {
-              if (newRems && newRems.length > 0) {
-                setAllRemissions(newRems);
-              }
-            }}
-            onWriteInventoryToExcel={handleTranscribeBatch}
-          />
+          {/* Estado Vacío cuando no hay artículos en inventario */}
+          {products.length === 0 && (
+            <div className="bg-white rounded-2xl p-8 sm:p-12 border-2 border-dashed border-slate-200 text-center flex flex-col items-center justify-center max-w-xl mx-auto my-6 space-y-4 shadow-2xs animate-in fade-in duration-200">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
+                <FileSpreadsheet size={32} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-slate-900">Catálogo de Inventario Vacío</h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  No hay artículos registrados actualmente en el ERP. Sube tu archivo Excel (.xlsx) oficial una sola vez para inicializar el catálogo de repuestos y materiales de Inteckno S.A.S.
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsExcelUploadModalOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-[#003650] hover:bg-[#00283c] text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-sm active:scale-95 transition-all"
+                >
+                  <Upload size={15} />
+                  <span>Subir Archivo Excel (.xlsx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setProdForm({
+                      sku: `ITK-REF-001`,
+                      name: '',
+                      category: 'Repuestos y Componentes',
+                      unit: 'unid',
+                      costPriceUSD: 50,
+                      costPriceCOP: 210000,
+                      realStock: 10,
+                      reservedStock: 0,
+                      availableStock: 10,
+                      minStock: 2,
+                      isCriticalSpare: false,
+                      isHomologatedITK: true,
+                      locationName: 'Bodega Principal - Guarne',
+                      shelf: 'Estante A-1',
+                      observations: 'Nuevo repuesto para mantenimiento de sistemas por cable.',
+                      physicalState: 'solido',
+                      safetyDataSheetUrl: '',
+                      technicalDataSheetUrl: '',
+                      calibrationInfo: '',
+                      purchaseDate: '',
+                    });
+                    setIsProductModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <Plus size={15} />
+                  <span>Crear Artículo Manual</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl p-3.5 sm:p-5 space-y-3.5">
           {/* Cabecera y Filtros */}
@@ -3627,92 +3562,20 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
         equipment={equipment}
       />
 
-      {/* Modal de Advertencia de Cambios Pendientes antes de Salir o Cambiar de Pestaña */}
-      {isConfirmLeaveOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
-                <AlertTriangle size={24} />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Tienes cambios sin transcribir al Excel
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Se detectaron {pendingChanges.length} modificaciones de stock en el inventario
-                </p>
-              </div>
-            </div>
+      {/* MODAL BLINDADO POKA-YOKE: VACIAR INVENTARIO */}
+      <ClearInventoryModal
+        isOpen={isClearInventoryModalOpen}
+        onClose={() => setIsClearInventoryModalOpen(false)}
+        productsCount={products.length}
+        onConfirmClear={handleConfirmClear}
+      />
 
-            <div className="py-4 space-y-3">
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Has realizado ajustes en el inventario del ERP. Si cambias de pestaña o sales sin transcribir, los datos en el Excel Online quedarán desfasados.
-              </p>
-
-              <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2.5 space-y-1.5">
-                {pendingChanges.map((chg) => (
-                  <div key={chg.id} className="flex items-center justify-between text-xs py-1 border-b border-slate-200/60 last:border-0">
-                    <div className="truncate pr-2">
-                      <span className="font-semibold text-slate-800">{chg.name}</span>
-                      <span className="text-[11px] text-slate-400 block font-mono">{chg.sku}</span>
-                    </div>
-                    <div className="shrink-0 flex items-center gap-1.5 font-mono text-[11px]">
-                      <span className="text-slate-500">{chg.oldStock}</span>
-                      <ArrowRight size={11} className="text-slate-400" />
-                      <span className="font-bold text-[#00668F]">{chg.newStock}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-[11px] text-slate-500 italic">
-                ¿Deseas guardar y transcribir estos cambios directamente al Excel Online ahora, descartar los cambios realizados o permanecer en el inventario?
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                disabled={isTranscribing}
-                onClick={() => {
-                  setIsConfirmLeaveOpen(false);
-                  setPendingTargetTab(null);
-                }}
-                className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                Permanecer Aquí
-              </button>
-              <button
-                type="button"
-                disabled={isTranscribing}
-                onClick={handleDiscardPendingChanges}
-                className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-              >
-                Descartar Cambios
-              </button>
-              <button
-                type="button"
-                disabled={isTranscribing}
-                onClick={handleTranscribeBatch}
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#008A4B] hover:bg-[#00703C] text-white shadow-xs transition-transform active:scale-95 cursor-pointer disabled:opacity-50"
-              >
-                {isTranscribing ? (
-                  <>
-                    <Loader2 size={13} className="animate-spin" />
-                    <span>Transcribiendo...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send size={13} />
-                    <span>Guardar y Transcribir al Excel</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL: CARGAR ARCHIVO EXCEL DE INVENTARIO */}
+      <InventoryExcelUploadModal
+        isOpen={isExcelUploadModalOpen}
+        onClose={() => setIsExcelUploadModalOpen(false)}
+        onImportProducts={handleImportProducts}
+      />
 
       {/* MODAL DETALLE COMPLETO DEL PRODUCTO (AL CLICKEAR CUALQUIER PRODUCTO) */}
       <ProductDetailModal

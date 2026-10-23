@@ -795,7 +795,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         purchaseOrders: Array.isArray(data.purchaseOrders) ? data.purchaseOrders : prev.purchaseOrders,
         requisitions: Array.isArray(data.requisitions) ? data.requisitions : prev.requisitions,
-        products: Array.isArray(data.products) && data.products.length > 0 ? data.products : prev.products,
+        products: Array.isArray(data.products) ? data.products : prev.products,
         equipment: Array.isArray(data.equipment) ? data.equipment : prev.equipment,
         partners: Array.isArray(data.partners) ? data.partners : prev.partners,
         inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) && data.inventoryAuditLogs.length > 0 ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
@@ -2050,6 +2050,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
     try {
       localStorage.removeItem('itk_excel_online_inventory_cache');
+      localStorage.removeItem('itk_excel_online_salidas_cache');
+      localStorage.removeItem('itk_excel_online_entradas_cache');
     } catch (e) {}
     notify('info', 'Inventario Vaciado', 'Se han eliminado todos los artículos del inventario.');
   }, [notify]);
