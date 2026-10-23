@@ -42,6 +42,7 @@ import {
   ExpensesModuleConfig,
 } from '../../core/services/moduleConfigService';
 import { ExpensesConfigModal } from './ExpensesConfigModal';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 
 export const ExpensesModule: React.FC = () => {
   const { expenses, projects, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
@@ -49,6 +50,7 @@ export const ExpensesModule: React.FC = () => {
   // Configuración dinámica del módulo (Sedes, Métodos de Pago, Rubros)
   const [moduleConfig, setModuleConfig] = useState<ExpensesModuleConfig>(getExpensesModuleConfig());
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<ExpenseEntry | null>(null);
 
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -517,11 +519,7 @@ export const ExpensesModule: React.FC = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => {
-                        if (window.confirm(`¿Estás seguro de eliminar este gasto de $${Number(exp.amount).toLocaleString()}?`)) {
-                          deleteExpense(exp.id);
-                        }
-                      }}
+                      onClick={() => setExpenseToDelete(exp)}
                       title="Eliminar Gasto"
                       className="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     >
@@ -1281,6 +1279,24 @@ export const ExpensesModule: React.FC = () => {
         onClose={() => setIsConfigModalOpen(false)}
         config={moduleConfig}
         onConfigUpdated={(newCfg) => setModuleConfig(newCfg)}
+      />
+
+      {/* ============================================================== */}
+      {/* MODAL BLINDADO POKA-YOKE: CONFIRMACIÓN DE ELIMINACIÓN DE GASTO */}
+      {/* ============================================================== */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(expenseToDelete)}
+        title="¿Eliminar Registro de Gasto / Factura?"
+        itemName={expenseToDelete ? `${expenseToDelete.categoryLabel || expenseToDelete.description} ($${Number(expenseToDelete.amount).toLocaleString()} COP)` : ''}
+        description="Esta acción eliminará el gasto registrado de los libros y de la imputación financiera. Se recomienda verificar si ya fue legalizado o pagado."
+        confirmText="Eliminar Gasto"
+        onConfirm={() => {
+          if (expenseToDelete) {
+            deleteExpense(expenseToDelete.id);
+            setExpenseToDelete(null);
+          }
+        }}
+        onCancel={() => setExpenseToDelete(null)}
       />
     </div>
   );

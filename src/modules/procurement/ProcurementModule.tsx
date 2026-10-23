@@ -33,6 +33,7 @@ import { useErp } from '../../core/storage/erpStore';
 import { PurchaseOrder, Partner, PurchaseOrderItem, InternalRequisition } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { AiDocumentUploader } from '../../components/ui/AiDocumentUploader';
@@ -95,6 +96,8 @@ export const ProcurementModule: React.FC = () => {
   const [isReqDetailModalOpen, setIsReqDetailModalOpen] = useState(false);
   const [isNewSupplierModalOpen, setIsNewSupplierModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [poToDelete, setPoToDelete] = useState<PurchaseOrder | null>(null);
+  const [reqToDelete, setReqToDelete] = useState<InternalRequisition | null>(null);
 
   // Catálogos dinámicos
   const catalogPaymentTerms = useModuleCatalog('compras', 'paymentTerms');
@@ -711,9 +714,7 @@ export const ProcurementModule: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`¿Estás seguro de eliminar la orden ${po.orderNumber}?`)) {
-                          deletePurchaseOrder(po.id);
-                        }
+                        setPoToDelete(po);
                       }}
                       title="Eliminar Orden de Compra"
                       className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
@@ -867,9 +868,7 @@ export const ProcurementModule: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`¿Estás seguro de eliminar la petición ${req.reqNumber}?`)) {
-                          deleteRequisition(req.id);
-                        }
+                        setReqToDelete(req);
                       }}
                       title="Eliminar Petición"
                       className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
@@ -1274,6 +1273,38 @@ export const ProcurementModule: React.FC = () => {
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="compras"
         moduleTitle="Compras y Proveedores"
+      />
+
+      {/* MODAL BLINDADO POKA-YOKE: ELIMINAR ORDEN DE COMPRA */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(poToDelete)}
+        title="¿Eliminar Orden de Compra?"
+        itemName={poToDelete ? `${poToDelete.orderNumber} - ${poToDelete.supplierName} (${formatCOP(poToDelete.totalAmountCOP)})` : ''}
+        description="Esta acción retirará la orden de compra del sistema. Si los artículos ya fueron recibidos o imputados, se recomienda validar antes de proceder."
+        confirmText="Eliminar Orden"
+        onConfirm={() => {
+          if (poToDelete) {
+            deletePurchaseOrder(poToDelete.id);
+            setPoToDelete(null);
+          }
+        }}
+        onCancel={() => setPoToDelete(null)}
+      />
+
+      {/* MODAL BLINDADO POKA-YOKE: ELIMINAR REQUISICIÓN */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(reqToDelete)}
+        title="¿Eliminar Requisición de Compra / SOLPED?"
+        itemName={reqToDelete ? `${reqToDelete.reqNumber} - ${reqToDelete.projectName}` : ''}
+        description="Esta acción eliminará la requisición interna y sus ítems del flujo de compras."
+        confirmText="Eliminar Requisición"
+        onConfirm={() => {
+          if (reqToDelete) {
+            deleteRequisition(reqToDelete.id);
+            setReqToDelete(null);
+          }
+        }}
+        onCancel={() => setReqToDelete(null)}
       />
 
     </div>

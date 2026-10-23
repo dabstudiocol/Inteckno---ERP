@@ -1705,11 +1705,49 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const approveTimesheet = useCallback(
     (id: string) => {
-      setState((prev) => ({
-        ...prev,
-        timesheets: prev.timesheets.map((t) => (t.id === id ? { ...t, status: 'approved' } : t)),
-      }));
-      notify('success', 'Horas Aprobadas', 'El registro de horas fue validado por la jefatura técnica.');
+      setState((prev) => {
+        const targetTs = prev.timesheets.find((t) => t.id === id);
+        const updatedProjects = targetTs
+          ? prev.projects.map((prj) => {
+              if (prj.id === targetTs.projectId || prj.code === targetTs.projectCode) {
+                const laborCOP = (targetTs.hours || 0) * 65000;
+                const laborUSD = Math.round(laborCOP / 4000);
+                const newAC = (prj.actualCostAC || 0) + laborUSD;
+                const newCV = (prj.earnedValueEV || 0) - newAC;
+                const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+                const existingMatrix = (prj as any).costMatrix || [];
+                const newCostItem = {
+                  id: `cost-ts-${Date.now()}`,
+                  category: 'mano_obra_itk' as const,
+                  concept: `Mano de Obra ITK - ${targetTs.userName || 'Técnico'} (${targetTs.hours}h - ${targetTs.taskName || 'Labores'})`,
+                  unit: 'Horas',
+                  plannedQuantity: targetTs.hours || 0,
+                  plannedUnitCost: 65000,
+                  plannedTotal: laborCOP,
+                  actualQuantity: targetTs.hours || 0,
+                  actualUnitCost: 65000,
+                  actualTotal: laborCOP,
+                  variance: 0,
+                };
+                return {
+                  ...prj,
+                  actualCostAC: newAC,
+                  cv: newCV,
+                  cpi: newCPI,
+                  costMatrix: [...existingMatrix, newCostItem],
+                };
+              }
+              return prj;
+            })
+          : prev.projects;
+
+        return {
+          ...prev,
+          timesheets: prev.timesheets.map((t) => (t.id === id ? { ...t, status: 'approved' } : t)),
+          projects: updatedProjects,
+        };
+      });
+      notify('success', 'Horas Aprobadas y Costo Imputado', 'Registro de horas validado y liquidado en la matriz del proyecto.');
     },
     [notify]
   );
@@ -1741,10 +1779,64 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         gmApproved: true,
       };
 
-      setState((prev) => ({
-        ...prev,
-        purchaseOrders: [newPo, ...prev.purchaseOrders],
-      }));
+      setState((prev) => {
+        // 1. Vincular Requisición de Origen (SOLPED) si aplica
+        const updatedReqs = poData.originRequisitionId
+          ? prev.requisitions.map((req) =>
+              req.id === poData.originRequisitionId
+                ? {
+                    ...req,
+                    status: 'auto_po_generated' as const,
+                    generatedPoId: newPo.id,
+                    generatedPoNumber: orderNumber,
+                  }
+                : req
+            )
+          : prev.requisitions;
+
+        // 2. Imputar costo directamente a la Matriz Financiera del Proyecto
+        const updatedProjects = prev.projects.map((prj) => {
+          if (prj.id === poData.projectId || prj.code === poData.projectCode) {
+            const costCOP = poData.totalAmountCOP || 0;
+            const costUSD = poData.totalAmountUSD || Math.round(costCOP / 4000);
+            const newAC = (prj.actualCostAC || 0) + costUSD;
+            const newCV = (prj.earnedValueEV || 0) - newAC;
+            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+            const existingMatrix = (prj as any).costMatrix || [];
+            const poCategory = (poData.costCategory as any) || 'repuestos_fabricacion';
+
+            const newMatrixItem = {
+              id: `cost-po-${Date.now()}`,
+              category: poCategory,
+              concept: `OC ${orderNumber} - ${poData.supplierName || 'Proveedor'}`,
+              unit: 'unid',
+              plannedQuantity: 1,
+              plannedUnitCost: costCOP,
+              plannedTotal: costCOP,
+              actualQuantity: 1,
+              actualUnitCost: costCOP,
+              actualTotal: costCOP,
+              variance: 0,
+            };
+
+            return {
+              ...prj,
+              actualCostAC: newAC,
+              cv: newCV,
+              cpi: newCPI,
+              costMatrix: [...existingMatrix, newMatrixItem],
+            };
+          }
+          return prj;
+        });
+
+        return {
+          ...prev,
+          purchaseOrders: [newPo, ...prev.purchaseOrders],
+          requisitions: updatedReqs,
+          projects: updatedProjects,
+        };
+      });
 
       // Huella Digital: Auditoría de creación de Orden de Compra
       recordAuditEvent({
@@ -1856,7 +1948,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev,
           products: updatedProducts,
           purchaseOrders: prev.purchaseOrders.map((p) =>
-            p.id === poId ? { ...p, status: 'received', physicalReceiptDone: true, technicalQualityInspectionDone: true } : p
+            p.id === poId ? { ...p, status: 'received', deliveryStatus: 'entregado', physicalReceiptDone: true, technicalQualityInspectionDone: true } : p
+          ),
+          requisitions: prev.requisitions.map((r) =>
+            r.id === po.originRequisitionId ? { ...r, status: 'fulfilled' as const } : r
           ),
         };
       });
@@ -1963,11 +2058,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ? {
                   ...p,
                   status: newStatus,
+                  deliveryStatus: allCompleted ? 'entregado' : 'parcial',
                   items: updatedPoItems,
                   physicalReceiptDone: allCompleted,
                   technicalQualityInspectionDone: allCompleted,
                 }
               : p
+          ),
+          requisitions: prev.requisitions.map((r) =>
+            r.id === po.originRequisitionId && allCompleted ? { ...r, status: 'fulfilled' as const } : r
           ),
         };
       });

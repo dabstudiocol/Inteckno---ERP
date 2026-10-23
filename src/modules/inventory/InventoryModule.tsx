@@ -47,6 +47,7 @@ import { useErp } from '../../core/storage/erpStore';
 import { Product, EquipmentTool, DispatchRemission, RemissionItem, InventoryAuditLog, PhysicalCableSegment } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { getCalibrationStatus } from '../../utils/calibrationUtils';
@@ -133,6 +134,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
   const [isWriteOffModalOpen, setIsWriteOffModalOpen] = useState(false);
   const [productForWriteOff, setProductForWriteOff] = useState<Product | null>(null);
   const [tramoForWriteOff, setTramoForWriteOff] = useState<PhysicalCableSegment | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const defaultTab = initialTab || (activeModuleId === 'codigo-barras' ? 'barcode' : 'unified');
   const [activeTab, setActiveTab] = useState<'unified' | 'dispatch' | 'return' | 'history' | 'barcode' | 'audit' | 'writeoffs'>(defaultTab);
@@ -300,8 +302,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     minStock: 2,
     isCriticalSpare: true,
     isHomologatedITK: true,
-    locationName: 'Almacén Central Medellín',
-    shelf: 'Estante A-01',
+    locationName: 'Almacén Central Medellín (Sede Poblado)',
+    shelf: 'Estante A-01 (Componentes Críticos)',
     observations: '',
     physicalState: 'solido',
     safetyDataSheetUrl: '',
@@ -931,8 +933,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                   minStock: 2,
                   isCriticalSpare: false,
                   isHomologatedITK: true,
-                  locationName: 'Bodega Principal - Guarne',
-                  shelf: 'Estante A-1',
+                  locationName: 'Almacén Central Medellín (Sede Poblado)',
+                  shelf: 'Estante A-01 (Componentes Críticos)',
                   observations: 'Nuevo repuesto para mantenimiento de sistemas por cable.',
                   physicalState: 'solido',
                   safetyDataSheetUrl: '',
@@ -1186,11 +1188,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         <Pencil size={14} />
                       </button>
                       <button
-                        onClick={() => {
-                          if (window.confirm(`¿Estás seguro de eliminar el artículo "${p.name}"?`)) {
-                            deleteProduct(p.id);
-                          }
-                        }}
+                        onClick={() => setProductToDelete(p)}
                         title="Eliminar este artículo"
                         className="p-2 rounded-xl text-gray-500 hover:text-rose-600 bg-white transition-colors cursor-pointer shadow-2xs"
                       >
@@ -3675,6 +3673,26 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
         onApplyReceipt={(orderId, itemReceipts) => {
           return receivePurchaseOrderPartial(orderId, itemReceipts);
         }}
+      />
+
+      {/* MODAL BLINDADO POKA-YOKE: ELIMINAR ARTÍCULO */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(productToDelete)}
+        title="¿Eliminar Artículo del Inventario?"
+        itemName={productToDelete ? `${productToDelete.sku} - ${productToDelete.name}` : ''}
+        description={
+          productToDelete && productToDelete.realStock > 0
+            ? `¡Atención! Este artículo cuenta actualmente con ${productToDelete.realStock} ${productToDelete.unit} en stock. Si lo eliminas, se retirará del catálogo y de los balances del almacén.`
+            : 'Esta acción eliminará el artículo del catálogo de repuestos e inventario de forma permanente.'
+        }
+        confirmText="Eliminar Artículo"
+        onConfirm={() => {
+          if (productToDelete) {
+            deleteProduct(productToDelete.id);
+            setProductToDelete(null);
+          }
+        }}
+        onCancel={() => setProductToDelete(null)}
       />
     </div>
   );

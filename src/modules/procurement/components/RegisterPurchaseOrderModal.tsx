@@ -66,11 +66,51 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   const [estimatedArrivalDate, setEstimatedArrivalDate] = useState('');
   const [carrierName, setCarrierName] = useState('Envía Colvanes');
   const [notes, setNotes] = useState('');
+  // Campos Oficiales de la Matriz Corporativa de Compras (BD COMPRAS)
+  const [solpedNumber, setSolpedNumber] = useState('');
+  const [requesterName, setRequesterName] = useState('Wilson Alzate');
+  const [paymentTermType, setPaymentTermType] = useState<'contado' | 'anticipo' | 'credito'>('credito');
+  const [paymentDueDate, setPaymentDueDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [costCategory, setCostCategory] = useState<string>('repuestos_fabricacion');
   const [isFastTrackEmergency, setIsFastTrackEmergency] = useState(false);
 
   // Excepción de Gerencia para presupuesto sobregirado
   const [gmOverrideGranted, setGmOverrideGranted] = useState(false);
   const [gmOverrideNotes, setGmOverrideNotes] = useState('');
+
+  // Auto-completar desde SOLPED / Requisición
+  const handleOriginReqChange = (reqId: string) => {
+    setOriginReqId(reqId);
+    if (!reqId) return;
+    const req = requisitions.find((r) => r.id === reqId);
+    if (req) {
+      setSolpedNumber(req.reqNumber);
+      if (req.requesterName) setRequesterName(req.requesterName);
+      if (req.projectId) setSelectedProjectId(req.projectId);
+      if (req.items && req.items.length > 0) {
+        const mappedItems: PoItemRow[] = req.items.map((it, idx) => {
+          const prod = products.find((p) => p.id === it.productId || p.sku === it.productSku);
+          const cop = prod?.costPriceCOP || (it.unitCostUSD ? Math.round(it.unitCostUSD * currentTrm) : 350000);
+          return {
+            id: `req-row-${idx}-${Date.now()}`,
+            productId: it.productId,
+            sku: it.productSku,
+            name: it.productName,
+            unit: it.unit || 'unid',
+            qty: it.qtyToPurchase || it.qtyRequested || 1,
+            unitPriceCOP: cop,
+            unitPriceUSD: Number((cop / currentTrm).toFixed(2)),
+            historicalPriceCOP: cop,
+          };
+        });
+        setItems(mappedItems);
+      }
+    }
+  };
 
   // Filas de insumos
   const [items, setItems] = useState<PoItemRow[]>([
@@ -293,7 +333,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       carrierName,
       estimatedArrivalDate: estimatedArrivalDate || undefined,
       notes: notes + (gmOverrideGranted ? ` [EXCEPCIÓN GERENCIA PRESUPUESTO: ${gmOverrideNotes}]` : ''),
-      isFastTrackEmergency,
+      isFastTrackEmergency: false,
       budgetProjectTrm: projectBudgetTrm,
       currentTrmAtOrder: currentTrm,
       exchangeRateAlert: hasExchangeAlert,
@@ -301,6 +341,20 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       paymentStatus: 'pending',
       threeWayMatchStatus: 'pending',
       items: formattedItems,
+      // Matriz Corporativa BD COMPRAS
+      solpedNumber: solpedNumber.trim() || undefined,
+      requesterName: requesterName.trim() || undefined,
+      supplierTaxId: (supplierType === 'registered' ? selectedSupplier?.taxId : customSupplierTaxId) || undefined,
+      paymentTerms: supplierType === 'registered' ? selectedSupplier?.paymentTerms : (paymentTermType === 'contado' ? 'Contado Inmediato' : paymentTermType === 'anticipo' ? 'Anticipo 50% + 50%' : 'Crédito 30 días'),
+      paymentTermType,
+      paymentDueDate: paymentDueDate || undefined,
+      costCategory,
+      deliveryStatus: 'pendiente',
+      weekOfYear: (() => {
+        const d = new Date(date);
+        const start = new Date(d.getFullYear(), 0, 1);
+        return Math.ceil((((d.getTime() - start.getTime()) / 86400000) + start.getDay() + 1) / 7);
+      })(),
     });
 
     onClose();
@@ -528,19 +582,86 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
             </div>
 
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Solicitud de Origen (Opcional)</label>
+              <label className="block text-slate-700 font-semibold mb-1"># SOLPED de Origen</label>
               <select
                 value={originReqId}
-                onChange={(e) => setOriginReqId(e.target.value)}
+                onChange={(e) => handleOriginReqChange(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white"
               >
-                <option value="">Sin solicitud vinculada</option>
+                <option value="">Sin SOLPED vinculada</option>
                 {requisitions.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.reqNumber} — {r.projectName}
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* SECCIÓN 2.1: PARÁMETROS CORPORATIVOS DE LA MATRIZ DE COMPRAS */}
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">N° # SOLPED</label>
+              <input
+                type="text"
+                placeholder="ej. SOLPED-018"
+                value={solpedNumber}
+                onChange={(e) => setSolpedNumber(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Solicitante Técnico</label>
+              <input
+                type="text"
+                placeholder="ej. Wilson Alzate"
+                value={requesterName}
+                onChange={(e) => setRequesterName(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Rubro de Costo</label>
+              <select
+                value={costCategory}
+                onChange={(e) => setCostCategory(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+              >
+                <option value="repuestos_fabricacion">Repuestos & Fabricación STC</option>
+                <option value="consumibles_taller">Consumibles & EPP</option>
+                <option value="viaticos_transporte">Viáticos & Movilidad</option>
+                <option value="inspeccion_mrt">Inspección Cables (MRT)</option>
+                <option value="ensayos_end">Ensayos NDT / END</option>
+                <option value="mano_obra_itk">Mano de Obra ITK</option>
+                <option value="mano_obra_externa">Mano de Obra Externa</option>
+                <option value="subcontratos_gruas">Subcontratos & Grúas</option>
+                <option value="imprevistos_contingencia">Imprevistos de Obra</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Forma de Pago</label>
+              <select
+                value={paymentTermType}
+                onChange={(e) => setPaymentTermType(e.target.value as any)}
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+              >
+                <option value="credito">Crédito (30/60 días)</option>
+                <option value="anticipo">Anticipo 50% + 50%</option>
+                <option value="contado">Contado Inmediato</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Vencimiento Factura</label>
+              <input
+                type="date"
+                value={paymentDueDate}
+                onChange={(e) => setPaymentDueDate(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+              />
             </div>
           </div>
 

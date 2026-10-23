@@ -17,6 +17,7 @@ import { useErp } from '../../core/storage/erpStore';
 import { TimesheetEntry } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 
 export const TimesheetModule: React.FC = () => {
@@ -28,6 +29,7 @@ export const TimesheetModule: React.FC = () => {
   const [description, setDescription] = useState('');
   const [taskName, setTaskName] = useState('');
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [timesheetToDelete, setTimesheetToDelete] = useState<TimesheetEntry | null>(null);
 
   // Catálogo dinámico de labores técnicas
   const catalogLaborTypes = useModuleCatalog('registro-horas', 'laborTypes');
@@ -282,11 +284,7 @@ export const TimesheetModule: React.FC = () => {
                       </>
                     )}
                     <button
-                      onClick={() => {
-                        if (window.confirm(`¿Estás seguro de eliminar este registro de ${t.hours} hrs?`)) {
-                          deleteTimesheet(t.id);
-                        }
-                      }}
+                      onClick={() => setTimesheetToDelete(t)}
                       title="Eliminar Registro de Horas"
                       className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     >
@@ -306,6 +304,22 @@ export const TimesheetModule: React.FC = () => {
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="registro-horas"
         moduleTitle="Registro de Horas de Campo"
+      />
+
+      {/* Modal Poka-Yoke: Confirmación de Eliminación de Horas */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(timesheetToDelete)}
+        title="¿Eliminar Registro de Horas?"
+        itemName={timesheetToDelete ? `${timesheetToDelete.userName} - ${timesheetToDelete.hours}h (${timesheetToDelete.projectCode})` : ''}
+        description="Esta acción eliminará el registro de horas de campo de forma definitiva. Si ya fue imputado al proyecto, las horas saldrán de los balances."
+        confirmText="Eliminar Horas"
+        onConfirm={() => {
+          if (timesheetToDelete) {
+            deleteTimesheet(timesheetToDelete.id);
+            setTimesheetToDelete(null);
+          }
+        }}
+        onCancel={() => setTimesheetToDelete(null)}
       />
     </div>
   );

@@ -164,9 +164,19 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
               <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-md bg-white/20 text-white tracking-wider">
                 {po.orderNumber}
               </span>
+              {po.solpedNumber && (
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-sky-400/20 text-sky-200 border border-sky-300/30">
+                  # SOLPED: {po.solpedNumber}
+                </span>
+              )}
               <span className="text-xs px-2.5 py-0.5 rounded-md bg-sky-500/30 text-sky-100 font-semibold truncate">
                 {po.projectCode || 'Gasto General / Oficina'}
               </span>
+              {po.requesterName && (
+                <span className="text-xs px-2 py-0.5 rounded-md bg-white/10 text-slate-200 truncate">
+                  Solicitante: {po.requesterName}
+                </span>
+              )}
               {po.supplierHomologated ? (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
                   <ShieldCheck size={12} /> Proveedor Homologado
@@ -493,10 +503,67 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
           {activeTab === 'finances' && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Gestión de Anticipos y Cruce de 3 Vías</h3>
+                <h3 className="text-sm font-bold text-slate-900">Gestión de Anticipos, Cartera y Cruce de 3 Vías</h3>
                 <p className="text-xs text-slate-500">
                   Condición indispensable para autorizar giros contables y pagos a proveedores
                 </p>
+              </div>
+
+              {/* Resumen de Cartera y Vencimiento (Matriz Corporativa) */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3 text-xs">
+                <div className="flex items-center justify-between font-bold text-slate-900">
+                  <span className="flex items-center gap-1.5">
+                    <Building2 size={15} className="text-[#00668F]" /> Programación de Pagos & Vencimiento
+                  </span>
+                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold ${
+                    po.paymentStatus === 'paid' 
+                      ? 'bg-emerald-100 text-emerald-800' 
+                      : po.paymentStatus === 'advance_paid'
+                      ? 'bg-purple-100 text-purple-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {po.paymentStatus === 'paid' ? 'Pagado 100%' : po.paymentStatus === 'advance_paid' ? 'Anticipo Pagado' : 'Pendiente de Pago'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-slate-600 font-medium mb-1">Forma de Pago</label>
+                    <span className="font-bold text-slate-800 block capitalize">{po.paymentTermType || 'Crédito'} ({po.paymentTerms || '30 días'})</span>
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 font-medium mb-1">Fecha Vencimiento</label>
+                    <span className="font-bold font-mono text-slate-800 block">{po.paymentDueDate || 'No definida'}</span>
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 font-medium mb-1">Valor Total OC</label>
+                    <span className="font-black font-mono text-slate-900 block">{formatCOP(po.totalAmountCOP || 0)}</span>
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 font-medium mb-1">Saldo por Pagar</label>
+                    <span className="font-black font-mono text-rose-600 block">
+                      {formatCOP(Math.max(0, (po.totalAmountCOP || 0) - (po.paidAmountCOP || (po.paymentStatus === 'paid' ? (po.totalAmountCOP || 0) : 0))))}
+                    </span>
+                  </div>
+                </div>
+
+                {po.paymentStatus !== 'paid' && (
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdatePo({
+                          paymentStatus: 'paid',
+                          paidAmountCOP: po.totalAmountCOP || 0,
+                          notes: `${po.notes || ''} [Liquidado al 100% el ${new Date().toISOString().split('T')[0]}]`.trim(),
+                        });
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-xs cursor-pointer"
+                    >
+                      ✓ Marcar como Pagado al 100%
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Registro de Anticipos */}

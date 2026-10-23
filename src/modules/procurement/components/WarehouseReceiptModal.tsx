@@ -57,6 +57,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
   const [itemsState, setItemsState] = useState<Record<string, ItemReceiptState>>({});
   const [generalReceiptNotes, setGeneralReceiptNotes] = useState<string>('');
   const [remissionNumber, setRemissionNumber] = useState<string>('');
+  const [targetWarehouse, setTargetWarehouse] = useState<string>('Almacén Central Medellín (Sede Poblado)');
 
   // Control de bloqueo de salida si hay cambios sin guardar
   const [showExitWarning, setShowExitWarning] = useState<boolean>(false);
@@ -190,7 +191,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
       return {
         sku: it.sku,
         receivedQty: Number(state.qtyEntering) || 0,
-        notes: state.notes,
+        notes: state.notes ? `${state.notes} [Ubicación: ${targetWarehouse}]` : `Ingreso a: ${targetWarehouse}`,
       };
     });
 
@@ -238,7 +239,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
             
             {/* Selección de la Orden de Compra & Datos del Proveedor */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="sm:col-span-2">
                   <label className="font-bold text-slate-800 block mb-1">
                     Seleccionar Orden de Compra Pendiente de Ingreso
@@ -262,7 +263,28 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
 
                 <div>
                   <label className="font-bold text-slate-800 block mb-1">
-                    N° Remisión / Factura Proveedor
+                    Sede / Bodega de Ingreso
+                  </label>
+                  <select
+                    value={targetWarehouse}
+                    onChange={(e) => {
+                      setTargetWarehouse(e.target.value);
+                      setHasUnsavedChanges(true);
+                    }}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-semibold text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
+                  >
+                    <option value="Almacén Central Medellín (Sede Poblado)">Almacén Central Medellín (Sede Poblado)</option>
+                    <option value="Taller Central Guayabal (Banco de Ensayos & Maquinado)">Taller Central Guayabal (Banco de Ensayos)</option>
+                    <option value="Bodega de Campo Metro de Medellín (Patios Bello / Línea K)">Bodega Metro Medellín (Patios Bello Línea K)</option>
+                    <option value="Bodega Internacional Mi Teleférico La Paz (Bolivia)">Bodega Internacional La Paz (Bolivia)</option>
+                    <option value="Bodega Internacional Inteckno RD (Santo Domingo)">Bodega Internacional Rep. Dominicana</option>
+                    <option value="Contenedor Móvil de Obra (Sistemas de Cable)">Contenedor Móvil de Obra</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">
+                    N° Remisión / Factura
                   </label>
                   <input
                     type="text"

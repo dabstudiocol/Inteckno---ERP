@@ -63,6 +63,7 @@ import {
 import { ContactDetailModal } from './ContactDetailModal';
 import { AwardOpportunityModal } from './components/AwardOpportunityModal';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { getStoredTRM, convertUSDToCOP, formatCOP, formatUSD } from '../../core/services/trmService';
@@ -384,6 +385,8 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
   const [oppPreviousStage, setOppPreviousStage] = useState<OpportunityStage | null>(null);
   const [editingOpp, setEditingOpp] = useState<Opportunity | null>(null);
   const [editingContact, setEditingContact] = useState<CRMContact | null>(null);
+  const [oppToDelete, setOppToDelete] = useState<Opportunity | null>(null);
+  const [contactToDelete, setContactToDelete] = useState<CRMContact | null>(null);
 
   // Pestaña activa del Modal de Detalle / Consola de la Oportunidad
   const [oppModalTab, setOppModalTab] = useState<
@@ -1182,9 +1185,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`¿Estás seguro de que deseas eliminar la oportunidad "${opp.title}"?`)) {
-                                  deleteOpportunity(opp.id);
-                                }
+                                setOppToDelete(opp);
                               }}
                               title="Eliminar Oportunidad"
                               className="p-1 rounded-md text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
@@ -1510,11 +1511,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     <Pencil size={13} />
                   </button>
                   <button
-                    onClick={() => {
-                      if (window.confirm(`¿Estás seguro de eliminar el contacto "${cnt.name}"?`)) {
-                        deleteContact(cnt.id);
-                      }
-                    }}
+                    onClick={() => setContactToDelete(cnt)}
                     title="Eliminar Contacto"
                     className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer border border-gray-200"
                   >
@@ -4821,6 +4818,38 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="crm"
         moduleTitle="CRM y Pipeline Comercial"
+      />
+
+      {/* MODAL BLINDADO POKA-YOKE: ELIMINAR OPORTUNIDAD */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(oppToDelete)}
+        title="¿Eliminar Oportunidad Comercial?"
+        itemName={oppToDelete ? `${oppToDelete.title} - ${oppToDelete.clientName} (${formatUSD(oppToDelete.estimatedValueUSD)})` : ''}
+        description="Esta acción eliminará la oportunidad y todo su historial de actividades y cotizaciones del pipeline comercial."
+        confirmText="Eliminar Oportunidad"
+        onConfirm={() => {
+          if (oppToDelete) {
+            deleteOpportunity(oppToDelete.id);
+            setOppToDelete(null);
+          }
+        }}
+        onCancel={() => setOppToDelete(null)}
+      />
+
+      {/* MODAL BLINDADO POKA-YOKE: ELIMINAR CONTACTO */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(contactToDelete)}
+        title="¿Eliminar Contacto del Directorio?"
+        itemName={contactToDelete ? `${contactToDelete.name} (${contactToDelete.company || 'Cliente'})` : ''}
+        description="Esta acción eliminará el contacto comercial de la libreta de direcciones."
+        confirmText="Eliminar Contacto"
+        onConfirm={() => {
+          if (contactToDelete) {
+            deleteContact(contactToDelete.id);
+            setContactToDelete(null);
+          }
+        }}
+        onCancel={() => setContactToDelete(null)}
       />
     </div>
   );
