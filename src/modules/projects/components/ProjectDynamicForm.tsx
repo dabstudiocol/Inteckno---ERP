@@ -13,7 +13,8 @@ import {
   BookOpen, 
   GraduationCap,
   Users,
-  Briefcase
+  Briefcase,
+  Settings,
 } from 'lucide-react';
 import { Project, Opportunity, User, Partner } from '../../../types';
 import { INTECKNO_PORTFOLIO } from '../../../core/config/portfolioCatalog';
@@ -295,6 +296,17 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
               Configuración de proyecto, centro de costos y parámetros técnicos del portafolio Inteckno
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer"
+            title="Personalizar catálogos y opciones de proyectos"
+          >
+            <Settings size={14} className="text-[#00668F]" />
+            <span className="hidden sm:inline">Configurar Opciones</span>
+          </button>
         </div>
       </div>
 

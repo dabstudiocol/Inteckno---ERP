@@ -21,7 +21,9 @@ import {
   Briefcase,
   Sparkles,
   Loader2,
+  Settings,
 } from 'lucide-react';
+import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import {
   CRMContact,
   RelatedContactPerson,
@@ -345,6 +347,15 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+            title="Personalizar catálogos y opciones comerciales"
+          >
+            <Settings size={14} />
+            <span className="hidden sm:inline">Configurar Opciones</span>
+          </button>
           <button
             type="button"
             onClick={handleEnrichWithLuciana}
