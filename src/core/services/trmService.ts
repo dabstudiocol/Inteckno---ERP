@@ -5,8 +5,8 @@
  */
 
 const TRM_CACHE_KEY = 'inteckno_erp_trm_cache';
-// TRM Oficial de Colombia vigente (calibrada al mercado financiero real)
-export const DEFAULT_FALLBACK_TRM = 4150.00;
+// TRM Oficial de Colombia vigente hoy
+export const DEFAULT_FALLBACK_TRM = 3236.84;
 
 export interface TRMCacheData {
   rate: number;
@@ -21,8 +21,8 @@ export function getStoredTRM(): number {
     const raw = localStorage.getItem(TRM_CACHE_KEY);
     if (raw) {
       const data: TRMCacheData = JSON.parse(raw);
-      // Validar rango corporativo oficial de TRM en Inteckno (piso mínimo de $3.800 COP)
-      if (typeof data.rate === 'number' && data.rate >= 3800 && data.rate <= 7000) {
+      // Validar rango razonable de TRM en Colombia (entre 2500 y 7000)
+      if (typeof data.rate === 'number' && data.rate >= 2500 && data.rate <= 7000) {
         return data.rate;
       }
     }
@@ -38,7 +38,7 @@ export function getTRMDetails(): TRMCacheData {
     const raw = localStorage.getItem(TRM_CACHE_KEY);
     if (raw) {
       const data: TRMCacheData = JSON.parse(raw);
-      if (typeof data.rate === 'number' && data.rate >= 3800 && data.rate <= 7000) {
+      if (typeof data.rate === 'number' && data.rate >= 2500 && data.rate <= 7000) {
         return data;
       }
     }
@@ -55,9 +55,8 @@ export function getTRMDetails(): TRMCacheData {
 
 // Guardar TRM manual o sincronizada
 export function setCustomTRM(rate: number): void {
-  const normalizedRate = Math.max(3800, rate);
   const data: TRMCacheData = {
-    rate: Math.round(normalizedRate * 100) / 100,
+    rate: Math.round(rate * 100) / 100,
     date: new Date().toISOString().split('T')[0],
     source: 'manual',
     lastUpdated: Date.now(),
@@ -72,7 +71,7 @@ export async function fetchLiveTRM(forceRefresh: boolean = false): Promise<numbe
   const cached = getTRMDetails();
 
   const FOUR_HOURS = 4 * 60 * 60 * 1000;
-  if (!forceRefresh && cached.rate >= 3800 && Date.now() - cached.lastUpdated < FOUR_HOURS && cached.date === todayStr) {
+  if (!forceRefresh && cached.rate >= 2500 && Date.now() - cached.lastUpdated < FOUR_HOURS && cached.date === todayStr) {
     return cached.rate;
   }
 
@@ -81,7 +80,7 @@ export async function fetchLiveTRM(forceRefresh: boolean = false): Promise<numbe
     const response = await fetch('https://open.er-api.com/v6/latest/USD', { cache: 'no-cache' });
     if (response.ok) {
       const json = await response.json();
-      if (json && json.rates && json.rates.COP && json.rates.COP >= 3800) {
+      if (json && json.rates && json.rates.COP && json.rates.COP >= 2500) {
         const rate = Math.round(Number(json.rates.COP) * 100) / 100;
         const cachePayload: TRMCacheData = {
           rate,
@@ -109,7 +108,7 @@ export async function fetchLiveTRM(forceRefresh: boolean = false): Promise<numbe
       const data = await response.json();
       if (Array.isArray(data) && data.length > 0 && data[0].valor) {
         const rate = parseFloat(data[0].valor);
-        if (!isNaN(rate) && rate >= 3800) {
+        if (!isNaN(rate) && rate >= 2500) {
           const cachePayload: TRMCacheData = {
             rate: Math.round(rate * 100) / 100,
             date: data[0].vigenciahasta ? data[0].vigenciahasta.split('T')[0] : todayStr,
@@ -126,7 +125,7 @@ export async function fetchLiveTRM(forceRefresh: boolean = false): Promise<numbe
     console.warn('[TRM] No se pudo consultar la API oficial de TRM, usando fallback:', error);
   }
 
-  return cached.rate >= 3500 ? cached.rate : DEFAULT_FALLBACK_TRM;
+  return cached.rate >= 2500 ? cached.rate : DEFAULT_FALLBACK_TRM;
 }
 
 // Búsqueda en Internet con LUC-IA-NA (tipo de cambio en tiempo real)
@@ -137,7 +136,7 @@ export async function fetchTRMWithLucianaWeb(): Promise<{ success: boolean; rate
     const res = await fetch('https://open.er-api.com/v6/latest/USD', { cache: 'no-cache' });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.rates && data.rates.COP && data.rates.COP >= 3800) {
+      if (data && data.rates && data.rates.COP && data.rates.COP >= 2500) {
         const rate = Math.round(Number(data.rates.COP) * 100) / 100;
         const cachePayload: TRMCacheData = {
           rate,
@@ -160,12 +159,11 @@ export async function fetchTRMWithLucianaWeb(): Promise<{ success: boolean; rate
   }
 
   const stored = getStoredTRM();
-  const guaranteedStored = Math.max(3800, stored);
   return {
     success: true,
-    rate: guaranteedStored,
-    message: `TRM activa verificada: $${guaranteedStored.toLocaleString('es-CO', { minimumFractionDigits: 2 })} COP`,
-    source: 'Registro verificado (Piso mín. $3.800 COP)',
+    rate: stored,
+    message: `TRM activa verificada: $${stored.toLocaleString('es-CO', { minimumFractionDigits: 2 })} COP`,
+    source: 'Registro verificado',
   };
 }
 
