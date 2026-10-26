@@ -50,6 +50,19 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
   const [selectedBankId, setSelectedBankId] = useState('');
   const [selectedPaymentTerm, setSelectedPaymentTerm] = useState('');
 
+  // Auto-selección inicial para agilizar la facturación (1 solo toque)
+  React.useEffect(() => {
+    if (!selectedBankId && catalogBanks.length > 0) {
+      setSelectedBankId(catalogBanks[0].id);
+    }
+  }, [catalogBanks, selectedBankId]);
+
+  React.useEffect(() => {
+    if (!selectedPaymentTerm && catalogPaymentTerms.length > 0) {
+      setSelectedPaymentTerm(catalogPaymentTerms[0].name);
+    }
+  }, [catalogPaymentTerms, selectedPaymentTerm]);
+
   const handleIssueInvoice = (e: React.FormEvent) => {
     e.preventDefault();
     if (!invoiceModalMilestone) return;

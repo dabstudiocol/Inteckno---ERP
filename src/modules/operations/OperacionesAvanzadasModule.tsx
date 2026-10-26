@@ -58,6 +58,14 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
               </h3>
               <span className="text-xs text-gray-500">Conforme a Normas EN 1709 / EN 12929</span>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsConfigModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-2xs cursor-pointer"
+            >
+              <Settings size={14} className="text-[#00668F]" />
+              <span>Configurar Opciones</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

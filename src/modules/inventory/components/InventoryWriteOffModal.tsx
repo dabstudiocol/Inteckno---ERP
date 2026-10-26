@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Building2,
   Package,
+  Settings,
 } from 'lucide-react';
 import {
   Product,
@@ -38,9 +39,16 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
   const [motivo, setMotivo] = useState<InventoryWriteOffReason>('RETAZO_INUTILIZABLE');
   const [destinacion, setDestinacion] = useState<'BAJA_DEFINITIVA' | 'REASIGNAR_ESLINGAS_IZAJE'>('BAJA_DEFINITIVA');
   const [cantidad, setCantidad] = useState<number>(tramo?.longitudMetros || 1);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(() => projects[0]?.id || '');
   const [descripcion, setDescripcion] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Auto-selección rápida de Centro de Costos si está vacío
+  React.useEffect(() => {
+    if (!selectedProjectId && projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
 
   if (!isOpen || !product) return null;
 
@@ -137,12 +145,24 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
               {product.name} ({product.sku})
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('inteckno:open-module-config', { detail: { moduleId: 'almacen' } }));
+              }}
+              title="Configurar Opciones y Catálogos de Almacén"
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-rose-200 hover:text-white transition-colors cursor-pointer"
+            >
+              <Settings size={18} />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* ALERTA DE GOBERNANZA */}

@@ -30,7 +30,7 @@ export const DianSupportDocumentManager: React.FC = () => {
   const [selectedXmlDoc, setSelectedXmlDoc] = useState<DianSupportDocument | null>(null);
 
   const sampleList = Object.values(SAMPLE_RUTS);
-  const [selectedRut, setSelectedRut] = useState<DianRutData | null>(null);
+  const [selectedRut, setSelectedRut] = useState<DianRutData | null>(() => sampleList[0] || null);
   const [description, setDescription] = useState('');
   const [conceptType, setConceptType] = useState<'servicio_tecnico' | 'mano_de_obra_obra' | 'repuestos_menores' | 'honorarios'>('servicio_tecnico');
   const [subtotal, setSubtotal] = useState<number>(0);
@@ -241,7 +241,7 @@ export const DianSupportDocumentManager: React.FC = () => {
                   Proveedor Beneficiario (Sujeto No Obligado a Facturar)
                 </label>
                 <select
-                  value={selectedRut.nit}
+                  value={selectedRut?.nit || ''}
                   onChange={(e) => {
                     const found = sampleList.find((r) => r.nit === e.target.value);
                     if (found) setSelectedRut(found);
@@ -254,15 +254,17 @@ export const DianSupportDocumentManager: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-amber-700">
-                  <UserCheck size={12} />
-                  <span>
-                    Responsabilidad DIAN:{' '}
-                    <strong>
-                      {selectedRut.responsabilidades.map((res) => res.code).join(', ')}
-                    </strong>
-                  </span>
-                </div>
+                {selectedRut && (
+                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-amber-700">
+                    <UserCheck size={12} />
+                    <span>
+                      Responsabilidad DIAN:{' '}
+                      <strong>
+                        {selectedRut.responsabilidades?.map((res) => res.code).join(', ') || 'R-99-PN'}
+                      </strong>
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
