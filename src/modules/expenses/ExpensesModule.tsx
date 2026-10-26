@@ -618,7 +618,11 @@ export const ExpensesModule: React.FC = () => {
                   <div className="shrink-0">
                     <button
                       type="button"
-                      className="px-4 py-2 rounded-full bg-white hover:bg-slate-200 text-slate-700 text-xs font-bold shadow-2xs flex items-center gap-1.5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="px-4 py-2 rounded-full bg-white hover:bg-slate-200 text-slate-700 text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <Upload size={14} className="text-[#00668F]" />
                       <span>{receiptImage ? 'Cambiar Foto' : 'Examinar Foto'}</span>

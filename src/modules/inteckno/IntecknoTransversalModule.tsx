@@ -358,7 +358,13 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
 
                 <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
                   <span className="text-[10px] font-bold text-gray-400">Verificado ITK</span>
-                  <button className="flex items-center gap-1 text-[#00668F] font-bold hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alert(`Iniciando descarga segura de: ${doc.title} (${doc.code})`);
+                    }}
+                    className="flex items-center gap-1 text-[#00668F] font-bold hover:underline cursor-pointer"
+                  >
                     <Download size={13} />
                     Descargar
                   </button>
@@ -523,7 +529,13 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
 
                 <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
                   <span>Autor: <strong className="text-gray-800">{art.author}</strong></span>
-                  <button className="text-[#00668F] font-bold hover:underline flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alert(`Abriendo procedimiento técnico: ${art.title}`);
+                    }}
+                    className="text-[#00668F] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
                     Leer Procedimiento <ExternalLink size={12} />
                   </button>
                 </div>

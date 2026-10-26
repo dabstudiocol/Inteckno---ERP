@@ -122,16 +122,32 @@ export const DesignSystemModule: React.FC = () => {
             <div className="space-y-2">
               <span className="text-xs font-bold text-gray-600 block">1. Botones Tipo Píldora</span>
               <div className="flex flex-wrap items-center gap-3">
-                <button className="px-5 py-2.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold shadow-md">
+                <button
+                  type="button"
+                  onClick={() => alert('Estilo: Botón Primario Inteckno')}
+                  className="px-5 py-2.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold shadow-md cursor-pointer transition-transform active:scale-95"
+                >
                   Primario Inteckno
                 </button>
-                <button className="px-5 py-2.5 rounded-full bg-[#F39200] hover:bg-[#D98200] text-white text-xs font-bold shadow-md">
+                <button
+                  type="button"
+                  onClick={() => alert('Estilo: Botón Acento de Acción')}
+                  className="px-5 py-2.5 rounded-full bg-[#F39200] hover:bg-[#D98200] text-white text-xs font-bold shadow-md cursor-pointer transition-transform active:scale-95"
+                >
                   Acento de Acción
                 </button>
-                <button className="px-5 py-2.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => alert('Estilo: Botón Secundario Suave')}
+                  className="px-5 py-2.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold cursor-pointer transition-transform active:scale-95"
+                >
                   Secundario Suave
                 </button>
-                <button className="px-5 py-2.5 rounded-full bg-slate-200/80 hover:bg-slate-300 text-gray-800 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => alert('Estilo: Botón Terciario Neutro')}
+                  className="px-5 py-2.5 rounded-full bg-slate-200/80 hover:bg-slate-300 text-gray-800 text-xs font-bold cursor-pointer transition-transform active:scale-95"
+                >
                   Terciario Neutro
                 </button>
               </div>

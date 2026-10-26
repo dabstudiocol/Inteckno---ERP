@@ -2513,7 +2513,11 @@ export const ConversacionesModule: React.FC = () => {
                               </div>
                               <button
                                 type="button"
-                                className="px-2 py-0.5 rounded-lg bg-[#00668F] hover:bg-[#005273] text-white text-[10px] font-bold shrink-0 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectOrCreateProjectChannel(p.code, p.name);
+                                }}
+                                className="px-2 py-0.5 rounded-lg bg-[#00668F] hover:bg-[#005273] text-white text-[10px] font-bold shrink-0 transition-colors cursor-pointer"
                               >
                                 + Canal
                               </button>

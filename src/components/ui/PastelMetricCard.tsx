@@ -90,7 +90,15 @@ export const PastelMetricCard: React.FC<PastelMetricCardProps> = ({
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-1">
         <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
-        <button className="text-slate-400 hover:text-slate-700 transition-colors p-0.5 rounded-md">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onClick) onClick();
+          }}
+          className="text-slate-400 hover:text-slate-700 transition-colors p-0.5 rounded-md cursor-pointer"
+          title="Ver detalle"
+        >
           <MoreHorizontal size={14} />
         </button>
       </div>
