@@ -13,9 +13,11 @@ import {
   Clock,
   Sparkles,
   ShieldAlert,
+  Settings,
 } from 'lucide-react';
 import { PurchaseOrder, Partner, Product, Project, PurchaseOrderItem, InternalRequisition } from '../../../types';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
+import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 
 interface PoItemRow {
   id: string;
@@ -60,6 +62,10 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   const [customSupplierTaxId, setCustomSupplierTaxId] = useState('');
   
   // Amarre obligatorio a Proyecto / Centro de Costos
+  // Catálogos dinámicos configurables por el usuario
+  const paymentTermsOptions = useModuleCatalog('compras', 'paymentTerms');
+  const supplierCategoriesOptions = useModuleCatalog('compras', 'supplierCategories');
+
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
   const [originReqId, setOriginReqId] = useState<string>('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -69,13 +75,14 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   // Campos Oficiales de la Matriz Corporativa de Compras (BD COMPRAS)
   const [solpedNumber, setSolpedNumber] = useState('');
   const [requesterName, setRequesterName] = useState('Wilson Alzate');
-  const [paymentTermType, setPaymentTermType] = useState<'contado' | 'anticipo' | 'credito'>('credito');
+  const [paymentTermType, setPaymentTermType] = useState<string>('30 días fecha factura (30 F/F)');
   const [paymentDueDate, setPaymentDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
     return d.toISOString().split('T')[0];
   });
-  const [costCategory, setCostCategory] = useState<string>('repuestos_fabricacion');
+  const [costCategory, setCostCategory] = useState<string>('Repuestos & Cables STC');
+  const [spendingNature, setSpendingNature] = useState<'PRESUPUESTO' | 'REPROCESO'>('PRESUPUESTO');
   const [isFastTrackEmergency, setIsFastTrackEmergency] = useState(false);
 
   // Excepción de Gerencia para presupuesto sobregirado
@@ -91,6 +98,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       setSolpedNumber(req.reqNumber);
       if (req.requesterName) setRequesterName(req.requesterName);
       if (req.projectId) setSelectedProjectId(req.projectId);
+      if (req.spendingNature) setSpendingNature(req.spendingNature);
       if (req.items && req.items.length > 0) {
         const mappedItems: PoItemRow[] = req.items.map((it, idx) => {
           const prod = products.find((p) => p.id === it.productId || p.sku === it.productSku);
@@ -313,6 +321,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       subtotalUSD: it.unitPriceUSD * it.qty,
       subtotalCOP: it.unitPriceCOP * it.qty,
       historicalPriceCOP: it.historicalPriceCOP,
+      spendingNature,
     }));
 
     onCreatePo({
@@ -326,6 +335,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       totalAmountUSD: Math.round(totalAmountUSD),
       totalAmountCOP: Math.round(totalAmountCOP),
       originRequisitionId: originReqId || undefined,
+      spendingNature,
       qualityCertificateRequired: hasCriticalSpare,
       qualityCertificateAttached: false,
       physicalReceiptDone: false,
@@ -345,8 +355,8 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       solpedNumber: solpedNumber.trim() || undefined,
       requesterName: requesterName.trim() || undefined,
       supplierTaxId: (supplierType === 'registered' ? selectedSupplier?.taxId : customSupplierTaxId) || undefined,
-      paymentTerms: supplierType === 'registered' ? selectedSupplier?.paymentTerms : (paymentTermType === 'contado' ? 'Contado Inmediato' : paymentTermType === 'anticipo' ? 'Anticipo 50% + 50%' : 'Crédito 30 días'),
-      paymentTermType,
+      paymentTerms: supplierType === 'registered' ? selectedSupplier?.paymentTerms : paymentTermType,
+      paymentTermType: (paymentTermType.toLowerCase().includes('contado') ? 'contado' : paymentTermType.toLowerCase().includes('anticipo') ? 'anticipo' : 'credito') as 'contado' | 'anticipo' | 'credito',
       paymentDueDate: paymentDueDate || undefined,
       costCategory,
       deliveryStatus: 'pendiente',
@@ -383,13 +393,25 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              title="Personalizar catálogos y opciones de compras"
+            >
+              <Settings size={16} />
+              <span className="hidden sm:inline">Configurar Catálogos</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title="Cerrar modal"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* ALERTA CAMBIARIA EN CASO DE COMPRA EN USD */}
@@ -599,7 +621,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
           </div>
 
           {/* SECCIÓN 2.1: PARÁMETROS CORPORATIVOS DE LA MATRIZ DE COMPRAS */}
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
             <div>
               <label className="block text-slate-700 font-semibold mb-1">N° # SOLPED</label>
               <input
@@ -629,15 +651,41 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
                 onChange={(e) => setCostCategory(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
               >
-                <option value="repuestos_fabricacion">Repuestos & Fabricación STC</option>
-                <option value="consumibles_taller">Consumibles & EPP</option>
-                <option value="viaticos_transporte">Viáticos & Movilidad</option>
-                <option value="inspeccion_mrt">Inspección Cables (MRT)</option>
-                <option value="ensayos_end">Ensayos NDT / END</option>
-                <option value="mano_obra_itk">Mano de Obra ITK</option>
-                <option value="mano_obra_externa">Mano de Obra Externa</option>
-                <option value="subcontratos_gruas">Subcontratos & Grúas</option>
-                <option value="imprevistos_contingencia">Imprevistos de Obra</option>
+                {supplierCategoriesOptions.length > 0 ? (
+                  supplierCategoriesOptions.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="repuestos_fabricacion">Repuestos & Fabricación STC</option>
+                    <option value="consumibles_taller">Consumibles & EPP</option>
+                    <option value="viaticos_transporte">Viáticos & Movilidad</option>
+                    <option value="inspeccion_mrt">Inspección Cables (MRT)</option>
+                    <option value="ensayos_end">Ensayos NDT / END</option>
+                    <option value="mano_obra_itk">Mano de Obra ITK</option>
+                    <option value="mano_obra_externa">Mano de Obra Externa</option>
+                    <option value="subcontratos_gruas">Subcontratos & Grúas</option>
+                    <option value="imprevistos_contingencia">Imprevistos de Obra</option>
+                  </>
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Naturaleza Gasto</label>
+              <select
+                value={spendingNature}
+                onChange={(e) => setSpendingNature(e.target.value as 'PRESUPUESTO' | 'REPROCESO')}
+                className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${
+                  spendingNature === 'REPROCESO'
+                    ? 'border-rose-400 bg-rose-50 text-rose-700'
+                    : 'border-slate-300 bg-white text-[#00668F]'
+                }`}
+              >
+                <option value="PRESUPUESTO">PRESUPUESTO (Obra)</option>
+                <option value="REPROCESO">REPROCESO (Garantía)</option>
               </select>
             </div>
 
@@ -645,12 +693,22 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
               <label className="block text-slate-700 font-semibold mb-1">Forma de Pago</label>
               <select
                 value={paymentTermType}
-                onChange={(e) => setPaymentTermType(e.target.value as any)}
+                onChange={(e) => setPaymentTermType(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
               >
-                <option value="credito">Crédito (30/60 días)</option>
-                <option value="anticipo">Anticipo 50% + 50%</option>
-                <option value="contado">Contado Inmediato</option>
+                {paymentTermsOptions.length > 0 ? (
+                  paymentTermsOptions.map((term) => (
+                    <option key={term.id} value={term.name}>
+                      {term.name} {term.code ? `(${term.code})` : ''}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="credito">Crédito (30/60 días)</option>
+                    <option value="anticipo">Anticipo 50% + 50%</option>
+                    <option value="contado">Contado Inmediato</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -702,13 +760,23 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
                     return (
                       <tr key={it.id} className={isPriceAnomaly ? 'bg-amber-50/70' : 'hover:bg-slate-50'}>
-                        <td className="p-2 min-w-[200px]">
+                        <td className="p-2 min-w-[260px] space-y-1">
+                          <input
+                            type="text"
+                            required
+                            placeholder="Nombre / Descripción del repuesto o insumo..."
+                            value={it.name}
+                            onChange={(e) => handleUpdateItem(it.id, 'name', e.target.value)}
+                            className="w-full px-2 py-1 text-xs border border-slate-300 rounded bg-white font-semibold text-slate-800"
+                          />
                           <select
-                            onChange={(e) => handleSelectProduct(it.id, e.target.value)}
+                            onChange={(e) => {
+                              if (e.target.value) handleSelectProduct(it.id, e.target.value);
+                            }}
                             value={it.productId || ''}
-                            className="w-full px-2 py-1 text-xs border rounded bg-white font-medium"
+                            className="w-full px-2 py-0.5 text-[11px] border border-slate-200 rounded bg-slate-50 text-slate-600 font-medium"
                           >
-                            <option value="">Seleccionar del catálogo o escribir...</option>
+                            <option value="">Buscar en catálogo existente...</option>
                             {products.map((p) => (
                               <option key={p.id} value={p.id}>
                                 {p.name} ({p.sku})
