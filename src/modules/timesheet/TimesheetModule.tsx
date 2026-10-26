@@ -19,6 +19,7 @@ import { LightTable } from '../../components/ui/LightTable';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 export const TimesheetModule: React.FC = () => {
   const { timesheets, projects, currentUser, submitTimesheet, approveTimesheet, rejectTimesheet, deleteTimesheet } = useErp();
@@ -134,22 +135,21 @@ export const TimesheetModule: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsConfigModalOpen(true)}
-                  className="text-[10px] text-[#00668F] hover:underline font-bold"
+                  className="text-[10px] text-[#00668F] hover:underline font-bold cursor-pointer"
                 >
                   ⚙️ Editar
                 </button>
               </div>
-              <select
+              <CreatableSelect
                 value={taskName}
-                onChange={(e) => setTaskName(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 bg-white text-xs font-semibold text-gray-800 focus:outline-hidden focus:border-[#00668F]"
-              >
-                {catalogLaborTypes.map((lt) => (
-                  <option key={lt.id} value={lt.name}>
-                    {lt.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setTaskName(val)}
+                options={catalogLaborTypes.map((lt) => ({ id: lt.id, name: lt.name, code: lt.code }))}
+                placeholder="Seleccionar o escribir labor..."
+                moduleId="registro-horas"
+                catalogKey="laborTypes"
+                allowCustomText={true}
+                onOpenConfig={() => setIsConfigModalOpen(true)}
+              />
             </div>
 
             {/* Toque 3: Selector de horas rápido con botones píldora */}
