@@ -7,6 +7,7 @@ import {
   ArrowDownRight,
 } from 'lucide-react';
 import { InventoryAuditLog, Product } from '../../../types';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface InventoryForensicsTabProps {
   logs: InventoryAuditLog[];
@@ -70,16 +71,34 @@ export const InventoryForensicsTab: React.FC<InventoryForensicsTabProps> = ({ lo
                 className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:bg-white focus:outline-hidden focus:border-[#00668F]"
               />
             </div>
-            <select
-              value={selectedSource}
-              onChange={(e) => setSelectedSource(e.target.value)}
-              className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold focus:outline-hidden shrink-0"
-            >
-              <option value="todos">Todos los orígenes</option>
-              <option value="erp_web">ERP Web Oficial</option>
-              <option value="m365_excel_online">Excel Online</option>
-              <option value="qr_scanner_movil">Escáner Móvil</option>
-            </select>
+            <div className="w-56 shrink-0">
+              <CreatableSelect
+                value={
+                  selectedSource === 'todos' ? 'Todos los orígenes' :
+                  selectedSource === 'erp_web' ? 'ERP Web Oficial' :
+                  selectedSource === 'm365_excel_online' ? 'Excel Online' :
+                  selectedSource === 'qr_scanner_movil' ? 'Escáner Móvil' :
+                  selectedSource
+                }
+                onChange={(val) => {
+                  if (val === 'Todos los orígenes' || !val) setSelectedSource('todos');
+                  else if (val === 'ERP Web Oficial') setSelectedSource('erp_web');
+                  else if (val === 'Excel Online') setSelectedSource('m365_excel_online');
+                  else if (val === 'Escáner Móvil') setSelectedSource('qr_scanner_movil');
+                  else setSelectedSource(val);
+                }}
+                options={[
+                  'Todos los orígenes',
+                  'ERP Web Oficial',
+                  'Excel Online',
+                  'Escáner Móvil',
+                ]}
+                placeholder="Origen..."
+                isClearable={false}
+                allowCustomText={false}
+                inputClassName="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold focus:outline-hidden"
+              />
+            </div>
           </div>
 
           {/* Tabla de Logs */}

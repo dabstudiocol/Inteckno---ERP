@@ -17,6 +17,7 @@ import {
 import { PurchaseOrder, Partner, Project } from '../../../types';
 import { LightTable } from '../../../components/ui/LightTable';
 import { formatCOP } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface Props {
   purchaseOrders: PurchaseOrder[];
@@ -338,18 +339,33 @@ export const ProcurementPendingDeliveryTab: React.FC<Props> = ({
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Bodega / Almacén de Destino *</label>
-                <select
-                  value={receivedWarehouse}
-                  onChange={(e) => setReceivedWarehouse(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
-                >
-                  <option value="BOD-MED-01">BOD-MED-01 (Almacén Central Poblado, Medellín)</option>
-                  <option value="TAL-GBL-02">TAL-GBL-02 (Taller de Fabricación Guayabal)</option>
-                  <option value="BOD-METRO-03">BOD-METRO-03 (Patios Bello Metro Medellín Línea K)</option>
-                  <option value="BOD-BOL-04">BOD-BOL-04 (Almacén de Obra Bolivia - Mi Teleférico)</option>
-                  <option value="BOD-RD-05">BOD-RD-05 (Almacén Obra República Dominicana)</option>
-                  <option value="BOD-MOV-06">BOD-MOV-06 (Contenedor Móvil de Obra)</option>
-                </select>
+                <CreatableSelect
+                  value={
+                    receivedWarehouse === 'BOD-MED-01' ? 'BOD-MED-01 (Almacén Central Poblado, Medellín)' :
+                    receivedWarehouse === 'TAL-GBL-02' ? 'TAL-GBL-02 (Taller de Fabricación Guayabal)' :
+                    receivedWarehouse === 'BOD-METRO-03' ? 'BOD-METRO-03 (Patios Bello Metro Medellín Línea K)' :
+                    receivedWarehouse === 'BOD-BOL-04' ? 'BOD-BOL-04 (Almacén de Obra Bolivia - Mi Teleférico)' :
+                    receivedWarehouse === 'BOD-RD-05' ? 'BOD-RD-05 (Almacén Obra República Dominicana)' :
+                    receivedWarehouse === 'BOD-MOV-06' ? 'BOD-MOV-06 (Contenedor Móvil de Obra)' :
+                    receivedWarehouse
+                  }
+                  onChange={(val) => {
+                    const code = val.split(' ')[0]?.trim() || val;
+                    setReceivedWarehouse(code);
+                  }}
+                  options={[
+                    'BOD-MED-01 (Almacén Central Poblado, Medellín)',
+                    'TAL-GBL-02 (Taller de Fabricación Guayabal)',
+                    'BOD-METRO-03 (Patios Bello Metro Medellín Línea K)',
+                    'BOD-BOL-04 (Almacén de Obra Bolivia - Mi Teleférico)',
+                    'BOD-RD-05 (Almacén Obra República Dominicana)',
+                    'BOD-MOV-06 (Contenedor Móvil de Obra)',
+                  ]}
+                  placeholder="Seleccionar almacén..."
+                  isClearable={false}
+                  allowCustomText={true}
+                  inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
+                />
               </div>
 
               <div>

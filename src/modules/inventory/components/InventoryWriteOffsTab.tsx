@@ -14,6 +14,7 @@ import {
 import { InventoryWriteOffRequest } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
 import { formatCOP } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface InventoryWriteOffsTabProps {
   onOpenNewWriteOff?: () => void;
@@ -149,16 +150,34 @@ export const InventoryWriteOffsTab: React.FC<InventoryWriteOffsTabProps> = ({ on
             />
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-medium focus:outline-hidden focus:ring-2 focus:ring-[#00668F]"
-          >
-            <option value="all">Todos los Estados</option>
-            <option value="PENDIENTE_APROBACION_GERENCIA">Pendientes de Gerencia</option>
-            <option value="APROBADO_GERENCIA">Aprobados</option>
-            <option value="RECHAZADO_GERENCIA">Rechazados</option>
-          </select>
+          <div className="w-56 shrink-0">
+            <CreatableSelect
+              value={
+                statusFilter === 'all' ? 'Todos los Estados' :
+                statusFilter === 'PENDIENTE_APROBACION_GERENCIA' ? 'Pendientes de Gerencia' :
+                statusFilter === 'APROBADO_GERENCIA' ? 'Aprobados' :
+                statusFilter === 'RECHAZADO_GERENCIA' ? 'Rechazados' :
+                statusFilter
+              }
+              onChange={(val) => {
+                if (val === 'Todos los Estados' || !val) setStatusFilter('all');
+                else if (val === 'Pendientes de Gerencia') setStatusFilter('PENDIENTE_APROBACION_GERENCIA');
+                else if (val === 'Aprobados') setStatusFilter('APROBADO_GERENCIA');
+                else if (val === 'Rechazados') setStatusFilter('RECHAZADO_GERENCIA');
+                else setStatusFilter(val);
+              }}
+              options={[
+                'Todos los Estados',
+                'Pendientes de Gerencia',
+                'Aprobados',
+                'Rechazados',
+              ]}
+              placeholder="Estado..."
+              isClearable={false}
+              allowCustomText={false}
+              inputClassName="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-medium focus:outline-hidden"
+            />
+          </div>
         </div>
 
         {onOpenNewWriteOff && (

@@ -592,17 +592,33 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                       <Award className="w-4 h-4" />
                       <span>Validación de Competencia END en HR (ASNT / ISO 9712)</span>
                     </div>
-                    <select
-                      value={form.endMethod}
-                      onChange={(e) => setForm({ ...form, endMethod: e.target.value as any })}
-                      className="text-[11px] font-bold px-2 py-1 border rounded bg-white dark:bg-slate-800 border-blue-300"
-                    >
-                      <option value="MRT">MRT (Magneto-inductivo)</option>
-                      <option value="UT">UT (Ultrasonido)</option>
-                      <option value="PT">PT (Tintas Penetrantes)</option>
-                      <option value="MT">MT (Partículas Magnéticas)</option>
-                      <option value="VT">VT (Visual)</option>
-                    </select>
+                    <div className="w-56 shrink-0">
+                      <CreatableSelect
+                        value={
+                          form.endMethod === 'MRT' ? 'MRT (Magneto-inductivo)' :
+                          form.endMethod === 'UT' ? 'UT (Ultrasonido)' :
+                          form.endMethod === 'PT' ? 'PT (Tintas Penetrantes)' :
+                          form.endMethod === 'MT' ? 'MT (Partículas Magnéticas)' :
+                          form.endMethod === 'VT' ? 'VT (Visual)' :
+                          form.endMethod
+                        }
+                        onChange={(val) => {
+                          const method = val.split(' ')[0] as any;
+                          setForm({ ...form, endMethod: method });
+                        }}
+                        options={[
+                          'MRT (Magneto-inductivo)',
+                          'UT (Ultrasonido)',
+                          'PT (Tintas Penetrantes)',
+                          'MT (Partículas Magnéticas)',
+                          'VT (Visual)',
+                        ]}
+                        placeholder="Método END..."
+                        isClearable={false}
+                        allowCustomText={false}
+                        inputClassName="text-[11px] font-bold px-2 py-1 border rounded bg-white dark:bg-slate-800 border-blue-300"
+                      />
+                    </div>
                   </div>
 
                   {certValidation.valid ? (

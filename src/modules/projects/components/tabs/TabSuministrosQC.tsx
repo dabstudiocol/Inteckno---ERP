@@ -21,6 +21,7 @@ import { Project } from '../../../../types';
 import { CriticalSparePart, InspectionEquipment } from '../../../../types/ProjectSchema';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
+import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 
 interface TabSuministrosQCProps {
   project: Project;
@@ -625,18 +626,37 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Categoría Crítica *
                   </label>
-                  <select
-                    value={spareForm.category}
-                    onChange={(e) => setSpareForm({ ...spareForm, category: e.target.value as any })}
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  >
-                    <option value="rodamientos">Rodamientos (Balancín / Volante)</option>
-                    <option value="guarniciones">Guarniciones de Volante (Goma/Poliuretano)</option>
-                    <option value="mordazas">Mordazas Desembragables</option>
-                    <option value="ejes">Ejes y Bulones de Balancín</option>
-                    <option value="sensores">Sensores de Posición / Seguridad</option>
-                    <option value="otros">Otros Repuestos Críticos</option>
-                  </select>
+                  <CreatableSelect
+                    value={
+                      spareForm.category === 'rodamientos' ? 'Rodamientos (Balancín / Volante)' :
+                      spareForm.category === 'guarniciones' ? 'Guarniciones de Volante (Goma/Poliuretano)' :
+                      spareForm.category === 'mordazas' ? 'Mordazas Desembragables' :
+                      spareForm.category === 'ejes' ? 'Ejes y Bulones de Balancín' :
+                      spareForm.category === 'sensores' ? 'Sensores de Posición / Seguridad' :
+                      spareForm.category === 'otros' ? 'Otros Repuestos Críticos' :
+                      spareForm.category
+                    }
+                    onChange={(val) => {
+                      if (val.includes('Rodamientos')) setSpareForm({ ...spareForm, category: 'rodamientos' });
+                      else if (val.includes('Guarniciones')) setSpareForm({ ...spareForm, category: 'guarniciones' });
+                      else if (val.includes('Mordazas')) setSpareForm({ ...spareForm, category: 'mordazas' });
+                      else if (val.includes('Ejes')) setSpareForm({ ...spareForm, category: 'ejes' });
+                      else if (val.includes('Sensores')) setSpareForm({ ...spareForm, category: 'sensores' });
+                      else setSpareForm({ ...spareForm, category: 'otros' });
+                    }}
+                    options={[
+                      'Rodamientos (Balancín / Volante)',
+                      'Guarniciones de Volante (Goma/Poliuretano)',
+                      'Mordazas Desembragables',
+                      'Ejes y Bulones de Balancín',
+                      'Sensores de Posición / Seguridad',
+                      'Otros Repuestos Críticos',
+                    ]}
+                    placeholder="Categoría..."
+                    isClearable={false}
+                    allowCustomText={false}
+                    inputClassName="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  />
                 </div>
               </div>
 

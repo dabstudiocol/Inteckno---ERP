@@ -18,6 +18,7 @@ import {
 import { PurchaseOrder, Partner, Project } from '../../../types';
 import { LightTable } from '../../../components/ui/LightTable';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface Props {
   purchaseOrders: PurchaseOrder[];
@@ -222,58 +223,108 @@ export const ProcurementCorporateMatrixTab: React.FC<Props> = ({
 
         {/* Filtro por Semana */}
         <div>
-          <select
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs"
-          >
-            <option value="all">Todas las Semanas</option>
-            {weeksList.map((w) => (
-              <option key={w} value={w}>{w}</option>
-            ))}
-          </select>
+          <CreatableSelect
+            value={selectedWeek === 'all' ? 'Todas las Semanas' : selectedWeek}
+            onChange={(val) => {
+              if (val === 'Todas las Semanas' || !val) setSelectedWeek('all');
+              else setSelectedWeek(val);
+            }}
+            options={['Todas las Semanas', ...weeksList]}
+            placeholder="Semana..."
+            isClearable={false}
+            allowCustomText={false}
+            inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
+          />
         </div>
 
         {/* Filtro por Proyecto */}
         <div>
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs"
-          >
-            <option value="all">Todos los Proyectos</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.code}>{p.code} — {p.clientName}</option>
-            ))}
-          </select>
+          <CreatableSelect
+            value={
+              selectedProject === 'all'
+                ? 'Todos los Proyectos'
+                : (() => {
+                    const found = projects.find((p) => p.code === selectedProject);
+                    return found ? `${found.code} — ${found.clientName}` : selectedProject;
+                  })()
+            }
+            onChange={(val) => {
+              if (val === 'Todos los Proyectos' || !val) {
+                setSelectedProject('all');
+              } else {
+                const code = val.split(' — ')[0]?.trim() || val;
+                setSelectedProject(code);
+              }
+            }}
+            options={[
+              'Todos los Proyectos',
+              ...projects.map((p) => `${p.code} — ${p.clientName}`),
+            ]}
+            placeholder="Proyecto..."
+            isClearable={false}
+            allowCustomText={false}
+            inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
+          />
         </div>
 
         {/* Filtro por Pago */}
         <div>
-          <select
-            value={selectedPaymentStatus}
-            onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs"
-          >
-            <option value="all">Estado de Pago: Todos</option>
-            <option value="pending">Pendiente de Pago</option>
-            <option value="advance_paid">Anticipo Pagado</option>
-            <option value="paid">Pagado 100%</option>
-          </select>
+          <CreatableSelect
+            value={
+              selectedPaymentStatus === 'all' ? 'Estado de Pago: Todos' :
+              selectedPaymentStatus === 'pending' ? 'Pendiente de Pago' :
+              selectedPaymentStatus === 'advance_paid' ? 'Anticipo Pagado' :
+              selectedPaymentStatus === 'paid' ? 'Pagado 100%' :
+              selectedPaymentStatus
+            }
+            onChange={(val) => {
+              if (val === 'Estado de Pago: Todos' || !val) setSelectedPaymentStatus('all');
+              else if (val === 'Pendiente de Pago') setSelectedPaymentStatus('pending');
+              else if (val === 'Anticipo Pagado') setSelectedPaymentStatus('advance_paid');
+              else if (val === 'Pagado 100%') setSelectedPaymentStatus('paid');
+              else setSelectedPaymentStatus(val);
+            }}
+            options={[
+              'Estado de Pago: Todos',
+              'Pendiente de Pago',
+              'Anticipo Pagado',
+              'Pagado 100%',
+            ]}
+            placeholder="Estado de Pago..."
+            isClearable={false}
+            allowCustomText={false}
+            inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
+          />
         </div>
 
         {/* Filtro por Entrega */}
         <div>
-          <select
-            value={selectedDeliveryStatus}
-            onChange={(e) => setSelectedDeliveryStatus(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs"
-          >
-            <option value="all">Estado Entrega: Todos</option>
-            <option value="pendiente">Por Despachar</option>
-            <option value="en_transito">En Tránsito</option>
-            <option value="entregado">Entregado en Bodega</option>
-          </select>
+          <CreatableSelect
+            value={
+              selectedDeliveryStatus === 'all' ? 'Estado Entrega: Todos' :
+              selectedDeliveryStatus === 'pendiente' ? 'Por Despachar' :
+              selectedDeliveryStatus === 'en_transito' ? 'En Tránsito' :
+              selectedDeliveryStatus === 'entregado' ? 'Entregado en Bodega' :
+              selectedDeliveryStatus
+            }
+            onChange={(val) => {
+              if (val === 'Estado Entrega: Todos' || !val) setSelectedDeliveryStatus('all');
+              else if (val === 'Por Despachar') setSelectedDeliveryStatus('pendiente');
+              else if (val === 'En Tránsito') setSelectedDeliveryStatus('en_transito');
+              else if (val === 'Entregado en Bodega') setSelectedDeliveryStatus('entregado');
+              else setSelectedDeliveryStatus(val);
+            }}
+            options={[
+              'Estado Entrega: Todos',
+              'Por Despachar',
+              'En Tránsito',
+              'Entregado en Bodega',
+            ]}
+            placeholder="Estado Entrega..."
+            isClearable={false}
+            allowCustomText={false}
+            inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
+          />
         </div>
       </div>
 

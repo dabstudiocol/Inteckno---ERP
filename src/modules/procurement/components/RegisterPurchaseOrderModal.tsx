@@ -569,14 +569,25 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-slate-700 font-semibold mb-1">Moneda de Negociación</label>
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as any)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
-              >
-                <option value="COP">COP (Pesos Colombianos)</option>
-                <option value="USD">USD (Dólares Americanos)</option>
-              </select>
+              <CreatableSelect
+                value={
+                  currency === 'COP' ? 'COP (Pesos Colombianos)' :
+                  currency === 'USD' ? 'USD (Dólares Americanos)' :
+                  currency
+                }
+                onChange={(val) => {
+                  if (val.includes('USD')) setCurrency('USD');
+                  else setCurrency('COP');
+                }}
+                options={[
+                  'COP (Pesos Colombianos)',
+                  'USD (Dólares Americanos)',
+                ]}
+                placeholder="Moneda..."
+                isClearable={false}
+                allowCustomText={false}
+                inputClassName="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+              />
             </div>
 
             <div>
@@ -667,18 +678,29 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
             <div>
               <label className="block text-slate-700 font-semibold mb-1">Naturaleza Gasto</label>
-              <select
-                value={spendingNature}
-                onChange={(e) => setSpendingNature(e.target.value as 'PRESUPUESTO' | 'REPROCESO')}
-                className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${
+              <CreatableSelect
+                value={
+                  spendingNature === 'PRESUPUESTO' ? 'PRESUPUESTO (Obra)' :
+                  spendingNature === 'REPROCESO' ? 'REPROCESO (Garantía)' :
+                  spendingNature
+                }
+                onChange={(val) => {
+                  if (val.includes('REPROCESO')) setSpendingNature('REPROCESO');
+                  else setSpendingNature('PRESUPUESTO');
+                }}
+                options={[
+                  'PRESUPUESTO (Obra)',
+                  'REPROCESO (Garantía)',
+                ]}
+                placeholder="Naturaleza..."
+                isClearable={false}
+                allowCustomText={false}
+                inputClassName={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${
                   spendingNature === 'REPROCESO'
                     ? 'border-rose-400 bg-rose-50 text-rose-700'
                     : 'border-slate-300 bg-white text-[#00668F]'
                 }`}
-              >
-                <option value="PRESUPUESTO">PRESUPUESTO (Obra)</option>
-                <option value="REPROCESO">REPROCESO (Garantía)</option>
-              </select>
+              />
             </div>
 
             <div>

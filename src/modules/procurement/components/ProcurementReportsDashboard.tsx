@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { PurchaseOrder, Project, Partner } from '../../../types';
 import { formatCOP, formatUSD, formatTRM } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface ProcurementReportsDashboardProps {
   purchaseOrders: PurchaseOrder[];
@@ -277,30 +278,63 @@ export const ProcurementReportsDashboard: React.FC<ProcurementReportsDashboardPr
           </div>
 
           {/* Filtro por Ámbito */}
-          <select
-            value={scope}
-            onChange={(e) => setScope(e.target.value as ScopeFilter)}
-            className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden focus:border-[#003650] cursor-pointer"
-          >
-            <option value="all">Todo (Proyectos + Oficina)</option>
-            <option value="projects">Solo Proyectos STC</option>
-            <option value="office">Solo Oficina & Administrativo</option>
-          </select>
+          <div className="w-56 shrink-0">
+            <CreatableSelect
+              value={
+                scope === 'all' ? 'Todo (Proyectos + Oficina)' :
+                scope === 'projects' ? 'Solo Proyectos STC' :
+                scope === 'office' ? 'Solo Oficina & Administrativo' :
+                scope
+              }
+              onChange={(val) => {
+                if (val === 'Todo (Proyectos + Oficina)' || !val) setScope('all');
+                else if (val === 'Solo Proyectos STC') setScope('projects');
+                else if (val === 'Solo Oficina & Administrativo') setScope('office');
+                else setScope(val as any);
+              }}
+              options={[
+                'Todo (Proyectos + Oficina)',
+                'Solo Proyectos STC',
+                'Solo Oficina & Administrativo',
+              ]}
+              placeholder="Ámbito..."
+              isClearable={false}
+              allowCustomText={false}
+              inputClassName="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden"
+            />
+          </div>
 
           {/* Filtro por Proyecto específico */}
           {scope !== 'office' && (
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden focus:border-[#003650] cursor-pointer max-w-[220px] truncate"
-            >
-              <option value="all">Todos los Proyectos</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} - {p.name}
-                </option>
-              ))}
-            </select>
+            <div className="w-64 shrink-0">
+              <CreatableSelect
+                value={
+                  selectedProjectId === 'all'
+                    ? 'Todos los Proyectos'
+                    : (() => {
+                        const found = projects.find((p) => p.id === selectedProjectId);
+                        return found ? `${found.code} - ${found.name}` : selectedProjectId;
+                      })()
+                }
+                onChange={(val) => {
+                  if (val === 'Todos los Proyectos' || !val) {
+                    setSelectedProjectId('all');
+                  } else {
+                    const code = val.split(' - ')[0]?.trim();
+                    const found = projects.find((p) => p.code === code || p.id === val);
+                    setSelectedProjectId(found ? found.id : val);
+                  }
+                }}
+                options={[
+                  'Todos los Proyectos',
+                  ...projects.map((p) => `${p.code} - ${p.name}`),
+                ]}
+                placeholder="Proyecto..."
+                isClearable={false}
+                allowCustomText={false}
+                inputClassName="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden"
+              />
+            </div>
           )}
         </div>
 

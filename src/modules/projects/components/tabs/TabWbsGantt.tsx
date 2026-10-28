@@ -1101,16 +1101,34 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                       >
                         {/* Estado */}
                         <td className="py-2 px-2 border-r border-slate-100 dark:border-slate-800 text-center" onClick={(e) => e.stopPropagation()}>
-                          <select
-                            value={task.status}
-                            onChange={(e) => onUpdateTask(task.id, { status: e.target.value as any })}
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer border-0 focus:outline-none ${st.bg}`}
-                          >
-                            <option value="pending">Programada</option>
-                            <option value="in_progress">En Ejecución</option>
-                            <option value="completed">Finalizada</option>
-                            <option value="blocked">Detenida</option>
-                          </select>
+                          <div className="w-28 mx-auto">
+                            <CreatableSelect
+                              value={
+                                task.status === 'pending' ? 'Programada' :
+                                task.status === 'in_progress' ? 'En Ejecución' :
+                                task.status === 'completed' ? 'Finalizada' :
+                                task.status === 'blocked' ? 'Detenida' :
+                                task.status
+                              }
+                              onChange={(val) => {
+                                if (val === 'Programada') onUpdateTask(task.id, { status: 'pending' });
+                                else if (val === 'En Ejecución') onUpdateTask(task.id, { status: 'in_progress' });
+                                else if (val === 'Finalizada') onUpdateTask(task.id, { status: 'completed' });
+                                else if (val === 'Detenida') onUpdateTask(task.id, { status: 'blocked' });
+                                else onUpdateTask(task.id, { status: val as any });
+                              }}
+                              options={[
+                                'Programada',
+                                'En Ejecución',
+                                'Finalizada',
+                                'Detenida',
+                              ]}
+                              placeholder="Estado..."
+                              isClearable={false}
+                              allowCustomText={false}
+                              inputClassName={`text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer border-0 focus:outline-none ${st.bg}`}
+                            />
+                          </div>
                         </td>
 
                         {/* Prioridad */}
@@ -1438,15 +1456,21 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                     <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Prioridad Técnica
                     </label>
-                    <select
-                      value={taskForm.priority}
-                      onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as any })}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-                    >
-                      {customPrioridades.map((p) => (
-                        <option key={p.id} value={p.id}>{p.label}</option>
-                      ))}
-                    </select>
+                    <CreatableSelect
+                      value={
+                        customPrioridades.find((p) => p.id === taskForm.priority)?.label ||
+                        taskForm.priority
+                      }
+                      onChange={(val) => {
+                        const found = customPrioridades.find((p) => p.label === val || p.id === val);
+                        setTaskForm({ ...taskForm, priority: (found ? found.id : val) as any });
+                      }}
+                      options={customPrioridades.map((p) => p.label)}
+                      placeholder="Prioridad..."
+                      isClearable={false}
+                      allowCustomText={false}
+                      inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                    />
                   </div>
 
                   <div>
@@ -1596,20 +1620,34 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                     <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Actividad Predecesora
                     </label>
-                    <select
-                      value={taskForm.predecessorsStr.split(',')[0]?.trim() || ''}
-                      onChange={(e) => handlePredecessorChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
-                    >
-                      <option value="">Sin predecesora (Inicia directamente)</option>
-                      {tasks
-                        .filter((t) => t.id !== editingTask?.id && t.code !== taskForm.code)
-                        .map((t) => (
-                          <option key={t.id || t.code} value={t.code}>
-                            {t.code} - {t.name} (Termina: {t.endDate || 'N/A'})
-                          </option>
-                        ))}
-                    </select>
+                    <CreatableSelect
+                      value={
+                        (() => {
+                          const currentPredCode = taskForm.predecessorsStr.split(',')[0]?.trim();
+                          if (!currentPredCode) return 'Sin predecesora (Inicia directamente)';
+                          const found = tasks.find((t) => t.code === currentPredCode);
+                          return found ? `${found.code} - ${found.name}` : currentPredCode;
+                        })()
+                      }
+                      onChange={(val) => {
+                        if (val === 'Sin predecesora (Inicia directamente)' || !val) {
+                          handlePredecessorChange('');
+                        } else {
+                          const code = val.split(' - ')[0]?.trim() || val;
+                          handlePredecessorChange(code);
+                        }
+                      }}
+                      options={[
+                        'Sin predecesora (Inicia directamente)',
+                        ...tasks
+                          .filter((t) => t.id !== editingTask?.id && t.code !== taskForm.code)
+                          .map((t) => `${t.code} - ${t.name}`),
+                      ]}
+                      placeholder="Predecesora..."
+                      isClearable={false}
+                      allowCustomText={false}
+                      inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                    />
                     <span className="text-[10px] text-slate-400 mt-1 block">
                       Al elegirla, sus fechas empatan automáticamente.
                     </span>
@@ -1619,16 +1657,32 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                     <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Tipo de Relación
                     </label>
-                    <select
-                      value={taskForm.dependencyType}
-                      onChange={(e) => handleDependencyTypeChange(e.target.value as DependencyType)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
-                    >
-                      <option value="FC">Fin a Comienzo (Inicia al terminar la anterior)</option>
-                      <option value="CC">Comienzo a Comienzo (Inician al mismo tiempo)</option>
-                      <option value="FF">Fin a Fin (Terminan al mismo tiempo)</option>
-                      <option value="CF">Comienzo a Fin</option>
-                    </select>
+                    <CreatableSelect
+                      value={
+                        taskForm.dependencyType === 'FC' ? 'Fin a Comienzo (Inicia al terminar la anterior)' :
+                        taskForm.dependencyType === 'CC' ? 'Comienzo a Comienzo (Inician al mismo tiempo)' :
+                        taskForm.dependencyType === 'FF' ? 'Fin a Fin (Terminan al mismo tiempo)' :
+                        taskForm.dependencyType === 'CF' ? 'Comienzo a Fin' :
+                        taskForm.dependencyType
+                      }
+                      onChange={(val) => {
+                        if (val.startsWith('Fin a Comienzo')) handleDependencyTypeChange('FC');
+                        else if (val.startsWith('Comienzo a Comienzo')) handleDependencyTypeChange('CC');
+                        else if (val.startsWith('Fin a Fin')) handleDependencyTypeChange('FF');
+                        else if (val.startsWith('Comienzo a Fin')) handleDependencyTypeChange('CF');
+                        else handleDependencyTypeChange(val as DependencyType);
+                      }}
+                      options={[
+                        'Fin a Comienzo (Inicia al terminar la anterior)',
+                        'Comienzo a Comienzo (Inician al mismo tiempo)',
+                        'Fin a Fin (Terminan al mismo tiempo)',
+                        'Comienzo a Fin',
+                      ]}
+                      placeholder="Tipo relación..."
+                      isClearable={false}
+                      allowCustomText={false}
+                      inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                    />
                   </div>
 
                   <div>
@@ -1691,14 +1745,25 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                     <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Método de Avance
                     </label>
-                    <select
-                      value={taskForm.progressMethod}
-                      onChange={(e) => setTaskForm({ ...taskForm, progressMethod: e.target.value as any })}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
-                    >
-                      <option value="percent">Porcentaje Físico Directo</option>
-                      <option value="hours">Basado en Horas Incurridas (Hoja de Horas)</option>
-                    </select>
+                    <CreatableSelect
+                      value={
+                        taskForm.progressMethod === 'percent' ? 'Porcentaje Físico Directo' :
+                        taskForm.progressMethod === 'hours' ? 'Basado en Horas Incurridas (Hoja de Horas)' :
+                        taskForm.progressMethod
+                      }
+                      onChange={(val) => {
+                        if (val.startsWith('Basado en Horas')) setTaskForm({ ...taskForm, progressMethod: 'hours' });
+                        else setTaskForm({ ...taskForm, progressMethod: 'percent' });
+                      }}
+                      options={[
+                        'Porcentaje Físico Directo',
+                        'Basado en Horas Incurridas (Hoja de Horas)',
+                      ]}
+                      placeholder="Método avance..."
+                      isClearable={false}
+                      allowCustomText={false}
+                      inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                    />
                   </div>
                 </div>
 

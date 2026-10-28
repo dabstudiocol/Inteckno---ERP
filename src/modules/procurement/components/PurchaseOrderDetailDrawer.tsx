@@ -583,16 +583,35 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-slate-600 font-medium mb-1">Porcentaje de Anticipo</label>
-                    <select
-                      value={advancePercent}
-                      onChange={(e) => setAdvancePercent(Number(e.target.value))}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
-                    >
-                      <option value={0}>0% (Pago contra entrega)</option>
-                      <option value={30}>30% de Anticipo</option>
-                      <option value={50}>50% de Anticipo</option>
-                      <option value={100}>100% Pago Anticipado</option>
-                    </select>
+                    <CreatableSelect
+                      value={
+                        advancePercent === 0 ? '0% (Pago contra entrega)' :
+                        advancePercent === 30 ? '30% de Anticipo' :
+                        advancePercent === 50 ? '50% de Anticipo' :
+                        advancePercent === 100 ? '100% Pago Anticipado' :
+                        `${advancePercent}%`
+                      }
+                      onChange={(val) => {
+                        if (val.includes('0%')) setAdvancePercent(0);
+                        else if (val.includes('30%')) setAdvancePercent(30);
+                        else if (val.includes('50%')) setAdvancePercent(50);
+                        else if (val.includes('100%')) setAdvancePercent(100);
+                        else {
+                          const num = parseInt(val.replace(/\D/g, ''), 10);
+                          setAdvancePercent(isNaN(num) ? 0 : num);
+                        }
+                      }}
+                      options={[
+                        '0% (Pago contra entrega)',
+                        '30% de Anticipo',
+                        '50% de Anticipo',
+                        '100% Pago Anticipado',
+                      ]}
+                      placeholder="Anticipo..."
+                      isClearable={false}
+                      allowCustomText={true}
+                      inputClassName="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                    />
                   </div>
 
                   <div>

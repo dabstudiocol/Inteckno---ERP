@@ -23,6 +23,7 @@ import {
   ExtractedDocumentAnalysis,
 } from '../../core/services/aiDocumentService';
 import { getGeminiApiKey } from '../../core/services/geminiChatService';
+import { CreatableSelect } from '../common/CreatableSelect';
 
 export type AiDocType = 'factura_cotizacion' | 'cedula_sst' | 'tecnico_stc' | 'ecm_general';
 
@@ -412,36 +413,76 @@ export const AiDocumentUploader: React.FC<AiDocumentUploaderProps> = ({
                       <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                         Categoría Documental:
                       </label>
-                      <select
-                        value={editedCategory}
-                        onChange={(e) => setEditedCategory(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs outline-none"
-                      >
-                        <option value="planos">Planos y Diagramas Unifilares/CAD</option>
-                        <option value="certificados_hseq">Certificados Calibración END / Alturas (HSEQ)</option>
-                        <option value="manuales_stc">Manuales de Fabricante / Fichas STC</option>
-                        <option value="actas_contratos">Actas, Contratos y Facturas</option>
-                        <option value="procedimientos">Procedimientos de Montaje y Desmonte</option>
-                        <option value="pliegos_licitacion">Pliegos de Licitación y Contratación</option>
-                      </select>
+                      <CreatableSelect
+                        value={
+                          editedCategory === 'planos' ? 'Planos y Diagramas Unifilares/CAD' :
+                          editedCategory === 'certificados_hseq' ? 'Certificados Calibración END / Alturas (HSEQ)' :
+                          editedCategory === 'manuales_stc' ? 'Manuales de Fabricante / Fichas STC' :
+                          editedCategory === 'actas_contratos' ? 'Actas, Contratos y Facturas' :
+                          editedCategory === 'procedimientos' ? 'Procedimientos de Montaje y Desmonte' :
+                          editedCategory === 'pliegos_licitacion' ? 'Pliegos de Licitación y Contratación' :
+                          editedCategory
+                        }
+                        onChange={(val) => {
+                          if (val.includes('Planos')) setEditedCategory('planos');
+                          else if (val.includes('Certificados')) setEditedCategory('certificados_hseq');
+                          else if (val.includes('Manuales')) setEditedCategory('manuales_stc');
+                          else if (val.includes('Actas')) setEditedCategory('actas_contratos');
+                          else if (val.includes('Procedimientos')) setEditedCategory('procedimientos');
+                          else if (val.includes('Pliegos')) setEditedCategory('pliegos_licitacion');
+                          else setEditedCategory(val);
+                        }}
+                        options={[
+                          'Planos y Diagramas Unifilares/CAD',
+                          'Certificados Calibración END / Alturas (HSEQ)',
+                          'Manuales de Fabricante / Fichas STC',
+                          'Actas, Contratos y Facturas',
+                          'Procedimientos de Montaje y Desmonte',
+                          'Pliegos de Licitación y Contratación',
+                        ]}
+                        placeholder="Categoría..."
+                        allowCustomText={true}
+                        isClearable={false}
+                        inputClassName="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs"
+                      />
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                         Área Responsable:
                       </label>
-                      <select
-                        value={editedDepartment}
-                        onChange={(e) => setEditedDepartment(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs outline-none"
-                      >
-                        <option value="Operaciones">Operaciones & Mantenimiento</option>
-                        <option value="HSEQ">HSEQ & Seguridad</option>
-                        <option value="Ingeniería">Ingeniería & Proyectos</option>
-                        <option value="Comercial">Comercial & Licitaciones</option>
-                        <option value="Administración">Administración & Finanzas</option>
-                        <option value="Sistemas">Sistemas & TI</option>
-                      </select>
+                      <CreatableSelect
+                        value={
+                          editedDepartment === 'Operaciones' ? 'Operaciones & Mantenimiento' :
+                          editedDepartment === 'HSEQ' ? 'HSEQ & Seguridad' :
+                          editedDepartment === 'Ingeniería' ? 'Ingeniería & Proyectos' :
+                          editedDepartment === 'Comercial' ? 'Comercial & Licitaciones' :
+                          editedDepartment === 'Administración' ? 'Administración & Finanzas' :
+                          editedDepartment === 'Sistemas' ? 'Sistemas & TI' :
+                          editedDepartment
+                        }
+                        onChange={(val) => {
+                          if (val.includes('Operaciones')) setEditedDepartment('Operaciones');
+                          else if (val.includes('HSEQ')) setEditedDepartment('HSEQ');
+                          else if (val.includes('Ingeniería')) setEditedDepartment('Ingeniería');
+                          else if (val.includes('Comercial')) setEditedDepartment('Comercial');
+                          else if (val.includes('Administración')) setEditedDepartment('Administración');
+                          else if (val.includes('Sistemas')) setEditedDepartment('Sistemas');
+                          else setEditedDepartment(val);
+                        }}
+                        options={[
+                          'Operaciones & Mantenimiento',
+                          'HSEQ & Seguridad',
+                          'Ingeniería & Proyectos',
+                          'Comercial & Licitaciones',
+                          'Administración & Finanzas',
+                          'Sistemas & TI',
+                        ]}
+                        placeholder="Área..."
+                        allowCustomText={true}
+                        isClearable={false}
+                        inputClassName="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs"
+                      />
                     </div>
                   </div>
 
