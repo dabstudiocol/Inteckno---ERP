@@ -818,16 +818,20 @@ export const ArticulosModule: React.FC = () => {
             {/* Buscador y Filtro de Aprobación */}
             <div className="flex items-center gap-2 w-full xl:w-auto flex-wrap sm:flex-nowrap">
               {/* Filtro por Estado */}
-              <select
-                value={selectedStatusFilter}
-                onChange={(e) => setSelectedStatusFilter(e.target.value as any)}
-                className="text-xs font-bold p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
-              >
-                <option value="all">Todos los Estados</option>
-                <option value="aprobado">Oficiales Aprobados</option>
-                <option value="en_revision">En Revisión</option>
-                <option value="borrador">Borradores</option>
-              </select>
+              <div className="w-48">
+                <CreatableSelect
+                  value={selectedStatusFilter}
+                  options={[
+                    { id: 'all', name: 'Todos los Estados' },
+                    { id: 'aprobado', name: 'Oficiales Aprobados' },
+                    { id: 'en_revision', name: 'En Revisión' },
+                    { id: 'borrador', name: 'Borradores' },
+                  ]}
+                  onChange={(val) => setSelectedStatusFilter((val as any) || 'all')}
+                  placeholder="Estado..."
+                  isClearable={false}
+                />
+              </div>
 
               {/* Buscador */}
               <div className="relative flex-1 sm:w-64 shrink-0">
@@ -1637,15 +1641,17 @@ export const ArticulosModule: React.FC = () => {
                   <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
                     Estado Técnico de Aprobación
                   </label>
-                  <select
+                  <CreatableSelect
                     value={newArticleForm.status}
-                    onChange={(e) => setNewArticleForm({ ...newArticleForm, status: e.target.value as any })}
-                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold text-xs"
-                  >
-                    <option value="aprobado">Oficial / Aprobado</option>
-                    <option value="en_revision">En Revisión Técnica</option>
-                    <option value="borrador">Borrador</option>
-                  </select>
+                    options={[
+                      { id: 'aprobado', name: 'Oficial / Aprobado' },
+                      { id: 'en_revision', name: 'En Revisión Técnica' },
+                      { id: 'borrador', name: 'Borrador' },
+                    ]}
+                    onChange={(val) => setNewArticleForm({ ...newArticleForm, status: (val as any) || 'borrador' })}
+                    placeholder="Estado técnico..."
+                    isClearable={false}
+                  />
                 </div>
 
                 <div>

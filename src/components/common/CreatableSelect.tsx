@@ -23,6 +23,7 @@ interface CreatableSelectProps {
   disabled?: boolean;
   required?: boolean;
   helpText?: string;
+  isClearable?: boolean;
   onOpenConfig?: () => void;
 }
 
@@ -40,6 +41,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   disabled = false,
   required = false,
   helpText,
+  isClearable = true,
   onOpenConfig,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -184,7 +186,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
         />
 
         <div className="absolute right-2 flex items-center gap-1 z-10">
-          {(value || searchTerm) && !disabled && (
+          {(value || searchTerm) && !disabled && isClearable && (
             <button
               type="button"
               onMouseDown={(e) => {

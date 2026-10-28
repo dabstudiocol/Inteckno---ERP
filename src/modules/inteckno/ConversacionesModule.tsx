@@ -59,6 +59,7 @@ import {
 } from 'lucide-react';
 import { useErp, normalizeChannelId } from '../../core/storage/erpStore';
 import { ChatMessage, ChatGroup } from '../../types';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 import {
   transcribeAndExtractVoiceNote,
   analyzeInspectionImage,
@@ -3906,18 +3907,18 @@ export const ConversacionesModule: React.FC = () => {
 
                     {nonGroupMembers.length > 0 ? (
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <select
-                          value={memberToAddId}
-                          onChange={(e) => setMemberToAddId(e.target.value)}
-                          className="flex-1 h-10 px-3 rounded-xl bg-white text-gray-800 text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-[#00668F]/30 shadow-2xs"
-                        >
-                          <option value="">Selecciona un colaborador de INTECKNO...</option>
-                          {nonGroupMembers.map((u) => (
-                            <option key={u.id} value={u.id}>
-                              {u.name} — {u.roleLabel} ({u.department})
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex-1">
+                          <CreatableSelect
+                            value={memberToAddId}
+                            options={nonGroupMembers.map((u) => ({
+                              id: u.id,
+                              name: `${u.name} — ${u.roleLabel} (${u.department})`,
+                            }))}
+                            onChange={(val) => setMemberToAddId(val || '')}
+                            placeholder="Buscar colaborador de INTECKNO..."
+                            isClearable={true}
+                          />
+                        </div>
                         <button
                           onClick={handleAddMemberToCurrentGroup}
                           disabled={!memberToAddId}
@@ -4461,31 +4462,32 @@ export const ConversacionesModule: React.FC = () => {
                 {/* Proyecto vinculado */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-gray-700">Proyecto Vinculado</label>
-                  <select
+                  <CreatableSelect
                     value={actionProjectCode}
-                    onChange={(e) => setActionProjectCode(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-[#00668F] focus:outline-none bg-white"
-                  >
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.code}>
-                        {p.code} - {p.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={projects.map((p) => ({
+                      id: p.code,
+                      name: `${p.code} - ${p.name}`,
+                    }))}
+                    onChange={(val) => setActionProjectCode(val || '')}
+                    placeholder="Proyecto..."
+                    isClearable={false}
+                  />
                 </div>
 
                 {/* Prioridad */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-gray-700">Prioridad</label>
-                  <select
+                  <CreatableSelect
                     value={actionPriority}
-                    onChange={(e) => setActionPriority(e.target.value as any)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-[#00668F] focus:outline-none bg-white font-bold"
-                  >
-                    <option value="Baja">Baja</option>
-                    <option value="Media">Media</option>
-                    <option value="Alta">Alta / Urgente</option>
-                  </select>
+                    options={[
+                      { id: 'Baja', name: 'Baja' },
+                      { id: 'Media', name: 'Media' },
+                      { id: 'Alta', name: 'Alta / Urgente' },
+                    ]}
+                    onChange={(val) => setActionPriority((val as any) || 'Media')}
+                    placeholder="Prioridad..."
+                    isClearable={false}
+                  />
                 </div>
               </div>
 
@@ -4505,17 +4507,19 @@ export const ConversacionesModule: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10.5px] font-bold text-gray-700">Rol Responsable</label>
-                    <select
+                    <CreatableSelect
                       value={wbsAssignedRole}
-                      onChange={(e) => setWbsAssignedRole(e.target.value)}
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                    >
-                      <option value="Técnico Especialista STC">Técnico Especialista STC</option>
-                      <option value="Ingeniero Residente">Ingeniero Residente</option>
-                      <option value="Técnico Mecánico de Alturas">Técnico Mecánico de Alturas</option>
-                      <option value="Inspector Eléctrico STC">Inspector Eléctrico STC</option>
-                      <option value="Líder HSEQ / SST">Líder HSEQ / SST</option>
-                    </select>
+                      options={[
+                        { id: 'Técnico Especialista STC', name: 'Técnico Especialista STC' },
+                        { id: 'Ingeniero Residente', name: 'Ingeniero Residente' },
+                        { id: 'Técnico Mecánico de Alturas', name: 'Técnico Mecánico de Alturas' },
+                        { id: 'Inspector Eléctrico STC', name: 'Inspector Eléctrico STC' },
+                        { id: 'Líder HSEQ / SST', name: 'Líder HSEQ / SST' },
+                      ]}
+                      onChange={(val) => setWbsAssignedRole(val || 'Técnico Especialista STC')}
+                      placeholder="Rol responsable..."
+                      isClearable={false}
+                    />
                   </div>
                 </div>
               )}
@@ -4525,18 +4529,20 @@ export const ConversacionesModule: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className="text-[10.5px] font-bold text-gray-700">Tipo de Incidente SST</label>
-                      <select
+                      <CreatableSelect
                         value={hseqIncidentType}
-                        onChange={(e) => setHseqIncidentType(e.target.value)}
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white font-medium"
-                      >
-                        <option value="Condición Insegura en Alturas">Condición Insegura en Alturas</option>
-                        <option value="Acto Inseguro">Acto Inseguro</option>
-                        <option value="Incidente Operativo STC">Incidente Operativo STC</option>
-                        <option value="Desgaste Crítico de Cable">Desgaste Crítico de Cable</option>
-                        <option value="Falla de Polea / Balancín">Falla de Polea / Balancín</option>
-                        <option value="Parada de Emergencia no Programada">Parada de Emergencia</option>
-                      </select>
+                        options={[
+                          { id: 'Condición Insegura en Alturas', name: 'Condición Insegura en Alturas' },
+                          { id: 'Acto Inseguro', name: 'Acto Inseguro' },
+                          { id: 'Incidente Operativo STC', name: 'Incidente Operativo STC' },
+                          { id: 'Desgaste Crítico de Cable', name: 'Desgaste Crítico de Cable' },
+                          { id: 'Falla de Polea / Balancín', name: 'Falla de Polea / Balancín' },
+                          { id: 'Parada de Emergencia no Programada', name: 'Parada de Emergencia' },
+                        ]}
+                        onChange={(val) => setHseqIncidentType(val || 'Condición Insegura en Alturas')}
+                        placeholder="Tipo de incidente..."
+                        isClearable={false}
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10.5px] font-bold text-gray-700">Ubicación / Pilona</label>
@@ -4587,16 +4593,18 @@ export const ConversacionesModule: React.FC = () => {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10.5px] font-bold text-gray-700">Unidad</label>
-                      <select
+                      <CreatableSelect
                         value={reqProductUnit}
-                        onChange={(e) => setReqProductUnit(e.target.value)}
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                      >
-                        <option value="unidades">unidades</option>
-                        <option value="juegos / kits">juegos / kits</option>
-                        <option value="metros">metros</option>
-                        <option value="galones">galones</option>
-                      </select>
+                        options={[
+                          { id: 'unidades', name: 'unidades' },
+                          { id: 'juegos / kits', name: 'juegos / kits' },
+                          { id: 'metros', name: 'metros' },
+                          { id: 'galones', name: 'galones' },
+                        ]}
+                        onChange={(val) => setReqProductUnit(val || 'unidades')}
+                        placeholder="Unidad..."
+                        isClearable={false}
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10.5px] font-bold text-gray-700">SKU / Referencia</label>

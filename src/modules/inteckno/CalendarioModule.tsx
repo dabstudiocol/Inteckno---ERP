@@ -954,18 +954,21 @@ export const CalendarioModule: React.FC = () => {
           </div>
 
           {/* Filtro de Tipos */}
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-100 text-gray-700 focus:outline-hidden cursor-pointer"
-          >
-            <option value="all">Todos los Tipos</option>
-            {catalogEventTypes.map((t) => (
-              <option key={t.id} value={t.code || t.name}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+          <div className="w-48">
+            <CreatableSelect
+              value={filterType}
+              options={[
+                { id: 'all', name: 'Todos los Tipos' },
+                ...catalogEventTypes.map((t) => ({
+                  id: t.code || t.name,
+                  name: t.name,
+                })),
+              ]}
+              onChange={(val) => setFilterType(val || 'all')}
+              placeholder="Tipo de evento..."
+              isClearable={false}
+            />
+          </div>
 
           {/* Sincronización M365 (Teams & Outlook) - Discreta y elegante */}
           <button
@@ -1550,13 +1553,23 @@ export const CalendarioModule: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsNewModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-gray-400 hover:text-gray-700 flex items-center justify-center cursor-pointer shrink-0 aspect-square"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(true)}
+                  className="w-8 h-8 rounded-full bg-slate-100 text-gray-500 hover:text-[#00668F] hover:bg-slate-200 flex items-center justify-center cursor-pointer shrink-0 aspect-square"
+                  title="Configurar catálogos del módulo"
+                >
+                  <Settings size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsNewModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 text-gray-400 hover:text-gray-700 flex items-center justify-center cursor-pointer shrink-0 aspect-square"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* ALERTA DE CONFLICTO DE CUADRILLA / SOLAPAMIENTO CON MEMORIA COLECTIVA */}
@@ -1954,57 +1967,48 @@ export const CalendarioModule: React.FC = () => {
 
                 <div>
                   <label className="font-bold text-gray-800 block mb-1">Proyecto STC Asociado</label>
-                  <select
+                  <CreatableSelect
                     value={newEventForm.projectCode}
-                    onChange={(e) =>
-                      setNewEventForm({ ...newEventForm, projectCode: e.target.value })
+                    options={projects.map((p) => ({
+                      id: p.code,
+                      name: `${p.code} - ${p.name}`,
+                    }))}
+                    onChange={(val) =>
+                      setNewEventForm({ ...newEventForm, projectCode: val || '' })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-100 text-gray-800 focus:bg-white focus:shadow-xs font-medium shadow-2xs"
-                  >
-                    {projects.map((p) => (
-                      <option key={p.code} value={p.code}>
-                        {p.code} - {p.name}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Proyecto STC..."
+                    isClearable={false}
+                  />
                 </div>
               </div>
 
               {/* Recordatorio Configurable */}
               <div>
-                <label className="font-bold text-gray-800 block mb-1 flex items-center justify-between">
+                <label className="font-bold text-gray-800 block mb-1">
                   <span className="flex items-center gap-1.5">
                     <Bell size={14} className="text-[#00668F]" />
                     <span>Alerta de Recordatorio</span>
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsConfigModalOpen(true)}
-                    className="text-[11px] font-semibold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Settings size={11} />
-                    <span>Configurar</span>
-                  </button>
                 </label>
-                <select
-                  value={newEventForm.reminderMinutes}
-                  onChange={(e) =>
-                    setNewEventForm({ ...newEventForm, reminderMinutes: Number(e.target.value) })
+                <CreatableSelect
+                  value={String(newEventForm.reminderMinutes)}
+                  options={
+                    catalogReminderTimes.length > 0
+                      ? catalogReminderTimes.map((opt) => ({
+                          id: String(Number(opt.code) || 0),
+                          name: opt.name,
+                        }))
+                      : REMINDER_OPTIONS.map((opt) => ({
+                          id: String(opt.value),
+                          name: opt.label,
+                        }))
                   }
-                  className="w-full p-2.5 rounded-xl bg-slate-100 text-gray-800 focus:bg-white focus:shadow-xs font-medium shadow-2xs"
-                >
-                  {catalogReminderTimes.length > 0
-                    ? catalogReminderTimes.map((opt) => (
-                        <option key={opt.id} value={Number(opt.code) || 0}>
-                          {opt.name}
-                        </option>
-                      ))
-                    : REMINDER_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                </select>
+                  onChange={(val) =>
+                    setNewEventForm({ ...newEventForm, reminderMinutes: Number(val) || 0 })
+                  }
+                  placeholder="Tiempo de recordatorio..."
+                  isClearable={false}
+                />
               </div>
 
               {/* Adjuntar Archivos */}

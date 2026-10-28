@@ -667,15 +667,19 @@ export const ActividadesModule: React.FC = () => {
               className="flex-1 text-xs p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#00668F]/30"
             />
 
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as any)}
-              className="text-xs p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-bold focus:bg-white cursor-pointer"
-            >
-              <option value="alta">Prioridad Alta</option>
-              <option value="media">Prioridad Media</option>
-              <option value="baja">Prioridad Baja</option>
-            </select>
+            <div className="w-44">
+              <CreatableSelect
+                value={priority}
+                options={[
+                  { id: 'alta', name: 'Prioridad Alta' },
+                  { id: 'media', name: 'Prioridad Media' },
+                  { id: 'baja', name: 'Prioridad Baja' },
+                ]}
+                onChange={(val) => setPriority((val as any) || 'media')}
+                placeholder="Prioridad"
+                isClearable={false}
+              />
+            </div>
 
             <button
               type="submit"
@@ -696,17 +700,16 @@ export const ActividadesModule: React.FC = () => {
                     <UserIcon size={12} className="text-[#00668F]" />
                     <span>Responsable:</span>
                   </label>
-                  <select
+                  <CreatableSelect
                     value={assignedToUserId}
-                    onChange={(e) => setAssignedToUserId(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 font-medium focus:bg-white shadow-2xs"
-                  >
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.roleLabel})
-                      </option>
-                    ))}
-                  </select>
+                    options={users.map((u) => ({
+                      id: u.id,
+                      name: `${u.name} (${u.roleLabel})`,
+                    }))}
+                    onChange={(val) => setAssignedToUserId(val || '')}
+                    placeholder="Responsable..."
+                    isClearable={false}
+                  />
                 </div>
 
                 {/* Fecha Límite */}
@@ -725,15 +728,16 @@ export const ActividadesModule: React.FC = () => {
 
                 {/* Categoría de Actividad */}
                 <div>
+                  <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1 flex items-center gap-1">
+                    <Tag size={12} className="text-[#00668F]" />
+                    <span>Categoría Operativa:</span>
+                  </label>
                   <CreatableSelect
-                    label="Categoría Operativa"
                     value={category}
                     onChange={(val) => setCategory(val)}
                     options={catalogCategories}
-                    moduleId="actividades"
-                    catalogKey="categories"
                     placeholder="Categoría..."
-                    onOpenConfig={() => setIsConfigModalOpen(true)}
+                    isClearable={true}
                   />
                 </div>
 
@@ -743,18 +747,19 @@ export const ActividadesModule: React.FC = () => {
                     <Briefcase size={12} className="text-[#00668F]" />
                     <span>Proyecto STC:</span>
                   </label>
-                  <select
+                  <CreatableSelect
                     value={projectCode}
-                    onChange={(e) => setProjectCode(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 font-medium focus:bg-white shadow-2xs"
-                  >
-                    <option value="">(Transversal)</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.code}>
-                        {p.code} - {p.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { id: '', name: '(Transversal)' },
+                      ...projects.map((p) => ({
+                        id: p.code,
+                        name: `${p.code} - ${p.name}`,
+                      })),
+                    ]}
+                    onChange={(val) => setProjectCode(val || '')}
+                    placeholder="Proyecto STC..."
+                    isClearable={true}
+                  />
                 </div>
               </div>
 
@@ -891,18 +896,18 @@ export const ActividadesModule: React.FC = () => {
 
           {/* Filtro por Proyecto y Buscador */}
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <select
-              value={selectedProjectFilter}
-              onChange={(e) => setSelectedProjectFilter(e.target.value)}
-              className="text-xs p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 font-bold focus:bg-white"
-            >
-              <option value="all">Todos los proyectos</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.code}>
-                  {p.code}
-                </option>
-              ))}
-            </select>
+            <div className="w-52">
+              <CreatableSelect
+                value={selectedProjectFilter}
+                options={[
+                  { id: 'all', name: 'Todos los proyectos' },
+                  ...projects.map((p) => ({ id: p.code, name: `${p.code} - ${p.name}` })),
+                ]}
+                onChange={(val) => setSelectedProjectFilter(val || 'all')}
+                placeholder="Filtrar proyecto..."
+                isClearable={false}
+              />
+            </div>
 
             <div className="relative w-full sm:w-56">
               <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
@@ -1610,11 +1615,17 @@ export const ActividadesModule: React.FC = () => {
             {/* Estado de Ejecución y Asignación */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl">
               <div>
-                <span className="text-[10px] text-gray-400 block">Estado Actual:</span>
-                <select
+                <span className="text-[10px] text-gray-400 block mb-1">Estado Actual:</span>
+                <CreatableSelect
                   value={selectedTodoForModal.status || 'pendiente'}
-                  onChange={(e) => {
-                    const st = e.target.value as TodoStatus;
+                  options={[
+                    { id: 'pendiente', name: 'Por Iniciar' },
+                    { id: 'en_curso', name: 'En Campo' },
+                    { id: 'en_revision', name: 'Validación Técnica' },
+                    { id: 'completada', name: 'Completada' },
+                  ]}
+                  onChange={(val) => {
+                    const st = (val || 'pendiente') as TodoStatus;
                     handleMoveStatus(selectedTodoForModal.id, st);
                     setSelectedTodoForModal({
                       ...selectedTodoForModal,
@@ -1622,13 +1633,9 @@ export const ActividadesModule: React.FC = () => {
                       completed: st === 'completada',
                     });
                   }}
-                  className="font-bold text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-700 p-1 rounded-lg mt-0.5 border border-slate-200 dark:border-slate-600"
-                >
-                  <option value="pendiente">Por Iniciar</option>
-                  <option value="en_curso">En Campo</option>
-                  <option value="en_revision">Validación Técnica</option>
-                  <option value="completada">Completada</option>
-                </select>
+                  placeholder="Estado..."
+                  isClearable={false}
+                />
               </div>
 
               <div>

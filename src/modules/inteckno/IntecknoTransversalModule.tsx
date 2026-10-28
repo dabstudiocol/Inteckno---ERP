@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { ChatMessage, DocumentItem, TodoItem, CalendarEvent } from '../../types';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 interface IntecknoTransversalModuleProps {
   initialSubTab?: 'conversaciones' | 'documentos' | 'calendario' | 'actividades' | 'articulos';
@@ -436,18 +437,22 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
                 onChange={(e) => setNewTodoText(e.target.value)}
                 className="flex-1 text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
               />
-              <select
-                value={newTodoPriority}
-                onChange={(e) => setNewTodoPriority(e.target.value as any)}
-                className="text-xs p-2 rounded-xl border border-gray-300 bg-white"
-              >
-                <option value="baja">Baja</option>
-                <option value="media">Media</option>
-                <option value="alta">Alta</option>
-              </select>
+              <div className="w-32">
+                <CreatableSelect
+                  value={newTodoPriority}
+                  options={[
+                    { id: 'baja', name: 'Baja' },
+                    { id: 'media', name: 'Media' },
+                    { id: 'alta', name: 'Alta' },
+                  ]}
+                  onChange={(val) => setNewTodoPriority((val as any) || 'media')}
+                  placeholder="Prioridad"
+                  isClearable={false}
+                />
+              </div>
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold rounded-xl shadow-xs"
+                className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold rounded-xl shadow-xs shrink-0"
               >
                 Añadir
               </button>
@@ -586,16 +591,18 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label>
-                  <select
+                  <CreatableSelect
                     value={docForm.category}
-                    onChange={(e) => setDocForm({ ...docForm, category: e.target.value as any })}
-                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300"
-                  >
-                    <option value="planos">Planos CAD / DWG</option>
-                    <option value="certificados_hseq">Certificado HSEQ / Alturas</option>
-                    <option value="manuales_stc">Manual / Protocolo STC</option>
-                    <option value="procedimientos">Procedimiento Técnico</option>
-                  </select>
+                    options={[
+                      { id: 'planos', name: 'Planos CAD / DWG' },
+                      { id: 'certificados_hseq', name: 'Certificado HSEQ / Alturas' },
+                      { id: 'manuales_stc', name: 'Manual / Protocolo STC' },
+                      { id: 'procedimientos', name: 'Procedimiento Técnico' },
+                    ]}
+                    onChange={(val) => setDocForm({ ...docForm, category: (val as any) || 'planos' })}
+                    placeholder="Categoría..."
+                    isClearable={false}
+                  />
                 </div>
               </div>
 

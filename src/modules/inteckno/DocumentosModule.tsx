@@ -1325,37 +1325,44 @@ export const DocumentosModule: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             {/* Filtro por Proyecto STC */}
-            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700">
               <Building2 size={13} className="text-[#00668F] shrink-0" />
               <span className="text-[11px] font-medium text-slate-500">Proyecto:</span>
-              <select
-                value={selectedProjectFilter}
-                onChange={(e) => setSelectedProjectFilter(e.target.value)}
-                className="bg-transparent font-bold text-slate-800 dark:text-slate-200 text-xs outline-none cursor-pointer"
-              >
-                <option value="todos">Todos los Proyectos STC</option>
-                <option value="DOCS-CORP">DOCS-CORP (Normativa STC)</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.code}>
-                    {p.code} ({p.name})
-                  </option>
-                ))}
-              </select>
+              <div className="w-56">
+                <CreatableSelect
+                  value={selectedProjectFilter}
+                  options={[
+                    { id: 'todos', name: 'Todos los Proyectos STC' },
+                    { id: 'DOCS-CORP', name: 'DOCS-CORP (Normativa STC)' },
+                    ...projects.map((p) => ({
+                      id: p.code,
+                      name: `${p.code} (${p.name})`,
+                    })),
+                  ]}
+                  onChange={(val) => setSelectedProjectFilter(val || 'todos')}
+                  placeholder="Proyecto..."
+                  isClearable={false}
+                />
+              </div>
             </div>
 
             {/* Filtro por Origen de Almacenamiento */}
-            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700">
               <Cloud size={13} className="text-[#0078D4] shrink-0" />
               <span className="text-[11px] font-medium text-slate-500">Origen:</span>
-              <select
-                value={selectedStorageSource}
-                onChange={(e) => setSelectedStorageSource(e.target.value as any)}
-                className="bg-transparent font-bold text-slate-800 dark:text-slate-200 text-xs outline-none cursor-pointer"
-              >
-                <option value="todos">Todos los Orígenes</option>
-                <option value="sharepoint_m365">SharePoint / OneDrive (M365)</option>
-                <option value="firebase_storage">Almacenamiento Local / Firebase</option>
-              </select>
+              <div className="w-52">
+                <CreatableSelect
+                  value={selectedStorageSource}
+                  options={[
+                    { id: 'todos', name: 'Todos los Orígenes' },
+                    { id: 'sharepoint_m365', name: 'SharePoint / OneDrive (M365)' },
+                    { id: 'firebase_storage', name: 'Almacenamiento Local / Firebase' },
+                  ]}
+                  onChange={(val) => setSelectedStorageSource((val as any) || 'todos')}
+                  placeholder="Origen..."
+                  isClearable={false}
+                />
+              </div>
             </div>
           </div>
 
@@ -2211,22 +2218,23 @@ export const DocumentosModule: React.FC = () => {
                       <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                         Carpeta asignada:
                       </span>
-                      <select
-                        value={previewDoc.folderName || 'Repositorio Corporativo & Normativa STC'}
-                        onChange={(e) => {
-                          const newFold = e.target.value;
-                          updateDocument(previewDoc.id, { folderName: newFold });
-                          setPreviewDoc({ ...previewDoc, folderName: newFold });
-                          setSyncToastMessage(`Documento movido a la carpeta "${newFold}".`);
-                        }}
-                        className="text-xs font-bold text-[#00668F] dark:text-sky-400 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg shadow-2xs outline-none cursor-pointer border border-slate-200 dark:border-slate-700"
-                      >
-                        {allFolders.map((f) => (
-                          <option key={f.id} value={f.name}>
-                            📁 {f.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="w-72">
+                        <CreatableSelect
+                          value={previewDoc.folderName || 'Repositorio Corporativo & Normativa STC'}
+                          options={allFolders.map((f) => ({
+                            id: f.name,
+                            name: `📁 ${f.name}`,
+                          }))}
+                          onChange={(val) => {
+                            const newFold = val || 'Repositorio Corporativo & Normativa STC';
+                            updateDocument(previewDoc.id, { folderName: newFold });
+                            setPreviewDoc({ ...previewDoc, folderName: newFold });
+                            setSyncToastMessage(`Documento movido a la carpeta "${newFold}".`);
+                          }}
+                          placeholder="Mover a carpeta..."
+                          isClearable={false}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2472,53 +2480,55 @@ export const DocumentosModule: React.FC = () => {
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     Carpeta de Destino:
                   </label>
-                  <select
+                  <CreatableSelect
                     value={uploadForm.folderName}
-                    onChange={(e) => setUploadForm({ ...uploadForm, folderName: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
-                  >
-                    {allFolders.map((f) => (
-                      <option key={f.id} value={f.name}>
-                        📁 {f.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={allFolders.map((f) => ({
+                      id: f.name,
+                      name: `📁 ${f.name}`,
+                    }))}
+                    onChange={(val) => setUploadForm({ ...uploadForm, folderName: val || 'Repositorio Corporativo & Normativa STC' })}
+                    placeholder="Carpeta..."
+                    isClearable={false}
+                  />
                 </div>
 
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     Categoría Documental:
                   </label>
-                  <select
+                  <CreatableSelect
                     value={uploadForm.category}
-                    onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value as any })}
-                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
-                  >
-                    <option value="planos">Planos CAD & As-Built</option>
-                    <option value="certificados">Certificados de Calidad & Cables</option>
-                    <option value="protocolos">Protocolos de Prueba & END</option>
-                    <option value="manuales">Manuales OEM & Fabricante</option>
-                    <option value="sst">Informes HSEQ & Alturas</option>
-                    <option value="actas">Actas de Recibo & Contratos</option>
-                  </select>
+                    options={[
+                      { id: 'planos', name: 'Planos CAD & As-Built' },
+                      { id: 'certificados', name: 'Certificados de Calidad & Cables' },
+                      { id: 'protocolos', name: 'Protocolos de Prueba & END' },
+                      { id: 'manuales', name: 'Manuales OEM & Fabricante' },
+                      { id: 'sst', name: 'Informes HSEQ & Alturas' },
+                      { id: 'actas', name: 'Actas de Recibo & Contratos' },
+                    ]}
+                    onChange={(val) => setUploadForm({ ...uploadForm, category: (val as any) || 'planos' })}
+                    placeholder="Categoría..."
+                    isClearable={false}
+                  />
                 </div>
 
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     Proyecto STC Asociado:
                   </label>
-                  <select
+                  <CreatableSelect
                     value={uploadForm.projectCode}
-                    onChange={(e) => setUploadForm({ ...uploadForm, projectCode: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
-                  >
-                    <option value="DOCS-CORP">Normativa Corporativa STC</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.code}>
-                        {p.code} ({p.name})
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { id: 'DOCS-CORP', name: 'Normativa Corporativa STC' },
+                      ...projects.map((p) => ({
+                        id: p.code,
+                        name: `${p.code} (${p.name})`,
+                      })),
+                    ]}
+                    onChange={(val) => setUploadForm({ ...uploadForm, projectCode: val || 'DOCS-CORP' })}
+                    placeholder="Proyecto..."
+                    isClearable={false}
+                  />
                 </div>
               </div>
 
