@@ -198,17 +198,18 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
             <label className="block text-xs font-bold text-gray-700 mb-1">
               Motivo Técnico de la Baja:
             </label>
-            <select
+            <CreatableSelect
+              options={[
+                { id: 'RETAZO_INUTILIZABLE', name: 'Retazo Inutilizable (Cables STC cortados no empalmables)' },
+                { id: 'DAÑO_MONTAÑA', name: 'Daño en Operación de Montaña / Tracción Mecánica' },
+                { id: 'CADUCIDAD_QUIMICO', name: 'Caducidad de Químico END / Lubricante (Vencimiento FEFO)' },
+                { id: 'OBSOLESCENCIA', name: 'Obsolescencia Técnica / Cambio de Norma' },
+                { id: 'DESGASTE_NORMAL', name: 'Desgaste Excesivo Fuera de Tolerancia Técnica' },
+              ]}
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value as InventoryWriteOffReason)}
-              className="w-full p-2.5 border border-gray-300 rounded-xl font-medium bg-white focus:outline-hidden focus:ring-2 focus:ring-[#00668F]"
-            >
-              <option value="RETAZO_INUTILIZABLE">Retazo Inutilizable (Cables STC cortados no empalmables)</option>
-              <option value="DAÑO_MONTAÑA">Daño en Operación de Montaña / Tracción Mecánica</option>
-              <option value="CADUCIDAD_QUIMICO">Caducidad de Químico END / Lubricante (Vencimiento FEFO)</option>
-              <option value="OBSOLESCENCIA">Obsolescencia Técnica / Cambio de Norma</option>
-              <option value="DESGASTE_NORMAL">Desgaste Excesivo Fuera de Tolerancia Técnica</option>
-            </select>
+              onChange={(val) => setMotivo(val as InventoryWriteOffReason)}
+              placeholder="Seleccionar o buscar motivo técnico..."
+            />
           </div>
 
           {/* Destino Final del Material */}
@@ -216,14 +217,15 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
             <label className="block text-xs font-bold text-gray-700 mb-1">
               Destino / Tratamiento del Material:
             </label>
-            <select
+            <CreatableSelect
+              options={[
+                { id: 'BAJA_DEFINITIVA', name: 'Baja Definitiva (Disposición Final / Merma / Chatarra)' },
+                { id: 'REASIGNAR_ESLINGAS_IZAJE', name: 'Reasignar como Eslingas / Estrobos de Izaje (Reutilización en Obra de Teleféricos)' },
+              ]}
               value={destinacion}
-              onChange={(e) => setDestinacion(e.target.value as any)}
-              className="w-full p-2.5 border border-gray-300 rounded-xl font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#00668F]"
-            >
-              <option value="BAJA_DEFINITIVA">Baja Definitiva (Disposición Final / Merma / Chatarra)</option>
-              <option value="REASIGNAR_ESLINGAS_IZAJE">Reasignar como Eslingas / Estrobos de Izaje (Reutilización en Obra de Teleféricos)</option>
-            </select>
+              onChange={(val) => setDestinacion(val as any)}
+              placeholder="Seleccionar destino del material..."
+            />
             {destinacion === 'REASIGNAR_ESLINGAS_IZAJE' && (
               <p className="text-[10px] text-emerald-700 mt-1 font-semibold">
                 ✓ Aprovechamiento técnico: El cable será reclasificado para confección de estrobos de izaje bajo norma ASME B30.9 para montajes electromecánicos.
