@@ -252,46 +252,10 @@ export function getCategoryMeta(cat: string) {
   };
 }
 
-// Catálogo de ITEMS Oficiales de Inteckno (Basado en Estructura de Control de Proyectos P23, P25, P26)
-export interface IntecknoItemDefinition {
-  code: string;
-  name: string;
-  categoryDefault?: CostMatrixItem['category'];
-  description?: string;
-}
-
-export const INTECKNO_PROJECT_ITEMS: IntecknoItemDefinition[] = [
-  { code: 'ITEM 01', name: 'Mantenimiento Electromecánico Estación Motriz / Retorno', categoryDefault: 'mano_obra_itk' },
-  { code: 'ITEM 02', name: 'Overhaul de Balancines, Rodillos y Ejes de Pilonas', categoryDefault: 'repuestos_fabricacion' },
-  { code: 'ITEM 03', name: 'Inspección Magneto-inductiva (MRT) de Cables Tractores / Portadores', categoryDefault: 'inspeccion_mrt' },
-  { code: 'ITEM 04', name: 'Ensayos No Destructivos (END / NDT) en Soldaduras y Perno-Pasadores', categoryDefault: 'ensayos_end' },
-  { code: 'ITEM 05', name: 'Alineación Láser y Análisis de Vibraciones en Reductor y Grupo Motriz', categoryDefault: 'analisis_vibraciones' },
-  { code: 'ITEM 06', name: 'Desarme, Inspección y Calibración de Mordazas de Cabinas', categoryDefault: 'mano_obra_itk' },
-  { code: 'ITEM 07', name: 'Tendido, Recorte y Empalme de Cable de Tracción', categoryDefault: 'mano_obra_itk' },
-  { code: 'ITEM 08', name: 'Cámara celular / Instalación red de aire / Almacén taller', categoryDefault: 'consumibles_taller' },
-  { code: 'ITEM 09', name: 'Suministro de Repuestos Críticos y Fabricación Metalmecánica', categoryDefault: 'repuestos_fabricacion' },
-  { code: 'ITEM 10', name: 'Maniobras Especializadas de Izaje y Grúas Telescópicas en Línea', categoryDefault: 'subcontratos_gruas' },
-  { code: 'ITEM 11', name: 'Mantenimiento de fijaciones mecánicas: retorqueo y ajuste de tornillería, espárragos y pernos en pilonas en cables aéreos', categoryDefault: 'mano_obra_itk' },
-  { code: 'ITEM 12', name: 'Termografía Infrarroja y Monitoreo de Redes Eléctricas', categoryDefault: 'termografia' },
-  { code: 'ITEM 13', name: 'Suministros de ferretería, soldadura y herramientas de precisión', categoryDefault: 'consumibles_taller' },
-  { code: 'ITEM 14', name: 'Seguridad y Salud en el Trabajo (SST), ARO y Permisos en Alturas', categoryDefault: 'mano_obra_itk' },
-  { code: 'ITEM 15', name: 'Transporte, Camionetas 4x4 y Logística de Cuadrilla', categoryDefault: 'viaticos_transporte' },
-  { code: 'ITEM 16', name: 'Pasajes Aéreos, Hotel y Viáticos de Comisión Técnica', categoryDefault: 'viaticos_transporte' },
-  { code: 'ITEM 17', name: 'Costos Globales Transversales / Administración de Proyecto', categoryDefault: 'imprevistos_contingencia' },
-  { code: 'ITEM 18', name: 'Placas, Señalización Técnica y Marcación de Componentes', categoryDefault: 'consumibles_taller' },
-  { code: 'ITEM 19', name: 'Pólizas Contractuales, RCE y Amparos de Cumplimiento', categoryDefault: 'imprevistos_contingencia' },
-  { code: 'ITEM 20', name: 'Liquidación de Obra, Informes Técnicos Finales y As-Built', categoryDefault: 'mano_obra_itk' },
-  { code: 'AD-25', name: 'Adicional / Otrosí / Modificación Contractual', categoryDefault: 'mano_obra_itk' },
-];
-
 export function getItemDisplayName(code?: string, name?: string) {
   if (!code && !name) return 'Sin ITEM asignado';
   if (code && name) return `${code} - ${name}`;
-  if (code) {
-    const found = INTECKNO_PROJECT_ITEMS.find((it) => it.code.toUpperCase() === code.toUpperCase());
-    return found ? `${found.code} - ${found.name}` : code;
-  }
-  return name || 'Sin ITEM';
+  return code || name || 'Sin ITEM';
 }
 
 export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
@@ -399,16 +363,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     splitPercentage: number;
     splitWithProjectCode: string;
   }>({
-    itemCode: 'ITEM 11',
-    itemName: 'Mantenimiento de fijaciones mecánicas: retorqueo y ajuste de tornillería, espárragos y pernos en pilonas en cables aéreos',
+    itemCode: '',
+    itemName: '',
     category: 'mano_obra_itk',
     costType: 'directo',
     concept: '',
     unit: 'Horas',
-    plannedQuantity: 40,
-    plannedUnitCost: 65000,
+    plannedQuantity: 1,
+    plannedUnitCost: 0,
     actualQuantity: 0,
-    actualUnitCost: 65000,
+    actualUnitCost: 0,
     spendingNature: 'PRESUPUESTO',
     date: new Date().toISOString().split('T')[0],
     invoiceNumber: '',
@@ -430,7 +394,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     const newFolder: ProjectItemFolder = {
       id: `ITEM-${Date.now()}`,
       code: formattedCode,
-      name: folderForm.name || INTECKNO_PROJECT_ITEMS.find((it) => it.code.toUpperCase() === formattedCode)?.name || formattedCode,
+      name: folderForm.name || formattedCode,
       budgetPlanned: Number(folderForm.budgetPlanned) || 0,
       observations: folderForm.observations || '',
       status: 'activo',
@@ -516,8 +480,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     const actualTotal = rawActual * factor;
     const variance = plannedTotal - actualTotal;
 
-    const targetCode = itemForm.itemCode || selectedFolderCode || 'ITEM 11';
-    const targetName = itemForm.itemName || INTECKNO_PROJECT_ITEMS.find((it) => it.code.toUpperCase() === targetCode.toUpperCase())?.name || targetCode;
+    const targetCode = itemForm.itemCode || selectedFolderCode || '';
+    const targetName = itemForm.itemName || targetCode || 'Rubro General';
 
     const newItem: CostMatrixItem = {
       id: `COST-${Date.now()}`,
@@ -549,7 +513,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
     // Asegurarse de que el ITEM exista en la lista de carpetas
     let updatedFolders = [...projectItems];
-    if (!updatedFolders.some((f) => f.code.toUpperCase() === targetCode.toUpperCase())) {
+    if (targetCode && !updatedFolders.some((f) => f.code.toUpperCase() === targetCode.toUpperCase())) {
       updatedFolders.push({
         id: `ITEM-${Date.now()}`,
         code: targetCode,
@@ -568,16 +532,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     } as any);
 
     setItemForm({
-      itemCode: 'ITEM 11',
-      itemName: 'Mantenimiento de fijaciones mecánicas: retorqueo y ajuste de tornillería, espárragos y pernos en pilonas en cables aéreos',
+      itemCode: '',
+      itemName: '',
       category: 'mano_obra_itk',
       costType: 'directo',
       concept: '',
       unit: 'Horas',
-      plannedQuantity: 40,
-      plannedUnitCost: 65000,
+      plannedQuantity: 1,
+      plannedUnitCost: 0,
       actualQuantity: 0,
-      actualUnitCost: 65000,
+      actualUnitCost: 0,
       spendingNature: 'PRESUPUESTO',
       date: new Date().toISOString().split('T')[0],
       invoiceNumber: '',
@@ -1539,34 +1503,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
             <form onSubmit={handleCreateFolder} className="p-5 space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Seleccionar o Escribir Código de ITEM</label>
-                <CreatableSelect
-                  options={INTECKNO_PROJECT_ITEMS.map((it) => ({
-                    id: it.code,
-                    name: `${it.code} - ${it.name}`,
-                  }))}
-                  value={folderForm.code ? `${folderForm.code} - ${folderForm.name}` : ''}
-                  onChange={(val) => {
-                    const match = INTECKNO_PROJECT_ITEMS.find(
-                      (it) => it.code.toLowerCase() === val.toLowerCase() || `${it.code} - ${it.name}`.toLowerCase() === val.toLowerCase()
-                    );
-                    if (match) {
-                      setFolderForm({
-                        ...folderForm,
-                        code: match.code,
-                        name: match.name,
-                      });
-                    } else {
-                      setFolderForm({
-                        ...folderForm,
-                        code: val,
-                        name: val,
-                      });
-                    }
-                  }}
-                  placeholder="ej. ITEM 11, ITEM 21, AD-25..."
-                  isClearable={true}
-                  allowCustomText={true}
+                <label className="block font-bold text-slate-700 mb-1">Código del ITEM</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="ej. ITEM 01, ITEM 1, AD-01..."
+                  value={folderForm.code}
+                  onChange={(e) => setFolderForm({ ...folderForm, code: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase font-bold focus:bg-white focus:border-[#00668F] transition-all"
                 />
               </div>
 
