@@ -115,24 +115,21 @@ export const TimesheetModule: React.FC = () => {
               <label className="block text-xs font-bold text-gray-700 mb-1">
                 1. Proyecto STC Asignado
               </label>
-              <select
+              <CreatableSelect
+                options={[
+                  ...projects.map((p) => ({
+                    id: p.id,
+                    name: `${p.code} — ${p.name}`,
+                    code: p.code
+                  })),
+                  { id: 'PRJ-INTERNAL-TALLER', name: 'ITK-TALLER — Taller Guayabal (Banco de Ensayos & Maquinado)', code: 'ITK-TALLER' },
+                  { id: 'PRJ-INTERNAL-SST', name: 'ITK-SST — Capacitación y Certificación en Alturas', code: 'ITK-SST' },
+                  { id: 'PRJ-INTERNAL-SEDE', name: 'ITK-ADMIN — Soporte Operativo y Logística de Sede', code: 'ITK-ADMIN' },
+                ]}
                 value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 bg-white text-xs font-semibold text-gray-800 focus:outline-hidden focus:border-[#00668F] cursor-pointer"
-              >
-                <optgroup label="Proyectos STC con Clientes">
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code} — {p.name}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Taller Central & Labores Internas">
-                  <option value="PRJ-INTERNAL-TALLER">ITK-TALLER — Taller Guayabal (Banco de Ensayos & Maquinado)</option>
-                  <option value="PRJ-INTERNAL-SST">ITK-SST — Capacitación y Certificación en Alturas</option>
-                  <option value="PRJ-INTERNAL-SEDE">ITK-ADMIN — Soporte Operativo y Logística de Sede</option>
-                </optgroup>
-              </select>
+                onChange={(val) => setSelectedProjectId(val)}
+                placeholder="Seleccionar o buscar proyecto STC o taller..."
+              />
             </div>
 
             {/* Toque 2: Tipo de Labor / Actividad Técnica */}
