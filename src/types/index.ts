@@ -957,6 +957,12 @@ export interface AppNotification {
   read: boolean;
   actionUrl?: string;
   module?: string;
+  userId?: string;
+  targetRole?: string;
+  requiresAction?: boolean;
+  actionCompleted?: boolean;
+  actionType?: string;
+  actionPayload?: any;
 }
 
 // ============================================================================

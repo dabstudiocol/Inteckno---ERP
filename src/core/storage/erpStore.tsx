@@ -221,8 +221,10 @@ export interface ErpContextType extends ErpState {
   createUserAccount: (user: Omit<User, 'id'>) => User;
   toggleUserStatus: (userId: string) => void;
   setActiveModule: (moduleId: string) => void;
-  notify: (type: AppNotification['type'], title: string, message: string) => void;
+  notify: (type: AppNotification['type'], title: string, message: string, extra?: Partial<AppNotification>) => void;
   dismissNotification: (id: string) => void;
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: (forUserId?: string) => void;
 
   // CHAT EN TIEMPO REAL & NOTIFICACIONES
   setActiveChatChannel: (channelId: string) => void;
@@ -984,19 +986,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ]);
 
   const notify = useCallback(
-    (type: AppNotification['type'], title: string, message: string) => {
+    (type: AppNotification['type'], title: string, message: string, extra?: Partial<AppNotification>) => {
       // Reproducir sonido si está habilitado en las preferencias del usuario
       if (state.currentUser?.preferences?.soundEnabled !== false) {
         playNotificationChime();
       }
 
       const newNotif: AppNotification = {
-        id: `notif-${Date.now()}`,
+        id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         title,
         message,
         type,
         timestamp: 'Ahora mismo',
         read: false,
+        ...extra,
       };
       setState((prev) => ({
         ...prev,
@@ -1010,6 +1013,27 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState((prev) => ({
       ...prev,
       notifications: prev.notifications.filter((n) => n.id !== id),
+    }));
+  }, []);
+
+  const markNotificationAsRead = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ),
+    }));
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback((forUserId?: string) => {
+    setState((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((n) => {
+        if (forUserId && n.userId && n.userId !== forUserId) {
+          return n;
+        }
+        return { ...n, read: true };
+      }),
     }));
   }, []);
 
@@ -4355,6 +4379,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveModule,
         notify,
         dismissNotification,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
         deleteProject,
         deleteOpportunity,
         deleteContact,

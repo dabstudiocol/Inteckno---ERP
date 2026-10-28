@@ -41,6 +41,7 @@ import { getUserAccessibleAreas, ALL_AREAS, MODULE_ICONS } from '../../core/auth
 import { AreaId } from '../../types';
 import { LucianaFloatingWidget } from '../ai/LucianaFloatingWidget';
 import { getStoredTRM, formatTRM, fetchLiveTRM, fetchTRMWithLucianaWeb, setCustomTRM, getTRMDetails } from '../../core/services/trmService';
+import { computeUserPendingActions } from '../../utils/userActionsUtils';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -60,6 +61,12 @@ export const AppShell: React.FC<AppShellProps> = ({
     setActiveModule,
     notifications,
     dismissNotification,
+    products,
+    requisitions,
+    purchaseOrders,
+    expenses,
+    milestones,
+    todos,
     chatMessages,
     chatGroups,
     activeChatToast,
@@ -432,7 +439,33 @@ export const AppShell: React.FC<AppShellProps> = ({
     return list;
   }, [accessibleAreas]);
 
-  const unreadNotifs = notifications.filter((n) => !n.read);
+  // Tareas obligatorias operativas (RACI) calculadas para el usuario activo
+  const userPendingActions = useMemo(() => {
+    return computeUserPendingActions({
+      currentUser,
+      products,
+      requisitions,
+      purchaseOrders,
+      expenses,
+      milestones,
+      todos,
+    });
+  }, [currentUser, products, requisitions, purchaseOrders, expenses, milestones, todos]);
+
+  // Notificaciones informativas dirigidas al usuario o globales no leídas
+  const userUnreadNotifs = useMemo(() => {
+    const userId = currentUser?.id || '';
+    const userRole = currentUser?.role || '';
+    return notifications.filter((n) => {
+      if (n.read) return false;
+      if (n.userId && n.userId !== userId) return false;
+      if (n.targetRole && n.targetRole !== userRole) return false;
+      return true;
+    });
+  }, [notifications, currentUser]);
+
+  // Conteo total para la campana de alertas: tareas obligatorias pendientes + novedades sin leer
+  const totalAlertBadgeCount = userPendingActions.length + userUnreadNotifs.length;
 
   // Navegación interactiva al hacer clic en una notificación
   const handleNotificationClick = (notif: typeof notifications[0]) => {
@@ -1011,9 +1044,9 @@ export const AppShell: React.FC<AppShellProps> = ({
               className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all relative active:scale-95 cursor-pointer group shrink-0 aspect-square"
             >
               <Bell size={16} className="group-hover:-rotate-12 transition-transform duration-200 shrink-0" />
-              {unreadNotifs.length > 0 && (
+              {totalAlertBadgeCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-[#F39200] text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-xs leading-none aspect-square shrink-0">
-                  {unreadNotifs.length > 99 ? '99+' : unreadNotifs.length}
+                  {totalAlertBadgeCount > 99 ? '99+' : totalAlertBadgeCount}
                 </span>
               )}
             </button>
