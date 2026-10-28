@@ -373,6 +373,31 @@ export interface ProjectItemFolder {
   createdAt?: string;
 }
 
+// Consolidado de Oferta / Presupuesto Estimado Inicial (Excel oficial de Inteckno)
+export interface ProjectOfferBudgetItem {
+  id: string;
+  rubroName: string; // ej. "1. RECURSO HUMANO", "2. VIÁTICOS Y GASTOS DE VIAJE", etc.
+  suppliersCost: number; // Proveedores
+  indirectCost: number; // Costos Indirectos
+  totalBudgetedCost: number; // Costos Totales Presupuestados
+  budgetedProfit: number; // Utilidad Total Presupuestada
+  subtotal: number; // Valor subtotal
+  ivaAmount: number; // IVA
+  totalOfferValue: number; // Valor Total
+}
+
+export interface ProjectOfferBudget {
+  items: ProjectOfferBudgetItem[];
+  totalSuppliersCost: number;
+  totalIndirectCost: number;
+  totalBudgetedCost: number;
+  totalBudgetedProfit: number;
+  subtotal: number;
+  ivaAmount: number;
+  grandTotalOffer: number;
+  lastUpdated?: string;
+}
+
 // ---------------------------------------------------------------------------
 // 7. ESQUEMA PRINCIPAL DE PROYECTO STC TELEFÉRICOS
 // ---------------------------------------------------------------------------
@@ -424,6 +449,7 @@ export interface STCFullProject {
   costMatrix: CostMatrixItem[];
   projectItems?: ProjectItemFolder[];
   billingItems?: ProjectBillingItem[];
+  offerBudget?: ProjectOfferBudget;
 
   createdAt: string;
   updatedAt: string;

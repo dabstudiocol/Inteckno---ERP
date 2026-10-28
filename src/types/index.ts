@@ -10,7 +10,7 @@ import {
   ChemicalLotFEFO,
   EquipmentCheckEvent,
 } from './InventorySchema';
-import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem } from './ProjectSchema';
+import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from './ProjectSchema';
 
 export type {
   PhysicalCableSegment,
@@ -21,6 +21,8 @@ export type {
   CostMatrixItem,
   ProjectItemFolder,
   ProjectBillingItem,
+  ProjectOfferBudget,
+  ProjectOfferBudgetItem,
 };
 
 export type UserRole =

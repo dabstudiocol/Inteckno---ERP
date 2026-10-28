@@ -25,9 +25,12 @@ import {
   Receipt,
   CheckCircle2,
   ChevronDown,
+  Calculator,
+  Save,
+  Check,
 } from 'lucide-react';
 import { Project } from '../../../../types';
-import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem } from '../../../../types/ProjectSchema';
+import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
 import { formatCOP, formatUSD } from '../../../../core/services/trmService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
@@ -297,6 +300,36 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     return (project as any).billingItems || [];
   });
 
+  // Presupuesto Estimado Inicial / Consolidado de Oferta (Excel oficial de Inteckno)
+  const defaultOfferBudgetItems: ProjectOfferBudgetItem[] = [
+    { id: 'pres-1', rubroName: '1. RECURSO HUMANO', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
+    { id: 'pres-2', rubroName: '2. VIÁTICOS Y GASTOS DE VIAJE', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
+    { id: 'pres-3', rubroName: '3. PROVEEDORES DE BIENES Y SERVICIOS', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
+    { id: 'pres-4', rubroName: '4. COSTOS INDIRECTOS DE FABRICACIÓN', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
+    { id: 'pres-5', rubroName: '5. IMPREVISTOS Y CONTINGENCIA', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
+  ];
+
+  const [offerBudget, setOfferBudget] = useState<ProjectOfferBudget>(() => {
+    if ((project as any).offerBudget && (project as any).offerBudget.items?.length > 0) {
+      return (project as any).offerBudget;
+    }
+    return {
+      items: defaultOfferBudgetItems,
+      totalSuppliersCost: 0,
+      totalIndirectCost: 0,
+      totalBudgetedCost: 0,
+      totalBudgetedProfit: 0,
+      subtotal: 0,
+      ivaAmount: 0,
+      grandTotalOffer: 0,
+    };
+  });
+
+  const [offerBudgetSavedMessage, setOfferBudgetSavedMessage] = useState(false);
+
+  // Selector de Vista Principal: 'items_costos' (Costos reales y facturación por ITEM) vs 'consolidado_oferta' (Presupuesto estimado inicial)
+  const [activeMainView, setActiveMainView] = useState<'items_costos' | 'consolidado_oferta'>('items_costos');
+
   // Mantener sincronizado el estado si el proyecto cambia
   React.useEffect(() => {
     if ((project as any)?.costMatrix) {
@@ -308,7 +341,62 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     if ((project as any)?.billingItems) {
       setBillingItems((project as any).billingItems);
     }
+    if ((project as any)?.offerBudget) {
+      setOfferBudget((project as any).offerBudget);
+    }
   }, [project]);
+
+  // Recalcular fila y totales del Consolidado de Oferta
+  const handleUpdateOfferBudgetItem = (index: number, field: keyof ProjectOfferBudgetItem, val: number) => {
+    const updatedItems = [...offerBudget.items];
+    const current = { ...updatedItems[index], [field]: val };
+    
+    // Total costos presupuestados = Proveedores + Indirectos
+    const sup = field === 'suppliersCost' ? val : (current.suppliersCost || 0);
+    const ind = field === 'indirectCost' ? val : (current.indirectCost || 0);
+    const totalCost = sup + ind;
+    
+    // Subtotal = Costos Totales + Utilidad
+    const prof = field === 'budgetedProfit' ? val : (current.budgetedProfit || 0);
+    const sub = totalCost + prof;
+    
+    // IVA = Subtotal * tasa del país
+    const taxRate = getProjectTaxRate(project.location).rate;
+    const iva = Math.round(sub * taxRate);
+    const total = sub + iva;
+
+    current.totalBudgetedCost = totalCost;
+    current.subtotal = sub;
+    current.ivaAmount = iva;
+    current.totalOfferValue = total;
+    updatedItems[index] = current;
+
+    const sumSuppliers = updatedItems.reduce((acc, it) => acc + (it.suppliersCost || 0), 0);
+    const sumIndirect = updatedItems.reduce((acc, it) => acc + (it.indirectCost || 0), 0);
+    const sumTotalCost = updatedItems.reduce((acc, it) => acc + (it.totalBudgetedCost || 0), 0);
+    const sumProfit = updatedItems.reduce((acc, it) => acc + (it.budgetedProfit || 0), 0);
+    const sumSubtotal = updatedItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
+    const sumIva = updatedItems.reduce((acc, it) => acc + (it.ivaAmount || 0), 0);
+    const sumGrand = updatedItems.reduce((acc, it) => acc + (it.totalOfferValue || 0), 0);
+
+    const newOfferBudget: ProjectOfferBudget = {
+      items: updatedItems,
+      totalSuppliersCost: sumSuppliers,
+      totalIndirectCost: sumIndirect,
+      totalBudgetedCost: sumTotalCost,
+      totalBudgetedProfit: sumProfit,
+      subtotal: sumSubtotal,
+      ivaAmount: sumIva,
+      grandTotalOffer: sumGrand,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    setOfferBudget(newOfferBudget);
+    onUpdateProject?.({
+      ...project,
+      offerBudget: newOfferBudget as any,
+    } as any);
+  };
 
   // Navegación: Vista general de carpetas o Carpeta de ITEM abierta
   const [selectedFolderCode, setSelectedFolderCode] = useState<string | null>(null);
@@ -374,7 +462,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     plannedUnitCost: number;
     actualQuantity: number;
     actualUnitCost: number;
-    spendingNature: 'PRESUPUESTO' | 'REPROCESO';
     date: string;
     invoiceNumber: string;
     ivaAmount: number;
@@ -393,7 +480,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     plannedUnitCost: 0,
     actualQuantity: 0,
     actualUnitCost: 0,
-    spendingNature: 'PRESUPUESTO',
     date: new Date().toISOString().split('T')[0],
     invoiceNumber: '',
     ivaAmount: 0,
@@ -518,7 +604,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       actualUnitCost: itemForm.actualUnitCost,
       actualTotal,
       variance,
-      spendingNature: itemForm.spendingNature,
       date: itemForm.date,
       invoiceNumber: itemForm.invoiceNumber,
       ivaAmount: itemForm.ivaAmount,
@@ -562,7 +647,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       plannedUnitCost: 0,
       actualQuantity: 0,
       actualUnitCost: 0,
-      spendingNature: 'PRESUPUESTO',
       date: new Date().toISOString().split('T')[0],
       invoiceNumber: '',
       ivaAmount: 0,
@@ -862,6 +946,178 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         </div>
       </div>
 
+      {/* SELECTOR DE VISTA PRINCIPAL: PRESUPUESTO INICIAL (OFERTA) VS EJECUCIÓN (ITEMS Y COSTOS) */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-xl">
+        <button
+          type="button"
+          onClick={() => setActiveMainView('items_costos')}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainView === 'items_costos'
+              ? 'bg-[#00668F] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Folder size={15} />
+          <span>Matriz de ITEMS & Costos</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMainView('consolidado_oferta')}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainView === 'consolidado_oferta'
+              ? 'bg-[#00668F] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <FileSpreadsheet size={15} />
+          <span>Presupuesto (Consolidado de Oferta)</span>
+        </button>
+      </div>
+
+      {activeMainView === 'consolidado_oferta' ? (
+        /* VISTA INDEPENDIENTE: CONSOLIDADO DE OFERTA / PRESUPUESTO ESTIMADO INICIAL (FOTO EXCEL OFICIAL) */
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden animate-in fade-in duration-150">
+          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-[#00668F]/10 text-[#00668F]">
+                  <FileSpreadsheet size={18} />
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">Consolidado de Oferta • Presupuesto Estimado Inicial</h3>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Estimación de oferta comercial previa a la creación de ITEMS y rubros reales de ejecución. Formato oficial Inteckno.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-100 text-[#00668F] font-mono">
+                IVA {projectTaxRate.countryName}: {projectTaxRate.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100/90 border-b border-slate-200 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                  <th className="py-3 px-4">Rubro Presupuestal</th>
+                  <th className="py-3 px-3 text-right">Proveedores</th>
+                  <th className="py-3 px-3 text-right">Costos Indirectos</th>
+                  <th className="py-3 px-3 text-right bg-slate-200/60 font-bold">Costos Totales Presupuestados</th>
+                  <th className="py-3 px-3 text-right">Utilidad Total Presupuestada</th>
+                  <th className="py-3 px-3 text-right font-bold">Valor Subtotal</th>
+                  <th className="py-3 px-3 text-right">IVA ({projectTaxRate.label})</th>
+                  <th className="py-3 px-4 text-right bg-[#00668F]/10 text-[#00668F] font-bold">Valor Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-sans">
+                {offerBudget.items.map((row, idx) => (
+                  <tr key={row.id || idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-2.5 px-4 font-bold text-slate-800 whitespace-nowrap">
+                      {row.rubroName}
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={row.suppliersCost || ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          handleUpdateOfferBudgetItem(idx, 'suppliersCost', val);
+                        }}
+                        className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
+                      />
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={row.indirectCost || ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          handleUpdateOfferBudgetItem(idx, 'indirectCost', val);
+                        }}
+                        className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
+                      />
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 bg-slate-50/50">
+                      {formatCOP(row.totalBudgetedCost)}
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={row.budgetedProfit || ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          handleUpdateOfferBudgetItem(idx, 'budgetedProfit', val);
+                        }}
+                        className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs text-emerald-700 font-semibold focus:bg-white focus:border-[#00668F] transition-all"
+                      />
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                      {formatCOP(row.subtotal)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                      {formatCOP(row.ivaAmount)}
+                    </td>
+                    <td className="py-2.5 px-4 text-right font-mono font-black text-[#00668F] bg-[#00668F]/5">
+                      {formatCOP(row.totalOfferValue)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
+                  <td className="py-3 px-4 font-bold uppercase tracking-wider text-slate-800">
+                    Total Presupuesto Oferta
+                  </td>
+                  <td className="py-3 px-2 text-right font-mono">
+                    {formatCOP(offerBudget.totalSuppliersCost)}
+                  </td>
+                  <td className="py-3 px-2 text-right font-mono">
+                    {formatCOP(offerBudget.totalIndirectCost)}
+                  </td>
+                  <td className="py-3 px-3 text-right font-mono text-slate-900 bg-slate-200/50">
+                    {formatCOP(offerBudget.totalBudgetedCost)}
+                  </td>
+                  <td className="py-3 px-2 text-right font-mono text-emerald-800">
+                    {formatCOP(offerBudget.totalBudgetedProfit)}
+                  </td>
+                  <td className="py-3 px-3 text-right font-mono text-slate-900">
+                    {formatCOP(offerBudget.subtotal)}
+                  </td>
+                  <td className="py-3 px-3 text-right font-mono text-slate-700">
+                    {formatCOP(offerBudget.ivaAmount)}
+                  </td>
+                  <td className="py-3 px-4 text-right font-mono font-black text-[#00668F] bg-[#00668F]/15 text-sm">
+                    {formatCOP(offerBudget.grandTotalOffer)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="text-slate-500 text-[11px] flex items-center gap-1.5">
+              <Info size={14} className="text-[#00668F]" />
+              <span>
+                Cálculos automáticos sincronizados en tiempo real: Subtotal = Costos Totales + Utilidad. IVA automático ({projectTaxRate.label}).
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                <Check size={14} /> Sincronizado en la nube
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* VISTA DE EJECUCIÓN REAL: ITEMS Y RUBROS (CARPETAS O 3 TABLAS POR ITEM) */
+        <>
       {/* 2. VISTA DE ITEMS: CARPETAS O DETALLE DE ITEM (3 TABLAS: COSTOS DIRECTOS, INDIRECTOS Y FACTURACIÓN) */}
       {!selectedFolderCode ? (
         /* VISTA DE CARPETAS DE ITEMS */
@@ -1203,20 +1459,22 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         );
                       })}
                   </tbody>
-                  {/* Fila de Consolidados Totales de Costos Directos */}
-                  <tfoot>
-                    {(() => {
-                      const directs = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto');
-                      const sumVal = directs.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
-                      const sumIva = directs.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
-                      const sumRet = directs.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
-                      const sumTotal = sumVal + sumIva - sumRet;
+                  {/* Fila de Consolidados Totales de Costos Directos (Solo visible cuando hay 2 o más registros para evitar duplicación visual) */}
+                  {(() => {
+                    const directs = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto');
+                    if (directs.length <= 1) return null;
 
-                      const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
-                      const budget = targetFolder?.budgetPlanned || directs.reduce((s, c) => s + c.plannedTotal, 0);
-                      const balancePct = budget > 0 ? (sumTotal / budget) * 100 : 0;
+                    const sumVal = directs.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
+                    const sumIva = directs.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
+                    const sumRet = directs.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
+                    const sumTotal = sumVal + sumIva - sumRet;
 
-                      return (
+                    const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
+                    const budget = targetFolder?.budgetPlanned || directs.reduce((s, c) => s + c.plannedTotal, 0);
+                    const balancePct = budget > 0 ? (sumTotal / budget) * 100 : 0;
+
+                    return (
+                      <tfoot>
                         <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
                           <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
                             Consolidados Totales Costos Directos
@@ -1230,9 +1488,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           </td>
                           <td></td>
                         </tr>
-                      );
-                    })()}
-                  </tfoot>
+                      </tfoot>
+                    );
+                  })()}
                 </table>
               </div>
             )}
@@ -1336,16 +1594,18 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         );
                       })}
                   </tbody>
-                  {/* Fila de Consolidados Totales de Costos Indirectos */}
-                  <tfoot>
-                    {(() => {
-                      const indirects = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto');
-                      const sumVal = indirects.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
-                      const sumIva = indirects.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
-                      const sumRet = indirects.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
-                      const sumTotal = sumVal + sumIva - sumRet;
+                  {/* Fila de Consolidados Totales de Costos Indirectos (Solo visible cuando hay 2 o más registros para evitar duplicación visual) */}
+                  {(() => {
+                    const indirects = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto');
+                    if (indirects.length <= 1) return null;
 
-                      return (
+                    const sumVal = indirects.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
+                    const sumIva = indirects.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
+                    const sumRet = indirects.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
+                    const sumTotal = sumVal + sumIva - sumRet;
+
+                    return (
+                      <tfoot>
                         <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
                           <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
                             Consolidados Totales Costos Indirectos
@@ -1359,9 +1619,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           </td>
                           <td></td>
                         </tr>
-                      );
-                    })()}
-                  </tfoot>
+                      </tfoot>
+                    );
+                  })()}
                 </table>
               </div>
             )}
@@ -1461,22 +1721,24 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         </tr>
                       ))}
                   </tbody>
-                  {/* Fila de Consolidados Totales de Facturación */}
-                  <tfoot>
-                    {(() => {
-                      const bills = billingItems.filter((b) => (b.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase());
-                      const sumAnt = bills.reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
-                      const sumSub = bills.reduce((acc, b) => acc + (b.subtotal || 0), 0);
-                      const sumIva = bills.reduce((acc, b) => acc + (b.ivaAmount || 0), 0);
-                      const sumRet = bills.reduce((acc, b) => acc + (b.retentionAmount || 0), 0);
-                      const sumGrand = bills.reduce((acc, b) => acc + (b.grandTotal || 0), 0);
+                  {/* Fila de Consolidados Totales de Facturación (Solo visible cuando hay 2 o más registros para evitar duplicación visual) */}
+                  {(() => {
+                    const bills = billingItems.filter((b) => (b.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase());
+                    if (bills.length <= 1) return null;
 
-                      const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
-                      const budget = targetFolder?.budgetPlanned || 0;
-                      const pendingFact = Math.max(0, budget - sumGrand);
-                      const pctFact = budget > 0 ? (sumGrand / budget) * 100 : 100;
+                    const sumAnt = bills.reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
+                    const sumSub = bills.reduce((acc, b) => acc + (b.subtotal || 0), 0);
+                    const sumIva = bills.reduce((acc, b) => acc + (b.ivaAmount || 0), 0);
+                    const sumRet = bills.reduce((acc, b) => acc + (b.retentionAmount || 0), 0);
+                    const sumGrand = bills.reduce((acc, b) => acc + (b.grandTotal || 0), 0);
 
-                      return (
+                    const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
+                    const budget = targetFolder?.budgetPlanned || 0;
+                    const pendingFact = Math.max(0, budget - sumGrand);
+                    const pctFact = budget > 0 ? (sumGrand / budget) * 100 : 100;
+
+                    return (
+                      <tfoot>
                         <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
                           <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
                             Consolidados Totales Facturación
@@ -1491,14 +1753,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           </td>
                           <td></td>
                         </tr>
-                      );
-                    })()}
-                  </tfoot>
+                      </tfoot>
+                    );
+                  })()}
                 </table>
               </div>
             )}
           </div>
         </div>
+      )}
+      </>
       )}
 
       {/* MODAL: CREAR O AÑADIR ITEM / CARPETA */}
@@ -1775,35 +2039,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               {/* Formulario con Scroll Interno Fluido */}
               <form onSubmit={handleAddItem} className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 text-xs">
-                  {/* Naturaleza del Gasto */}
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Naturaleza del Gasto</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setItemForm({ ...itemForm, spendingNature: 'PRESUPUESTO' })}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          itemForm.spendingNature === 'PRESUPUESTO'
-                            ? 'bg-[#00668F]/10 border-[#00668F] text-[#00668F]'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Presupuesto (Obra)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setItemForm({ ...itemForm, spendingNature: 'REPROCESO' })}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          itemForm.spendingNature === 'REPROCESO'
-                            ? 'bg-rose-50 border-rose-400 text-rose-700'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Reproceso / Calidad
-                      </button>
-                    </div>
-                  </div>
-
                   {/* ITEM Contractual / Operativo */}
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">ITEM Contractual / Operativo</label>
