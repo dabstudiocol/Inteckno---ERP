@@ -432,7 +432,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                      <div className="sm:col-span-7 space-y-1">
+                      <div className="sm:col-span-6 space-y-1">
                         <input
                           type="text"
                           required
@@ -481,13 +481,25 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                         />
                       </div>
 
-                      <div className="sm:col-span-1">
-                        <input
-                          type="text"
-                          value={item.unit}
-                          onChange={(e) => handleUpdateItem(item.id, 'unit', e.target.value)}
-                          className="w-full h-9 px-1 text-center font-bold rounded-lg border border-slate-300 bg-white text-[11px] focus:outline-hidden"
-                          title="Unidad de medida"
+                      <div className="sm:col-span-2">
+                        <CreatableSelect
+                          value={item.unit || 'unid'}
+                          onChange={(val) => handleUpdateItem(item.id, 'unit', val)}
+                          options={[
+                            'unid',
+                            'm (metros)',
+                            'kg',
+                            'gal (galón)',
+                            'juego / set',
+                            'par',
+                            'caja',
+                            'paquete',
+                            'litro',
+                          ]}
+                          placeholder="Unidad..."
+                          isClearable={false}
+                          allowCustomText={true}
+                          inputClassName="w-full h-9 px-1 text-center font-bold rounded-lg border border-slate-300 bg-white text-[11px] focus:outline-hidden"
                         />
                       </div>
                     </div>
