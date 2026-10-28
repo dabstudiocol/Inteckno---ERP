@@ -252,6 +252,25 @@ export function getCategoryMeta(cat: string) {
   };
 }
 
+export function getProjectTaxRate(country?: string): { rate: number; label: string; countryName: string } {
+  const norm = (country || '').trim().toLowerCase();
+  if (norm.includes('colombia')) return { rate: 0.19, label: '19%', countryName: 'Colombia' };
+  if (norm.includes('méxico') || norm.includes('mexico')) return { rate: 0.16, label: '16%', countryName: 'México' };
+  if (norm.includes('chile')) return { rate: 0.19, label: '19%', countryName: 'Chile' };
+  if (norm.includes('perú') || norm.includes('peru')) return { rate: 0.18, label: '18%', countryName: 'Perú' };
+  if (norm.includes('bolivia')) return { rate: 0.13, label: '13%', countryName: 'Bolivia' };
+  if (norm.includes('ecuador')) return { rate: 0.15, label: '15%', countryName: 'Ecuador' };
+  if (norm.includes('españa') || norm.includes('espana')) return { rate: 0.21, label: '21%', countryName: 'España' };
+  if (norm.includes('panamá') || norm.includes('panama')) return { rate: 0.07, label: '7%', countryName: 'Panamá' };
+  if (norm.includes('dominicana')) return { rate: 0.18, label: '18%', countryName: 'Rep. Dominicana' };
+  if (norm.includes('costa rica')) return { rate: 0.13, label: '13%', countryName: 'Costa Rica' };
+  if (norm.includes('guatemala')) return { rate: 0.12, label: '12%', countryName: 'Guatemala' };
+  if (norm.includes('argentina')) return { rate: 0.21, label: '21%', countryName: 'Argentina' };
+  
+  // Default estándar en caso de no estar especificado (Inteckno Colombia)
+  return { rate: 0.19, label: '19%', countryName: country || 'Colombia' };
+}
+
 export function getItemDisplayName(code?: string, name?: string) {
   if (!code && !name) return 'Sin ITEM asignado';
   if (code && name) return `${code} - ${name}`;
@@ -341,6 +360,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('todos');
   const [activeItemFilter, setActiveItemFilter] = useState<string>('todos');
+  const [hasIva, setHasIva] = useState<boolean>(true);
 
   // Formulario de nuevo rubro financiero (Alineado a ITEMS y Rubros de Control de Proyectos Inteckno P23, P25, P26)
   const [itemForm, setItemForm] = useState<{
@@ -436,7 +456,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
     const newBilling: ProjectBillingItem = {
       id: `BILL-${Date.now()}`,
-      itemCode: billingForm.itemCode || selectedFolderCode || 'ITEM 11',
+      itemCode: billingForm.itemCode || selectedFolderCode || '',
       invoiceDate: billingForm.invoiceDate || new Date().toISOString().split('T')[0],
       invoiceNumber: billingForm.invoiceNumber,
       advanceAmount: Number(billingForm.advanceAmount) || 0,
@@ -598,7 +618,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const filteredItems = costItems.filter((i) => {
     // Filtro por ITEM
     if (activeItemFilter !== 'todos') {
-      const targetItem = (i.itemCode || 'ITEM 11').toUpperCase();
+      const targetItem = (i.itemCode || '').toUpperCase();
       if (targetItem !== activeItemFilter.toUpperCase()) return false;
     }
     // Filtro por Categoría
@@ -620,6 +640,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     : currency === 'EUR' 
     ? rawContractAmount * (currentTrm * 1.08) 
     : rawContractAmount;
+
+  const projectCountry = project.clientCountry || (project as any).country || ((project as any).client as any)?.country || 'Colombia';
+  const projectTaxRate = getProjectTaxRate(projectCountry);
 
   const totalIncurred = totalActual;
   const grossProfitCOP = contractAmountCOP - totalIncurred;
@@ -897,13 +920,13 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {allAvailableItems.map((itemDef) => {
                 const itemDirects = costItems.filter(
-                  (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType !== 'indirecto'
+                  (c) => (c.itemCode || '').toUpperCase() === itemDef.code.toUpperCase() && c.costType !== 'indirecto'
                 );
                 const itemIndirects = costItems.filter(
-                  (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType === 'indirecto'
+                  (c) => (c.itemCode || '').toUpperCase() === itemDef.code.toUpperCase() && c.costType === 'indirecto'
                 );
                 const itemBills = billingItems.filter(
-                  (b) => (b.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase()
+                  (b) => (b.itemCode || '').toUpperCase() === itemDef.code.toUpperCase()
                 );
 
                 const totalDir = itemDirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
@@ -1091,7 +1114,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   Costos Directos — {selectedFolderCode}
                 </h4>
                 <span className="text-[11px] text-slate-500 font-mono">
-                  ({costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto').length} rubros)
+                  ({costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto').length} rubros)
                 </span>
               </div>
               <button
@@ -1112,7 +1135,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               </button>
             </div>
 
-            {costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto').length === 0 ? (
+            {costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto').length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
                 No hay costos directos registrados para {selectedFolderCode}. Agrega horas-hombre, compras de ferretería o insumos de obra.
               </div>
@@ -1124,7 +1147,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       <th className="py-2.5 px-3">Fecha</th>
                       <th className="py-2.5 px-4">Concepto del Costo Directo</th>
                       <th className="py-2.5 px-3 text-right">Valor Costo Directo</th>
-                      <th className="py-2.5 px-3 text-right">IVA (19%)</th>
+                      <th className="py-2.5 px-3 text-right">IVA ({projectTaxRate.label})</th>
                       <th className="py-2.5 px-3 text-right">Retención</th>
                       <th className="py-2.5 px-3 text-right">Gran Total</th>
                       <th className="py-2.5 px-3">Recibo - Factura</th>
@@ -1134,7 +1157,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-sans">
                     {costItems
-                      .filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto')
+                      .filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto')
                       .map((c) => {
                         const valDirecto = c.actualTotal || (c.actualQuantity * c.actualUnitCost) || c.plannedTotal;
                         const iva = c.ivaAmount || 0;
@@ -1183,7 +1206,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   {/* Fila de Consolidados Totales de Costos Directos */}
                   <tfoot>
                     {(() => {
-                      const directs = costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto');
+                      const directs = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto');
                       const sumVal = directs.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
                       const sumIva = directs.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
                       const sumRet = directs.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
@@ -1224,7 +1247,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   Costos Indirectos — {selectedFolderCode}
                 </h4>
                 <span className="text-[11px] text-slate-500 font-mono">
-                  ({costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto').length} rubros)
+                  ({costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto').length} rubros)
                 </span>
               </div>
               <button
@@ -1245,7 +1268,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               </button>
             </div>
 
-            {costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto').length === 0 ? (
+            {costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto').length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
                 No hay costos indirectos registrados para {selectedFolderCode}. Agrega pólizas, peajes, grúas o papelería.
               </div>
@@ -1257,7 +1280,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       <th className="py-2.5 px-3">Fecha</th>
                       <th className="py-2.5 px-4">Concepto del Costo Indirecto</th>
                       <th className="py-2.5 px-3 text-right">Valor Costo Indirecto</th>
-                      <th className="py-2.5 px-3 text-right">IVA (19%)</th>
+                      <th className="py-2.5 px-3 text-right">IVA ({projectTaxRate.label})</th>
                       <th className="py-2.5 px-3 text-right">Retención</th>
                       <th className="py-2.5 px-3 text-right">Gran Total</th>
                       <th className="py-2.5 px-3">Factura Proveedor</th>
@@ -1267,7 +1290,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-sans">
                     {costItems
-                      .filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto')
+                      .filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto')
                       .map((c) => {
                         const valIndirecto = c.actualTotal || (c.actualQuantity * c.actualUnitCost) || c.plannedTotal;
                         const iva = c.ivaAmount || 0;
@@ -1316,7 +1339,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   {/* Fila de Consolidados Totales de Costos Indirectos */}
                   <tfoot>
                     {(() => {
-                      const indirects = costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto');
+                      const indirects = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto');
                       const sumVal = indirects.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
                       const sumIva = indirects.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
                       const sumRet = indirects.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
@@ -1353,7 +1376,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   Facturación — {selectedFolderCode}
                 </h4>
                 <span className="text-[11px] text-slate-500 font-mono">
-                  ({billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase()).length} facturas)
+                  ({billingItems.filter((b) => (b.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase()).length} facturas)
                 </span>
               </div>
               <button
@@ -1372,7 +1395,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               </button>
             </div>
 
-            {billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase()).length === 0 ? (
+            {billingItems.filter((b) => (b.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase()).length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
                 No hay facturas emitidas ni registradas para {selectedFolderCode}. Registra facturas FE con su subtotal e IVA.
               </div>
@@ -1385,7 +1408,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       <th className="py-2.5 px-3">Número Factura</th>
                       <th className="py-2.5 px-3 text-right">Anticipo</th>
                       <th className="py-2.5 px-3 text-right">Subtotal</th>
-                      <th className="py-2.5 px-3 text-right">IVA (19%)</th>
+                      <th className="py-2.5 px-3 text-right">IVA ({projectTaxRate.label})</th>
                       <th className="py-2.5 px-3 text-right">Retención</th>
                       <th className="py-2.5 px-3 text-right">Gran Total</th>
                       <th className="py-2.5 px-4">Observaciones</th>
@@ -1395,7 +1418,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-sans">
                     {billingItems
-                      .filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase())
+                      .filter((b) => (b.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase())
                       .map((b) => (
                         <tr key={b.id} className="hover:bg-slate-50 transition-colors">
                           <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px] text-slate-600">
@@ -1441,7 +1464,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   {/* Fila de Consolidados Totales de Facturación */}
                   <tfoot>
                     {(() => {
-                      const bills = billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase());
+                      const bills = billingItems.filter((b) => (b.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase());
                       const sumAnt = bills.reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
                       const sumSub = bills.reduce((acc, b) => acc + (b.subtotal || 0), 0);
                       const sumIva = bills.reduce((acc, b) => acc + (b.ivaAmount || 0), 0);
@@ -1626,19 +1649,26 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     required
                     placeholder="0"
                     value={billingForm.subtotal || ''}
-                    onChange={(e) => setBillingForm({ ...billingForm, subtotal: Number(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                    onChange={(e) => {
+                      const sub = e.target.value === '' ? 0 : Number(e.target.value);
+                      setBillingForm((prev) => ({
+                        ...prev,
+                        subtotal: sub,
+                        ivaAmount: Math.round(sub * projectTaxRate.rate),
+                      }));
+                    }}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-emerald-600 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">IVA (19% Si Aplica)</label>
+                  <label className="block font-bold text-slate-700 mb-1">IVA ({projectTaxRate.label} Si Aplica)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0"
                     value={billingForm.ivaAmount || ''}
-                    onChange={(e) => setBillingForm({ ...billingForm, ivaAmount: Number(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                    onChange={(e) => setBillingForm({ ...billingForm, ivaAmount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-emerald-600 transition-all"
                   />
                 </div>
               </div>
@@ -1651,8 +1681,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     min="0"
                     placeholder="0"
                     value={billingForm.advanceAmount || ''}
-                    onChange={(e) => setBillingForm({ ...billingForm, advanceAmount: Number(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                    onChange={(e) => setBillingForm({ ...billingForm, advanceAmount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-emerald-600 transition-all"
                   />
                 </div>
                 <div>
@@ -1662,8 +1692,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     min="0"
                     placeholder="0"
                     value={billingForm.retentionAmount || ''}
-                    onChange={(e) => setBillingForm({ ...billingForm, retentionAmount: Number(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                    onChange={(e) => setBillingForm({ ...billingForm, retentionAmount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-emerald-600 transition-all"
                   />
                 </div>
               </div>
@@ -1727,7 +1757,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 shrink-0 bg-white">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    Agregar Rubro a {itemForm.itemCode || selectedFolderCode || 'ITEM 11'}
+                    Agregar Rubro a {itemForm.itemCode || selectedFolderCode || 'ITEM'}
                   </h3>
                   <p className="text-[11px] text-slate-400">
                     {itemForm.costType === 'indirecto' ? 'Costo Indirecto (Pólizas, Peajes, Grúas)' : 'Costo Directo (MO, Obra, Insumos)'}
@@ -1806,7 +1836,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           });
                         }
                       }}
-                      placeholder="Seleccionar o escribir ITEM (ej. ITEM 11)..."
+                      placeholder="Seleccionar o escribir ITEM (ej. ITEM 01, ITEM 1)..."
                       isClearable={true}
                       allowCustomText={true}
                     />
@@ -1899,8 +1929,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     </div>
                   </div>
 
-                  {/* Unidad y Cantidad */}
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Unidad, Cantidad y Costo */}
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Unidad</label>
                       <CreatableSelect
@@ -1915,71 +1945,157 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Cantidad Planificada</label>
+                      <label className="block font-bold text-slate-700 mb-1">Cantidad</label>
                       <input
                         type="number"
                         min="1"
-                        value={itemForm.plannedQuantity}
-                        onChange={(e) => setItemForm({ ...itemForm, plannedQuantity: Number(e.target.value) })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Costos Plan y Real */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">Costo Unitario Plan (COP)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={itemForm.plannedUnitCost}
-                        onChange={(e) => setItemForm({ ...itemForm, plannedUnitCost: Number(e.target.value) })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">Costo Real Incurrido (COP)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={itemForm.actualUnitCost * (itemForm.actualQuantity || 1)}
+                        placeholder="1"
+                        value={itemForm.plannedQuantity || ''}
                         onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setItemForm({
-                            ...itemForm,
-                            actualQuantity: 1,
-                            actualUnitCost: val,
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          const newQty = val;
+                          setItemForm((prev) => {
+                            const newCost = prev.actualUnitCost || prev.plannedUnitCost || 0;
+                            const newSubtotal = newCost * (newQty || 1);
+                            const updatedIva = hasIva ? Math.round(newSubtotal * projectTaxRate.rate) : 0;
+                            return {
+                              ...prev,
+                              plannedQuantity: newQty,
+                              actualQuantity: newQty,
+                              ivaAmount: updatedIva,
+                            };
                           });
                         }}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-[#00668F] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Costo o Subtotal {itemForm.costType === 'directo' ? 'Directo' : 'Indirecto'} (COP)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={itemForm.actualUnitCost || itemForm.plannedUnitCost || ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          setItemForm((prev) => {
+                            const qty = prev.plannedQuantity || 1;
+                            const subtotal = val * qty;
+                            const updatedIva = hasIva ? Math.round(subtotal * projectTaxRate.rate) : 0;
+                            return {
+                              ...prev,
+                              plannedUnitCost: val,
+                              actualUnitCost: val,
+                              actualQuantity: qty,
+                              ivaAmount: updatedIva,
+                            };
+                          });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800 focus:bg-white focus:border-[#00668F] transition-all"
                       />
                     </div>
                   </div>
 
-                  {/* IVA y Retención si aplica */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">IVA (19% si aplica)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={itemForm.ivaAmount || ''}
-                        onChange={(e) => setItemForm({ ...itemForm, ivaAmount: Number(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                      />
+                  {/* IVA y Retención */}
+                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <label className="font-bold text-slate-700 text-xs">
+                          IVA ({projectTaxRate.countryName}: {projectTaxRate.label})
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHasIva(false);
+                            setItemForm((prev) => ({ ...prev, ivaAmount: 0 }));
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
+                            !hasIva
+                              ? 'bg-slate-700 text-white shadow-xs'
+                              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          Sin IVA
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHasIva(true);
+                            const cost = itemForm.actualUnitCost || itemForm.plannedUnitCost || 0;
+                            const qty = itemForm.plannedQuantity || 1;
+                            const sub = cost * qty;
+                            setItemForm((prev) => ({
+                              ...prev,
+                              ivaAmount: Math.round(sub * projectTaxRate.rate),
+                            }));
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
+                            hasIva
+                              ? 'bg-[#00668F] text-white shadow-xs'
+                              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          Con IVA ({projectTaxRate.label})
+                        </button>
+                      </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-slate-500 mb-0.5">
+                          {hasIva ? `Valor IVA Calculado (${projectTaxRate.label})` : 'IVA (No aplica)'}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={itemForm.ivaAmount || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : Number(e.target.value);
+                            setItemForm({ ...itemForm, ivaAmount: val });
+                          }}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs focus:border-[#00668F] transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-500 mb-0.5">Retención (si aplica)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={itemForm.retentionAmount || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : Number(e.target.value);
+                            setItemForm({ ...itemForm, retentionAmount: val });
+                          }}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs focus:border-[#00668F] transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* GRAN TOTAL: Solo Visualización de la Suma (Subtotal + IVA + Retención) */}
+                  <div className="p-3.5 bg-linear-to-r from-sky-50 to-blue-50/60 rounded-xl border border-sky-200/80 flex items-center justify-between">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Retención si aplica</label>
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={itemForm.retentionAmount || ''}
-                        onChange={(e) => setItemForm({ ...itemForm, retentionAmount: Number(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                      />
+                      <span className="block font-bold text-slate-800 text-xs">Gran Total del Rubro:</span>
+                      <span className="text-[10px] text-slate-500">Costo/Subtotal + IVA + Retención</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-base font-black text-[#00668F] font-mono">
+                        {(() => {
+                          const cost = itemForm.actualUnitCost || itemForm.plannedUnitCost || 0;
+                          const qty = itemForm.plannedQuantity || 1;
+                          const subtotal = cost * qty;
+                          const iva = itemForm.ivaAmount || 0;
+                          const ret = itemForm.retentionAmount || 0;
+                          const total = subtotal + iva + ret;
+                          return formatCOP(total);
+                        })()}
+                      </span>
                     </div>
                   </div>
 
@@ -1997,8 +2113,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             type="number"
                             min="1"
                             max="100"
-                            value={itemForm.splitPercentage}
-                            onChange={(e) => setItemForm({ ...itemForm, splitPercentage: Number(e.target.value) || 100 })}
+                            placeholder="100"
+                            value={itemForm.splitPercentage || ''}
+                            onChange={(e) => setItemForm({ ...itemForm, splitPercentage: e.target.value === '' ? 0 : Number(e.target.value) })}
                             className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs"
                           />
                         </div>
@@ -2035,20 +2152,32 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 </div>
 
                 {/* Footer Fijo con Botones */}
-                <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-100 bg-slate-50/90 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddItemModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold transition-colors cursor-pointer text-xs"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white font-bold rounded-xl transition-all cursor-pointer text-xs shadow-xs"
-                  >
-                    Guardar Rubro
-                  </button>
+                <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 bg-slate-50/90 shrink-0">
+                  <div className="text-[11px] font-mono text-slate-500">
+                    Gran Total: <strong className="text-slate-900 font-bold">{(() => {
+                      const cost = itemForm.actualUnitCost || itemForm.plannedUnitCost || 0;
+                      const qty = itemForm.plannedQuantity || 1;
+                      const subtotal = cost * qty;
+                      const iva = itemForm.ivaAmount || 0;
+                      const ret = itemForm.retentionAmount || 0;
+                      return formatCOP(subtotal + iva + ret);
+                    })()}</strong>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddItemModalOpen(false)}
+                      className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold transition-colors cursor-pointer text-xs"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white font-bold rounded-xl transition-all cursor-pointer text-xs shadow-xs"
+                    >
+                      Guardar Rubro
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -2091,8 +2220,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           if (folderToDelete) {
             const codeToDel = folderToDelete.code.toUpperCase();
             const updatedFolders = projectItems.filter((f) => f.code.toUpperCase() !== codeToDel);
-            const updatedCosts = costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() !== codeToDel);
-            const updatedBills = billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() !== codeToDel);
+            const updatedCosts = costItems.filter((c) => (c.itemCode || '').toUpperCase() !== codeToDel);
+            const updatedBills = billingItems.filter((b) => (b.itemCode || '').toUpperCase() !== codeToDel);
 
             setProjectItems(updatedFolders);
             setCostItems(updatedCosts);
