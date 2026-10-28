@@ -1053,30 +1053,39 @@ export const ExpensesModule: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-gray-900 mb-1 text-[11px]">
-                      Total Factura *
-                    </label>
-                    <div className="flex gap-1.5">
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value as any)}
-                        className="w-18 p-2.5 rounded-xl bg-white font-bold text-gray-900 shadow-2xs focus:outline-hidden"
-                      >
-                        <option value="COP">COP</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                      </select>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={amount}
-                        onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                        className="w-full p-2.5 rounded-xl bg-white font-black text-gray-900 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden text-right"
-                      />
+                    <div>
+                      <label className="block font-bold text-gray-900 mb-1 text-[11px]">
+                        Total Factura *
+                      </label>
+                      <div className="flex gap-1.5">
+                        <div className="w-24 shrink-0">
+                          <CreatableSelect
+                            value={currency}
+                            onChange={(val) => {
+                              if (val) setCurrency(val as any);
+                            }}
+                            options={[
+                              { id: 'COP', name: 'COP', code: 'COP' },
+                              { id: 'USD', name: 'USD', code: 'USD' },
+                              { id: 'EUR', name: 'EUR', code: 'EUR' },
+                              { id: 'MXN', name: 'MXN', code: 'MXN' },
+                            ]}
+                            placeholder="Divisa..."
+                            allowCustomText={false}
+                            isClearable={false}
+                            inputClassName="p-2.5 rounded-xl bg-white font-bold text-gray-900 shadow-2xs"
+                          />
+                        </div>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={amount}
+                          onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+                          className="w-full p-2.5 rounded-xl bg-white font-black text-gray-900 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden text-right"
+                        />
+                      </div>
                     </div>
-                  </div>
                 </div>
 
                 {/* CATEGORÍA Y DESCRIPCIÓN */}

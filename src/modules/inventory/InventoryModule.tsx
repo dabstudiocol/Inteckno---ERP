@@ -2200,17 +2200,28 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                           <label className="text-[10px] font-bold text-slate-500 block mb-1">
                             Repuesto o Artículo
                           </label>
-                          <select
-                            value={item.productId}
-                            onChange={(e) => updateDispatchItem(item.id, 'productId', e.target.value)}
-                            className="w-full h-11 px-3 text-xs rounded-xl bg-slate-100 font-semibold text-slate-800"
-                          >
-                            {products.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.sku} — {p.name} (Disp: {p.availableStock} {p.unit})
-                              </option>
-                            ))}
-                          </select>
+                          <CreatableSelect
+                            value={
+                              products.find((p) => p.id === item.productId)
+                                ? `${products.find((p) => p.id === item.productId)!.sku} — ${products.find((p) => p.id === item.productId)!.name} (Disp: ${products.find((p) => p.id === item.productId)!.availableStock} ${products.find((p) => p.id === item.productId)!.unit})`
+                                : ''
+                            }
+                            onChange={(val) => {
+                              const found = products.find(
+                                (p) => `${p.sku} — ${p.name} (Disp: ${p.availableStock} ${p.unit})` === val || p.id === val || p.sku === val
+                              );
+                              if (found) updateDispatchItem(item.id, 'productId', found.id);
+                            }}
+                            options={products.map((p) => ({
+                              id: p.id,
+                              name: `${p.sku} — ${p.name} (Disp: ${p.availableStock} ${p.unit})`,
+                              code: p.sku,
+                            }))}
+                            placeholder="Buscar repuesto..."
+                            allowCustomText={false}
+                            isClearable={false}
+                            inputClassName="w-full h-11 px-3 text-xs rounded-xl bg-slate-100 font-semibold text-slate-800"
+                          />
                         </div>
                         {dispatchItems.length > 1 && (
                           <button
@@ -2278,17 +2289,28 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         return (
                           <div key={item.id} className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-sky-50/30">
                             <div className="col-span-5">
-                              <select
-                                value={item.productId}
-                                onChange={(e) => updateDispatchItem(item.id, 'productId', e.target.value)}
-                                className="w-full h-10 px-3 text-xs rounded-xl bg-slate-100 font-medium"
-                              >
-                                {products.map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.sku} — {p.name} (Disp: {p.availableStock} {p.unit})
-                                  </option>
-                                ))}
-                              </select>
+                              <CreatableSelect
+                                value={
+                                  products.find((p) => p.id === item.productId)
+                                    ? `${products.find((p) => p.id === item.productId)!.sku} — ${products.find((p) => p.id === item.productId)!.name} (Disp: ${products.find((p) => p.id === item.productId)!.availableStock} ${products.find((p) => p.id === item.productId)!.unit})`
+                                    : ''
+                                }
+                                onChange={(val) => {
+                                  const found = products.find(
+                                    (p) => `${p.sku} — ${p.name} (Disp: ${p.availableStock} ${p.unit})` === val || p.id === val || p.sku === val
+                                  );
+                                  if (found) updateDispatchItem(item.id, 'productId', found.id);
+                                }}
+                                options={products.map((p) => ({
+                                  id: p.id,
+                                  name: `${p.sku} — ${p.name} (Disp: ${p.availableStock} ${p.unit})`,
+                                  code: p.sku,
+                                }))}
+                                placeholder="Buscar repuesto..."
+                                allowCustomText={false}
+                                isClearable={false}
+                                inputClassName="w-full h-10 px-3 text-xs rounded-xl bg-slate-100 font-medium"
+                              />
                             </div>
 
                             <div className="col-span-2 text-center">
@@ -2451,35 +2473,56 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
               <label className="block font-bold text-gray-700 text-xs">
                 Seleccionar Remisión de Salida a Reingresar: *
               </label>
-              <select
-                value={selectedReturnRemissionId}
-                onChange={(e) => setSelectedReturnRemissionId(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-bold text-xs focus:outline-hidden focus:border-[#00668F]"
-              >
-                {remissions.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.remissionNumber} — {r.projectName} ({r.responsibleTechnicianName} | Salida: {r.departureDate} | Estado: {r.status})
-                  </option>
-                ))}
-              </select>
+              <CreatableSelect
+                value={
+                  remissions.find((r) => r.id === selectedReturnRemissionId)
+                    ? `${remissions.find((r) => r.id === selectedReturnRemissionId)!.remissionNumber} — ${remissions.find((r) => r.id === selectedReturnRemissionId)!.projectName} (${remissions.find((r) => r.id === selectedReturnRemissionId)!.responsibleTechnicianName} | Salida: ${remissions.find((r) => r.id === selectedReturnRemissionId)!.departureDate} | Estado: ${remissions.find((r) => r.id === selectedReturnRemissionId)!.status})`
+                    : ''
+                }
+                onChange={(val) => {
+                  const match = remissions.find(
+                    (r) => `${r.remissionNumber} — ${r.projectName} (${r.responsibleTechnicianName} | Salida: ${r.departureDate} | Estado: ${r.status})` === val || r.id === val || r.remissionNumber === val
+                  );
+                  if (match) setSelectedReturnRemissionId(match.id);
+                }}
+                options={remissions.map((r) => ({
+                  id: r.id,
+                  name: `${r.remissionNumber} — ${r.projectName} (${r.responsibleTechnicianName} | Salida: ${r.departureDate} | Estado: ${r.status})`,
+                  code: r.remissionNumber,
+                }))}
+                placeholder="Buscar remisión..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-bold text-xs"
+              />
             </div>
 
             <div className="space-y-1.5">
               <label className="block font-bold text-gray-700 text-xs">
                 Almacenista o Encargado que Recibe: * (Obligatorio)
               </label>
-              <select
-                value={returnReceiverUserId}
-                onChange={(e) => setReturnReceiverUserId(e.target.value)}
-                required
-                className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-bold text-xs focus:outline-hidden focus:border-[#00668F]"
-              >
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} — {u.roleLabel}
-                  </option>
-                ))}
-              </select>
+              <CreatableSelect
+                value={
+                  users.find((u) => u.id === returnReceiverUserId)
+                    ? `${users.find((u) => u.id === returnReceiverUserId)!.name} — ${users.find((u) => u.id === returnReceiverUserId)!.roleLabel}`
+                    : ''
+                }
+                onChange={(val) => {
+                  const match = users.find(
+                    (u) => `${u.name} — ${u.roleLabel}` === val || u.id === val || u.name === val
+                  );
+                  if (match) setReturnReceiverUserId(match.id);
+                }}
+                options={users.map((u) => ({
+                  id: u.id,
+                  name: `${u.name} — ${u.roleLabel}`,
+                  code: u.department,
+                }))}
+                placeholder="Seleccionar encargado..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-bold text-xs"
+              />
             </div>
           </div>
 
@@ -2560,24 +2603,37 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                             <label className="text-[10px] font-bold text-slate-500 block mb-1">
                               Estado al Regreso
                             </label>
-                            <select
-                              value={itemState.condition}
-                              onChange={(e) => {
+                            <CreatableSelect
+                              value={
+                                itemState.condition === 'bueno' ? '✓ Buen Estado' :
+                                itemState.condition === 'regular' ? '⚠️ Requiere Mantenimiento' :
+                                itemState.condition === 'danado' ? '❌ Dañado' :
+                                '📦 Consumido en Obra'
+                              }
+                              onChange={(val) => {
+                                let cond: any = 'bueno';
+                                if (val.includes('Mantenimiento')) cond = 'regular';
+                                else if (val.includes('Dañado')) cond = 'danado';
+                                else if (val.includes('Consumido')) cond = 'consumido';
                                 setReturnItemsState({
                                   ...returnItemsState,
                                   [item.id]: {
                                     ...itemState,
-                                    condition: e.target.value as any,
+                                    condition: cond,
                                   },
                                 });
                               }}
-                              className="w-full h-10 px-3 text-xs rounded-xl bg-slate-100 font-semibold text-slate-800"
-                            >
-                              <option value="bueno">✓ Buen Estado</option>
-                              <option value="regular">⚠️ Requiere Mantenimiento</option>
-                              <option value="danado">❌ Dañado</option>
-                              <option value="consumido">📦 Consumido en Obra</option>
-                            </select>
+                              options={[
+                                '✓ Buen Estado',
+                                '⚠️ Requiere Mantenimiento',
+                                '❌ Dañado',
+                                '📦 Consumido en Obra',
+                              ]}
+                              placeholder="Estado..."
+                              allowCustomText={false}
+                              isClearable={false}
+                              inputClassName="w-full h-10 px-3 text-xs rounded-xl bg-slate-100 font-semibold text-slate-800"
+                            />
                           </div>
 
                           <div className="flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0">
@@ -2662,24 +2718,37 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                               </div>
 
                               <div className="col-span-2 text-center">
-                                <select
-                                  value={itemState.condition}
-                                  onChange={(e) => {
+                                <CreatableSelect
+                                  value={
+                                    itemState.condition === 'bueno' ? '✓ Buen Estado' :
+                                    itemState.condition === 'regular' ? '⚠️ Requiere Mantenimiento' :
+                                    itemState.condition === 'danado' ? '❌ Dañado' :
+                                    '📦 Consumido en Obra'
+                                  }
+                                  onChange={(val) => {
+                                    let cond: any = 'bueno';
+                                    if (val.includes('Mantenimiento')) cond = 'regular';
+                                    else if (val.includes('Dañado')) cond = 'danado';
+                                    else if (val.includes('Consumido')) cond = 'consumido';
                                     setReturnItemsState({
                                       ...returnItemsState,
                                       [item.id]: {
                                         ...itemState,
-                                        condition: e.target.value as any,
+                                        condition: cond,
                                       },
                                     });
                                   }}
-                                  className="w-full h-9 p-1.5 text-xs rounded-lg bg-slate-100 font-semibold"
-                                >
-                                  <option value="bueno">✓ Buen Estado</option>
-                                  <option value="regular">⚠️ Requiere Mantenimiento</option>
-                                  <option value="danado">❌ Dañado</option>
-                                  <option value="consumido">📦 Consumido en Obra</option>
-                                </select>
+                                  options={[
+                                    '✓ Buen Estado',
+                                    '⚠️ Requiere Mantenimiento',
+                                    '❌ Dañado',
+                                    '📦 Consumido en Obra',
+                                  ]}
+                                  placeholder="Estado..."
+                                  allowCustomText={false}
+                                  isClearable={false}
+                                  inputClassName="w-full h-9 p-1.5 text-xs rounded-lg bg-slate-100 font-semibold"
+                                />
                               </div>
                             </div>
                           );
@@ -3265,16 +3334,31 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="font-bold text-gray-700 mb-1 flex items-center text-xs">Estado Físico / Materia</label>
-                      <select
-                        value={prodForm.physicalState || 'solido'}
-                        onChange={(e) => setProdForm({ ...prodForm, physicalState: e.target.value })}
-                        className="w-full p-2.5 rounded-xl bg-white border border-gray-200 text-gray-800 focus:bg-white focus:outline-hidden text-xs"
-                      >
-                        <option value="solido">Sólido</option>
-                        <option value="liquido">Líquido</option>
-                        <option value="gas_vapor">Gas / Vapor</option>
-                        <option value="otro">Otro</option>
-                      </select>
+                      <CreatableSelect
+                        value={
+                          prodForm.physicalState === 'liquido' ? 'Líquido' :
+                          prodForm.physicalState === 'gas_vapor' ? 'Gas / Vapor' :
+                          prodForm.physicalState === 'otro' ? 'Otro' :
+                          'Sólido'
+                        }
+                        onChange={(val) => {
+                          let st = 'solido';
+                          if (val === 'Líquido') st = 'liquido';
+                          else if (val.includes('Gas')) st = 'gas_vapor';
+                          else if (val === 'Otro') st = 'otro';
+                          setProdForm({ ...prodForm, physicalState: st });
+                        }}
+                        options={[
+                          'Sólido',
+                          'Líquido',
+                          'Gas / Vapor',
+                          'Otro',
+                        ]}
+                        placeholder="Estado físico..."
+                        allowCustomText={false}
+                        isClearable={false}
+                        inputClassName="w-full p-2.5 rounded-xl bg-white border border-gray-200 text-gray-800 text-xs"
+                      />
                     </div>
                     <div>
                       <label className="font-bold text-gray-700 mb-1 flex items-center text-xs">Fecha de Compra</label>

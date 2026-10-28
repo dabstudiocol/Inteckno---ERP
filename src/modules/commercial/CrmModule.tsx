@@ -3633,22 +3633,26 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                       <td className="p-2 text-center text-gray-400 font-mono text-[11px]">{idx + 1}</td>
                                       
                                       {/* Categoría Editable */}
-                                      <td className="p-2">
-                                        <select
+                                      <td className="p-2 min-w-[170px]">
+                                        <CreatableSelect
                                           value={it.category || 'Servicio STC'}
-                                          onChange={(e) => {
+                                          onChange={(val) => {
                                             const newItems = [...(currentQuote.items || [])];
-                                            newItems[idx] = { ...newItems[idx], category: e.target.value };
+                                            newItems[idx] = { ...newItems[idx], category: val || 'Servicio STC' };
                                             updateCurrentQuote({ items: newItems });
                                           }}
-                                          className="text-[11px] font-bold p-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 w-full focus:outline-hidden focus:border-[#00668F]"
-                                        >
-                                          <option value="Servicio STC">Servicio STC</option>
-                                          <option value="Ensayos NDT/MRT">Ensayos NDT/MRT</option>
-                                          <option value="Repuestos OEM">Repuestos OEM</option>
-                                          <option value="Viáticos & Logística">Viáticos & Logística</option>
-                                          <option value="Ingeniería & Peritaje">Ingeniería & Peritaje</option>
-                                        </select>
+                                          options={[
+                                            'Servicio STC',
+                                            'Ensayos NDT/MRT',
+                                            'Repuestos OEM',
+                                            'Viáticos & Logística',
+                                            'Ingeniería & Peritaje',
+                                          ]}
+                                          placeholder="Categoría..."
+                                          allowCustomText={true}
+                                          isClearable={false}
+                                          inputClassName="text-[11px] font-bold p-1 rounded-lg border border-gray-200 bg-white text-gray-700"
+                                        />
                                       </td>
 
                                       {/* Descripción Editable */}
@@ -3745,17 +3749,23 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
 
                           {/* Formulario Agregar Nuevo Ítem Rápido */}
                           <div className="p-3 bg-slate-50/80 border-t border-gray-200 flex flex-col md:flex-row items-stretch md:items-center gap-2">
-                            <select
-                              value={newItemCategory}
-                              onChange={(e) => setNewItemCategory(e.target.value)}
-                              className="text-xs p-2 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F] font-semibold text-gray-700 shrink-0"
-                            >
-                              <option value="Servicio STC">Servicio STC</option>
-                              <option value="Ensayos NDT/MRT">Ensayos NDT/MRT</option>
-                              <option value="Repuestos OEM">Repuestos OEM</option>
-                              <option value="Viáticos & Logística">Viáticos & Logística</option>
-                              <option value="Ingeniería & Peritaje">Ingeniería & Peritaje</option>
-                            </select>
+                            <div className="w-52 shrink-0">
+                              <CreatableSelect
+                                value={newItemCategory}
+                                onChange={(val) => setNewItemCategory(val || 'Servicio STC')}
+                                options={[
+                                  'Servicio STC',
+                                  'Ensayos NDT/MRT',
+                                  'Repuestos OEM',
+                                  'Viáticos & Logística',
+                                  'Ingeniería & Peritaje',
+                                ]}
+                                placeholder="Categoría..."
+                                allowCustomText={true}
+                                isClearable={false}
+                                inputClassName="text-xs p-2 rounded-xl border border-gray-300 bg-white font-semibold text-gray-700"
+                              />
+                            </div>
 
                             <input
                               type="text"
@@ -4133,14 +4143,27 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                 <div className="flex justify-between items-center text-gray-600 pt-1">
                                   <span className="flex items-center gap-1">
                                     <span>IVA:</span>
-                                    <select
-                                      value={currentQuote.taxRate ?? 0.19}
-                                      onChange={(e) => updateCurrentQuote({ taxRate: Number(e.target.value) })}
-                                      className="text-[11px] p-0.5 rounded border border-gray-300 bg-white font-medium"
-                                    >
-                                      <option value={0.19}>19% (Pleno Colombia)</option>
-                                      <option value={0}>0% (Exento Exportación E.T. Art 481)</option>
-                                    </select>
+                                    <div className="w-48">
+                                      <CreatableSelect
+                                        value={
+                                          (currentQuote.taxRate ?? 0.19) === 0.19
+                                            ? '19% (Pleno Colombia)'
+                                            : '0% (Exento Exportación E.T. Art 481)'
+                                        }
+                                        onChange={(val) => {
+                                          if (val.startsWith('0%')) updateCurrentQuote({ taxRate: 0 });
+                                          else updateCurrentQuote({ taxRate: 0.19 });
+                                        }}
+                                        options={[
+                                          '19% (Pleno Colombia)',
+                                          '0% (Exento Exportación E.T. Art 481)',
+                                        ]}
+                                        placeholder="IVA..."
+                                        allowCustomText={false}
+                                        isClearable={false}
+                                        inputClassName="text-[11px] p-0.5 rounded border border-gray-300 bg-white font-medium"
+                                      />
+                                    </div>
                                   </span>
                                   <span className="font-medium text-gray-800">
                                     ${Math.round(currentQuote.taxAmount || 0).toLocaleString()} {currentQuote.currency}
@@ -4545,48 +4568,58 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                             <label className="block text-[11px] font-semibold text-gray-600 mb-1">
                               Contacto del Directorio (Prioridad: {editingOpp.clientName})
                             </label>
-                            <select
-                              value={selectedContactIdForStakeholder}
-                              onChange={(e) => setSelectedContactIdForStakeholder(e.target.value)}
-                              className="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F]"
-                            >
-                              <option value="">Seleccionar contacto del cliente...</option>
-                              {clientContacts.length > 0 && (
-                                <optgroup label={`Contactos de ${editingOpp.clientName}`}>
-                                  {clientContacts.map((cnt) => (
-                                    <option key={cnt.id} value={cnt.id}>
-                                      ⭐ {cnt.name} - {cnt.role} ({cnt.company})
-                                    </option>
-                                  ))}
-                                </optgroup>
-                              )}
-                              <optgroup label="Otros Contactos del Directorio">
-                                {otherContacts.map((cnt) => (
-                                  <option key={cnt.id} value={cnt.id}>
-                                    {cnt.name} - {cnt.company} ({cnt.role})
-                                  </option>
-                                ))}
-                              </optgroup>
-                            </select>
+                            <CreatableSelect
+                              value={
+                                contacts.find((c) => c.id === selectedContactIdForStakeholder)
+                                  ? `${contacts.find((c) => c.id === selectedContactIdForStakeholder)!.name} - ${contacts.find((c) => c.id === selectedContactIdForStakeholder)!.role} (${contacts.find((c) => c.id === selectedContactIdForStakeholder)!.company})`
+                                  : ''
+                              }
+                              onChange={(val) => {
+                                const found = contacts.find(
+                                  (c) => `${c.name} - ${c.role} (${c.company})` === val || `${c.name} - ${c.company} (${c.role})` === val || c.id === val
+                                );
+                                setSelectedContactIdForStakeholder(found ? found.id : '');
+                              }}
+                              options={[
+                                ...clientContacts.map((cnt) => ({
+                                  id: cnt.id,
+                                  name: `${cnt.name} - ${cnt.role} (${cnt.company})`,
+                                  code: 'Cliente',
+                                })),
+                                ...otherContacts.map((cnt) => ({
+                                  id: cnt.id,
+                                  name: `${cnt.name} - ${cnt.company} (${cnt.role})`,
+                                  code: 'Otro',
+                                })),
+                              ]}
+                              placeholder="Seleccionar contacto del cliente..."
+                              allowCustomText={false}
+                              isClearable={true}
+                              inputClassName="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white"
+                            />
                           </div>
 
                           <div>
                             <label className="block text-[11px] font-semibold text-gray-600 mb-1">
                               Rol en el Comité del Cliente
                             </label>
-                            <select
+                            <CreatableSelect
                               value={stakeholderRole}
-                              onChange={(e) => setStakeholderRole(e.target.value)}
-                              className="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F]"
-                            >
-                              <option value="👑 Decisor Económico (Gerente / Finanzas)">👑 Decisor Económico (Gerente / Finanzas)</option>
-                              <option value="⚙️ Evaluador Técnico (Jefe STC / Mantenimiento)">⚙️ Evaluador Técnico (Jefe STC / Mantenimiento)</option>
-                              <option value="💼 Comprador (Licitaciones / Adquisiciones)">💼 Comprador (Licitaciones / Adquisiciones)</option>
-                              <option value="🌟 Campeón Interno (Aliado que apoya a Inteckno)">🌟 Campeón Interno (Aliado que apoya a Inteckno)</option>
-                              <option value="🔍 Interventor / Auditor Externo">🔍 Interventor / Auditor Externo</option>
-                              <option value="🚠 Operaciones de Campo (Jefe de Estación)">🚠 Operaciones de Campo (Jefe de Estación)</option>
-                              <option value="⚠️ Detractor / Reticente (Preferencia por OEM)">⚠️ Detractor / Reticente (Preferencia por OEM)</option>
-                            </select>
+                              onChange={(val) => setStakeholderRole(val || '👑 Decisor Económico (Gerente / Finanzas)')}
+                              options={[
+                                '👑 Decisor Económico (Gerente / Finanzas)',
+                                '⚙️ Evaluador Técnico (Jefe STC / Mantenimiento)',
+                                '💼 Comprador (Licitaciones / Adquisiciones)',
+                                '🌟 Campeón Interno (Aliado que apoya a Inteckno)',
+                                '🔍 Interventor / Auditor Externo',
+                                '🚠 Operaciones de Campo (Jefe de Estación)',
+                                '⚠️ Detractor / Reticente (Preferencia por OEM)',
+                              ]}
+                              placeholder="Rol en el comité..."
+                              allowCustomText={true}
+                              isClearable={false}
+                              inputClassName="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white"
+                            />
                           </div>
 
                           <div className="flex items-end">
@@ -4955,16 +4988,27 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Modalidad</label>
-                  <select
-                    value={meetingForm.meetingMethod}
-                    onChange={(e) =>
-                      setMeetingForm({ ...meetingForm, meetingMethod: e.target.value as any })
+                  <CreatableSelect
+                    value={
+                      meetingForm.meetingMethod === 'virtual'
+                        ? '💻 Virtual (Microsoft Teams)'
+                        : '🏢 Presencial (En Sitio)'
                     }
-                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F]"
-                  >
-                    <option value="virtual">💻 Virtual (Microsoft Teams)</option>
-                    <option value="presencial">🏢 Presencial (En Sitio)</option>
-                  </select>
+                    onChange={(val) =>
+                      setMeetingForm({
+                        ...meetingForm,
+                        meetingMethod: val?.includes('Virtual') ? 'virtual' : 'presencial',
+                      })
+                    }
+                    options={[
+                      '💻 Virtual (Microsoft Teams)',
+                      '🏢 Presencial (En Sitio)',
+                    ]}
+                    placeholder="Modalidad..."
+                    allowCustomText={false}
+                    isClearable={false}
+                    inputClassName="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Ubicación / Plataforma</label>
