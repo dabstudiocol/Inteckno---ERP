@@ -369,6 +369,22 @@ export const DEFAULT_MODULE_CONFIGS: Record<string, ModuleConfigGroup> = {
           { id: 'pt-v8', name: '30% Anticipo / 60% Avance / 10% Retención', code: '30-60-10', isActive: true },
         ],
       },
+      paymentMethods: {
+        key: 'paymentMethods',
+        title: 'Métodos y Formas de Pago',
+        description: 'Instrumentos y medios de recaudo/pago comercial acordados.',
+        hasCode: true,
+        codeLabel: 'Código',
+        items: [
+          { id: 'pm-1', name: 'Transferencia Bancaria Electrónica', code: 'TRANSF', isActive: true },
+          { id: 'pm-2', name: 'Consignación Bancaria Directa', code: 'CONSIG', isActive: true },
+          { id: 'pm-3', name: 'Cheque de Gerencia / Cruzado', code: 'CHEQUE', isActive: true },
+          { id: 'pm-4', name: 'Carta de Crédito Standby (Internacional)', code: 'LC-STBY', isActive: true },
+          { id: 'pm-5', name: 'Giro Internacional (SWIFT / ACH)', code: 'SWIFT', isActive: true },
+          { id: 'pm-6', name: 'Pasarela Digital / Enlace QR', code: 'QR-PAY', isActive: true },
+          { id: 'pm-7', name: 'Efectivo / Caja Menor', code: 'EFEC', isActive: true },
+        ],
+      },
       dealScoreCriteria: {
         key: 'dealScoreCriteria',
         title: 'Criterios de Probabilidad Deal Score',

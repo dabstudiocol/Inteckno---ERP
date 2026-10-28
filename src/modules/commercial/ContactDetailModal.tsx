@@ -110,6 +110,7 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
   const catalogCountries = useModuleCatalog('crm', 'countries');
   const catalogCurrencies = useModuleCatalog('crm', 'currencies');
   const catalogPaymentTerms = useModuleCatalog('crm', 'paymentTerms');
+  const catalogPaymentMethods = useModuleCatalog('crm', 'paymentMethods');
 
   const [activeTab, setActiveTab] = useState<
     'contactos' | 'ventas_compras' | 'facturacion' | 'notas' | 'dian'
@@ -976,20 +977,34 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">Método de Pago (Ventas)</label>
-                  <input
-                    type="text"
-                    value={formData.salesPurchases?.paymentMethodSales || 'Transferencia Bancaria'}
-                    onChange={(e) =>
+                  <CreatableSelect
+                    label="Método de Pago (Ventas)"
+                    value={formData.salesPurchases?.paymentMethodSales || 'Transferencia Bancaria Electrónica'}
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          paymentMethodSales: e.target.value,
+                          paymentMethodSales: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
+                    options={
+                      catalogPaymentMethods.length > 0
+                        ? catalogPaymentMethods.map((pm) => ({ id: pm.id, name: pm.name, code: pm.code }))
+                        : [
+                            { id: 'TRANSF', name: 'Transferencia Bancaria Electrónica', code: 'TRANSF' },
+                            { id: 'CONSIG', name: 'Consignación Bancaria Directa', code: 'CONSIG' },
+                            { id: 'CHEQUE', name: 'Cheque de Gerencia / Cruzado', code: 'CHEQUE' },
+                            { id: 'LC-STBY', name: 'Carta de Crédito Standby (Internacional)', code: 'LC-STBY' },
+                            { id: 'SWIFT', name: 'Giro Internacional (SWIFT / ACH)', code: 'SWIFT' },
+                          ]
+                    }
+                    placeholder="Seleccionar o escribir método de pago..."
+                    moduleId="crm"
+                    catalogKey="paymentMethods"
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
                   />
                 </div>
 
@@ -1051,38 +1066,58 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">Términos de Pago (Compras)</label>
-                  <input
-                    type="text"
-                    value={formData.salesPurchases?.paymentTermsPurchases || '30 días'}
-                    onChange={(e) =>
+                  <CreatableSelect
+                    label="Términos de Pago (Compras)"
+                    value={formData.salesPurchases?.paymentTermsPurchases || '30 días fecha factura (30 F/F)'}
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          paymentTermsPurchases: e.target.value,
+                          paymentTermsPurchases: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
+                    options={
+                      catalogPaymentTerms.length > 0
+                        ? catalogPaymentTerms.map((pt) => ({ id: pt.id, name: pt.name, code: pt.code }))
+                        : PAYMENT_TERMS_PRESETS.map((p) => ({ id: p, name: p }))
+                    }
+                    placeholder="Seleccionar o escribir término de pago compras..."
+                    moduleId="crm"
+                    catalogKey="paymentTerms"
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">Método de Pago (Compras)</label>
-                  <input
-                    type="text"
-                    value={formData.salesPurchases?.paymentMethodPurchases || 'Transferencia Bancaria'}
-                    onChange={(e) =>
+                  <CreatableSelect
+                    label="Método de Pago (Compras)"
+                    value={formData.salesPurchases?.paymentMethodPurchases || 'Transferencia Bancaria Electrónica'}
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          paymentMethodPurchases: e.target.value,
+                          paymentMethodPurchases: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
+                    options={
+                      catalogPaymentMethods.length > 0
+                        ? catalogPaymentMethods.map((pm) => ({ id: pm.id, name: pm.name, code: pm.code }))
+                        : [
+                            { id: 'TRANSF', name: 'Transferencia Bancaria Electrónica', code: 'TRANSF' },
+                            { id: 'CONSIG', name: 'Consignación Bancaria Directa', code: 'CONSIG' },
+                            { id: 'CHEQUE', name: 'Cheque de Gerencia / Cruzado', code: 'CHEQUE' },
+                          ]
+                    }
+                    placeholder="Seleccionar o escribir método de pago compras..."
+                    moduleId="crm"
+                    catalogKey="paymentMethods"
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
                   />
                 </div>
               </div>
@@ -1093,20 +1128,29 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
               <h4 className="text-sm font-bold text-gray-900">Información Fiscal & Clasificación Sectorial</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">Posición Fiscal</label>
-                  <input
-                    type="text"
+                  <CreatableSelect
+                    label="Posición Fiscal"
                     value={formData.salesPurchases?.fiscalPosition || 'Régimen Ordinario / Común'}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          fiscalPosition: e.target.value,
+                          fiscalPosition: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
+                    options={[
+                      { id: 'reg-ord', name: 'Régimen Ordinario / Común' },
+                      { id: 'reg-simp', name: 'Régimen Simple de Tributación (RST)' },
+                      { id: 'gran-cont', name: 'Gran Contribuyente' },
+                      { id: 'autoretenedor', name: 'Autorretenedor' },
+                      { id: 'no-responsable', name: 'Persona Natural No Responsable de IVA' },
+                      { id: 'extranjero', name: 'Extranjero / No Residente Fiscal' },
+                    ]}
+                    placeholder="Seleccionar o escribir posición fiscal..."
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
                   />
                 </div>
 
@@ -1129,26 +1173,23 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">Industria / Sector</label>
-                  <select
+                  <CreatableSelect
+                    label="Industria / Sector"
                     value={formData.salesPurchases?.industry || 'Transporte por Cable / STC'}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          industry: e.target.value,
+                          industry: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
-                  >
-                    {INDUSTRIES_PRESETS.map((ind) => (
-                      <option key={ind} value={ind}>
-                        {ind}
-                      </option>
-                    ))}
-                  </select>
+                    options={INDUSTRIES_PRESETS.map((ind) => ({ id: ind, name: ind }))}
+                    placeholder="Seleccionar o escribir sector..."
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
+                  />
                 </div>
               </div>
             </div>
@@ -1185,14 +1226,29 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-gray-700 font-semibold mb-1">Banco *</label>
-                      <input
-                        type="text"
+                      <CreatableSelect
+                        label="Banco"
                         required
                         placeholder="Ej: Bancolombia / BBVA"
                         value={newBankAccount.bankName}
-                        onChange={(e) => setNewBankAccount({ ...newBankAccount, bankName: e.target.value })}
-                        className="w-full p-2 bg-white rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
+                        onChange={(val) => setNewBankAccount({ ...newBankAccount, bankName: val })}
+                        options={[
+                          { id: 'bancolombia', name: 'Bancolombia', code: 'COL' },
+                          { id: 'davivienda', name: 'Davivienda', code: 'COL' },
+                          { id: 'bogota', name: 'Banco de Bogotá', code: 'COL' },
+                          { id: 'bbva', name: 'BBVA Colombia', code: 'COL' },
+                          { id: 'occidente', name: 'Banco de Occidente', code: 'COL' },
+                          { id: 'popular', name: 'Banco Popular', code: 'COL' },
+                          { id: 'chase', name: 'JPMorgan Chase (USD)', code: 'USA' },
+                          { id: 'bofa', name: 'Bank of America (USD)', code: 'USA' },
+                          { id: 'wells', name: 'Wells Fargo (USD)', code: 'USA' },
+                          { id: 'mercantil', name: 'Banco Mercantil Santa Cruz', code: 'BOL' },
+                          { id: 'bisa', name: 'Banco BISA', code: 'BOL' },
+                          { id: 'bpd', name: 'Banco Popular Dominicano', code: 'DOM' },
+                          { id: 'banreservas', name: 'Banreservas', code: 'DOM' },
+                        ]}
+                        allowCustomText={true}
+                        inputClassName="bg-white"
                       />
                     </div>
                     <div>
