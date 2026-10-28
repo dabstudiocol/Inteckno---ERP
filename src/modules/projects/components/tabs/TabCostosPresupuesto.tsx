@@ -1929,16 +1929,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     </div>
                   </div>
 
-                  {/* Unidad, Cantidad y Costo */}
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Unidad y Cantidad (Grid 2 columnas simétrico) */}
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Unidad</label>
+                      <label className="block font-bold text-slate-700 mb-1">Unidad de Medida</label>
                       <CreatableSelect
                         key={`unit-${itemForm.category}`}
                         value={itemForm.unit}
                         onChange={(val) => setItemForm({ ...itemForm, unit: val })}
                         options={catMeta.allowedUnits}
-                        placeholder="Unidad..."
+                        placeholder="Seleccionar unidad..."
                         allowCustomText={true}
                         isClearable={true}
                         inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
@@ -1969,33 +1969,35 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-[#00668F] transition-all"
                       />
                     </div>
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Costo o Subtotal {itemForm.costType === 'directo' ? 'Directo' : 'Indirecto'} (COP)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={itemForm.actualUnitCost || itemForm.plannedUnitCost || ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : Number(e.target.value);
-                          setItemForm((prev) => {
-                            const qty = prev.plannedQuantity || 1;
-                            const subtotal = val * qty;
-                            const updatedIva = hasIva ? Math.round(subtotal * projectTaxRate.rate) : 0;
-                            return {
-                              ...prev,
-                              plannedUnitCost: val,
-                              actualUnitCost: val,
-                              actualQuantity: qty,
-                              ivaAmount: updatedIva,
-                            };
-                          });
-                        }}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800 focus:bg-white focus:border-[#00668F] transition-all"
-                      />
-                    </div>
+                  </div>
+
+                  {/* Costo / Subtotal (Fila completa estructurada y alineada) */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Costo / Subtotal {itemForm.costType === 'directo' ? 'Directo' : 'Indirecto'} (COP)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={itemForm.actualUnitCost || itemForm.plannedUnitCost || ''}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Number(e.target.value);
+                        setItemForm((prev) => {
+                          const qty = prev.plannedQuantity || 1;
+                          const subtotal = val * qty;
+                          const updatedIva = hasIva ? Math.round(subtotal * projectTaxRate.rate) : 0;
+                          return {
+                            ...prev,
+                            plannedUnitCost: val,
+                            actualUnitCost: val,
+                            actualQuantity: qty,
+                            ivaAmount: updatedIva,
+                          };
+                        });
+                      }}
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-sm text-slate-800 focus:bg-white focus:border-[#00668F] transition-all"
+                    />
                   </div>
 
                   {/* IVA y Retención */}
