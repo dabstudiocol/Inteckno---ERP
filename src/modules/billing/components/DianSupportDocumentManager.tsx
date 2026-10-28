@@ -21,6 +21,7 @@ import {
 } from '../services/dianSupportDocumentService';
 import { SAMPLE_RUTS } from '../services/dianRutParserService';
 import { LightTable } from '../../../components/ui/LightTable';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 export const DianSupportDocumentManager: React.FC = () => {
   const [documents, setDocuments] = useState<DianSupportDocument[]>(() =>
@@ -240,20 +241,19 @@ export const DianSupportDocumentManager: React.FC = () => {
                 <label className="block font-bold text-gray-700 mb-1">
                   Proveedor Beneficiario (Sujeto No Obligado a Facturar)
                 </label>
-                <select
+                <CreatableSelect
+                  options={sampleList.map((r) => ({
+                    id: r.nit,
+                    name: `${r.razonSocial || `${r.primerNombre || ''} ${r.primerApellido || ''}`} (NIT: ${r.nit}-${r.dv})`,
+                    code: r.nit
+                  }))}
                   value={selectedRut?.nit || ''}
-                  onChange={(e) => {
-                    const found = sampleList.find((r) => r.nit === e.target.value);
+                  onChange={(val) => {
+                    const found = sampleList.find((r) => r.nit === val);
                     if (found) setSelectedRut(found);
                   }}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F]"
-                >
-                  {sampleList.map((r) => (
-                    <option key={r.nit} value={r.nit}>
-                      {r.razonSocial || `${r.primerNombre || ''} ${r.primerApellido || ''}`} (NIT: {r.nit}-{r.dv})
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Buscar o seleccionar proveedor no obligado..."
+                />
                 {selectedRut && (
                   <div className="mt-1 flex items-center gap-1.5 text-[11px] text-amber-700">
                     <UserCheck size={12} />
@@ -269,16 +269,17 @@ export const DianSupportDocumentManager: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-gray-700 mb-1">Concepto Operativo</label>
-                <select
+                <CreatableSelect
+                  options={[
+                    { id: 'servicio_tecnico', name: 'Servicio Técnico / Mantenimiento (4% ReteFuente)' },
+                    { id: 'repuestos_menores', name: 'Suministro de Repuestos Menores (2.5% ReteFuente)' },
+                    { id: 'mano_de_obra_obra', name: 'Mano de Obra en Sitio (4% ReteFuente)' },
+                    { id: 'honorarios', name: 'Honorarios Profesionales / Consultoría (10% ReteFuente)' }
+                  ]}
                   value={conceptType}
-                  onChange={(e) => setConceptType(e.target.value as any)}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F]"
-                >
-                  <option value="servicio_tecnico">Servicio Técnico / Mantenimiento (4% ReteFuente)</option>
-                  <option value="repuestos_menores">Suministro de Repuestos Menores (2.5% ReteFuente)</option>
-                  <option value="mano_de_obra_obra">Mano de Obra en Sitio (4% ReteFuente)</option>
-                  <option value="honorarios">Honorarios Profesionales / Consultoría (10% ReteFuente)</option>
-                </select>
+                  onChange={(val) => setConceptType(val as any)}
+                  placeholder="Seleccionar o buscar concepto..."
+                />
               </div>
 
               <div>

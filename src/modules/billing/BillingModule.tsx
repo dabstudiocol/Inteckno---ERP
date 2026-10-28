@@ -23,6 +23,7 @@ import { LightTable } from '../../components/ui/LightTable';
 import { BusinessRulesEngine } from '../../core/rules/businessRules';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 // Subcomponentes DIAN
 import { DianRutUploaderModal } from './components/DianRutUploaderModal';
@@ -381,12 +382,23 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
                   {invoiceModalMilestone.projectCode} — USD ${invoiceModalMilestone.amountUSD.toLocaleString()}
                 </p>
               </div>
-              <button
-                onClick={() => setInvoiceModalMilestone(null)}
-                className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer transition-colors"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="Configurar cuentas bancarias y términos de pago"
+                >
+                  <Settings size={13} className="text-[#00668F]" />
+                  <span>Configuración</span>
+                </button>
+                <button
+                  onClick={() => setInvoiceModalMilestone(null)}
+                  className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer transition-colors"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleIssueInvoice} className="space-y-4 text-xs">
@@ -415,51 +427,42 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block font-bold text-slate-700">Cuenta Bancaria Receptora</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsConfigModalOpen(true)}
-                      className="text-[10px] text-[#00668F] hover:underline font-bold cursor-pointer"
-                    >
-                      ⚙️ Editar
-                    </button>
-                  </div>
-                  <select
-                    value={selectedBankId}
-                    onChange={(e) => setSelectedBankId(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F]"
-                  >
-                    {catalogBanks.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name} {b.code ? `(${b.code})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <CreatableSelect
+                    label="Cuenta Bancaria Receptora"
+                    required
+                    value={catalogBanks.find((b) => b.id === selectedBankId)?.name || selectedBankId}
+                    onChange={(val) => {
+                      const match = catalogBanks.find((b) => b.name.toLowerCase() === val.toLowerCase() || b.id === val);
+                      setSelectedBankId(match?.id || val);
+                    }}
+                    options={catalogBanks.map((b) => ({
+                      id: b.id,
+                      name: b.name,
+                      code: b.code,
+                    }))}
+                    placeholder="Seleccionar o escribir cuenta bancaria..."
+                    moduleId="contabilidad"
+                    catalogKey="banks"
+                    allowCustomText={true}
+                  />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block font-bold text-slate-700">Término de Pago</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsConfigModalOpen(true)}
-                      className="text-[10px] text-[#00668F] hover:underline font-bold cursor-pointer"
-                    >
-                      ⚙️ Editar
-                    </button>
-                  </div>
-                  <select
+                  <CreatableSelect
+                    label="Término de Pago"
+                    required
                     value={selectedPaymentTerm}
-                    onChange={(e) => setSelectedPaymentTerm(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F]"
-                  >
-                    {catalogPaymentTerms.map((pt) => (
-                      <option key={pt.id} value={pt.name}>
-                        {pt.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedPaymentTerm(val)}
+                    options={catalogPaymentTerms.map((pt) => ({
+                      id: pt.id,
+                      name: pt.name,
+                      code: pt.code,
+                    }))}
+                    placeholder="Seleccionar o escribir plazo de cobro..."
+                    moduleId="contabilidad"
+                    catalogKey="paymentTerms"
+                    allowCustomText={true}
+                  />
                 </div>
               </div>
 
