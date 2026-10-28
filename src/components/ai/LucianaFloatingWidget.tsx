@@ -168,6 +168,22 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
     addChatMessage,
     products,
     inventoryAuditLogs,
+    opportunities,
+    createOpportunity,
+    contacts,
+    createContact,
+    equipment,
+    loanEquipment,
+    purchaseOrders,
+    requisitions,
+    milestones,
+    timesheets,
+    submitTimesheet,
+    ddrs,
+    submitDDR,
+    documents,
+    addDocument,
+    updateProjectStatus,
   } = useErp();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -482,6 +498,15 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
       calendarEvents,
       products,
       inventoryAuditLogs,
+      opportunities,
+      contacts,
+      equipment,
+      purchaseOrders,
+      requisitions,
+      milestones,
+      timesheets,
+      ddrs,
+      documents,
       activeModuleTitle,
       activeModuleId,
       currentDate: sysDate.dateStr,
@@ -496,6 +521,13 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
       submitExpense,
       createRequisition,
       addChatMessage,
+      createOpportunity,
+      createContact,
+      submitDDR,
+      submitTimesheet,
+      addDocument,
+      loanEquipment,
+      updateProjectStatus,
     };
 
     return { context, handlers };
@@ -612,12 +644,70 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const quickPills = [
-    { label: '📅 Agendar reunión con Gustavo', question: 'Agenda una cita con Gustavo para mañana a las 8 am por teams' },
-    { label: '🚠 Parada técnica Línea K', question: 'Programa una parada técnica nocturna en Pilona 4 de Línea K el martes de 10 PM a 3 AM' },
-    { label: '📂 Ir a Documentos', question: 'Llévame al módulo de gestión documental' },
-    { label: '📝 Crear tarea STC', question: 'Crea una tarea urgente para inspeccionar el cable tractor de TransMiCable' },
-  ];
+  const getModuleQuickPills = (): { label: string; question: string }[] => {
+    switch (activeModuleId) {
+      case 'crm':
+      case 'ventas':
+        return [
+          { label: '💼 Crear Oportunidad', question: 'Crea una oportunidad comercial para Inspección Magnetográfica MRT en Teleférico con Consorcio Occidental por $55.000.000 COP' },
+          { label: '📇 Registrar Contacto', question: 'Guarda a Carlos Mendoza de Metrocable Medellín como Director de Operaciones STC' },
+          { label: '📊 Resumen Pipeline', question: '¿Cuál es el valor acumulado de oportunidades en negociación y su probabilidad?' },
+          { label: '📑 Validar pliego', question: '¿Qué requerimientos técnicos mínimos exige la norma ISO 4309 para cotizar MRT de cable?' },
+        ];
+      case 'compras':
+      case 'requisiciones':
+        return [
+          { label: '🛒 Crear SOLPED Presupuesto', question: 'Crea una requisición de compra para 4 galones de Solvente Dieléctrico con cargo al proyecto PRJ-2026-MED-K como PRESUPUESTO' },
+          { label: '⚠️ Alerta Reproceso', question: '¿Cuál es la diferencia en el ERP entre compras de PRESUPUESTO y compras de REPROCESO?' },
+          { label: '📦 Proveedores Homologados', question: '¿Cuáles proveedores están homologados para mordazas y resinas de empalme?' },
+          { label: '📑 Órdenes Abiertas', question: '¿Qué órdenes de compra están pendientes de aprobación o en tránsito?' },
+        ];
+      case 'proyectos':
+      case 'planeacion':
+        return [
+          { label: '📋 Radicar Reporte DDR', question: 'Radica el Reporte Diario de Operaciones DDR de hoy para el proyecto de Línea K con clima despejado y 8 técnicos' },
+          { label: '📈 Estado de Ruta Crítica', question: '¿Cómo van los índices CPI y SPI de los proyectos de transporte por cable?' },
+          { label: '🛠️ Asignar Equipo NDT', question: 'Pide en custodia el Magnetógrafo MRT para la inspección de cable de la próxima semana' },
+          { label: '📝 Crear Tarea de Obra', question: 'Crea una tarea urgente para inspeccionar el cable tractor de TransMiCable' },
+        ];
+      case 'inventario':
+      case 'codigo-barras':
+        return [
+          { label: '🔬 Semáforo Metrológico', question: '¿Cuáles herramientas o magnetógrafos tienen calibración vencida o próxima a vencer?' },
+          { label: '🔍 Consultar Stock', question: '¿Cuánto stock físico tenemos disponible de resinas y kits de empalme en Almacén Central?' },
+          { label: '📜 Bitácora de Movimientos', question: '¿Cuáles fueron los últimos movimientos de almacén y quién los realizó?' },
+          { label: '🚚 Despacho a Campo', question: '¿Cómo se genera una remisión de salida con firma biométrica para cuadrilla en sitio?' },
+        ];
+      case 'registro-horas':
+        return [
+          { label: '⏱️ Radicar 8 Horas', question: 'Radica 8 horas ordinarias de hoy en el proyecto PRJ-2026-MED-K en la actividad de Inspección Magnetográfica' },
+          { label: '📋 Estado de Mis Horas', question: '¿Tengo horas pendientes de aprobación por parte del líder técnico?' },
+          { label: '🌙 Recargos Nocturnos', question: '¿Cómo se registran las paradas técnicas nocturnas en teleféricos?' },
+        ];
+      case 'gastos':
+      case 'contabilidad':
+        return [
+          { label: '🧾 Registrar Gasto Viáticos', question: 'Registra un gasto de transporte por $120.000 COP para el proyecto activo de teleférico' },
+          { label: '🏛️ Retenciones DIAN', question: '¿Qué porcentajes de ReteFuente y ReteICA aplican a servicios técnicos de teleféricos?' },
+          { label: '📄 Facturación de Hito', question: '¿Qué hitos contractuales tienen acta firmada y están listos para emitir Factura DIAN?' },
+        ];
+      case 'documentos':
+        return [
+          { label: '📁 Guardar Certificado', question: 'Registra un documento de Certificado de Inspección NDT en SharePoint para el proyecto activo' },
+          { label: '🔍 Buscar Procedimientos', question: '¿Dónde está el procedimiento de empalme de cable de 6 cordones?' },
+        ];
+      default:
+        return [
+          { label: '📅 Agendar reunión con Gustavo', question: 'Agenda una cita con Gustavo para mañana a las 8 am por teams' },
+          { label: '🚠 Parada técnica Línea K', question: 'Programa una parada técnica nocturna en Pilona 4 de Línea K el martes de 10 PM a 3 AM' },
+          { label: '📂 Ir a Documentos', question: 'Llévame al módulo de gestión documental' },
+          { label: '📝 Crear tarea STC', question: 'Crea una tarea urgente para inspeccionar el cable tractor de TransMiCable' },
+          { label: '💡 ¿Cómo me ayudas?', question: '¿Qué acciones y ayuda puedes realizar en los diferentes módulos del ERP de Inteckno?' },
+        ];
+    }
+  };
+
+  const quickPills = getModuleQuickPills();
 
   return (
     <>

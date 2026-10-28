@@ -1,6 +1,6 @@
 import { getGeminiApiKey, getBestAvailableModel } from './geminiChatService';
 import { canUserAccessModule } from '../auth/rbac';
-import { User, Project, CalendarEvent, TodoItem, ExpenseEntry, InternalRequisition, WikiArticle, WikiArticleChecklistStep, JobPosition, LucianaImprovementPlan, JobApplicationCandidate, EmployeeCertification, PerformanceEvaluation, Opportunity, OpportunityActivity, OpportunityQuotation, OpportunityPliegoAnalysis, OpportunityStakeholder, CRMContact, Product, InventoryAuditLog, EquipmentTool, PurchaseOrder, DispatchRemission } from '../../types';
+import { User, Project, CalendarEvent, TodoItem, ExpenseEntry, InternalRequisition, WikiArticle, WikiArticleChecklistStep, JobPosition, LucianaImprovementPlan, JobApplicationCandidate, EmployeeCertification, PerformanceEvaluation, Opportunity, OpportunityActivity, OpportunityQuotation, OpportunityPliegoAnalysis, OpportunityStakeholder, CRMContact, Product, InventoryAuditLog, EquipmentTool, PurchaseOrder, DispatchRemission, DailyProgressReport, TimesheetEntry, BillingMilestone, WBSTask, DocumentItem } from '../../types';
 import {
   getM365Config,
   isM365TokenExpired,
@@ -34,6 +34,13 @@ export interface LucianaAction {
     | 'create_todo'
     | 'submit_expense'
     | 'create_requisition'
+    | 'create_opportunity'
+    | 'create_contact'
+    | 'submit_ddr'
+    | 'submit_timesheet'
+    | 'add_document'
+    | 'loan_equipment'
+    | 'update_project_status'
     | 'send_chat_message';
   targetModule: string;
   description: string;
@@ -72,6 +79,15 @@ export interface LucianaContext {
   currentDate?: string; // YYYY-MM-DD
   products?: Product[];
   inventoryAuditLogs?: InventoryAuditLog[];
+  opportunities?: Opportunity[];
+  contacts?: CRMContact[];
+  equipment?: EquipmentTool[];
+  purchaseOrders?: PurchaseOrder[];
+  requisitions?: InternalRequisition[];
+  milestones?: BillingMilestone[];
+  timesheets?: TimesheetEntry[];
+  ddrs?: DailyProgressReport[];
+  documents?: DocumentItem[];
 }
 
 export interface LucianaStoreHandlers {
@@ -92,6 +108,13 @@ export interface LucianaStoreHandlers {
   submitExpense?: (entry: Omit<ExpenseEntry, 'id' | 'status'>) => void;
   createRequisition?: (req: any) => { success: boolean; poNumber?: string };
   addChatMessage?: (channel: string, text: string) => void;
+  createOpportunity?: (opp: any) => any;
+  createContact?: (contact: any) => void;
+  submitDDR?: (ddr: any) => void;
+  submitTimesheet?: (ts: any) => void;
+  addDocument?: (doc: any) => void;
+  loanEquipment?: (toolId: string, projectId: string, userId: string) => { success: boolean; error?: string };
+  updateProjectStatus?: (projectId: string, status: Project['status']) => void;
 }
 
 export interface LucianaResponseResult {
@@ -321,7 +344,40 @@ function buildLucianaSystemPrompt(context: LucianaContext): string {
           .join('\n')
       : 'Sin movimientos recientes en bitácora.';
 
-  return `Eres LUC-IA-NA 🌼, la asistente inteligente autónoma y compañera de equipo de INTECKNO S.A.S. (empresa especializada en ingeniería de sistemas de transporte por cable STC, teleféricos y metrocables).
+  const crmSummary =
+    context.opportunities && context.opportunities.length > 0
+      ? context.opportunities
+          .slice(0, 15)
+          .map(
+            (o) =>
+              `- Código: ${o.code} | Título: ${o.title} | Cliente: ${o.clientName} | Etapa: ${o.stage} | Valor: $${(o.estimatedValue || 0).toLocaleString()} ${o.currency || 'COP'}`
+          )
+          .join('\n')
+      : 'Sin oportunidades registradas.';
+
+  const equipmentSummary =
+    context.equipment && context.equipment.length > 0
+      ? context.equipment
+          .slice(0, 15)
+          .map(
+            (eq) =>
+              `- Código: ${eq.code} | Nombre: ${eq.name} | Estado: ${eq.status} | Calibrado: ${eq.isCalibrated ? 'VIGENTE' : 'VENCIDO/ALERTA'} (Vence: ${eq.calibrationExpiry})`
+          )
+          .join('\n')
+      : 'Sin equipos registrados.';
+
+  const purchasesSummary =
+    context.purchaseOrders && context.purchaseOrders.length > 0
+      ? context.purchaseOrders
+          .slice(0, 10)
+          .map(
+            (po) =>
+              `- PO: ${po.orderNumber} | Proveedor: ${po.supplierName} | Naturaleza: ${po.spendingNature || 'PRESUPUESTO'} | Total: $${(po.totalAmountCOP || 0).toLocaleString()} COP | Estado: ${po.status}`
+          )
+          .join('\n')
+      : 'Sin órdenes de compra activas.';
+
+  return `Eres LUC-IA-NA 🌼, la asistente inteligente autónoma, copiloto central y compañera de equipo de INTECKNO S.A.S. (empresa especializada en ingeniería de sistemas de transporte por cable STC, teleféricos y metrocables).
 
 FECHAS DEL SISTEMA:
 - Fecha de hoy: ${refDate} (Año 2026).
@@ -338,6 +394,15 @@ ${usersList}
 PROYECTOS ACTIVOS DE TRANSPORTE POR CABLE:
 ${projectsList}
 
+OPORTUNIDADES COMERCIALES (CRM):
+${crmSummary}
+
+EQUIPOS Y HERRAMIENTAS NDT (METROLOGÍA ISO/IEC 17025):
+${equipmentSummary}
+
+ÓRDENES DE COMPRA RECIENTES (PRESUPUESTO VS REPROCESO):
+${purchasesSummary}
+
 EVENTOS PROGRAMADOS EN EL CALENDARIO ACTUALMENTE (MEMORIA COLECTIVA):
 ${eventsSummary}
 
@@ -348,164 +413,64 @@ BITÁCORA Y MOVIMIENTOS RECIENTES DE ALMACÉN (HISTORIAL INMUTABLE):
 ${auditLogsSummary}
 
 MISIÓN CRÍTICA - ¡ACTUAR EN EL ERP, NO DAR TUTORIALES!:
-1. CONSULTAS DE ALMACÉN, MOVIMIENTOS Y STOCK:
-   Cuando el usuario te pregunte sobre cuándo fue el último movimiento de un ítem, quién modificó el stock, si hay existencias de un repuesto, variaciones desde Excel Online o detalles de almacén:
-   - ¡RESPONDE CON DATOS EXACTOS, PRECISOS Y REALES DE LA BITÁCORA Y STOCK INDICADOS ARRIBA!
-   - NUNCA digas respuestas genéricas o evasivas como "sí, ya está verificado" o "está todo correcto".
-   - Menciona el SKU, nombre del ítem, fecha y hora exacta, cantidad modificada, quién fue el responsable y si se originó en Excel Online o ERP Web.
+1. ASISTENCIA MULTI-MÓDULO INTEGRAL:
+   Eres el cerebro transversal de INTECKNO. Puedes responder dudas y actuar directamente en:
+   - Comercial (CRM & Contactos)
+   - Proyectos (WBS, Curva S, Fechas, Estado)
+   - Abastecimiento (Compras, SOLPEDs, POs: Presupuesto vs Reproceso)
+   - Almacén (Stock, Control Metrológico, Despachos)
+   - Operación en Campo (Timesheet, Horas Hombre, DDRs)
+   - Gestión Documental (SharePoint)
+   - Talento Humano y Colaboración
 
-2. CUANDO EL USUARIO TE PIDA AGENDAR, CREAR, QUITAR, CANCELAR, CAMBIAR, ASIGNAR O NAVEGAR:
-   ¡ESTÁ TOTALMENTE PROHIBIDO DAR EL PASO A PASO O INSTRUCCIONES MANUALES ("1. Haz clic aquí, 2. Escribe...")!
-   Tu deber es EJECUTAR DIRECTAMENTE LA ACCIÓN en el ERP usando el bloque JSON de acción.
-
-2. ACCIONES DE CALENDARIO:
-   - Para agendar o programar: usa "create_calendar_event".
-   - Para cancelar o retirar una reunión en específico: usa "delete_calendar_event" con parameters: { "eventId": "ID_DEL_EVENTO", "title": "título de la reunión" }.
-   - Para quitar o cancelar TODAS las reuniones de un día determinado (ejemplo: "quita todas las reuniones que tenga para mañana", "cancela las citas de mañana", "limpia mi agenda de mañana"): usa "clear_calendar_events_by_date" con parameters: { "date": "YYYY-MM-DD" }.
-   ¡ATENCIÓN CRÍTICA! Si el usuario te pide eliminar, quitar o cancelar reuniones, ESTÁ TOTALMENTE PROHIBIDO crear un nuevo evento llamado "Cancelación de agenda" o similar. DEBES emitir la acción "clear_calendar_events_by_date" o "delete_calendar_event" para que el ERP las retire efectivamente del calendario.
-
-3. MEMORIA COLECTIVA Y REGLA ESTRICTA DE CRUCE DE HORARIOS:
-   Eres la guardiana de la memoria colectiva del ERP y la agenda compartida de todo el equipo de Inteckno.
-   Las reuniones abarcan un periodo de tiempo desde su hora de inicio hasta su hora de fin (por ejemplo: de 08:00 AM a 09:30 AM).
-   Está TOTALMENTE PROHIBIDO crear reuniones que se crucen o solapen en fecha y hora con reuniones preexistentes de cualquiera de los participantes (tanto invitados como el creador).
-   ANTES de agendar:
-   - Consulta minuciosamente la lista de "EVENTOS PROGRAMADOS EN EL CALENDARIO ACTUALMENTE" para esa fecha.
-   - Si la persona invitada (ejemplo: Gustavo, Wilson, Alejandro o el usuario actual) ya tiene un evento en ese intervalo de horas (o si se cruza parcialmente):
-     ¡ESTÁ PROHIBIDO AGENDAR! (Debes dejar "action": null).
-     En tu respuesta ("reply"), debes informar con calidez y claridad:
-     "No es posible agendar a esa hora porque [Nombre] ya tiene su agenda ocupada con la reunión '[Título]' de [Hora inicio] a [Hora fin]. Gracias a la memoria colectiva de Inteckno evitamos cruces de horario. ¿Te gustaría que la programemos a las [Hora alternativa sugerida libre]?"
-
-4. PERMISOS DEL USUARIO (RBAC):
-   Cada acción pertenece a un módulo específico:
-   - create_calendar_event, delete_calendar_event, clear_calendar_events_by_date -> módulo 'calendario'
-   - navigate_module -> módulo de destino (ej: 'documentos', 'inventario', 'crm')
-   - create_todo -> módulo 'actividades'
-   - submit_expense -> módulo 'gastos'
-   - create_requisition -> módulo 'compras'
-   - send_chat_message -> módulo 'conversaciones'
-   El ERP validará si el rol del usuario (${currentUser.role}) tiene acceso. Si no tiene permiso, tú debes responder amablemente explicando que para ese módulo se requieren permisos adicionales de su rol.
-
-5. GUÍA OPERATIVA Y CORPORATIVA DE INTECKNO S.A.S. (¡ERES LA MEGAMENTE DEL ERP Y CONOCES TODOS LOS PROCESOS A LA PERFECCIÓN!):
-   Cualquier colaborador (nuevo o antiguo, de cualquier área) puede pedirte ayuda sobre cómo funciona la empresa, sus módulos, flujos de trabajo, políticas y matrices de responsabilidad (RACI). Responde siempre con total precisión, autoridad técnica y calidez didáctica en español:
-
-   - MONEDA PRINCIPAL Y TRM:
-     En Inteckno S.A.S. la moneda oficial y principal para TODO el ERP es el Peso Colombiano (COP). Los dólares (USD) se calculan y muestran como referencia secundaria. La TRM se sincroniza en vivo con la Superintendencia Financiera / Banco de la República o puede editarse haciendo clic en la insignia superior de TRM en el ERP.
-
-   - FLUJO DE COMPRAS (PROCUREMENT) Y ROLES:
-     * El área de Compras NO inventa compras ni hace peticiones; las peticiones de compra provienen de los Ingenieros de Proyectos (vía BOM/despiece de ingeniería o requerimientos en sitio) y de los líderes de área para insumos de oficina o mantenimiento.
-     * Wilson Aprueba técnicamente las requisiciones antes de que pasen a Compras.
-     * El encargado de Compras recibe las peticiones aprobadas, solicita cotizaciones a proveedores, genera la Orden de Compra (PO) y registra en el ERP la trazabilidad (documento soporte, fecha de emisión, fecha estimada de llegada, destino de compras para proyectos o sedes administrativas).
-     * El módulo de Compras cuenta con tablero de métricas y Distribución de Compras por Proyecto, Sedes y Oficinas, Mantenimiento/Taller y Dotación/EPP.
-     * Importante: El encargado de compras NO recibe la mercancía en bodega; eso le corresponde exclusivamente al Almacenista en el módulo de Inventario.
-
-   - ALMACÉN E INVENTARIOS:
-     * Recepción: El almacenista recibe los pedidos de órdenes de compra con el botón "Ingreso de Mercancía / PO", cotejando cantidades físicas vs remisión del proveedor antes de actualizar el stock.
-     * Calibración de Equipos y Herramientas: Los torquímetros, manómetros, tecles y equipos de precisión cuentan con fecha de validez de calibración. El ERP emite alertas automáticas: Recordatorio naranja cuando faltan 2 meses para el vencimiento, y Alerta roja crítica cuando falta 1 mes o ya expiró.
-     * Remisiones de Salida (Despacho): Al despachar equipos a campo, el sistema exige responsable, fecha estimada de retorno y firma biométrica en pantalla trayendo automáticamente el nombre y documento de identidad (Cédula de Ciudadanía C.C.) del usuario responsable.
-
-   - PROYECTOS, INGENIERÍA Y EMBUDO BOM:
-     * El Embudo de Ingeniería BOM (despiece técnico de componentes y cables) reside en el módulo de Proyectos, no en compras.
-     * Los ingenieros controlan el valor ganado (EVM: PV, EV, AC, CPI, SPI) y generan desde el BOM las solicitudes de compra requeridas.
-
-   - MATRIZ RACI Y NOTIFICACIONES AL INICIAR SESIÓN:
-     * Cada usuario recibe exclusivamente las alertas que le corresponden según su rol:
-       - Wilson (USR-18): Requisiciones técnicas pendientes de aprobación.
-       - Almacén: Órdenes de compra listas para recibir y equipos con calibración próxima a vencer (alertas 2m y 1m).
-       - Compras: Requisiciones aprobadas listas para generar orden de compra a proveedores.
-       - Contabilidad: Facturación electrónica DIAN pendiente de actas firmadas (regla de las 48 horas).
-       - Gerencia Administrativa: Legalización de viáticos y comprobantes de gastos.
-       - Administrador TI / Sistemas (David Hurtado): Consola TI, respaldos, integraciones y tareas personales asignadas. NUNCA se le notifican temas contables o de compras rutinarias.
-
-   - CÓMO SE TRABAJA DENTRO DEL RESTO DEL ERP:
-     * Facturación y Contabilidad: Monitoreo estricto del plazo de 48h de la DIAN para emitir facturas electrónicas desde que el cliente firma el acta de entrega o hito.
-     * Registro de Horas (Timesheets): Reporte de horas ordinarias, extras y recargos nocturnos por proyecto STC.
-     * Gastos y Viáticos: Extracción inteligente de recibos con Gemini y emisión de documento soporte electrónico R-99-PN para prestadores sin factura.
-     * Seguridad y Alturas (SST): Permiso de trabajo en alturas y ATS validados antes de intervenir torres o pilonas de teleférico.
-
-   - CULTURA INTECKNO:
-     Somos líderes en ingeniería de transporte por cable aéreo STC en Latinoamérica (Metrocable Medellín, TransMiCable Bogotá, Manizales, Pereira, Mi Teleférico La Paz). La seguridad humana y el rigor técnico son nuestra prioridad absoluta.
-
-6. CONSULTAS GENERALES:
-   Si el usuario hace preguntas de conocimiento o procedimientos ("¿cómo pido al de compras?", "¿cómo saco herramientas?", "¿cómo funciona el ERP?", "¿qué proyectos tenemos?"), responde de forma amigable, cálida, sencilla y deja la acción en null (o sugiere llevarlo al módulo si lo requiere).
-
-7. CERO ASTERISCOS:
-   PROHIBIDO rotundamente usar asteriscos (*) ni negritas con asteriscos (**) en ninguna parte de tu respuesta.
-
-8. INTEGRACIÓN CON MICROSOFT 365, OUTLOOK Y TEAMS:
-   Cuando agendes una reunión, cita o actividad (virtual o presencial):
-   - Siempre incluye enlace corporativo de Microsoft Teams si la reunión es virtual ("meetingMethod": "virtual").
-   - En tu respuesta ("reply"), confirma alegremente que la reunión quedó guardada en el ERP y recuérdale que en la tarjeta inferior tiene los accesos directos para confirmarla/guardarla en Outlook Web en un solo clic, o conectar su cuenta Microsoft 365 para sincronización automática en la nube. Cero asteriscos.
+2. ACCIONES EJECUTABLES:
+   Cuando el usuario te pida registrar, agendar, crear, radicar o actualizar algo:
+   ¡EJECUTA DIRECTAMENTE LA ACCIÓN emitiendo el objeto action correspondiente! Cero asteriscos en la respuesta.
 
 FORMATO OBLIGATORIO DE RESPUESTA:
 Debes responder SIEMPRE en formato JSON estricto con la siguiente estructura:
 {
   "transcription": "Texto transcrito si el mensaje vino por audio, o null si fue texto",
   "action": {
-    "type": "create_calendar_event" | "delete_calendar_event" | "clear_calendar_events_by_date" | "navigate_module" | "create_todo" | "submit_expense" | "create_requisition" | "send_chat_message" | null,
-    "targetModule": "calendario" | "documentos" | "actividades" | "gastos" | "compras" | "conversaciones" | "otro",
+    "type": "create_calendar_event" | "delete_calendar_event" | "clear_calendar_events_by_date" | "navigate_module" | "create_todo" | "submit_expense" | "create_requisition" | "create_opportunity" | "create_contact" | "submit_ddr" | "submit_timesheet" | "add_document" | "loan_equipment" | "update_project_status" | "send_chat_message" | null,
+    "targetModule": "calendario" | "documentos" | "actividades" | "gastos" | "compras" | "crm" | "contactos" | "proyectos" | "registro-horas" | "inventario" | "conversaciones" | "otro",
     "description": "Breve descripción de la acción para el usuario",
     "parameters": { ... }
   },
-  "reply": "Tu mensaje conversacional, cálido, alegre y humano en español. Debe ser conciso, empático y confirmar la acción realizada sin rodeos técnicos ni pasos manuales. Cero asteriscos."
+  "reply": "Tu mensaje conversacional, cálido, alegre y humano en español. Conciso y empático. Cero asteriscos."
 }
 
 PARÁMETROS POR TIPO DE ACCIÓN:
 - create_calendar_event:
-  parameters: {
-    "title": "Título claro de la reunión",
-    "date": "YYYY-MM-DD",
-    "startTime": "HH:MM AM/PM",
-    "endTime": "HH:MM AM/PM",
-    "meetingMethod": "virtual" | "presencial",
-    "type": "visita_campo" | "inspeccion_stc" | "parada_tecnica" | "comite_gerencial" | "auditoria_hseq",
-    "attendeeIds": ["USR-xxx"],
-    "attendeeNames": ["Nombre Completo"],
-    "location": "Lugar o Microsoft Teams",
-    "projectCode": "PRJ-xxx",
-    "isOvernight": boolean,
-    "description": "Notas o agenda"
-  }
+  parameters: { "title": string, "date": "YYYY-MM-DD", "startTime": "HH:MM AM/PM", "endTime": "HH:MM AM/PM", "meetingMethod": "virtual" | "presencial", "attendeeIds": ["USR-xxx"], "location": string, "projectCode": "PRJ-xxx" }
 - delete_calendar_event:
-  parameters: {
-    "eventId": "EVT-xxx",
-    "title": "Título de la reunión"
-  }
+  parameters: { "eventId": string, "title": string }
 - clear_calendar_events_by_date:
-  parameters: {
-    "date": "YYYY-MM-DD"
-  }
+  parameters: { "date": "YYYY-MM-DD" }
 - navigate_module:
-  parameters: {
-    "moduleId": "calendario" | "documentos" | "actividades" | "articulos" | "crm" | "proyectos" | "registro-horas" | "inventario" | "compras" | "gastos" | "contabilidad" | "tableros"
-  }
+  parameters: { "moduleId": "calendario" | "documentos" | "actividades" | "articulos" | "crm" | "contactos" | "proyectos" | "registro-horas" | "inventario" | "compras" | "gastos" | "contabilidad" | "tableros" }
 - create_todo:
-  parameters: {
-    "title": "Descripción de la tarea",
-    "priority": "alta" | "media" | "baja",
-    "dueDate": "YYYY-MM-DD",
-    "assignedToUserId": "USR-xxx",
-    "assignedToName": "Nombre",
-    "projectCode": "PRJ-xxx"
-  }
+  parameters: { "title": string, "priority": "alta" | "media" | "baja", "dueDate": "YYYY-MM-DD", "assignedToUserId": "USR-xxx", "projectCode": "PRJ-xxx" }
 - submit_expense:
-  parameters: {
-    "amount": number,
-    "category": "transporte" | "alimentacion" | "hospedaje" | "combustible" | "repuestos" | "otros",
-    "description": "Concepto del gasto",
-    "projectCode": "PRJ-xxx",
-    "date": "YYYY-MM-DD"
-  }
+  parameters: { "amount": number, "category": string, "description": string, "projectCode": "PRJ-xxx", "date": "YYYY-MM-DD" }
 - create_requisition:
-  parameters: {
-    "itemDescription": "Descripción de materiales o insumos",
-    "quantity": number,
-    "projectCode": "PRJ-xxx"
-  }
+  parameters: { "itemDescription": string, "quantity": number, "projectCode": "PRJ-xxx" }
+- create_opportunity:
+  parameters: { "title": string, "clientName": string, "estimatedValue": number, "currency": "COP" | "USD", "cableType": string, "country": string }
+- create_contact:
+  parameters: { "name": string, "company": string, "role": string, "email": string, "phone": string }
+- submit_ddr:
+  parameters: { "projectCode": "PRJ-xxx", "activitiesDone": string, "weather": "despejado" | "nublado" | "lluvia", "progressDeltaPct": number }
+- submit_timesheet:
+  parameters: { "projectCode": "PRJ-xxx", "taskName": string, "hours": number, "description": string }
+- add_document:
+  parameters: { "title": string, "category": "planos" | "certificados_hseq" | "manuales_stc" | "actas_contratos" | "procedimientos", "projectCode": "PRJ-xxx", "sharepointFolder": string }
+- loan_equipment:
+  parameters: { "toolId": string, "projectCode": "PRJ-xxx", "userId": string }
+- update_project_status:
+  parameters: { "projectCode": "PRJ-xxx", "status": "active" | "on_hold" | "completed" }
 - send_chat_message:
-  parameters: {
-    "channel": "general" | "stc-operaciones" | "gerencia" | "dm-USR-xxx",
-    "text": "Mensaje a enviar"
-  }`;
+  parameters: { "channel": string, "text": string }`;
 }
 
 /**
@@ -1123,6 +1088,198 @@ export async function executeLucianaAction(
           };
         }
         return { success: false, targetModule: 'conversaciones', description: 'Operación no soportada' };
+      }
+
+      case 'create_opportunity': {
+        if (handlers.createOpportunity) {
+          const p = action.parameters;
+          const currency = p.currency || 'COP';
+          const estVal = Number(p.estimatedValue) || 45000000;
+          const oppData = {
+            title: cleanSpecialChars(p.title || 'Nueva Oportunidad STC'),
+            clientId: p.clientId || `CLI-${Date.now()}`,
+            clientName: cleanSpecialChars(p.clientName || 'Cliente Prospecto STC'),
+            clientContactPerson: p.clientContactPerson || '',
+            clientEmail: p.clientEmail || '',
+            clientPhone: p.clientPhone || '',
+            cableType: p.cableType || 'Cable Portador / Tractor STC',
+            country: p.country || 'Colombia',
+            currency,
+            estimatedValue: estVal,
+            estimatedValueUSD: currency === 'COP' ? Math.round(estVal / 4150) : estVal,
+            probabilityPct: Number(p.probabilityPct) || 70,
+            stage: p.stage || 'propuesta_tecnica_economica',
+            expectedCloseDate: p.expectedCloseDate || getSystemDate().tomorrowStr,
+            technicalSpecs: p.technicalSpecs || 'Estructurado con asistencia de LUC-IA-NA',
+            assignedOwnerId: currentUser.id,
+            assignedOwnerName: currentUser.name,
+          };
+          const created = handlers.createOpportunity(oppData);
+          return {
+            success: true,
+            targetModule: 'crm',
+            description: `Oportunidad "${oppData.title}" creada en CRM para ${oppData.clientName} (${oppData.currency} $${oppData.estimatedValue.toLocaleString()})`,
+            data: created,
+          };
+        }
+        return { success: false, targetModule: 'crm', description: 'Operación no soportada en este perfil' };
+      }
+
+      case 'create_contact': {
+        if (handlers.createContact) {
+          const p = action.parameters;
+          const contactData = {
+            name: cleanSpecialChars(p.name || 'Nuevo Contacto'),
+            company: cleanSpecialChars(p.company || 'Empresa Operadora STC'),
+            role: cleanSpecialChars(p.role || 'Contacto Clave'),
+            email: p.email || '',
+            phone: p.phone || '',
+            country: p.country || 'Colombia',
+            notes: cleanSpecialChars(p.notes || 'Registrado por LUC-IA-NA'),
+            systemType: p.systemType || 'Teleférico / Metrocable',
+          };
+          handlers.createContact(contactData);
+          return {
+            success: true,
+            targetModule: 'contactos',
+            description: `Contacto "${contactData.name}" (${contactData.company}) guardado en el directorio comercial`,
+            data: contactData,
+          };
+        }
+        return { success: false, targetModule: 'contactos', description: 'Operación no soportada' };
+      }
+
+      case 'submit_ddr': {
+        if (handlers.submitDDR) {
+          const p = action.parameters;
+          const prj = projects.find((pr) => pr.code === p.projectCode) || projects[0];
+          const ddrData = {
+            projectId: prj?.id || 'PRJ-1',
+            projectCode: prj?.code || 'PRJ-2026-MED-K',
+            projectName: prj?.name || 'Proyecto STC',
+            date: p.date || context.currentDate || getSystemDate().dateStr,
+            reporterId: currentUser.id,
+            reporterName: currentUser.name,
+            weather: p.weather || 'despejado',
+            workHeightsAuthorized: p.workHeightsAuthorized !== false,
+            activitiesDone: cleanSpecialChars(p.activitiesDone || 'Inspección técnica y labores en campo'),
+            progressDeltaPct: Number(p.progressDeltaPct) || 2,
+            teamPresent: Array.isArray(p.teamPresent) ? p.teamPresent : [currentUser.name],
+            equipmentUsed: Array.isArray(p.equipmentUsed) ? p.equipmentUsed : ['Cabezal Magnetógrafo MRT', 'Línea de vida'],
+            incidentsReported: !!p.incidentsReported,
+            incidentNotes: p.incidentNotes || '',
+          };
+          handlers.submitDDR(ddrData);
+          return {
+            success: true,
+            targetModule: 'proyectos',
+            description: `Reporte Diario de Operaciones (DDR) radicado con éxito para ${ddrData.projectName}`,
+            data: ddrData,
+          };
+        }
+        return { success: false, targetModule: 'proyectos', description: 'Operación no soportada' };
+      }
+
+      case 'submit_timesheet': {
+        if (handlers.submitTimesheet) {
+          const p = action.parameters;
+          const prj = projects.find((pr) => pr.code === p.projectCode) || projects[0];
+          const tsData = {
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userRole: currentUser.roleLabel,
+            projectId: prj?.id || 'PRJ-1',
+            projectCode: prj?.code || 'PRJ-2026-MED-K',
+            projectName: prj?.name || 'Proyecto STC',
+            taskName: cleanSpecialChars(p.taskName || 'Inspección y Ensayos No Destructivos NDT'),
+            date: p.date || context.currentDate || getSystemDate().dateStr,
+            hours: Number(p.hours) || 8,
+            isBillable: p.isBillable !== false,
+            description: cleanSpecialChars(p.description || 'Horas de labor técnica radicadas por LUC-IA-NA'),
+          };
+          handlers.submitTimesheet(tsData);
+          return {
+            success: true,
+            targetModule: 'registro-horas',
+            description: `${tsData.hours} horas radicadas para ${tsData.userName} en ${tsData.projectCode}`,
+            data: tsData,
+          };
+        }
+        return { success: false, targetModule: 'registro-horas', description: 'Operación no soportada' };
+      }
+
+      case 'add_document': {
+        if (handlers.addDocument) {
+          const p = action.parameters;
+          const prj = projects.find((pr) => pr.code === p.projectCode) || projects[0];
+          const docData = {
+            code: `DOC-${Date.now().toString().slice(-4)}`,
+            title: cleanSpecialChars(p.title || 'Documento Técnico STC'),
+            category: p.category || 'procedimientos',
+            categoryLabel: p.categoryLabel || 'Procedimientos Técnicos',
+            projectCode: prj?.code,
+            projectName: prj?.name,
+            uploadedBy: currentUser.name,
+            fileSize: p.fileSize || '1.2 MB',
+            fileType: 'PDF',
+            sharepointFolder: p.sharepointFolder || 'Ingeniería y Operaciones',
+            description: cleanSpecialChars(p.description || 'Documento registrado por LUC-IA-NA'),
+            scope: p.scope || 'empresa',
+            department: p.department || 'Operaciones',
+          };
+          handlers.addDocument(docData);
+          return {
+            success: true,
+            targetModule: 'documentos',
+            description: `Documento "${docData.title}" archivado en SharePoint (${docData.sharepointFolder})`,
+            data: docData,
+          };
+        }
+        return { success: false, targetModule: 'documentos', description: 'Operación no soportada' };
+      }
+
+      case 'loan_equipment': {
+        if (handlers.loanEquipment) {
+          const p = action.parameters;
+          const prj = projects.find((pr) => pr.code === p.projectCode) || projects[0];
+          const res = handlers.loanEquipment(p.toolId, prj?.id || projects[0]?.id || 'PRJ-1', p.userId || currentUser.id);
+          if (res.success) {
+            return {
+              success: true,
+              targetModule: 'inventario',
+              description: `Equipo ${p.toolId} asignado en custodia para ${prj?.name || 'campo'}`,
+            };
+          }
+          return {
+            success: false,
+            targetModule: 'inventario',
+            description: `No se pudo asignar el equipo`,
+            errorReason: res.error || 'Equipo no disponible o con bloqueo metrológico',
+          };
+        }
+        return { success: false, targetModule: 'inventario', description: 'Operación no soportada' };
+      }
+
+      case 'update_project_status': {
+        if (handlers.updateProjectStatus) {
+          const p = action.parameters;
+          const prj = projects.find((pr) => pr.code === p.projectCode || pr.id === p.projectId);
+          if (prj) {
+            handlers.updateProjectStatus(prj.id, p.status || 'active');
+            return {
+              success: true,
+              targetModule: 'proyectos',
+              description: `Estado del proyecto ${prj.code} actualizado a "${p.status}"`,
+              data: { projectId: prj.id, status: p.status },
+            };
+          }
+          return {
+            success: false,
+            targetModule: 'proyectos',
+            description: `No se encontró el proyecto ${p.projectCode || ''}`,
+          };
+        }
+        return { success: false, targetModule: 'proyectos', description: 'Operación no soportada' };
       }
 
       default:
