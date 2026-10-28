@@ -14,6 +14,7 @@ import {
 import { Project } from '../../../../types';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
+import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 
 export interface DeliverableDocument {
   id: string;
@@ -253,16 +254,17 @@ export const TabDocumentosEntregables: React.FC<TabDocumentosEntregablesProps> =
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Categoría *
                   </label>
-                  <select
+                  <CreatableSelect
+                    options={[
+                      { id: 'informe_tecnico', name: 'Informe Técnico' },
+                      { id: 'memoria_calculo', name: 'Memoria de Cálculo' },
+                      { id: 'plano', name: 'Plano de Trazado / Montaje' },
+                      { id: 'especificacion', name: 'Especificación Técnica' },
+                    ]}
                     value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value as any })}
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  >
-                    <option value="informe_tecnico">Informe Técnico</option>
-                    <option value="memoria_calculo">Memoria de Cálculo</option>
-                    <option value="plano">Plano de Trazado / Montaje</option>
-                    <option value="especificacion">Especificación Técnica</option>
-                  </select>
+                    onChange={(val) => setForm({ ...form, category: val as any })}
+                    placeholder="Seleccionar categoría..."
+                  />
                 </div>
               </div>
 
@@ -297,16 +299,17 @@ export const TabDocumentosEntregables: React.FC<TabDocumentosEntregablesProps> =
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Estado *
                   </label>
-                  <select
+                  <CreatableSelect
+                    options={[
+                      { id: 'en_elaboracion', name: 'En elaboración' },
+                      { id: 'en_revision', name: 'En revisión' },
+                      { id: 'aprobado', name: 'Aprobado' },
+                      { id: 'entregado', name: 'Entregado' },
+                    ]}
                     value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value as any })}
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                  >
-                    <option value="en_elaboracion">En elaboración</option>
-                    <option value="en_revision">En revisión</option>
-                    <option value="aprobado">Aprobado</option>
-                    <option value="entregado">Entregado</option>
-                  </select>
+                    onChange={(val) => setForm({ ...form, status: val as any })}
+                    placeholder="Seleccionar estado..."
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">

@@ -18,6 +18,7 @@ import { Project, WBSTask, User } from '../../../../types';
 import { ProjectTimesheetEntry } from '../../../../types/ProjectSchema';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
+import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 
 interface TabHojaHorasProps {
   project: Project;
@@ -513,18 +514,16 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Actividad del Plan de Trabajo *
                 </label>
-                <select
-                  required
+                <CreatableSelect
+                  options={tasks.map((t) => ({
+                    id: t.id,
+                    name: `${t.code} - ${t.name}`,
+                    code: t.code
+                  }))}
                   value={form.taskId}
-                  onChange={(e) => handleTaskChange(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
-                >
-                  {tasks.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.code} - {t.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => handleTaskChange(val)}
+                  placeholder="Seleccionar actividad WBS..."
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -532,18 +531,16 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Técnico / Inspector *
                   </label>
-                  <select
-                    required
+                  <CreatableSelect
+                    options={erpUsers.map((u) => ({
+                      id: u.id,
+                      name: `${u.name} (${u.roleLabel})`,
+                      code: u.id
+                    }))}
                     value={form.userId}
-                    onChange={(e) => setForm({ ...form, userId: e.target.value })}
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
-                  >
-                    {erpUsers.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.roleLabel})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setForm({ ...form, userId: val })}
+                    placeholder="Seleccionar técnico..."
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">

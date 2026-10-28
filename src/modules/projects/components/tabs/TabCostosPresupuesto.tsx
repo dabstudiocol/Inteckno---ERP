@@ -23,6 +23,7 @@ import { Project } from '../../../../types';
 import { CostMatrixItem } from '../../../../types/ProjectSchema';
 import { formatCOP, formatUSD } from '../../../../core/services/trmService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
+import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { DetailModal } from '../../../../components/common/DetailModal';
 
 export const INTECKNO_OFFICIAL_CATEGORIES: {
@@ -539,17 +540,15 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Categoría</label>
-                <select
+                <CreatableSelect
+                  options={INTECKNO_OFFICIAL_CATEGORIES.map((cat) => ({
+                    id: cat.key,
+                    name: cat.label
+                  }))}
                   value={itemForm.category}
-                  onChange={(e) => setItemForm({ ...itemForm, category: e.target.value as any })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
-                >
-                  {INTECKNO_OFFICIAL_CATEGORIES.map((cat) => (
-                    <option key={cat.key} value={cat.key}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setItemForm({ ...itemForm, category: val as any })}
+                  placeholder="Seleccionar o buscar categoría..."
+                />
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Concepto / Descripción</label>
