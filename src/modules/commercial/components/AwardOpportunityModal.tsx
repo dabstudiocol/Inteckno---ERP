@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Opportunity, Partner, CRMContact, User, Project } from '../../../types';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface AwardOpportunityModalProps {
   opportunity: Opportunity;
@@ -320,20 +321,16 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
                 <label className="block font-bold text-slate-700 mb-1">
                   Encargado del Proyecto (PM) <span className="text-rose-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    required
-                    value={selectedLeaderId}
-                    onChange={(e) => setSelectedLeaderId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00668F]"
-                  >
-                    {projectLeaders.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CreatableSelect
+                  options={projectLeaders.map((u) => ({
+                    id: u.id,
+                    name: u.name,
+                    code: u.id
+                  }))}
+                  value={selectedLeaderId}
+                  onChange={(val) => setSelectedLeaderId(val)}
+                  placeholder="Seleccionar líder del proyecto..."
+                />
               </div>
             </div>
 
@@ -439,27 +436,19 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
                   Auto-estructurado
                 </span>
               </div>
-              <select
+              <CreatableSelect
+                options={[
+                  { id: 'Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)', name: 'Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)' },
+                  { id: 'Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)', name: 'Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)' },
+                  { id: 'Familia 3: Mantenimiento Mayor y Desmontaje PLEM', name: 'Familia 3: Mantenimiento Mayor y Desmontaje PLEM' },
+                  { id: 'Familia 4: Suministro de Repuestos y Componentes OEM', name: 'Familia 4: Suministro de Repuestos y Componentes OEM' },
+                  { id: 'Familia 5: Consultoría, Interventoría y Asistencia Técnica', name: 'Familia 5: Consultoría, Interventoría y Asistencia Técnica' },
+                ]}
                 value={selectedTemplateFamily}
-                onChange={(e) => setSelectedTemplateFamily(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-sky-300 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#00668F]"
-              >
-                <option value="Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)">
-                  Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)
-                </option>
-                <option value="Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)">
-                  Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)
-                </option>
-                <option value="Familia 3: Mantenimiento Mayor y Desmontaje PLEM">
-                  Familia 3: Mantenimiento Mayor y Desmontaje PLEM
-                </option>
-                <option value="Familia 4: Suministro de Repuestos y Componentes OEM">
-                  Familia 4: Suministro de Repuestos y Componentes OEM
-                </option>
-                <option value="Familia 5: Consultoría, Interventoría y Asistencia Técnica">
-                  Familia 5: Consultoría, Interventoría y Asistencia Técnica
-                </option>
-              </select>
+                onChange={(val) => setSelectedTemplateFamily(val)}
+                allowCustomText={true}
+                placeholder="Seleccionar plantilla de fases..."
+              />
               <p className="text-[10px] text-slate-500 leading-relaxed">
                 El proyecto se creará automáticamente con sus fases, tareas críticas, cálculo CPM y matriz de costos inicial transferida desde la oferta comercial.
               </p>
