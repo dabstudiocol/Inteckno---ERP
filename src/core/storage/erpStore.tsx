@@ -701,6 +701,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.productivity.articles)) { next.articles = cloudData.productivity.articles; hasChanges = true; }
         }
 
+        // Reconciliación bidireccional inmediata con Firestore:
+        // Si el cliente local en memoria tiene productos y la nube no los tiene (ej: importación inicial previa),
+        // subirlos inmediatamente a Cloud Firestore para que toda la empresa los tenga.
+        const localProducts = prev.products || [];
+        const cloudProductsCount = Array.isArray(cloudData?.products) ? cloudData.products.length : 0;
+
+        if (localProducts.length > cloudProductsCount) {
+          console.log(`[CloudSync] El cliente local tiene más artículos (${localProducts.length}) que la nube (${cloudProductsCount}). Sincronizando catálogo completo hacia Google Cloud Firestore...`);
+          syncInventoryToCloud(localProducts, prev.currentUser?.id || 'USR-01').catch(console.warn);
+        }
+
         return hasChanges ? next : prev;
       });
       isCloudLoadedRef.current = true;
@@ -722,6 +733,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncLocalCustomUsersToCloud(idbState.users).catch(() => {});
       }
       setState((prev) => {
+        const hasIdbProducts = Array.isArray(idbState.products) && idbState.products.length > (prev.products?.length || 0);
+        if (hasIdbProducts) {
+          console.log(`[IndexedDB] Recuperados ${idbState.products.length} productos desde almacenamiento local durable. Subiendo a Firestore...`);
+          syncInventoryToCloud(idbState.products, prev.currentUser?.id || 'USR-01').catch(console.warn);
+        }
+
         if (idbState.users && Array.isArray(idbState.users) && idbState.users.length > 0) {
           const mergedUsers = prev.users.map((pu) => {
             const idbUser = idbState.users.find((iu) => iu.id === pu.id);
@@ -735,11 +752,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...prev,
             users: mergedUsers,
             currentUser: updatedCurrent,
-            products: (Array.isArray(idbState.products) && idbState.products.length > (prev.products?.length || 0))
-              ? idbState.products
-              : prev.products,
+            products: hasIdbProducts ? idbState.products : prev.products,
           };
-        } else if (Array.isArray(idbState.products) && idbState.products.length > (prev.products?.length || 0)) {
+        } else if (hasIdbProducts) {
           return {
             ...prev,
             products: idbState.products,

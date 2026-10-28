@@ -520,13 +520,17 @@ export async function syncInventoryToCloud(
       chunks.push(products.slice(i, i + INVENTORY_CHUNK_SIZE));
     }
 
-    // Guardar cada chunk en paralelo
+    console.log(`[FirestoreSync] Subiendo catálogo a Cloud Firestore: ${products.length} artículos en ${chunks.length} bloques...`);
+
+    // Guardar cada chunk en paralelo limpiando valores undefined
     const chunkPromises = chunks.map((chunk, idx) => {
       const chunkRef = doc(db, 'erp_inventory', `chunk_${idx}`);
+      // JSON serialization limpia cualquier campo con valor 'undefined' que Firestore rechaza
+      const cleanItems = JSON.parse(JSON.stringify(chunk));
       return setDoc(chunkRef, {
         chunkIndex: idx,
-        itemCount: chunk.length,
-        items: chunk,
+        itemCount: cleanItems.length,
+        items: cleanItems,
         lastUpdated: now,
       });
     });
@@ -542,9 +546,10 @@ export async function syncInventoryToCloud(
       updatedBy: userId || 'system',
     });
 
+    console.log(`[FirestoreSync] ¡Catálogo completo de ${products.length} artículos guardado con éxito en Cloud Firestore!`);
     return true;
   } catch (err) {
-    console.warn('[FirestoreSync] Error sincronizando inventario particionado:', err);
+    console.error('[FirestoreSync] Error crítico sincronizando inventario particionado:', err);
     return false;
   }
 }
