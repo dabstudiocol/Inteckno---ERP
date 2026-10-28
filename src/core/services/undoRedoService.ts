@@ -15,7 +15,8 @@ export type SupportedCollection =
   | 'documents'
   | 'todos'
   | 'opportunities'
-  | 'contacts';
+  | 'contacts'
+  | 'notifications';
 
 export interface UserUndoAction {
   id: string;

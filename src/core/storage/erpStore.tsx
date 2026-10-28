@@ -1010,31 +1010,73 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const dismissNotification = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      notifications: prev.notifications.filter((n) => n.id !== id),
-    }));
+    setState((prev) => {
+      const targetNotif = prev.notifications.find((n) => n.id === id);
+      if (targetNotif && prev.currentUser?.id) {
+        undoRedoService.recordAction({
+          userId: prev.currentUser.id,
+          userName: prev.currentUser.name,
+          actionType: 'delete',
+          collection: 'notifications',
+          entityName: `Notificación: ${targetNotif.title}`,
+          description: `Se descartó la notificación "${targetNotif.title}"`,
+          previousData: targetNotif,
+        });
+      }
+      return {
+        ...prev,
+        notifications: prev.notifications.filter((n) => n.id !== id),
+      };
+    });
   }, []);
 
   const markNotificationAsRead = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      notifications: prev.notifications.map((n) =>
-        n.id === id ? { ...n, read: true } : n
-      ),
-    }));
+    setState((prev) => {
+      const targetNotif = prev.notifications.find((n) => n.id === id);
+      if (targetNotif && prev.currentUser?.id) {
+        undoRedoService.recordAction({
+          userId: prev.currentUser.id,
+          userName: prev.currentUser.name,
+          actionType: 'delete',
+          collection: 'notifications',
+          entityName: `Notificación: ${targetNotif.title}`,
+          description: `Se chuleó como recibida la notificación "${targetNotif.title}"`,
+          previousData: targetNotif,
+        });
+      }
+      // Al chulear se quita del panel activo
+      return {
+        ...prev,
+        notifications: prev.notifications.filter((n) => n.id !== id),
+      };
+    });
   }, []);
 
   const markAllNotificationsAsRead = useCallback((forUserId?: string) => {
-    setState((prev) => ({
-      ...prev,
-      notifications: prev.notifications.map((n) => {
-        if (forUserId && n.userId && n.userId !== forUserId) {
-          return n;
-        }
-        return { ...n, read: true };
-      }),
-    }));
+    setState((prev) => {
+      const removedNotifs = prev.notifications.filter((n) => {
+        if (forUserId && n.userId && n.userId !== forUserId) return false;
+        return true;
+      });
+      if (removedNotifs.length > 0 && prev.currentUser?.id) {
+        undoRedoService.recordAction({
+          userId: prev.currentUser.id,
+          userName: prev.currentUser.name,
+          actionType: 'delete',
+          collection: 'notifications',
+          entityName: `${removedNotifs.length} Notificaciones`,
+          description: `Se marcaron como recibidas y quitaron ${removedNotifs.length} notificaciones`,
+          previousData: removedNotifs,
+        });
+      }
+      return {
+        ...prev,
+        notifications: prev.notifications.filter((n) => {
+          if (forUserId && n.userId && n.userId !== forUserId) return true;
+          return false;
+        }),
+      };
+    });
   }, []);
 
   const login = useCallback((userId: string) => {
@@ -4196,6 +4238,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           break;
         }
+        case 'notifications': {
+          if (action.actionType === 'delete') {
+            const restored = Array.isArray(action.previousData) ? action.previousData : [action.previousData];
+            return {
+              ...prev,
+              notifications: [...restored, ...prev.notifications],
+            };
+          } else if (action.actionType === 'create') {
+            return {
+              ...prev,
+              notifications: prev.notifications.filter((n) => n.id !== action.newData.id),
+            };
+          }
+          break;
+        }
         default:
           return prev;
       }
@@ -4348,6 +4405,23 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return {
               ...prev,
               contacts: prev.contacts.map((c) => (c.id === action.newData.id ? action.newData : c)),
+            };
+          }
+          break;
+        }
+        case 'notifications': {
+          if (action.actionType === 'delete') {
+            const removedIds = Array.isArray(action.previousData)
+              ? action.previousData.map((n: any) => n.id)
+              : [action.previousData?.id];
+            return {
+              ...prev,
+              notifications: prev.notifications.filter((n) => !removedIds.includes(n.id)),
+            };
+          } else if (action.actionType === 'create') {
+            return {
+              ...prev,
+              notifications: [action.newData, ...prev.notifications],
             };
           }
           break;
