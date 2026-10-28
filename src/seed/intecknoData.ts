@@ -16,6 +16,7 @@ import {
   ChatGroup,
   CRMContact,
 } from '../types';
+import { OFFICIAL_INTECKNO_SUPPLIERS } from './officialSuppliersData';
 
 export const SEED_USERS: User[] = [
   {
@@ -1936,6 +1937,7 @@ export const SEED_PARTNERS: Partner[] = [
     ratingScore: 5.0,
     criticality: 'alta',
   },
+  ...OFFICIAL_INTECKNO_SUPPLIERS,
 ];
 
 export const SEED_PRODUCTS: Product[] = [

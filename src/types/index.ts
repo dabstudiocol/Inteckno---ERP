@@ -551,6 +551,15 @@ export interface Partner {
   ratingScore: number; // 1 a 5 estrellas
   criticality: 'alta' | 'media' | 'baja';
   category?: string;
+  // Atributos de Calidad Inteckno (Formato FCPR01 e Identificación de Proveedores)
+  specialtyActivity?: string; // Actividad - Especialidad (ej. Suministro platinería, Ensayos END, Metrología)
+  contactPerson?: string; // Nombre de Contacto
+  contactRole?: string; // Cargo del Contacto
+  address?: string; // Dirección física oficial
+  mobilePhone?: string; // Celular
+  contactDate?: string; // Fecha de contacto inicial
+  qualityFormatNo?: string; // ej. FCPR01-23-01
+  providerClassification?: string; // Clasificación según auditoría de calidad ITK
 }
 
 export interface Product {

@@ -48,6 +48,7 @@ import { RegisterPurchaseOrderModal } from './components/RegisterPurchaseOrderMo
 import { ProcurementPayablesTab } from './components/ProcurementPayablesTab';
 import { ProcurementPendingDeliveryTab } from './components/ProcurementPendingDeliveryTab';
 import { ProcurementCorporateMatrixTab } from './components/ProcurementCorporateMatrixTab';
+import { Fcpr01SupplierModal } from './components/Fcpr01SupplierModal';
 import { getStoredTRM, formatCOP, formatUSD, formatTRM } from '../../core/services/trmService';
 
 interface PoItemRow {
@@ -98,6 +99,7 @@ export const ProcurementModule: React.FC = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [poToDelete, setPoToDelete] = useState<PurchaseOrder | null>(null);
   const [reqToDelete, setReqToDelete] = useState<InternalRequisition | null>(null);
+  const [selectedSupplierForFcpr01, setSelectedSupplierForFcpr01] = useState<Partner | null>(null);
 
   // Catálogos dinámicos
   const catalogPaymentTerms = useModuleCatalog('compras', 'paymentTerms');
@@ -995,8 +997,31 @@ export const ProcurementModule: React.FC = () => {
                 header: 'Razón Social / NIT',
                 render: (s) => (
                   <div>
-                    <div className="font-bold text-xs text-slate-900">{s.name}</div>
-                    <div className="text-[11px] text-slate-400 font-mono">NIT: {s.taxId} • {s.city}, {s.country}</div>
+                    <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                      <span>{s.name}</span>
+                      {s.qualityFormatNo && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-sky-50 text-[#00668F] font-mono text-[9px] font-extrabold">
+                          {s.qualityFormatNo}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-mono">
+                      NIT: {s.taxId} • {s.city}, {s.country}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: 'specialty',
+                header: 'Actividad / Especialidad Oficial',
+                render: (s) => (
+                  <div className="max-w-xs">
+                    <div className="text-xs text-slate-800 font-semibold line-clamp-1">
+                      {s.specialtyActivity || s.category || 'Suministro Industrial STC'}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      {s.contactPerson ? `Contacto: ${s.contactPerson}` : (s.phone || 'Sin contacto directo')}
+                    </div>
                   </div>
                 ),
               },
@@ -1019,7 +1044,7 @@ export const ProcurementModule: React.FC = () => {
                           isHomologatedTechnical: !isFullyHomologated,
                         })
                       }
-                      title="Clic para cambiar estado de homologación técnica y legal"
+                      title="Clic para alternar estado de homologación de calidad"
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-all hover:scale-105 ${
                         isFullyHomologated
                           ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
@@ -1032,13 +1057,18 @@ export const ProcurementModule: React.FC = () => {
                 },
               },
               {
-                key: 'ratingScore',
-                header: 'Calificación',
-                align: 'center',
+                key: 'actions',
+                header: 'Ficha FCPR01',
+                align: 'right',
                 render: (s) => (
-                  <span className="text-xs font-bold text-amber-600 font-mono">
-                    ★ {s.ratingScore.toFixed(1)} / 5.0
-                  </span>
+                  <button
+                    onClick={() => setSelectedSupplierForFcpr01(s)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-[#003650] hover:text-white text-slate-700 text-[11px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+                    title="Ver Ficha de Calidad FCPR01 Oficial"
+                  >
+                    <FileText size={12} />
+                    <span>Ficha FCPR01</span>
+                  </button>
                 ),
               },
             ]}
@@ -1288,6 +1318,13 @@ export const ProcurementModule: React.FC = () => {
         onCancel={() => setReqToDelete(null)}
       />
 
+      {/* MODAL OFICIAL FORMATO DE CALIDAD FCPR01 PROVEEDORES ITK */}
+      <Fcpr01SupplierModal
+        isOpen={Boolean(selectedSupplierForFcpr01)}
+        supplier={selectedSupplierForFcpr01}
+        onClose={() => setSelectedSupplierForFcpr01(null)}
+        onUpdateSupplier={(id, updates) => updatePartner(id, updates)}
+      />
     </div>
   );
 };
