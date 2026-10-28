@@ -20,7 +20,8 @@ import {
   BookOpen,
   GraduationCap,
   Edit,
-  Settings
+  Settings,
+  Users,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { Project } from '../../types';
@@ -35,6 +36,7 @@ import { TabHseqOffline } from './components/tabs/TabHseqOffline';
 import { TabOrdenesCambio } from './components/tabs/TabOrdenesCambio';
 import { TabDocumentosEntregables } from './components/tabs/TabDocumentosEntregables';
 import { TabAsistentesCapacitacion } from './components/tabs/TabAsistentesCapacitacion';
+import { TabCuadrilla } from './components/tabs/TabCuadrilla';
 import { INTECKNO_PORTFOLIO } from '../../core/config/portfolioCatalog';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../components/common/DetailModal';
@@ -43,7 +45,7 @@ import { formatCOP, getStoredTRM } from '../../core/services/trmService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 type GlobalViewMode = 'table' | 'kanban' | 'gantt';
-type InternalTab = 'dashboard' | 'wbs' | 'costos' | 'suministros' | 'horas' | 'hseq' | 'cambios' | 'documentos' | 'asistentes';
+type InternalTab = 'dashboard' | 'wbs' | 'costos' | 'cuadrilla' | 'suministros' | 'horas' | 'hseq' | 'cambios' | 'documentos' | 'asistentes';
 
 export interface ProjectsModuleProps {
   initialView?: 'gantt' | 'list' | 'engineering' | 'table' | 'kanban';
@@ -260,6 +262,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
         { id: 'dashboard', label: 'Panel de Control', icon: <BarChart3 className="w-4 h-4" /> },
         { id: 'wbs', label: 'Plan y Cronograma', icon: <Layers className="w-4 h-4" /> },
         { id: 'costos', label: 'Costos y Presupuesto', icon: <DollarSign className="w-4 h-4" /> },
+        { id: 'cuadrilla', label: 'Personal & Staffing (S1..S52)', icon: <Users className="w-4 h-4" /> },
         { id: 'horas', label: 'Hojas de Horas / Turnos', icon: <Clock className="w-4 h-4" /> },
       ];
 
@@ -501,6 +504,12 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
               project={selectedProject} 
               currentTrm={currentTrm} 
               onUpdateProject={handleUpdateCurrentProject}
+            />
+          )}
+
+          {currentTab === 'cuadrilla' && (
+            <TabCuadrilla 
+              project={selectedProject} 
             />
           )}
 
