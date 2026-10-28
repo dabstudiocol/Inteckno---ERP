@@ -31,18 +31,145 @@ export const INTECKNO_OFFICIAL_CATEGORIES: {
   label: string;
   shortLabel: string;
   color: string;
+  defaultUnit: string;
+  allowedUnits: string[];
+  conceptPlaceholder: string;
+  defaultCostType: 'directo' | 'indirecto';
+  showProrrateo: boolean;
+  notesPlaceholder: string;
 }[] = [
-  { key: 'mano_obra_itk', label: 'Mano de Obra ITK (Horas-Hombre)', shortLabel: 'Mano de Obra ITK', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { key: 'mano_obra_externa', label: 'Mano de Obra Externa / Especialistas', shortLabel: 'MO Externa', color: 'bg-sky-50 text-sky-700 border-sky-200' },
-  { key: 'viaticos_transporte', label: 'Transporte, Pasajes & Viáticos', shortLabel: 'Viáticos & Movilidad', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'consumibles_taller', label: 'Consumibles de Taller & EPP', shortLabel: 'Consumibles', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-  { key: 'inspeccion_mrt', label: 'Inspección Electromagnética Cables (MRT)', shortLabel: 'MRT Cables', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  { key: 'ensayos_end', label: 'Ensayos No Destructivos (END / NDT)', shortLabel: 'Ensayos END', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  { key: 'analisis_vibraciones', label: 'Análisis de Vibraciones & Tribología', shortLabel: 'Vibraciones', color: 'bg-teal-50 text-teal-700 border-teal-200' },
-  { key: 'termografia', label: 'Termografía Infrarroja', shortLabel: 'Termografía', color: 'bg-rose-50 text-rose-700 border-rose-200' },
-  { key: 'repuestos_fabricacion', label: 'Materiales, Repuestos & Fabricación', shortLabel: 'Repuestos & Piezas', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { key: 'subcontratos_gruas', label: 'Subcontratos Especializados / Grúas', shortLabel: 'Subcontratos / Grúas', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-  { key: 'imprevistos_contingencia', label: 'Imprevistos & Contingencia de Obra', shortLabel: 'Imprevistos', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  { 
+    key: 'mano_obra_itk', 
+    label: 'Mano de Obra ITK (Horas-Hombre)', 
+    shortLabel: 'Mano de Obra ITK', 
+    color: 'bg-blue-50 text-blue-700 border-blue-200',
+    defaultUnit: 'Horas',
+    allowedUnits: ['Horas', 'Días', 'Meses', 'Turno'],
+    conceptPlaceholder: 'ej. Ingeniero Residente / Técnico Empalmador ITK',
+    defaultCostType: 'directo',
+    showProrrateo: true,
+    notesPlaceholder: 'ej. Planilla MO cuadrilla corte quincenal',
+  },
+  { 
+    key: 'mano_obra_externa', 
+    label: 'Mano de Obra Externa / Especialistas', 
+    shortLabel: 'MO Externa', 
+    color: 'bg-sky-50 text-sky-700 border-sky-200',
+    defaultUnit: 'Horas',
+    allowedUnits: ['Horas', 'Días', 'Servicio', 'Turno'],
+    conceptPlaceholder: 'ej. Especialista Alineación Láser / Soldador 6G Certificado',
+    defaultCostType: 'directo',
+    showProrrateo: true,
+    notesPlaceholder: 'ej. Factura honorarios especialista externo',
+  },
+  { 
+    key: 'viaticos_transporte', 
+    label: 'Transporte, Pasajes & Viáticos', 
+    shortLabel: 'Viáticos & Movilidad', 
+    color: 'bg-amber-50 text-amber-700 border-amber-200',
+    defaultUnit: 'Viaje',
+    allowedUnits: ['Viaje', 'Días', 'Pasaje', 'Pernocta', 'Ruta', 'Global'],
+    conceptPlaceholder: 'ej. Tiquetes Aéreos Medellín-Bucaramanga / Hotel Chicamocha / Camioneta 4x4',
+    defaultCostType: 'directo',
+    showProrrateo: true,
+    notesPlaceholder: 'ej. Legalización viáticos cuadrilla comisión de servicio',
+  },
+  { 
+    key: 'consumibles_taller', 
+    label: 'Consumibles de Taller & EPP', 
+    shortLabel: 'Consumibles', 
+    color: 'bg-orange-50 text-orange-700 border-orange-200',
+    defaultUnit: 'unid',
+    allowedUnits: ['unid', 'gal', 'kg', 'm', 'kit', 'Lote', 'Global'],
+    conceptPlaceholder: 'ej. Discos de corte / Desengrasante dieléctrico / Arnés dieléctrico',
+    defaultCostType: 'directo',
+    showProrrateo: false,
+    notesPlaceholder: 'ej. Comprobante almacén taller central',
+  },
+  { 
+    key: 'inspeccion_mrt', 
+    label: 'Inspección Electromagnética Cables (MRT)', 
+    shortLabel: 'MRT Cables', 
+    color: 'bg-purple-50 text-purple-700 border-purple-200',
+    defaultUnit: 'm',
+    allowedUnits: ['m', 'km', 'Cable', 'Servicio', 'Jornada'],
+    conceptPlaceholder: 'ej. Ensayo MRT Intron Cable Portador-Tractor 52mm',
+    defaultCostType: 'directo',
+    showProrrateo: true,
+    notesPlaceholder: 'ej. Informe técnico y certificado Nivel II MRT',
+  },
+  { 
+    key: 'ensayos_end', 
+    label: 'Ensayos No Destructivos (END / NDT)', 
+    shortLabel: 'Ensayos END', 
+    color: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    defaultUnit: 'Punto',
+    allowedUnits: ['Punto', 'Elemento', 'unid', 'Servicio', 'Jornada'],
+    conceptPlaceholder: 'ej. Tintas penetrantes y partículas magnéticas en balancines y ejes',
+    defaultCostType: 'directo',
+    showProrrateo: true,
+    notesPlaceholder: 'ej. Registro de inspección END según norma UNE-EN',
+  },
+  { 
+    key: 'analisis_vibraciones', 
+    label: 'Análisis de Vibraciones & Tribología', 
+    shortLabel: 'Vibraciones', 
+    color: 'bg-teal-50 text-teal-700 border-teal-200',
+    defaultUnit: 'Punto',
+    allowedUnits: ['Punto', 'Equipo', 'Servicio', 'Muestra'],
+    conceptPlaceholder: 'ej. Espectro de vibración en reductor principal Flender y motor',
+    defaultCostType: 'directo',
+    showProrrateo: false,
+    notesPlaceholder: 'ej. Reporte diagnóstico predictivo de rodamientos',
+  },
+  { 
+    key: 'termografia', 
+    label: 'Termografía Infrarroja', 
+    shortLabel: 'Termografía', 
+    color: 'bg-rose-50 text-rose-700 border-rose-200',
+    defaultUnit: 'Tablero',
+    allowedUnits: ['Tablero', 'Punto', 'Servicio', 'Jornada'],
+    conceptPlaceholder: 'ej. Barrido termográfico tableros de potencia y control variadores',
+    defaultCostType: 'directo',
+    showProrrateo: false,
+    notesPlaceholder: 'ej. Termogramas con diferencial de temperatura',
+  },
+  { 
+    key: 'repuestos_fabricacion', 
+    label: 'Materiales, Repuestos & Fabricación', 
+    shortLabel: 'Repuestos & Piezas', 
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    defaultUnit: 'unid',
+    allowedUnits: ['unid', 'm', 'kg', 'Juego', 'Lote'],
+    conceptPlaceholder: 'ej. Rodamiento SKF 23140-CC / Guarnición de volante / Mordaza DT-104',
+    defaultCostType: 'directo',
+    showProrrateo: false,
+    notesPlaceholder: 'ej. Certificado de calidad del fabricante (Mill Test Certificate)',
+  },
+  { 
+    key: 'subcontratos_gruas', 
+    label: 'Subcontratos Especializados / Grúas', 
+    shortLabel: 'Subcontratos / Grúas', 
+    color: 'bg-slate-100 text-slate-700 border-slate-200',
+    defaultUnit: 'Hora',
+    allowedUnits: ['Hora', 'Día', 'Servicio', 'Turno', 'Global'],
+    conceptPlaceholder: 'ej. Grúa telescópica 70 Ton maniobra pilona / Transporte cama baja',
+    defaultCostType: 'directo',
+    showProrrateo: true,
+    notesPlaceholder: 'ej. Plan de izaje y póliza contractual del operador',
+  },
+  { 
+    key: 'imprevistos_contingencia', 
+    label: 'Imprevistos & Contingencia de Obra', 
+    shortLabel: 'Imprevistos', 
+    color: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    defaultUnit: 'Global',
+    allowedUnits: ['Global', 'Porcentaje', 'Evento'],
+    conceptPlaceholder: 'ej. Fondo de contingencia por condiciones climáticas en montaña',
+    defaultCostType: 'indirecto',
+    showProrrateo: false,
+    notesPlaceholder: 'ej. Aprobación expresa de Gerencia de Proyectos',
+  },
 ];
 
 export function getCategoryMeta(cat: string) {
@@ -56,6 +183,12 @@ export function getCategoryMeta(cat: string) {
     label: normalized.replace('_', ' ').toUpperCase(),
     shortLabel: normalized.replace('_', ' ').toUpperCase(),
     color: 'bg-slate-100 text-slate-700 border-slate-200',
+    defaultUnit: 'unid',
+    allowedUnits: ['unid', 'Horas', 'Días', 'Global', 'Servicio'],
+    conceptPlaceholder: 'ej. Concepto o proveedor...',
+    defaultCostType: 'directo' as const,
+    showProrrateo: true,
+    notesPlaceholder: 'Observaciones de obra...',
   };
 }
 
@@ -564,237 +697,280 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       </div>
 
       {/* MODAL: AGREGAR RUBRO */}
-      {isAddItemModalOpen && (
-        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="text-sm font-bold text-slate-900">Agregar Rubro a la Matriz Financiera</h3>
-              <button
-                onClick={() => setIsAddItemModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleAddItem} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Naturaleza del Gasto</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setItemForm({ ...itemForm, spendingNature: 'PRESUPUESTO' })}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                      itemForm.spendingNature === 'PRESUPUESTO'
-                        ? 'bg-[#00668F]/10 border-[#00668F] text-[#00668F]'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    Presupuesto (Obra)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setItemForm({ ...itemForm, spendingNature: 'REPROCESO' })}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                      itemForm.spendingNature === 'REPROCESO'
-                        ? 'bg-rose-50 border-rose-400 text-rose-700'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    Reproceso / Calidad
-                  </button>
-                </div>
-              </div>
-              {/* Tipo de Costo: Directo vs Indirecto (Real Inteckno) */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Tipo de Costo</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setItemForm({ ...itemForm, costType: 'directo' })}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                      itemForm.costType === 'directo'
-                        ? 'bg-sky-50 border-[#00668F] text-[#00668F]'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    Costos Directos (MO, Obra, Insumos)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setItemForm({ ...itemForm, costType: 'indirecto' })}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                      itemForm.costType === 'indirecto'
-                        ? 'bg-purple-50 border-purple-500 text-purple-700'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    Costos Indirectos (Pólizas, Peajes)
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Categoría Financiera</label>
-                <CreatableSelect
-                  options={INTECKNO_OFFICIAL_CATEGORIES.map((cat) => ({
-                    id: cat.key,
-                    name: cat.label
-                  }))}
-                  value={itemForm.category}
-                  onChange={(val) => setItemForm({ ...itemForm, category: val as any })}
-                  placeholder="Seleccionar o buscar categoría..."
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Concepto / Actividad / Proveedor</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ej. Ruben Arcos / Cía Mundial de Seguros / SKF"
-                  value={itemForm.concept}
-                  onChange={(e) => setItemForm({ ...itemForm, concept: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+      {isAddItemModalOpen && (() => {
+        const catMeta = getCategoryMeta(itemForm.category);
+        return (
+          <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden">
+              {/* Header Fijo */}
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 shrink-0 bg-white">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Fecha</label>
-                  <input
-                    type="date"
-                    value={itemForm.date}
-                    onChange={(e) => setItemForm({ ...itemForm, date: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-                  />
+                  <h3 className="text-sm font-bold text-slate-900">Agregar Rubro a la Matriz Financiera</h3>
+                  <p className="text-[11px] text-slate-400">Presupuesto y costos directos/indirectos del proyecto</p>
                 </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Recibo / Factura / DS</label>
-                  <input
-                    type="text"
-                    placeholder="ej. FE-3098 / DS-1035"
-                    value={itemForm.invoiceNumber}
-                    onChange={(e) => setItemForm({ ...itemForm, invoiceNumber: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Unidad</label>
-                  <CreatableSelect
-                    value={itemForm.unit}
-                    onChange={(val) => setItemForm({ ...itemForm, unit: val })}
-                    options={['Horas', 'Días', 'Meses', 'unid', 'm', 'gal', 'Servicio', 'Póliza']}
-                    placeholder="Unidad..."
-                    allowCustomText={true}
-                    isClearable={false}
-                    inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Cantidad Planificada</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={itemForm.plannedQuantity}
-                    onChange={(e) => setItemForm({ ...itemForm, plannedQuantity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Costo Unitario Plan (COP)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={itemForm.plannedUnitCost}
-                    onChange={(e) => setItemForm({ ...itemForm, plannedUnitCost: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Costo Real Incurrido (COP)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={itemForm.actualUnitCost * (itemForm.actualQuantity || 1)}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setItemForm({
-                        ...itemForm,
-                        actualQuantity: 1,
-                        actualUnitCost: val,
-                      });
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800"
-                  />
-                </div>
-              </div>
-
-              {/* Prorrateo entre Proyectos (Regla Real Inteckno ej. P25-20 y P25-21) */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-700 text-xs">Prorrateo / División entre Proyectos</label>
-                  <span className="text-[10px] font-bold text-[#00668F] font-mono">{itemForm.splitPercentage}% a este proyecto</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-0.5">% Asignado a {project.code}</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={itemForm.splitPercentage}
-                      onChange={(e) => setItemForm({ ...itemForm, splitPercentage: Number(e.target.value) || 100 })}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-0.5">Compartido con Proyecto (ej. P25-21)</label>
-                    <input
-                      type="text"
-                      placeholder="ej. P25 - 21"
-                      value={itemForm.splitWithProjectCode}
-                      onChange={(e) => setItemForm({ ...itemForm, splitWithProjectCode: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Observaciones / Notas de Obra</label>
-                <input
-                  type="text"
-                  placeholder="ej. Mano de obra personal con corte al 5/12/2025"
-                  value={itemForm.observations}
-                  onChange={(e) => setItemForm({ ...itemForm, observations: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsAddItemModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-600 font-bold"
+                  className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-sm font-bold"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#00668F] text-white rounded-xl font-bold"
-                >
-                  Registrar Rubro
+                  ✕
                 </button>
               </div>
-            </form>
+
+              {/* Formulario con Scroll Interno Fluido */}
+              <form onSubmit={handleAddItem} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 text-xs">
+                  {/* Naturaleza del Gasto */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Naturaleza del Gasto</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, spendingNature: 'PRESUPUESTO' })}
+                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                          itemForm.spendingNature === 'PRESUPUESTO'
+                            ? 'bg-[#00668F]/10 border-[#00668F] text-[#00668F]'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        Presupuesto (Obra)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, spendingNature: 'REPROCESO' })}
+                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                          itemForm.spendingNature === 'REPROCESO'
+                            ? 'bg-rose-50 border-rose-400 text-rose-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        Reproceso / Calidad
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Categoría Financiera */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-slate-700">Categoría Financiera</label>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${catMeta.color}`}>
+                        {catMeta.shortLabel}
+                      </span>
+                    </div>
+                    <CreatableSelect
+                      options={INTECKNO_OFFICIAL_CATEGORIES.map((cat) => ({
+                        id: cat.key,
+                        name: cat.label
+                      }))}
+                      value={itemForm.category}
+                      onChange={(val) => {
+                        const newCat = val as CostMatrixItem['category'];
+                        const meta = getCategoryMeta(newCat);
+                        setItemForm({
+                          ...itemForm,
+                          category: newCat,
+                          unit: meta.defaultUnit,
+                          costType: meta.defaultCostType,
+                        });
+                      }}
+                      placeholder="Seleccionar o buscar categoría..."
+                    />
+                  </div>
+
+                  {/* Tipo de Costo: Directo vs Indirecto (Real Inteckno) */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Tipo de Costo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, costType: 'directo' })}
+                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                          itemForm.costType === 'directo'
+                            ? 'bg-sky-50 border-[#00668F] text-[#00668F]'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        Costos Directos (MO, Obra, Insumos)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, costType: 'indirecto' })}
+                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                          itemForm.costType === 'indirecto'
+                            ? 'bg-purple-50 border-purple-500 text-purple-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        Costos Indirectos (Pólizas, Peajes)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Concepto / Actividad / Proveedor (Placeholder Dinámico) */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Concepto / Actividad / Proveedor</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={catMeta.conceptPlaceholder}
+                      value={itemForm.concept}
+                      onChange={(e) => setItemForm({ ...itemForm, concept: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:border-[#00668F] transition-all"
+                    />
+                  </div>
+
+                  {/* Fecha y Soporte / Factura */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Fecha</label>
+                      <input
+                        type="date"
+                        value={itemForm.date}
+                        onChange={(e) => setItemForm({ ...itemForm, date: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Recibo / Factura / DS</label>
+                      <input
+                        type="text"
+                        placeholder="ej. FE-3098 / DS-1035"
+                        value={itemForm.invoiceNumber}
+                        onChange={(e) => setItemForm({ ...itemForm, invoiceNumber: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Unidad y Cantidad (Unidades Dinámicas según Categoría) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Unidad</label>
+                      <CreatableSelect
+                        value={itemForm.unit}
+                        onChange={(val) => setItemForm({ ...itemForm, unit: val })}
+                        options={catMeta.allowedUnits}
+                        placeholder="Unidad..."
+                        allowCustomText={true}
+                        isClearable={false}
+                        inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Cantidad Planificada</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={itemForm.plannedQuantity}
+                        onChange={(e) => setItemForm({ ...itemForm, plannedQuantity: Number(e.target.value) })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Costos Plan y Real */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Costo Unitario Plan (COP)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={itemForm.plannedUnitCost}
+                        onChange={(e) => setItemForm({ ...itemForm, plannedUnitCost: Number(e.target.value) })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Costo Real Incurrido (COP)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={itemForm.actualUnitCost * (itemForm.actualQuantity || 1)}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setItemForm({
+                            ...itemForm,
+                            actualQuantity: 1,
+                            actualUnitCost: val,
+                          });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Prorrateo entre Proyectos: Solo visible o configurable si la categoría lo amerita */}
+                  {catMeta.showProrrateo ? (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="font-bold text-slate-700 text-xs">Prorrateo / División entre Proyectos</label>
+                        <span className="text-[10px] font-bold text-[#00668F] font-mono">{itemForm.splitPercentage}% a este proyecto</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] text-slate-500 mb-0.5">% Asignado a {project.code}</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={itemForm.splitPercentage}
+                            onChange={(e) => setItemForm({ ...itemForm, splitPercentage: Number(e.target.value) || 100 })}
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-500 mb-0.5">Compartido con Proyecto</label>
+                          <input
+                            type="text"
+                            placeholder="ej. P25 - 21"
+                            value={itemForm.splitWithProjectCode}
+                            onChange={(e) => setItemForm({ ...itemForm, splitWithProjectCode: e.target.value })}
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl text-[11px] text-slate-500 flex items-center justify-between">
+                      <span>Imputación directa 100% a este proyecto ({catMeta.shortLabel})</span>
+                      <span className="font-mono font-bold text-[#00668F]">100%</span>
+                    </div>
+                  )}
+
+                  {/* Observaciones con Placeholder Contextual */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Observaciones / Notas de Obra</label>
+                    <input
+                      type="text"
+                      placeholder={catMeta.notesPlaceholder}
+                      value={itemForm.observations}
+                      onChange={(e) => setItemForm({ ...itemForm, observations: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#00668F] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer Fijo con Botones */}
+                <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-100 bg-slate-50/90 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddItemModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold transition-colors cursor-pointer text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white font-bold rounded-xl transition-all cursor-pointer text-xs shadow-xs"
+                  >
+                    Guardar Rubro
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal Confirmación de Eliminación de Rubro */}
       <ConfirmDeleteModal
