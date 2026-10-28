@@ -317,18 +317,16 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
           <label className="block text-xs font-semibold text-[#00668F] mb-1.5">
             Precargar datos desde Oportunidad Adjudicada del CRM (Opcional):
           </label>
-          <select
+          <CreatableSelect
+            options={opportunities.map(opp => ({
+              id: opp.id,
+              name: `${opp.title} (${opp.clientName}) - $${Math.round((opp.estimatedValueUSD || 0) * currentTrm).toLocaleString('es-CO')} COP`,
+              code: opp.id
+            }))}
             value={selectedOppId}
-            onChange={(e) => handleSelectOpportunity(e.target.value)}
-            className="w-full text-xs px-3 py-2 border rounded-lg border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
-          >
-            <option value="">-- Seleccionar oportunidad comercial adjudicada --</option>
-            {opportunities.map(opp => (
-              <option key={opp.id} value={opp.id}>
-                {opp.title} ({opp.clientName}) - ${Math.round((opp.estimatedValueUSD || 0) * currentTrm).toLocaleString('es-CO')} COP
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectOpportunity(val)}
+            placeholder="-- Seleccionar oportunidad comercial adjudicada --"
+          />
         </div>
       )}
 
@@ -344,34 +342,32 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               1. Categoría Principal *
             </label>
-            <select
+            <CreatableSelect
+              options={INTECKNO_PORTFOLIO.map(item => ({
+                id: item.category,
+                name: item.category
+              }))}
               value={selectedCategory}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full text-xs px-3 py-2.5 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-[#00668F] focus:outline-none focus:ring-1 focus:ring-[#00668F]"
-            >
-              {INTECKNO_PORTFOLIO.map(item => (
-                <option key={item.category} value={item.category}>
-                  {item.category}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleCategoryChange(val)}
+              allowCustomText={true}
+              placeholder="Seleccionar o buscar categoría principal..."
+            />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               2. Servicio Específico *
             </label>
-            <select
+            <CreatableSelect
+              options={currentCategoryObj.services.map(srv => ({
+                id: srv,
+                name: srv
+              }))}
               value={selectedService}
-              onChange={(e) => setSelectedService(e.target.value)}
-              className="w-full text-xs px-3 py-2.5 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
-            >
-              {currentCategoryObj.services.map(srv => (
-                <option key={srv} value={srv}>
-                  {srv}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedService(val)}
+              allowCustomText={true}
+              placeholder="Seleccionar o buscar servicio específico..."
+            />
           </div>
         </div>
       </div>
@@ -579,15 +575,16 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Moneda Contractual
               </label>
-              <select
+              <CreatableSelect
+                options={[
+                  { id: 'COP', name: 'COP ($ Pesos Colombianos)' },
+                  { id: 'USD', name: 'USD ($ Dólares Americanos)' },
+                  { id: 'EUR', name: 'EUR (€ Euros)' },
+                ]}
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value as any)}
-                className="w-full text-xs font-bold px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#00668F]"
-              >
-                <option value="COP">COP ($ Pesos Colombianos)</option>
-                <option value="USD">USD ($ Dólares Americanos)</option>
-                <option value="EUR">EUR (€ Euros)</option>
-              </select>
+                onChange={(val) => setCurrency(val as any)}
+                placeholder="Seleccionar moneda..."
+              />
             </div>
           </div>
 
@@ -682,19 +679,21 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Componente Afectado / Intervenido *
                 </label>
-                <select
+                <CreatableSelect
+                  options={[
+                    { id: 'Balancines', name: 'Balancines (Tren de Poleas y Rodillos)' },
+                    { id: 'Volantes', name: 'Volantes Motrices y de Retorno' },
+                    { id: 'Reductores', name: 'Reductores y Grupos Motrices' },
+                    { id: 'Mordazas', name: 'Mordazas de Cabinas' },
+                    { id: 'Pilonas_Torres', name: 'Pilonas / Torres' },
+                    { id: 'Cable_Tractor_Portador', name: 'Cable Tractor o Portador' },
+                    { id: 'Cabinas_Vehiculos', name: 'Cabinas y Suspensión' },
+                  ]}
                   value={componentIntervened}
-                  onChange={(e) => setComponentIntervened(e.target.value as any)}
-                  className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
-                >
-                  <option value="Balancines">Balancines (Tren de Poleas y Rodillos)</option>
-                  <option value="Volantes">Volantes Motrices y de Retorno</option>
-                  <option value="Reductores">Reductores y Grupos Motrices</option>
-                  <option value="Mordazas">Mordazas de Cabinas</option>
-                  <option value="Pilonas_Torres">Pilonas / Torres</option>
-                  <option value="Cable_Tractor_Portador">Cable Tractor o Portador</option>
-                  <option value="Cabinas_Vehiculos">Cabinas y Suspensión</option>
-                </select>
+                  onChange={(val) => setComponentIntervened(val as any)}
+                  allowCustomText={true}
+                  placeholder="Seleccionar o escribir componente..."
+                />
               </div>
             </div>
           </div>
@@ -753,18 +752,20 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Fase del Estudio *
               </label>
-              <select
+              <CreatableSelect
+                options={[
+                  { id: 'Prefactibilidad', name: 'Prefactibilidad' },
+                  { id: 'Factibilidad', name: 'Factibilidad' },
+                  { id: 'Diseño', name: 'Diseño' },
+                  { id: 'Supervisión', name: 'Supervisión' },
+                  { id: 'Interventoría', name: 'Interventoría' },
+                  { id: 'Implementación', name: 'Implementación' },
+                ]}
                 value={studyPhase}
-                onChange={(e) => setStudyPhase(e.target.value as any)}
-                className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
-              >
-                <option value="Prefactibilidad">Prefactibilidad</option>
-                <option value="Factibilidad">Factibilidad</option>
-                <option value="Diseño">Diseño</option>
-                <option value="Supervisión">Supervisión</option>
-                <option value="Interventoría">Interventoría</option>
-                <option value="Implementación">Implementación</option>
-              </select>
+                onChange={(val) => setStudyPhase(val as any)}
+                allowCustomText={true}
+                placeholder="Seleccionar o escribir fase..."
+              />
             </div>
           </div>
         )}
