@@ -27,6 +27,7 @@ import {
   Layers,
   Check,
   Settings,
+  Wallet,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { ExpenseEntry, ExpenseCategory, InvoiceLineItem } from '../../types';
@@ -44,9 +45,13 @@ import {
 import { ExpensesConfigModal } from './ExpensesConfigModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { TabPettyCash } from './components/TabPettyCash';
 
 export const ExpensesModule: React.FC = () => {
   const { expenses, projects, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
+
+  // Pestaña Activa: Comprobantes Generales vs Caja Menor
+  const [activeTab, setActiveTab] = useState<'comprobantes' | 'caja_menor'>('comprobantes');
 
   // Configuración dinámica del módulo (Sedes, Métodos de Pago, Rubros)
   const [moduleConfig, setModuleConfig] = useState<ExpensesModuleConfig>(getExpensesModuleConfig());
@@ -370,14 +375,57 @@ export const ExpensesModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Historial de Gastos y Facturas Radicadas */}
-      <div className="bg-white rounded-xl p-3.5 sm:p-5 space-y-3.5">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <div>
-            <h3 className="text-base font-bold text-slate-900">Comprobantes Radicados ({expenses.length})</h3>
-            <p className="text-xs text-slate-500">Revisión contable y legalización por Gerencia Administrativa (Clemencia García)</p>
+      {/* Selector de Pestañas: Comprobantes Generales vs Caja Menor & Gastos Menores */}
+      <div className="flex items-center gap-2 border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab('comprobantes')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            activeTab === 'comprobantes'
+              ? 'border-[#00668F] text-[#00668F] bg-sky-50/50'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+          }`}
+        >
+          <FileText size={15} />
+          <span>Comprobantes & Facturas ({expenses.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('caja_menor')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            activeTab === 'caja_menor'
+              ? 'border-[#00668F] text-[#00668F] bg-sky-50/50'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+          }`}
+        >
+          <Wallet size={15} />
+          <span>Caja Menor & Gastos Menores</span>
+          <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
+            Base $1M
+          </span>
+        </button>
+      </div>
+
+      {activeTab === 'caja_menor' ? (
+        <TabPettyCash
+          expenses={expenses}
+          projects={projects}
+          currentUser={currentUser}
+          onSubmitExpense={submitExpense}
+          onApproveExpense={approveExpense}
+          onDeleteExpense={(id) => {
+            const exp = expenses.find((e) => e.id === id);
+            if (exp) setExpenseToDelete(exp);
+          }}
+        />
+      ) : (
+        /* Historial de Gastos y Facturas Radicadas */
+        <div className="bg-white rounded-xl p-3.5 sm:p-5 space-y-3.5">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Comprobantes Radicados ({expenses.length})</h3>
+              <p className="text-xs text-slate-500">Revisión contable y legalización por Gerencia Administrativa (Clemencia García)</p>
+            </div>
           </div>
-        </div>
 
         <LightTable
           data={expenses}
@@ -533,6 +581,7 @@ export const ExpensesModule: React.FC = () => {
           ]}
         />
       </div>
+      )}
 
       {/* ============================================================== */}
       {/* MODAL: REGISTRO Y ESCANEO DE FACTURAS CON IA                   */}

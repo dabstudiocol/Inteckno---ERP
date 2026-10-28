@@ -482,6 +482,9 @@ export type ExpenseCategory =
   | 'materiales_urgentes'
   | 'herramientas'
   | 'gastos_oficina'
+  | 'materiales_obra'
+  | 'servicios_tecnicos'
+  | 'transporte_urbano'
   | 'otros';
 
 export interface InvoiceLineItem {
@@ -519,6 +522,17 @@ export interface ExpenseEntry {
   items?: InvoiceLineItem[];
   aiExtracted?: boolean;
   imputationType?: 'proyecto' | 'oficina';
+  // Atributos de Caja Menor & Documento Soporte DIAN (Registro de caja de efectivo)
+  isPettyCash?: boolean; // Indica si es movimiento de Caja Menor
+  pettyCashReceiptNo?: string; // N° Recibo (ej: 0, 1, 2, 3...)
+  receivedBy?: string; // Recibido por (ej: SANTIAGO ARBELAEZ, JUAN DAVID CORREA, SEBASTIAN VELEZ)
+  chargedTo?: string; // Cobrado a (ej: PAGO EFECTIVO, SALDO INICIAL)
+  dianDocType?: 'FE' | 'DS' | 'ticket' | 'ninguno'; // Factura Electrónica o Documento Soporte
+  dianDocNumber?: string; // ej. DS-1035, FE-3098, FEVW2564
+  movementType?: 'egreso' | 'deposito'; // Egreso o Reembolso/Depósito de saldo
+  depositedAmount?: number; // Importe depositado si fue recarga
+  withdrawnAmount?: number; // Importe retirado
+  observations?: string; // ej: P23-24ITEM27, OFICINA, SST
 }
 
 export interface Partner {
