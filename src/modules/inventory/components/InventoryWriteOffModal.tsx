@@ -18,6 +18,7 @@ import {
 } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
 import { formatCOP } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface InventoryWriteOffModalProps {
   isOpen: boolean;
@@ -262,23 +263,22 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
 
           {/* Centro de Costos / Proyecto (Regla 1 Proyecto = 1 Centro de Costos) */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-              <Building2 size={13} className="text-[#00668F]" />
-              Centro de Costos Afectado (Proyecto Inteckno):
-            </label>
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="w-full p-2.5 border border-gray-300 rounded-xl font-medium bg-white focus:outline-hidden focus:ring-2 focus:ring-[#00668F]"
+            <CreatableSelect
+              label="Centro de Costos Afectado (Proyecto Inteckno)"
               required
-            >
-              <option value="">-- Selecciona el Proyecto / Centro de Costos --</option>
-              {projects.map((proj) => (
-                <option key={proj.id} value={proj.id}>
-                  {proj.code} — {proj.name}
-                </option>
-              ))}
-            </select>
+              value={projects.find((p) => p.id === selectedProjectId)?.name ? `${projects.find((p) => p.id === selectedProjectId)?.code} — ${projects.find((p) => p.id === selectedProjectId)?.name}` : selectedProjectId}
+              onChange={(val) => {
+                const match = projects.find((p) => `${p.code} — ${p.name}`.toLowerCase() === val.toLowerCase() || p.id === val);
+                if (match) setSelectedProjectId(match.id);
+              }}
+              options={projects.map((proj) => ({
+                id: proj.id,
+                name: `${proj.code} — ${proj.name}`,
+                code: proj.costCenter,
+              }))}
+              placeholder="Buscar o seleccionar proyecto..."
+              inputClassName="bg-white border-gray-300"
+            />
             <span className="text-[10px] text-gray-500 mt-1 block">
               Código de imputación contable: <strong>{projectCode}</strong>
             </span>

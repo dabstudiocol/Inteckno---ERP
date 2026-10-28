@@ -2072,45 +2072,71 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
             {/* Cabecera de la Remisión */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block font-bold text-gray-700 mb-1">
-                  Proyecto Destino STC
-                </label>
-                <select
-                  value={dispatchProjectId}
-                  onChange={(e) => setDispatchProjectId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F] cursor-pointer"
-                >
-                  <optgroup label="Proyectos STC Activos">
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.code} — {p.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Sedes, Bodegas y Taller Interno">
-                    <option value="SEDE-MED-01">BOD-MED-01 — Almacén Central Medellín (Poblado)</option>
-                    <option value="TAL-GBL-02">TAL-GBL-02 — Taller Central Guayabal (Banco de Ensayos)</option>
-                    <option value="BOD-METRO-03">BOD-METRO-03 — Bodega de Campo Metro Medellín</option>
-                    <option value="BOD-MOV-06">BOD-MOV-06 — Contenedor Móvil de Obra STC</option>
-                  </optgroup>
-                </select>
+                <CreatableSelect
+                  label="Proyecto o Sede Destino STC"
+                  value={
+                    projects.find((p) => p.id === dispatchProjectId)?.name
+                      ? `${projects.find((p) => p.id === dispatchProjectId)?.code} — ${projects.find((p) => p.id === dispatchProjectId)?.name}`
+                      : dispatchProjectId === 'SEDE-MED-01'
+                      ? 'BOD-MED-01 — Almacén Central Medellín (Poblado)'
+                      : dispatchProjectId === 'TAL-GBL-02'
+                      ? 'TAL-GBL-02 — Taller Central Guayabal (Banco de Ensayos)'
+                      : dispatchProjectId === 'BOD-METRO-03'
+                      ? 'BOD-METRO-03 — Bodega de Campo Metro Medellín'
+                      : dispatchProjectId === 'BOD-MOV-06'
+                      ? 'BOD-MOV-06 — Contenedor Móvil de Obra STC'
+                      : dispatchProjectId
+                  }
+                  onChange={(val) => {
+                    const match = projects.find((p) => `${p.code} — ${p.name}`.toLowerCase() === val.toLowerCase() || p.id === val);
+                    if (match) {
+                      setDispatchProjectId(match.id);
+                    } else if (val.includes('BOD-MED-01')) {
+                      setDispatchProjectId('SEDE-MED-01');
+                    } else if (val.includes('TAL-GBL-02')) {
+                      setDispatchProjectId('TAL-GBL-02');
+                    } else if (val.includes('BOD-METRO-03')) {
+                      setDispatchProjectId('BOD-METRO-03');
+                    } else if (val.includes('BOD-MOV-06')) {
+                      setDispatchProjectId('BOD-MOV-06');
+                    } else {
+                      setDispatchProjectId(val);
+                    }
+                  }}
+                  options={[
+                    ...projects.map((p) => ({
+                      id: p.id,
+                      name: `${p.code} — ${p.name}`,
+                      code: p.costCenter,
+                    })),
+                    { id: 'SEDE-MED-01', name: 'BOD-MED-01 — Almacén Central Medellín (Poblado)', code: 'BOD-01' },
+                    { id: 'TAL-GBL-02', name: 'TAL-GBL-02 — Taller Central Guayabal (Banco de Ensayos)', code: 'TAL-02' },
+                    { id: 'BOD-METRO-03', name: 'BOD-METRO-03 — Bodega de Campo Metro Medellín', code: 'BOD-03' },
+                    { id: 'BOD-MOV-06', name: 'BOD-MOV-06 — Contenedor Móvil de Obra STC', code: 'BOD-06' },
+                  ]}
+                  placeholder="Seleccionar destino..."
+                  allowCustomText={true}
+                  inputClassName="bg-white border-gray-200"
+                />
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 mb-1">
-                  Responsable de lo que sale
-                </label>
-                <select
-                  value={dispatchTechId}
-                  onChange={(e) => setDispatchTechId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-hidden focus:border-[#00668F]"
-                >
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.roleLabel})
-                    </option>
-                  ))}
-                </select>
+                <CreatableSelect
+                  label="Responsable de lo que sale"
+                  value={users.find((u) => u.id === dispatchTechId)?.name || dispatchTechId}
+                  onChange={(val) => {
+                    const match = users.find((u) => u.name.toLowerCase() === val.toLowerCase() || u.id === val);
+                    setDispatchTechId(match?.id || val);
+                  }}
+                  options={users.map((u) => ({
+                    id: u.id,
+                    name: u.name,
+                    code: u.roleLabel,
+                  }))}
+                  placeholder="Seleccionar responsable..."
+                  allowCustomText={true}
+                  inputClassName="bg-white border-gray-200"
+                />
               </div>
 
               <div>
@@ -3057,13 +3083,24 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                   {editingProduct ? 'Editar Artículo de Inventario' : 'Nuevo Artículo de Inventario'}
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsProductModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-200/60 text-sm font-bold cursor-pointer"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="Configurar bodegas, categorías y unidades"
+                >
+                  <Settings size={13} className="text-[#00668F]" />
+                  <span>Configuración</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsProductModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-200/60 text-sm font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Contenido Desplazable */}
@@ -3089,7 +3126,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       moduleId="inventario"
                       catalogKey="categories"
                       placeholder="Seleccionar o escribir categoría..."
-                      onOpenConfig={() => setIsConfigModalOpen(true)}
                     />
                   </div>
                 </div>
@@ -3116,7 +3152,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       moduleId="inventario"
                       catalogKey="units"
                       placeholder="Seleccionar o escribir unidad..."
-                      onOpenConfig={() => setIsConfigModalOpen(true)}
                     />
                   </div>
                   <div>
@@ -3207,7 +3242,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       moduleId="inventario"
                       catalogKey="warehouses"
                       placeholder="Seleccionar o escribir bodega..."
-                      onOpenConfig={() => setIsConfigModalOpen(true)}
                     />
                   </div>
                   <div>
@@ -3219,7 +3253,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       moduleId="inventario"
                       catalogKey="shelves"
                       placeholder="Seleccionar o escribir estante..."
-                      onOpenConfig={() => setIsConfigModalOpen(true)}
                     />
                   </div>
                 </div>
