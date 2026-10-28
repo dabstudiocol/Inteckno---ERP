@@ -24,6 +24,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 import {
   CRMContact,
   RelatedContactPerson,
@@ -106,6 +107,9 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const catalogCountries = useModuleCatalog('crm', 'countries');
+  const catalogPaymentTerms = useModuleCatalog('compras', 'paymentTerms');
+
   const [activeTab, setActiveTab] = useState<
     'contactos' | 'ventas_compras' | 'facturacion' | 'notas' | 'dian'
   >('contactos');
@@ -489,12 +493,15 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
             <label className="block text-xs font-bold text-gray-700 mb-1">
               País
             </label>
-            <input
-              type="text"
-              value={formData.country}
-              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-              placeholder="Colombia"
-              className="w-full text-xs p-2.5 rounded-xl bg-white focus:outline-hidden focus:ring-2 focus:ring-[#00668F] text-gray-900"
+            <CreatableSelect
+              value={formData.country || 'Colombia'}
+              onChange={(val) => setFormData({ ...formData, country: val })}
+              options={catalogCountries.map((c) => ({ id: c.id, name: c.name, code: c.code }))}
+              placeholder="Seleccionar o escribir país..."
+              moduleId="crm"
+              catalogKey="countries"
+              allowCustomText={true}
+              inputClassName="bg-white"
             />
           </div>
         </div>
@@ -908,49 +915,53 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
 
                 <div>
                   <label className="block text-gray-700 font-bold mb-1">Lista de Precios / Moneda</label>
-                  <select
+                  <CreatableSelect
                     value={formData.salesPurchases?.priceListCurrency || 'USD'}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          priceListCurrency: e.target.value,
+                          priceListCurrency: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
-                  >
-                    <option value="USD">USD ($ - Dólar Estadounidense)</option>
-                    <option value="COP">COP ($ - Peso Colombiano)</option>
-                    <option value="EUR">EUR (€ - Euro)</option>
-                    <option value="MXN">MXN ($ - Peso Mexicano)</option>
-                    <option value="BOB">BOB (Bs - Boliviano)</option>
-                  </select>
+                    options={[
+                      { id: 'USD', name: 'USD ($ - Dólar Estadounidense)', code: 'USD' },
+                      { id: 'COP', name: 'COP ($ - Peso Colombiano)', code: 'COP' },
+                      { id: 'EUR', name: 'EUR (€ - Euro)', code: 'EUR' },
+                      { id: 'MXN', name: 'MXN ($ - Peso Mexicano)', code: 'MXN' },
+                      { id: 'BOB', name: 'BOB (Bs - Boliviano)', code: 'BOB' },
+                    ]}
+                    allowCustomText={false}
+                    inputClassName="bg-slate-50"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-gray-700 font-bold mb-1">Términos de Pago (Ventas)</label>
-                  <input
-                    type="text"
-                    list="payment-terms-list"
+                  <CreatableSelect
                     value={formData.salesPurchases?.paymentTermsSales || '30 días'}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          paymentTermsSales: e.target.value,
+                          paymentTermsSales: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
+                    options={
+                      catalogPaymentTerms.length > 0
+                        ? catalogPaymentTerms.map((pt) => ({ id: pt.id, name: pt.name, code: pt.code }))
+                        : PAYMENT_TERMS_PRESETS.map((p) => ({ id: p, name: p }))
+                    }
+                    placeholder="Seleccionar o escribir término de pago..."
+                    moduleId="compras"
+                    catalogKey="paymentTerms"
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
                   />
-                  <datalist id="payment-terms-list">
-                    {PAYMENT_TERMS_PRESETS.map((p) => (
-                      <option key={p} value={p} />
-                    ))}
-                  </datalist>
                 </div>
 
                 <div>

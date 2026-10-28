@@ -154,23 +154,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       {label && (
-        <div className="flex items-center justify-between mb-1 min-h-[22px] gap-1.5">
-          <label className="font-bold text-gray-700 text-xs flex items-center gap-1 min-w-0">
-            <span className="truncate whitespace-nowrap">{label}</span>
-            {required && <span className="text-rose-500 shrink-0">*</span>}
-          </label>
-          {(moduleId || onOpenConfig) && (
-            <button
-              type="button"
-              onClick={handleOpenModuleConfig}
-              title="Configurar opciones desplegables de este campo"
-              className="text-[11px] font-semibold text-[#00668F] hover:text-[#005073] flex items-center gap-1 hover:underline cursor-pointer shrink-0"
-            >
-              <Settings size={12} className="shrink-0" />
-              <span className="hidden sm:inline">Configurar</span>
-            </button>
-          )}
-        </div>
+        <label className="block font-bold text-gray-700 text-xs mb-1">
+          {label} {required && <span className="text-rose-500">*</span>}
+        </label>
       )}
 
       {/* Input de búsqueda / escritura interactiva */}
@@ -334,19 +320,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
             </div>
           )}
 
-          {/* Pie de lista con acceso a configuración */}
-          {(moduleId || onOpenConfig) && (
-            <div className="pt-1 mt-1 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={handleOpenModuleConfig}
-                className="w-full px-2.5 py-1.5 text-center text-[11px] font-semibold text-[#00668F] hover:bg-sky-50 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Settings size={12} />
-                <span>Administrar todas las opciones en Configuración</span>
-              </button>
-            </div>
-          )}
+          {/* Fin de opciones */}
         </div>
       )}
     </div>

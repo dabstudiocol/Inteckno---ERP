@@ -96,6 +96,15 @@ export const TimesheetModule: React.FC = () => {
             <span className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800">
               {currentUser.name}
             </span>
+            <button
+              type="button"
+              onClick={() => setIsConfigModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-2xs"
+              title="Personalizar catálogo de labores y turnos"
+            >
+              <Settings size={14} className="text-[#00668F]" />
+              <span>Configuración</span>
+            </button>
           </div>
         </div>
 
@@ -128,18 +137,9 @@ export const TimesheetModule: React.FC = () => {
 
             {/* Toque 2: Tipo de Labor / Actividad Técnica */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-gray-700">
-                  2. Labor Técnica
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsConfigModalOpen(true)}
-                  className="text-[10px] text-[#00668F] hover:underline font-bold cursor-pointer"
-                >
-                  ⚙️ Editar
-                </button>
-              </div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                2. Labor Técnica
+              </label>
               <CreatableSelect
                 value={taskName}
                 onChange={(val) => setTaskName(val)}
@@ -148,7 +148,6 @@ export const TimesheetModule: React.FC = () => {
                 moduleId="registro-horas"
                 catalogKey="laborTypes"
                 allowCustomText={true}
-                onOpenConfig={() => setIsConfigModalOpen(true)}
               />
             </div>
 
