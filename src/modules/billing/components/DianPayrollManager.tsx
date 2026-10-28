@@ -13,8 +13,11 @@ import {
 import { DianPayrollDocument } from '../../../types';
 import { DianPayrollService } from '../../hr/services/dianPayrollService';
 import { LightTable } from '../../../components/ui/LightTable';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { useErp } from '../../../core/storage/erpStore';
 
 export const DianPayrollManager: React.FC = () => {
+  const { users } = useErp();
   const [payrollRecords, setPayrollRecords] = useState<DianPayrollDocument[]>(() =>
     DianPayrollService.getPayrollRecords()
   );
@@ -260,14 +263,21 @@ export const DianPayrollManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 mb-1">Nombres y Apellidos</label>
-                <input
-                  type="text"
-                  required
+                <label className="block font-bold text-gray-700 mb-1">Nombres y Apellidos del Colaborador</label>
+                <CreatableSelect
                   value={employeeName}
-                  onChange={(e) => setEmployeeName(e.target.value)}
-                  placeholder="Ej. Andrés Felipe Lopera Castro"
-                  className="w-full p-2.5 rounded-xl border border-gray-200 font-bold focus:outline-hidden focus:border-emerald-600"
+                  onChange={(val) => {
+                    setEmployeeName(val);
+                    const found = (users || []).find((u) => u.name.toLowerCase() === val.toLowerCase());
+                    if (found && (found as any).documentNumber) {
+                      setEmployeeDocumentNumber((found as any).documentNumber);
+                    }
+                  }}
+                  options={(users || []).map((u) => u.name)}
+                  placeholder="Seleccionar o escribir colaborador..."
+                  isClearable={true}
+                  allowCustomText={true}
+                  inputClassName="w-full p-2.5 rounded-xl border border-gray-200 font-bold focus:outline-hidden"
                 />
               </div>
 
