@@ -347,6 +347,32 @@ export interface CostMatrixItem {
   splitWithProjectCode?: string; // Proyecto con el que se comparte (ej. P25-21)
 }
 
+// Facturación asociada a un ITEM (Hojas de Facturación Inteckno)
+export interface ProjectBillingItem {
+  id: string;
+  itemCode?: string;
+  invoiceDate: string; // Fecha factura
+  invoiceNumber: string; // Número factura
+  advanceAmount?: number; // Anticipo
+  subtotal: number; // Subtotal
+  ivaAmount?: number; // IVA (19%)
+  retentionAmount?: number; // Retención
+  grandTotal: number; // Gran total
+  observations?: string; // Observaciones
+  paymentDate?: string; // Fecha pago
+}
+
+// Carpeta / Bloque de ITEM de Control de Proyecto (ej. ITEM 11)
+export interface ProjectItemFolder {
+  id: string;
+  code: string; // ej. "ITEM 11", "ITEM 01", "AD-25"
+  name: string; // ej. "Mantenimiento de las fijaciones mecánicas..."
+  budgetPlanned?: number; // Presupuesto asignado al ITEM
+  observations?: string;
+  status?: 'activo' | 'completado' | 'en_ejecucion';
+  createdAt?: string;
+}
+
 // ---------------------------------------------------------------------------
 // 7. ESQUEMA PRINCIPAL DE PROYECTO STC TELEFÉRICOS
 // ---------------------------------------------------------------------------
@@ -396,6 +422,8 @@ export interface STCFullProject {
   inspectionEquipment: InspectionEquipment[];
   changeOrders: ProjectChangeOrder[];
   costMatrix: CostMatrixItem[];
+  projectItems?: ProjectItemFolder[];
+  billingItems?: ProjectBillingItem[];
 
   createdAt: string;
   updatedAt: string;

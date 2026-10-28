@@ -16,12 +16,18 @@ import {
   ShieldCheck,
   Gauge,
   Flame,
-  Wrench,
   Clock,
   Layers,
+  Folder,
+  FolderPlus,
+  ChevronRight,
+  ArrowLeft,
+  Receipt,
+  CheckCircle2,
+  ChevronDown,
 } from 'lucide-react';
 import { Project } from '../../../../types';
-import { CostMatrixItem } from '../../../../types/ProjectSchema';
+import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem } from '../../../../types/ProjectSchema';
 import { formatCOP, formatUSD } from '../../../../core/services/trmService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
@@ -298,18 +304,79 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     return (project as any).costMatrix || [];
   });
 
-  // Mantener sincronizada la matriz si el proyecto cambia o se actualiza
+  // Carpetas / ITEMS del proyecto
+  const [projectItems, setProjectItems] = useState<ProjectItemFolder[]>(() => {
+    return (project as any).projectItems || [];
+  });
+
+  // Registros de facturación del proyecto
+  const [billingItems, setBillingItems] = useState<ProjectBillingItem[]>(() => {
+    return (project as any).billingItems || [];
+  });
+
+  // Mantener sincronizado el estado si el proyecto cambia
   React.useEffect(() => {
     if ((project as any)?.costMatrix) {
       setCostItems((project as any).costMatrix);
     }
+    if ((project as any)?.projectItems) {
+      setProjectItems((project as any).projectItems);
+    }
+    if ((project as any)?.billingItems) {
+      setBillingItems((project as any).billingItems);
+    }
   }, [project]);
+
+  // Navegación: Vista general de carpetas o Carpeta de ITEM abierta
+  const [selectedFolderCode, setSelectedFolderCode] = useState<string | null>(null);
+
+  // Modales
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+  const [isAddBillingModalOpen, setIsAddBillingModalOpen] = useState(false);
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<CostMatrixItem | null>(null);
+  const [billingToDelete, setBillingToDelete] = useState<ProjectBillingItem | null>(null);
+  const [folderToDelete, setFolderToDelete] = useState<ProjectItemFolder | null>(null);
+  const [selectedCostDetail, setSelectedCostDetail] = useState<CostMatrixItem | null>(null);
+
+  // Formulario para crear Carpeta de ITEM
+  const [folderForm, setFolderForm] = useState<{
+    code: string;
+    name: string;
+    budgetPlanned: number;
+    observations: string;
+  }>({
+    code: '',
+    name: '',
+    budgetPlanned: 0,
+    observations: '',
+  });
+
+  // Formulario para Facturación (Hojas de Facturación Inteckno)
+  const [billingForm, setBillingForm] = useState<{
+    itemCode: string;
+    invoiceDate: string;
+    invoiceNumber: string;
+    advanceAmount: number;
+    subtotal: number;
+    ivaAmount: number;
+    retentionAmount: number;
+    observations: string;
+    paymentDate: string;
+  }>({
+    itemCode: '',
+    invoiceDate: new Date().toISOString().split('T')[0],
+    invoiceNumber: '',
+    advanceAmount: 0,
+    subtotal: 0,
+    ivaAmount: 0,
+    retentionAmount: 0,
+    observations: '',
+    paymentDate: '',
+  });
 
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('todos');
   const [activeItemFilter, setActiveItemFilter] = useState<string>('todos');
-  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<CostMatrixItem | null>(null);
-  const [selectedCostDetail, setSelectedCostDetail] = useState<CostMatrixItem | null>(null);
 
   // Formulario de nuevo rubro financiero (Alineado a ITEMS y Rubros de Control de Proyectos Inteckno P23, P25, P26)
   const [itemForm, setItemForm] = useState<{
@@ -352,6 +419,92 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     splitWithProjectCode: '',
   });
 
+  // Manejador para crear una nueva Carpeta de ITEM
+  const handleCreateFolder = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!folderForm.code) return;
+
+    const formattedCode = folderForm.code.trim().toUpperCase();
+    const existingIndex = projectItems.findIndex((f) => f.code.toUpperCase() === formattedCode);
+
+    const newFolder: ProjectItemFolder = {
+      id: `ITEM-${Date.now()}`,
+      code: formattedCode,
+      name: folderForm.name || INTECKNO_PROJECT_ITEMS.find((it) => it.code.toUpperCase() === formattedCode)?.name || formattedCode,
+      budgetPlanned: Number(folderForm.budgetPlanned) || 0,
+      observations: folderForm.observations || '',
+      status: 'activo',
+      createdAt: new Date().toISOString(),
+    };
+
+    let updatedFolders: ProjectItemFolder[];
+    if (existingIndex >= 0) {
+      updatedFolders = [...projectItems];
+      updatedFolders[existingIndex] = { ...updatedFolders[existingIndex], ...newFolder };
+    } else {
+      updatedFolders = [...projectItems, newFolder];
+    }
+
+    setProjectItems(updatedFolders);
+    onUpdateProject?.({
+      ...project,
+      projectItems: updatedFolders as any,
+    } as any);
+
+    setFolderForm({
+      code: '',
+      name: '',
+      budgetPlanned: 0,
+      observations: '',
+    });
+    setIsCreateFolderModalOpen(false);
+  };
+
+  // Manejador para agregar factura a la carpeta de ITEM
+  const handleAddBilling = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!billingForm.invoiceNumber) return;
+
+    const subtotal = Number(billingForm.subtotal) || 0;
+    const ivaAmount = Number(billingForm.ivaAmount) || 0;
+    const retentionAmount = Number(billingForm.retentionAmount) || 0;
+    const grandTotal = subtotal + ivaAmount - retentionAmount;
+
+    const newBilling: ProjectBillingItem = {
+      id: `BILL-${Date.now()}`,
+      itemCode: billingForm.itemCode || selectedFolderCode || 'ITEM 11',
+      invoiceDate: billingForm.invoiceDate || new Date().toISOString().split('T')[0],
+      invoiceNumber: billingForm.invoiceNumber,
+      advanceAmount: Number(billingForm.advanceAmount) || 0,
+      subtotal,
+      ivaAmount,
+      retentionAmount,
+      grandTotal,
+      observations: billingForm.observations,
+      paymentDate: billingForm.paymentDate,
+    };
+
+    const updatedBilling = [newBilling, ...billingItems];
+    setBillingItems(updatedBilling);
+    onUpdateProject?.({
+      ...project,
+      billingItems: updatedBilling as any,
+    } as any);
+
+    setBillingForm({
+      itemCode: '',
+      invoiceDate: new Date().toISOString().split('T')[0],
+      invoiceNumber: '',
+      advanceAmount: 0,
+      subtotal: 0,
+      ivaAmount: 0,
+      retentionAmount: 0,
+      observations: '',
+      paymentDate: '',
+    });
+    setIsAddBillingModalOpen(false);
+  };
+
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemForm.concept) return;
@@ -363,10 +516,13 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     const actualTotal = rawActual * factor;
     const variance = plannedTotal - actualTotal;
 
+    const targetCode = itemForm.itemCode || selectedFolderCode || 'ITEM 11';
+    const targetName = itemForm.itemName || INTECKNO_PROJECT_ITEMS.find((it) => it.code.toUpperCase() === targetCode.toUpperCase())?.name || targetCode;
+
     const newItem: CostMatrixItem = {
       id: `COST-${Date.now()}`,
-      itemCode: itemForm.itemCode,
-      itemName: itemForm.itemName,
+      itemCode: targetCode,
+      itemName: targetName,
       category: itemForm.category,
       costType: itemForm.costType,
       concept: itemForm.concept,
@@ -390,9 +546,25 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
     const updated = [newItem, ...costItems];
     setCostItems(updated);
+
+    // Asegurarse de que el ITEM exista en la lista de carpetas
+    let updatedFolders = [...projectItems];
+    if (!updatedFolders.some((f) => f.code.toUpperCase() === targetCode.toUpperCase())) {
+      updatedFolders.push({
+        id: `ITEM-${Date.now()}`,
+        code: targetCode,
+        name: targetName,
+        budgetPlanned: plannedTotal,
+        status: 'activo',
+        createdAt: new Date().toISOString(),
+      });
+      setProjectItems(updatedFolders);
+    }
+
     onUpdateProject?.({
       ...project,
       costMatrix: updated as any,
+      projectItems: updatedFolders as any,
     } as any);
 
     setItemForm({
@@ -494,6 +666,41 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const advanceAmount = project.advancePaymentAmount || (
     project.advancePaymentPercentage ? (contractAmountCOP * project.advancePaymentPercentage / 100) : 0
   );
+
+  // Lista consolidada de todos los ITEMS disponibles (Oficiales de catálogo + personalizados del proyecto + usados en costos/facturación)
+  const allAvailableItems = (() => {
+    const map = new Map<string, { code: string; name: string; budgetPlanned?: number }>();
+    
+    // 1. Agregar catálogo oficial de 21 ITEMS
+    INTECKNO_PROJECT_ITEMS.forEach((it) => {
+      map.set(it.code.toUpperCase(), { code: it.code, name: it.name, budgetPlanned: 0 });
+    });
+
+    // 2. Agregar o sobrescribir con carpetas guardadas en project.projectItems
+    projectItems.forEach((f) => {
+      map.set(f.code.toUpperCase(), {
+        code: f.code,
+        name: f.name,
+        budgetPlanned: f.budgetPlanned,
+      });
+    });
+
+    // 3. Incluir cualquier ITEM que aparezca en los costos existentes
+    costItems.forEach((c) => {
+      if (c.itemCode) {
+        const upper = c.itemCode.toUpperCase();
+        if (!map.has(upper)) {
+          map.set(upper, {
+            code: c.itemCode,
+            name: c.itemName || c.itemCode,
+            budgetPlanned: 0,
+          });
+        }
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+  })();
 
   return (
     <div className="space-y-4">
@@ -659,205 +866,850 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         </div>
       </div>
 
-      {/* 2. TABLA DE LA MATRIZ FINANCIERA */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        {/* Cabecera y Selector de ITEMS Inteckno */}
-        <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* 2. VISTA DE ITEMS: CARPETAS O DETALLE DE ITEM (3 TABLAS: COSTOS DIRECTOS, INDIRECTOS Y FACTURACIÓN) */}
+      {!selectedFolderCode ? (
+        /* VISTA DE CARPETAS DE ITEMS */
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
             <div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span>Matriz Financiera de Presupuesto</span>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Folder size={18} className="text-[#00668F]" />
+                <span>Carpetas de ITEMS del Proyecto</span>
                 <span className="px-2 py-0.5 rounded-full bg-sky-100 text-[#00668F] text-[11px] font-extrabold font-mono">
-                  {filteredItems.length} Rubros
+                  {allAvailableItems.length} ITEMS
                 </span>
               </h3>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Total Plan: <span className="font-bold text-slate-700">{formatCOP(totalPlanned)}</span> • Real Incurrido: <span className="font-bold text-slate-700">{formatCOP(totalActual)}</span>
+                Cada carpeta agrupa sus rubros de costos directos, costos indirectos y facturación tal como se gestiona en el Excel oficial.
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsAddItemModalOpen(true)}
+                onClick={() => {
+                  setFolderForm({ code: '', name: '', budgetPlanned: 0, observations: '' });
+                  setIsCreateFolderModalOpen(true);
+                }}
                 className="px-3.5 py-1.5 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <Plus size={14} />
-                <span>Agregar Rubro</span>
+                <FolderPlus size={14} />
+                <span>Añadir ITEM / Carpeta</span>
               </button>
             </div>
           </div>
 
-          {/* Filtro por ITEM Contractual / Operativo */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-slate-200/60">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
-              <Layers size={13} className="text-[#00668F]" />
-              Filtrar por ITEM:
-            </span>
-            <div className="flex-1 max-w-xl">
-              <CreatableSelect
-                options={[
-                  { id: 'todos', name: 'Todos los ITEMS del Proyecto' },
-                  ...INTECKNO_PROJECT_ITEMS.map((it) => ({
-                    id: it.code,
-                    name: `${it.code} - ${it.name}`,
-                  })),
-                ]}
-                value={
-                  activeItemFilter === 'todos'
-                    ? 'Todos los ITEMS del Proyecto'
-                    : getItemDisplayName(activeItemFilter)
-                }
-                onChange={(val) => {
-                  if (!val || val === 'Todos los ITEMS del Proyecto' || val === 'todos') {
-                    setActiveItemFilter('todos');
-                  } else {
-                    const match = INTECKNO_PROJECT_ITEMS.find(
-                      (it) => it.code.toLowerCase() === val.toLowerCase() || `${it.code} - ${it.name}`.toLowerCase() === val.toLowerCase()
-                    );
-                    setActiveItemFilter(match ? match.code : val);
-                  }
-                }}
-                placeholder="Seleccionar o buscar ITEM contractual..."
-                isClearable={true}
-              />
-            </div>
-            {activeItemFilter !== 'todos' && (
+          {/* Grid de Carpetas de ITEMS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {allAvailableItems.map((itemDef) => {
+              const itemDirects = costItems.filter(
+                (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType !== 'indirecto'
+              );
+              const itemIndirects = costItems.filter(
+                (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType === 'indirecto'
+              );
+              const itemBills = billingItems.filter(
+                (b) => (b.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase()
+              );
+
+              const totalDir = itemDirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
+              const totalInd = itemIndirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
+              const totalCost = totalDir + totalInd;
+              const totalFact = itemBills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
+
+              const budgetPlan = itemDef.budgetPlanned || itemDirects.reduce((s, c) => s + c.plannedTotal, 0) + itemIndirects.reduce((s, c) => s + c.plannedTotal, 0);
+              const balancePct = budgetPlan > 0 ? (totalCost / budgetPlan) * 100 : 0;
+
+              return (
+                <div
+                  key={itemDef.code}
+                  onClick={() => setSelectedFolderCode(itemDef.code)}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-4 hover:border-[#00668F] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <span className="p-2 rounded-xl bg-sky-50 text-[#00668F] group-hover:bg-[#00668F] group-hover:text-white transition-colors">
+                          <Folder size={18} />
+                        </span>
+                        <div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-slate-100 text-[#00668F] border border-slate-200">
+                            {itemDef.code}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-400 group-hover:text-[#00668F] font-bold flex items-center gap-0.5">
+                        Abrir <ChevronRight size={13} />
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs font-bold text-slate-800 mt-2.5 line-clamp-2 min-h-[32px] group-hover:text-[#00668F] transition-colors">
+                      {itemDef.name}
+                    </h4>
+
+                    {/* Resumen de costos */}
+                    <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px]">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">Costos Totales</span>
+                        <span className="font-bold text-slate-900 font-mono">{formatCOP(totalCost)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">Facturación</span>
+                        <span className="font-bold text-emerald-700 font-mono">{formatCOP(totalFact)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-slate-100/80 flex items-center justify-between text-[10px]">
+                    <span className="text-slate-400">
+                      {itemDirects.length + itemIndirects.length} rubros • {itemBills.length} facturas
+                    </span>
+                    {budgetPlan > 0 && (
+                      <span className={`font-mono font-bold px-1.5 py-0.5 rounded ${
+                        balancePct <= 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                      }`}>
+                        Balance: {balancePct.toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* VISTA INTERNA DE LA CARPETA DEL ITEM CON LAS 3 TABLAS */
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {/* Barra de Navegación del ITEM */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setActiveItemFilter('todos')}
-                className="px-2.5 py-1 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer shrink-0 self-center"
+                onClick={() => setSelectedFolderCode(null)}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Volver a todas las carpetas"
               >
-                Quitar filtro ({activeItemFilter})
+                <ArrowLeft size={16} />
+                <span>Volver a Carpetas</span>
               </button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-xs font-mono font-black bg-[#00668F] text-white">
+                    {selectedFolderCode}
+                  </span>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                    {allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase())?.name || selectedFolderCode}
+                  </h3>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Control contractual de costos directos, costos indirectos y facturación de este ITEM
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setItemForm({
+                    ...itemForm,
+                    itemCode: selectedFolderCode,
+                    itemName: allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase())?.name || selectedFolderCode,
+                    costType: 'directo',
+                  });
+                  setIsAddItemModalOpen(true);
+                }}
+                className="px-3 py-1.5 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Añadir Costo Directo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setItemForm({
+                    ...itemForm,
+                    itemCode: selectedFolderCode,
+                    itemName: allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase())?.name || selectedFolderCode,
+                    costType: 'indirecto',
+                  });
+                  setIsAddItemModalOpen(true);
+                }}
+                className="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Añadir Costo Indirecto</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBillingForm({
+                    ...billingForm,
+                    itemCode: selectedFolderCode,
+                  });
+                  setIsAddBillingModalOpen(true);
+                }}
+                className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Añadir Facturación</span>
+              </button>
+            </div>
+          </div>
+
+          {/* TABLA 1: COSTOS DIRECTOS (Tal cual la foto de Excel) */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-100 bg-sky-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#00668F]"></span>
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Costos Directos — {selectedFolderCode}
+                </h4>
+                <span className="text-[11px] text-slate-500 font-mono">
+                  ({costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto').length} rubros)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setItemForm({
+                    ...itemForm,
+                    itemCode: selectedFolderCode,
+                    itemName: allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase())?.name || selectedFolderCode,
+                    costType: 'directo',
+                  });
+                  setIsAddItemModalOpen(true);
+                }}
+                className="text-xs font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Plus size={13} />
+                <span>Agregar Rubro Directo</span>
+              </button>
+            </div>
+
+            {costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto').length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                No hay costos directos registrados para {selectedFolderCode}. Agrega horas-hombre, compras de ferretería o insumos de obra.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Fecha</th>
+                      <th className="py-2.5 px-4">Concepto del Costo Directo</th>
+                      <th className="py-2.5 px-3 text-right">Valor Costo Directo</th>
+                      <th className="py-2.5 px-3 text-right">IVA (19%)</th>
+                      <th className="py-2.5 px-3 text-right">Retención</th>
+                      <th className="py-2.5 px-3 text-right">Gran Total</th>
+                      <th className="py-2.5 px-3">Recibo - Factura</th>
+                      <th className="py-2.5 px-4">Observaciones</th>
+                      <th className="py-2.5 px-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-sans">
+                    {costItems
+                      .filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto')
+                      .map((c) => {
+                        const valDirecto = c.actualTotal || (c.actualQuantity * c.actualUnitCost) || c.plannedTotal;
+                        const iva = c.ivaAmount || 0;
+                        const ret = c.retentionAmount || 0;
+                        const granTotal = valDirecto + iva - ret;
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px] text-slate-600">
+                              {c.date || '—'}
+                            </td>
+                            <td className="py-2.5 px-4 font-bold text-slate-800">
+                              {c.concept}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-700">
+                              {formatCOP(valDirecto)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                              {iva > 0 ? formatCOP(iva) : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                              {ret > 0 ? formatCOP(ret) : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                              {formatCOP(granTotal)}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-slate-600">
+                              {c.invoiceNumber || '—'}
+                            </td>
+                            <td className="py-2.5 px-4 text-slate-500 text-[11px] italic">
+                              {c.observations || '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setItemToDelete(c)}
+                                className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                title="Eliminar rubro"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                  {/* Fila de Consolidados Totales de Costos Directos */}
+                  <tfoot>
+                    {(() => {
+                      const directs = costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto');
+                      const sumVal = directs.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
+                      const sumIva = directs.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
+                      const sumRet = directs.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
+                      const sumTotal = sumVal + sumIva - sumRet;
+
+                      const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
+                      const budget = targetFolder?.budgetPlanned || directs.reduce((s, c) => s + c.plannedTotal, 0);
+                      const balancePct = budget > 0 ? (sumTotal / budget) * 100 : 0;
+
+                      return (
+                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
+                          <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
+                            Consolidados Totales Costos Directos
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono">{formatCOP(sumVal)}</td>
+                          <td className="py-2.5 px-3 text-right font-mono">{sumIva > 0 ? formatCOP(sumIva) : '$ -'}</td>
+                          <td className="py-2.5 px-3 text-right font-mono">{sumRet > 0 ? formatCOP(sumRet) : '$ -'}</td>
+                          <td className="py-2.5 px-3 text-right font-mono text-[#00668F]">{formatCOP(sumTotal)}</td>
+                          <td colSpan={2} className="py-2.5 px-3 text-right bg-yellow-100 text-yellow-900 font-black font-mono">
+                            Balance Presupuesto: {balancePct.toFixed(0)}%
+                          </td>
+                          <td></td>
+                        </tr>
+                      );
+                    })()}
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* TABLA 2: COSTOS INDIRECTOS (Tal cual la foto de Excel) */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-100 bg-purple-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                  Costos Indirectos — {selectedFolderCode}
+                </h4>
+                <span className="text-[11px] text-slate-500 font-mono">
+                  ({costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto').length} rubros)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setItemForm({
+                    ...itemForm,
+                    itemCode: selectedFolderCode,
+                    itemName: allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase())?.name || selectedFolderCode,
+                    costType: 'indirecto',
+                  });
+                  setIsAddItemModalOpen(true);
+                }}
+                className="text-xs font-bold text-purple-700 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Plus size={13} />
+                <span>Agregar Rubro Indirecto</span>
+              </button>
+            </div>
+
+            {costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto').length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                No hay costos indirectos registrados para {selectedFolderCode}. Agrega pólizas, peajes, grúas o papelería.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Fecha</th>
+                      <th className="py-2.5 px-4">Concepto del Costo Indirecto</th>
+                      <th className="py-2.5 px-3 text-right">Valor Costo Indirecto</th>
+                      <th className="py-2.5 px-3 text-right">IVA (19%)</th>
+                      <th className="py-2.5 px-3 text-right">Retención</th>
+                      <th className="py-2.5 px-3 text-right">Gran Total</th>
+                      <th className="py-2.5 px-3">Factura Proveedor</th>
+                      <th className="py-2.5 px-4">Observaciones</th>
+                      <th className="py-2.5 px-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-sans">
+                    {costItems
+                      .filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto')
+                      .map((c) => {
+                        const valIndirecto = c.actualTotal || (c.actualQuantity * c.actualUnitCost) || c.plannedTotal;
+                        const iva = c.ivaAmount || 0;
+                        const ret = c.retentionAmount || 0;
+                        const granTotal = valIndirecto + iva - ret;
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px] text-slate-600">
+                              {c.date || '—'}
+                            </td>
+                            <td className="py-2.5 px-4 font-bold text-slate-800">
+                              {c.concept}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-700">
+                              {formatCOP(valIndirecto)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                              {iva > 0 ? formatCOP(iva) : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                              {ret > 0 ? formatCOP(ret) : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                              {formatCOP(granTotal)}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-slate-600">
+                              {c.invoiceNumber || '—'}
+                            </td>
+                            <td className="py-2.5 px-4 text-slate-500 text-[11px] italic">
+                              {c.observations || '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setItemToDelete(c)}
+                                className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                title="Eliminar rubro"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                  {/* Fila de Consolidados Totales de Costos Indirectos */}
+                  <tfoot>
+                    {(() => {
+                      const indirects = costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto');
+                      const sumVal = indirects.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
+                      const sumIva = indirects.reduce((acc, c) => acc + (c.ivaAmount || 0), 0);
+                      const sumRet = indirects.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
+                      const sumTotal = sumVal + sumIva - sumRet;
+
+                      return (
+                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
+                          <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
+                            Consolidados Totales Costos Indirectos
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono">{formatCOP(sumVal)}</td>
+                          <td className="py-2.5 px-3 text-right font-mono">{sumIva > 0 ? formatCOP(sumIva) : '$ -'}</td>
+                          <td className="py-2.5 px-3 text-right font-mono">{sumRet > 0 ? formatCOP(sumRet) : '$ -'}</td>
+                          <td className="py-2.5 px-3 text-right font-mono text-purple-700">{formatCOP(sumTotal)}</td>
+                          <td colSpan={2} className="py-2.5 px-3 text-right text-slate-500 text-[11px]">
+                            {indirects.length} registros cargados
+                          </td>
+                          <td></td>
+                        </tr>
+                      );
+                    })()}
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* TABLA 3: FACTURACIÓN (Tal cual la foto de Excel) */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-100 bg-emerald-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                  Facturación — {selectedFolderCode}
+                </h4>
+                <span className="text-[11px] text-slate-500 font-mono">
+                  ({billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase()).length} facturas)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBillingForm({
+                    ...billingForm,
+                    itemCode: selectedFolderCode,
+                  });
+                  setIsAddBillingModalOpen(true);
+                }}
+                className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Plus size={13} />
+                <span>Agregar Factura</span>
+              </button>
+            </div>
+
+            {billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase()).length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                No hay facturas emitidas ni registradas para {selectedFolderCode}. Registra facturas FE con su subtotal e IVA.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Fecha Factura</th>
+                      <th className="py-2.5 px-3">Número Factura</th>
+                      <th className="py-2.5 px-3 text-right">Anticipo</th>
+                      <th className="py-2.5 px-3 text-right">Subtotal</th>
+                      <th className="py-2.5 px-3 text-right">IVA (19%)</th>
+                      <th className="py-2.5 px-3 text-right">Retención</th>
+                      <th className="py-2.5 px-3 text-right">Gran Total</th>
+                      <th className="py-2.5 px-4">Observaciones</th>
+                      <th className="py-2.5 px-3 whitespace-nowrap">Fecha Pago</th>
+                      <th className="py-2.5 px-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-sans">
+                    {billingItems
+                      .filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase())
+                      .map((b) => (
+                        <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px] text-slate-600">
+                            {b.invoiceDate || '—'}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
+                            {b.invoiceNumber}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                            {b.advanceAmount ? formatCOP(b.advanceAmount) : '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-700">
+                            {formatCOP(b.subtotal)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                            {b.ivaAmount ? formatCOP(b.ivaAmount) : '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                            {b.retentionAmount ? formatCOP(b.retentionAmount) : '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
+                            {formatCOP(b.grandTotal)}
+                          </td>
+                          <td className="py-2.5 px-4 text-slate-500 text-[11px] italic">
+                            {b.observations || '—'}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px] text-slate-600">
+                            {b.paymentDate || '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setBillingToDelete(b)}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                              title="Eliminar factura"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                  {/* Fila de Consolidados Totales de Facturación */}
+                  <tfoot>
+                    {(() => {
+                      const bills = billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() === selectedFolderCode.toUpperCase());
+                      const sumAnt = bills.reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
+                      const sumSub = bills.reduce((acc, b) => acc + (b.subtotal || 0), 0);
+                      const sumIva = bills.reduce((acc, b) => acc + (b.ivaAmount || 0), 0);
+                      const sumRet = bills.reduce((acc, b) => acc + (b.retentionAmount || 0), 0);
+                      const sumGrand = bills.reduce((acc, b) => acc + (b.grandTotal || 0), 0);
+
+                      const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
+                      const budget = targetFolder?.budgetPlanned || 0;
+                      const pendingFact = Math.max(0, budget - sumGrand);
+                      const pctFact = budget > 0 ? (sumGrand / budget) * 100 : 100;
+
+                      return (
+                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
+                          <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
+                            Consolidados Totales Facturación
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono">{sumAnt > 0 ? formatCOP(sumAnt) : '$ -'}</td>
+                          <td className="py-2.5 px-3 text-right font-mono">{formatCOP(sumSub)}</td>
+                          <td className="py-2.5 px-3 text-right font-mono">{sumIva > 0 ? formatCOP(sumIva) : '$ -'}</td>
+                          <td className="py-2.5 px-3 text-right font-mono">{sumRet > 0 ? formatCOP(sumRet) : '$ -'}</td>
+                          <td className="py-2.5 px-3 text-right font-mono text-emerald-800">{formatCOP(sumGrand)}</td>
+                          <td colSpan={2} className="py-2.5 px-3 text-right bg-yellow-100 text-yellow-900 font-black font-mono">
+                            Pendiente Facturación: {formatCOP(pendingFact)} ({pctFact.toFixed(0)}% Facturado)
+                          </td>
+                          <td></td>
+                        </tr>
+                      );
+                    })()}
+                  </tfoot>
+                </table>
+              </div>
             )}
           </div>
         </div>
+      )}
 
-        {filteredItems.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 space-y-2">
-            <FileSpreadsheet size={32} className="mx-auto opacity-30" />
-            <p className="text-xs font-bold text-slate-600">No hay rubros de costos en este filtro</p>
-            <p className="text-[11px]">Agrega conceptos asociados a los ITEMS del proyecto para el control presupuestal.</p>
+      {/* MODAL: CREAR O AÑADIR ITEM / CARPETA */}
+      {isCreateFolderModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-white">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-sky-50 text-[#00668F]">
+                  <FolderPlus size={18} />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Añadir ITEM / Carpeta</h3>
+                  <p className="text-[11px] text-slate-400">Estructura contractual del proyecto (Excel oficial)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateFolderModalOpen(false)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateFolder} className="p-5 space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Seleccionar o Escribir Código de ITEM</label>
+                <CreatableSelect
+                  options={INTECKNO_PROJECT_ITEMS.map((it) => ({
+                    id: it.code,
+                    name: `${it.code} - ${it.name}`,
+                  }))}
+                  value={folderForm.code ? `${folderForm.code} - ${folderForm.name}` : ''}
+                  onChange={(val) => {
+                    const match = INTECKNO_PROJECT_ITEMS.find(
+                      (it) => it.code.toLowerCase() === val.toLowerCase() || `${it.code} - ${it.name}`.toLowerCase() === val.toLowerCase()
+                    );
+                    if (match) {
+                      setFolderForm({
+                        ...folderForm,
+                        code: match.code,
+                        name: match.name,
+                      });
+                    } else {
+                      setFolderForm({
+                        ...folderForm,
+                        code: val,
+                        name: val,
+                      });
+                    }
+                  }}
+                  placeholder="ej. ITEM 11, ITEM 21, AD-25..."
+                  isClearable={true}
+                  allowCustomText={true}
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nombre Descriptivo del ITEM</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="ej. Mantenimiento de fijaciones mecánicas..."
+                  value={folderForm.name}
+                  onChange={(e) => setFolderForm({ ...folderForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:border-[#00668F] transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Presupuesto Asignado al ITEM (COP)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="ej. 15000000"
+                  value={folderForm.budgetPlanned || ''}
+                  onChange={(e) => setFolderForm({ ...folderForm, budgetPlanned: Number(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Observaciones / Alcance Contractual</label>
+                <input
+                  type="text"
+                  placeholder="ej. Pilonas en cables aéreos estación motriz"
+                  value={folderForm.observations}
+                  onChange={(e) => setFolderForm({ ...folderForm, observations: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateFolderModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold transition-colors cursor-pointer text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white font-bold rounded-xl transition-all cursor-pointer text-xs shadow-xs"
+                >
+                  Guardar Carpeta de ITEM
+                </button>
+              </div>
+            </form>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-2.5 px-3">ITEM</th>
-                  <th className="py-2.5 px-3">Tipo</th>
-                  <th className="py-2.5 px-3">Fecha / Soporte</th>
-                  <th className="py-2.5 px-4">Categoría</th>
-                  <th className="py-2.5 px-4">Concepto / Actividad / Proveedor</th>
-                  <th className="py-2.5 px-3 text-center">Unidad</th>
-                  <th className="py-2.5 px-3 text-right">Cant. Plan</th>
-                  <th className="py-2.5 px-3 text-right">Costo Plan</th>
-                  <th className="py-2.5 px-3 text-right">Total Plan</th>
-                  <th className="py-2.5 px-3 text-right">Total Real</th>
-                  <th className="py-2.5 px-3 text-right">Desviación</th>
-                  <th className="py-2.5 px-3 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredItems.map((item) => (
-                  <tr 
-                    key={item.id} 
-                    onClick={() => setSelectedCostDetail(item)}
-                    className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
-                  >
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded bg-sky-50 text-[#00668F] border border-sky-200 font-mono font-bold text-[10px]">
-                        {item.itemCode || 'ITEM 11'}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                        item.costType === 'indirecto'
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                          : 'bg-sky-50 text-[#00668F] border border-sky-200'
-                      }`}>
-                        {item.costType === 'indirecto' ? 'INDIRECTO' : 'DIRECTO'}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <div className="font-mono text-[11px] font-semibold text-slate-700">
-                        {item.date || '—'}
-                      </div>
-                      {item.invoiceNumber && (
-                        <div className="font-mono text-[10px] text-slate-400">
-                          {item.invoiceNumber}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-4">
-                      {(() => {
-                        const meta = getCategoryMeta(item.category);
-                        return (
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border ${meta.color}`}>
-                            {meta.shortLabel}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="py-2.5 px-4 font-bold text-slate-800 group-hover:text-[#00668F] transition-colors">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span>{item.concept}</span>
-                        {item.splitPercentage && item.splitPercentage < 100 && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title={`Prorrateado ${item.splitPercentage}% con ${item.splitWithProjectCode || 'otro proyecto'}`}>
-                            {item.splitPercentage}% {item.splitWithProjectCode ? `(${item.splitWithProjectCode})` : ''}
-                          </span>
-                        )}
-                        {item.spendingNature === 'REPROCESO' ? (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300" title="Reproceso / Calidad (Garantía)">
-                            REPROCESO
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200" title="Partida de Presupuesto Inicial">
-                            PRESUPUESTO
-                          </span>
-                        )}
-                      </div>
-                      {item.observations && (
-                        <div className="text-[10px] text-slate-400 font-normal mt-0.5 italic">
-                          {item.observations}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-3 text-center text-slate-500 font-mono text-[11px]">{item.unit}</td>
-                    <td className="py-2.5 px-3 text-right font-mono">{item.plannedQuantity}</td>
-                    <td className="py-2.5 px-3 text-right font-mono">{formatCOP(item.plannedUnitCost)}</td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatCOP(item.plannedTotal)}</td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatCOP(item.actualTotal)}</td>
-                    <td className={`py-2.5 px-3 text-right font-mono font-bold ${item.variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {item.variance >= 0 ? '+' : ''}{formatCOP(item.variance)}
-                    </td>
-                    <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedCostDetail(item)}
-                          className="p-1 text-slate-400 hover:text-[#00668F] hover:bg-slate-100 rounded transition-colors"
-                          title="Ver detalle del rubro"
-                        >
-                          <Info size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setItemToDelete(item)}
-                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                          title="Eliminar rubro"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        </div>
+      )}
+
+      {/* MODAL: AGREGAR FACTURA A ITEM */}
+      {isAddBillingModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-white">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+                  <Receipt size={18} />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Agregar Facturación — {billingForm.itemCode || selectedFolderCode}</h3>
+                  <p className="text-[11px] text-slate-400">Registro de factura emitida asociada al ITEM</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddBillingModalOpen(false)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddBilling} className="p-5 space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Fecha Factura</label>
+                  <input
+                    type="date"
+                    required
+                    value={billingForm.invoiceDate}
+                    onChange={(e) => setBillingForm({ ...billingForm, invoiceDate: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Número Factura</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ej. FE-318 / FE-292"
+                    value={billingForm.invoiceNumber}
+                    onChange={(e) => setBillingForm({ ...billingForm, invoiceNumber: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Subtotal (COP)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="0"
+                    value={billingForm.subtotal || ''}
+                    onChange={(e) => setBillingForm({ ...billingForm, subtotal: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">IVA (19% Si Aplica)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={billingForm.ivaAmount || ''}
+                    onChange={(e) => setBillingForm({ ...billingForm, ivaAmount: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Anticipo Amortizado</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={billingForm.advanceAmount || ''}
+                    onChange={(e) => setBillingForm({ ...billingForm, advanceAmount: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Retención</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={billingForm.retentionAmount || ''}
+                    onChange={(e) => setBillingForm({ ...billingForm, retentionAmount: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Fecha de Pago</label>
+                  <input
+                    type="date"
+                    value={billingForm.paymentDate}
+                    onChange={(e) => setBillingForm({ ...billingForm, paymentDate: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Observaciones</label>
+                  <input
+                    type="text"
+                    placeholder="ej. Pago primer hito contractual"
+                    value={billingForm.observations}
+                    onChange={(e) => setBillingForm({ ...billingForm, observations: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between font-mono">
+                <span className="font-bold text-emerald-900 text-xs">Gran Total Proyectado:</span>
+                <span className="font-black text-emerald-800 text-sm">
+                  {formatCOP((billingForm.subtotal || 0) + (billingForm.ivaAmount || 0) - (billingForm.retentionAmount || 0))}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddBillingModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold transition-colors cursor-pointer text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold rounded-xl transition-all cursor-pointer text-xs shadow-xs"
+                >
+                  Guardar Factura
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* MODAL: AGREGAR RUBRO */}
       {isAddItemModalOpen && (() => {
@@ -868,8 +1720,12 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               {/* Header Fijo */}
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 shrink-0 bg-white">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Agregar Rubro a la Matriz Financiera</h3>
-                  <p className="text-[11px] text-slate-400">Presupuesto y costos directos/indirectos del proyecto</p>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Agregar Rubro a {itemForm.itemCode || selectedFolderCode || 'ITEM 11'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {itemForm.costType === 'indirecto' ? 'Costo Indirecto (Pólizas, Peajes, Grúas)' : 'Costo Directo (MO, Obra, Insumos)'}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -916,17 +1772,17 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">ITEM Contractual / Operativo</label>
                     <CreatableSelect
-                      options={INTECKNO_PROJECT_ITEMS.map((it) => ({
+                      options={allAvailableItems.map((it) => ({
                         id: it.code,
                         name: `${it.code} - ${it.name}`,
                       }))}
-                      value={getItemDisplayName(itemForm.itemCode, itemForm.itemName)}
+                      value={getItemDisplayName(itemForm.itemCode || selectedFolderCode, itemForm.itemName)}
                       onChange={(val) => {
-                        const matched = INTECKNO_PROJECT_ITEMS.find(
+                        const matched = allAvailableItems.find(
                           (it) => it.code.toLowerCase() === val.toLowerCase() || `${it.code} - ${it.name}`.toLowerCase() === val.toLowerCase()
                         );
                         if (matched) {
-                          const suggestedCategory = matched.categoryDefault || itemForm.category;
+                          const suggestedCategory = (matched as any).categoryDefault || itemForm.category;
                           const meta = getCategoryMeta(suggestedCategory);
                           setItemForm({
                             ...itemForm,
@@ -948,6 +1804,35 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       isClearable={true}
                       allowCustomText={true}
                     />
+                  </div>
+
+                  {/* Tipo de Costo: Directo vs Indirecto (Real Inteckno) */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Tipo de Costo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, costType: 'directo' })}
+                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                          itemForm.costType === 'directo'
+                            ? 'bg-sky-50 border-[#00668F] text-[#00668F]'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        Costos Directos (MO, Insumos)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, costType: 'indirecto' })}
+                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                          itemForm.costType === 'indirecto'
+                            ? 'bg-purple-50 border-purple-500 text-purple-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        Costos Indirectos (Pólizas, Grúas)
+                      </button>
+                    </div>
                   </div>
 
                   {/* Categoría Financiera */}
@@ -972,36 +1857,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     />
                   </div>
 
-                  {/* Tipo de Costo: Directo vs Indirecto (Real Inteckno) */}
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Tipo de Costo</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setItemForm({ ...itemForm, costType: 'directo' })}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          itemForm.costType === 'directo'
-                            ? 'bg-sky-50 border-[#00668F] text-[#00668F]'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Costos Directos (MO, Obra, Insumos)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setItemForm({ ...itemForm, costType: 'indirecto' })}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          itemForm.costType === 'indirecto'
-                            ? 'bg-purple-50 border-purple-500 text-purple-700'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Costos Indirectos (Pólizas, Peajes)
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Concepto / Actividad / Proveedor (Placeholder Dinámico) */}
+                  {/* Concepto / Actividad / Proveedor */}
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Concepto / Actividad / Proveedor</label>
                     <input
@@ -1029,7 +1885,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       <label className="block font-bold text-slate-700 mb-1">Recibo / Factura / DS</label>
                       <input
                         type="text"
-                        placeholder="ej. FE-3098 / DS-1035"
+                        placeholder="ej. FE-3098 / DS-1035 / WF-970838"
                         value={itemForm.invoiceNumber}
                         onChange={(e) => setItemForm({ ...itemForm, invoiceNumber: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
@@ -1037,7 +1893,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     </div>
                   </div>
 
-                  {/* Unidad y Cantidad (Unidades Dinámicas según Categoría) */}
+                  {/* Unidad y Cantidad */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Unidad</label>
@@ -1095,7 +1951,33 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     </div>
                   </div>
 
-                  {/* Prorrateo entre Proyectos: Solo visible o configurable si la categoría lo amerita */}
+                  {/* IVA y Retención si aplica */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">IVA (19% si aplica)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={itemForm.ivaAmount || ''}
+                        onChange={(e) => setItemForm({ ...itemForm, ivaAmount: Number(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Retención si aplica</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={itemForm.retentionAmount || ''}
+                        onChange={(e) => setItemForm({ ...itemForm, retentionAmount: Number(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Prorrateo entre Proyectos */}
                   {catMeta.showProrrateo ? (
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                       <div className="flex items-center justify-between">
@@ -1133,7 +2015,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     </div>
                   )}
 
-                  {/* Observaciones con Placeholder Contextual */}
+                  {/* Observaciones */}
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Observaciones / Notas de Obra</label>
                     <input
@@ -1181,12 +2063,33 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             const updated = costItems.filter((i) => i.id !== itemToDelete.id);
             setCostItems(updated);
             if (onUpdateProject) {
-              onUpdateProject({ costMatrix: updated } as any);
+              onUpdateProject({ ...project, costMatrix: updated } as any);
             }
             setItemToDelete(null);
           }
         }}
         onCancel={() => setItemToDelete(null)}
+      />
+
+      {/* Modal Confirmación de Eliminación de Factura */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(billingToDelete)}
+        title="¿Eliminar Registro de Factura?"
+        itemName={billingToDelete ? `Factura N° ${billingToDelete.invoiceNumber}` : ''}
+        description="Esta acción eliminará el registro de facturación asociado a este ITEM. ¿Deseas confirmar la eliminación?"
+        requireConfirmWord={false}
+        confirmText="Eliminar Factura"
+        onConfirm={() => {
+          if (billingToDelete) {
+            const updated = billingItems.filter((b) => b.id !== billingToDelete.id);
+            setBillingItems(updated);
+            if (onUpdateProject) {
+              onUpdateProject({ ...project, billingItems: updated } as any);
+            }
+            setBillingToDelete(null);
+          }
+        }}
+        onCancel={() => setBillingToDelete(null)}
       />
 
       {/* Modal Detalle Completo de Rubro */}
