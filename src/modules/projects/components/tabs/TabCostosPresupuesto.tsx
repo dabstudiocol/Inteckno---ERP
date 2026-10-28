@@ -18,6 +18,7 @@ import {
   Flame,
   Wrench,
   Clock,
+  Layers,
 } from 'lucide-react';
 import { Project } from '../../../../types';
 import { CostMatrixItem } from '../../../../types/ProjectSchema';
@@ -25,6 +26,12 @@ import { formatCOP, formatUSD } from '../../../../core/services/trmService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { DetailModal } from '../../../../components/common/DetailModal';
+
+export interface TabCostosPresupuestoProps {
+  project: Project;
+  currentTrm: number;
+  onUpdateProject?: (updatedProject: Project) => void;
+}
 
 export const INTECKNO_OFFICIAL_CATEGORIES: {
   key: CostMatrixItem['category'];
@@ -239,10 +246,46 @@ export function getCategoryMeta(cat: string) {
   };
 }
 
-interface TabCostosPresupuestoProps {
-  project: Project;
-  currentTrm: number;
-  onUpdateProject?: (updates: Partial<Project>) => void;
+// Catálogo de ITEMS Oficiales de Inteckno (Basado en Estructura de Control de Proyectos P23, P25, P26)
+export interface IntecknoItemDefinition {
+  code: string;
+  name: string;
+  categoryDefault?: CostMatrixItem['category'];
+  description?: string;
+}
+
+export const INTECKNO_PROJECT_ITEMS: IntecknoItemDefinition[] = [
+  { code: 'ITEM 01', name: 'Mantenimiento Electromecánico Estación Motriz / Retorno', categoryDefault: 'mano_obra_itk' },
+  { code: 'ITEM 02', name: 'Overhaul de Balancines, Rodillos y Ejes de Pilonas', categoryDefault: 'repuestos_fabricacion' },
+  { code: 'ITEM 03', name: 'Inspección Magneto-inductiva (MRT) de Cables Tractores / Portadores', categoryDefault: 'inspeccion_mrt' },
+  { code: 'ITEM 04', name: 'Ensayos No Destructivos (END / NDT) en Soldaduras y Perno-Pasadores', categoryDefault: 'ensayos_end' },
+  { code: 'ITEM 05', name: 'Alineación Láser y Análisis de Vibraciones en Reductor y Grupo Motriz', categoryDefault: 'analisis_vibraciones' },
+  { code: 'ITEM 06', name: 'Desarme, Inspección y Calibración de Mordazas de Cabinas', categoryDefault: 'mano_obra_itk' },
+  { code: 'ITEM 07', name: 'Tendido, Recorte y Empalme de Cable de Tracción', categoryDefault: 'mano_obra_itk' },
+  { code: 'ITEM 08', name: 'Cámara celular / Instalación red de aire / Almacén taller', categoryDefault: 'consumibles_taller' },
+  { code: 'ITEM 09', name: 'Suministro de Repuestos Críticos y Fabricación Metalmecánica', categoryDefault: 'repuestos_fabricacion' },
+  { code: 'ITEM 10', name: 'Maniobras Especializadas de Izaje y Grúas Telescópicas en Línea', categoryDefault: 'subcontratos_gruas' },
+  { code: 'ITEM 11', name: 'Mantenimiento de fijaciones mecánicas: retorqueo y ajuste de tornillería, espárragos y pernos en pilonas en cables aéreos', categoryDefault: 'mano_obra_itk' },
+  { code: 'ITEM 12', name: 'Termografía Infrarroja y Monitoreo de Redes Eléctricas', categoryDefault: 'termografia' },
+  { code: 'ITEM 13', name: 'Suministros de ferretería, soldadura y herramientas de precisión', categoryDefault: 'consumibles_taller' },
+  { code: 'ITEM 14', name: 'Seguridad y Salud en el Trabajo (SST), ARO y Permisos en Alturas', categoryDefault: 'mano_obra_itk' },
+  { code: 'ITEM 15', name: 'Transporte, Camionetas 4x4 y Logística de Cuadrilla', categoryDefault: 'viaticos_transporte' },
+  { code: 'ITEM 16', name: 'Pasajes Aéreos, Hotel y Viáticos de Comisión Técnica', categoryDefault: 'viaticos_transporte' },
+  { code: 'ITEM 17', name: 'Costos Globales Transversales / Administración de Proyecto', categoryDefault: 'imprevistos_contingencia' },
+  { code: 'ITEM 18', name: 'Placas, Señalización Técnica y Marcación de Componentes', categoryDefault: 'consumibles_taller' },
+  { code: 'ITEM 19', name: 'Pólizas Contractuales, RCE y Amparos de Cumplimiento', categoryDefault: 'imprevistos_contingencia' },
+  { code: 'ITEM 20', name: 'Liquidación de Obra, Informes Técnicos Finales y As-Built', categoryDefault: 'mano_obra_itk' },
+  { code: 'AD-25', name: 'Adicional / Otrosí / Modificación Contractual', categoryDefault: 'mano_obra_itk' },
+];
+
+export function getItemDisplayName(code?: string, name?: string) {
+  if (!code && !name) return 'Sin ITEM asignado';
+  if (code && name) return `${code} - ${name}`;
+  if (code) {
+    const found = INTECKNO_PROJECT_ITEMS.find((it) => it.code.toUpperCase() === code.toUpperCase());
+    return found ? `${found.code} - ${found.name}` : code;
+  }
+  return name || 'Sin ITEM';
 }
 
 export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
@@ -263,12 +306,15 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   }, [project]);
 
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('todos');
+  const [activeItemFilter, setActiveItemFilter] = useState<string>('todos');
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<CostMatrixItem | null>(null);
   const [selectedCostDetail, setSelectedCostDetail] = useState<CostMatrixItem | null>(null);
 
-  // Formulario de nuevo rubro financiero (Alineado a BD Control de Proyectos Inteckno P23, P25, P26)
+  // Formulario de nuevo rubro financiero (Alineado a ITEMS y Rubros de Control de Proyectos Inteckno P23, P25, P26)
   const [itemForm, setItemForm] = useState<{
+    itemCode: string;
+    itemName: string;
     category: CostMatrixItem['category'];
     costType: 'directo' | 'indirecto';
     concept: string;
@@ -286,6 +332,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     splitPercentage: number;
     splitWithProjectCode: string;
   }>({
+    itemCode: 'ITEM 11',
+    itemName: 'Mantenimiento de fijaciones mecánicas: retorqueo y ajuste de tornillería, espárragos y pernos en pilonas en cables aéreos',
     category: 'mano_obra_itk',
     costType: 'directo',
     concept: '',
@@ -317,6 +365,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
     const newItem: CostMatrixItem = {
       id: `COST-${Date.now()}`,
+      itemCode: itemForm.itemCode,
+      itemName: itemForm.itemName,
       category: itemForm.category,
       costType: itemForm.costType,
       concept: itemForm.concept,
@@ -346,6 +396,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     } as any);
 
     setItemForm({
+      itemCode: 'ITEM 11',
+      itemName: 'Mantenimiento de fijaciones mecánicas: retorqueo y ajuste de tornillería, espárragos y pernos en pilonas en cables aéreos',
       category: 'mano_obra_itk',
       costType: 'directo',
       concept: '',
@@ -407,17 +459,22 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     actual: getCategoryStats('viaticos_transporte').actual + getCategoryStats('subcontratos_gruas').actual,
   };
 
-  const filteredItems = activeCategoryFilter === 'todos'
-    ? costItems
-    : costItems.filter((i) => {
-        if (i.category === activeCategoryFilter) return true;
-        if (activeCategoryFilter === 'mano_obra_itk' && (i.category === 'mano_obra' || i.category === 'mano_obra_externa')) return true;
-        if (activeCategoryFilter === 'repuestos_fabricacion' && i.category === 'repuestos_materiales') return true;
-        if (activeCategoryFilter === 'subcontratos_gruas' && i.category === 'subcontratos') return true;
-        if (activeCategoryFilter === 'viaticos_transporte' && i.category === 'viaticos') return true;
-        if (activeCategoryFilter === 'end_mrt' && ['inspeccion_mrt', 'ensayos_end', 'analisis_vibraciones', 'termografia'].includes(i.category)) return true;
-        return false;
-      });
+  const filteredItems = costItems.filter((i) => {
+    // Filtro por ITEM
+    if (activeItemFilter !== 'todos') {
+      const targetItem = (i.itemCode || 'ITEM 11').toUpperCase();
+      if (targetItem !== activeItemFilter.toUpperCase()) return false;
+    }
+    // Filtro por Categoría
+    if (activeCategoryFilter === 'todos') return true;
+    if (i.category === activeCategoryFilter) return true;
+    if (activeCategoryFilter === 'mano_obra_itk' && (i.category === 'mano_obra' || i.category === 'mano_obra_externa')) return true;
+    if (activeCategoryFilter === 'repuestos_fabricacion' && i.category === 'repuestos_materiales') return true;
+    if (activeCategoryFilter === 'subcontratos_gruas' && i.category === 'subcontratos') return true;
+    if (activeCategoryFilter === 'viaticos_transporte' && i.category === 'viaticos') return true;
+    if (activeCategoryFilter === 'end_mrt' && ['inspeccion_mrt', 'ensayos_end', 'analisis_vibraciones', 'termografia'].includes(i.category)) return true;
+    return false;
+  });
 
   // Cálculos financieros contractuales basados en la realidad de Inteckno S.A.S.
   const rawContractAmount = project.contractAmount || project.budgetPV || 0;
@@ -604,36 +661,90 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
       {/* 2. TABLA DE LA MATRIZ FINANCIERA */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-          <div>
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-              Matriz Financiera de Presupuesto ({filteredItems.length} Rubros)
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              Total Plan: <span className="font-bold text-slate-700">{formatCOP(totalPlanned)}</span> • Real Incurrido: <span className="font-bold text-slate-700">{formatCOP(totalActual)}</span>
-            </p>
+        {/* Cabecera y Selector de ITEMS Inteckno */}
+        <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                <span>Matriz Financiera de Presupuesto</span>
+                <span className="px-2 py-0.5 rounded-full bg-sky-100 text-[#00668F] text-[11px] font-extrabold font-mono">
+                  {filteredItems.length} Rubros
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Total Plan: <span className="font-bold text-slate-700">{formatCOP(totalPlanned)}</span> • Real Incurrido: <span className="font-bold text-slate-700">{formatCOP(totalActual)}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAddItemModalOpen(true)}
+                className="px-3.5 py-1.5 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Agregar Rubro</span>
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsAddItemModalOpen(true)}
-            className="px-3.5 py-1.5 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus size={14} />
-            <span>Agregar Rubro</span>
-          </button>
+
+          {/* Filtro por ITEM Contractual / Operativo */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-slate-200/60">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
+              <Layers size={13} className="text-[#00668F]" />
+              Filtrar por ITEM:
+            </span>
+            <div className="flex-1 max-w-xl">
+              <CreatableSelect
+                options={[
+                  { id: 'todos', name: 'Todos los ITEMS del Proyecto' },
+                  ...INTECKNO_PROJECT_ITEMS.map((it) => ({
+                    id: it.code,
+                    name: `${it.code} - ${it.name}`,
+                  })),
+                ]}
+                value={
+                  activeItemFilter === 'todos'
+                    ? 'Todos los ITEMS del Proyecto'
+                    : getItemDisplayName(activeItemFilter)
+                }
+                onChange={(val) => {
+                  if (!val || val === 'Todos los ITEMS del Proyecto' || val === 'todos') {
+                    setActiveItemFilter('todos');
+                  } else {
+                    const match = INTECKNO_PROJECT_ITEMS.find(
+                      (it) => it.code.toLowerCase() === val.toLowerCase() || `${it.code} - ${it.name}`.toLowerCase() === val.toLowerCase()
+                    );
+                    setActiveItemFilter(match ? match.code : val);
+                  }
+                }}
+                placeholder="Seleccionar o buscar ITEM contractual..."
+                isClearable={true}
+              />
+            </div>
+            {activeItemFilter !== 'todos' && (
+              <button
+                type="button"
+                onClick={() => setActiveItemFilter('todos')}
+                className="px-2.5 py-1 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer shrink-0 self-center"
+              >
+                Quitar filtro ({activeItemFilter})
+              </button>
+            )}
+          </div>
         </div>
 
         {filteredItems.length === 0 ? (
           <div className="p-12 text-center text-slate-400 space-y-2">
             <FileSpreadsheet size={32} className="mx-auto opacity-30" />
-            <p className="text-xs font-bold text-slate-600">No hay rubros de costos en esta categoría</p>
-            <p className="text-[11px]">Agrega conceptos de mano de obra, materiales, subcontratos o viáticos para el control presupuestal.</p>
+            <p className="text-xs font-bold text-slate-600">No hay rubros de costos en este filtro</p>
+            <p className="text-[11px]">Agrega conceptos asociados a los ITEMS del proyecto para el control presupuestal.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-2.5 px-3">ITEM</th>
                   <th className="py-2.5 px-3">Tipo</th>
                   <th className="py-2.5 px-3">Fecha / Soporte</th>
                   <th className="py-2.5 px-4">Categoría</th>
@@ -654,6 +765,11 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     onClick={() => setSelectedCostDetail(item)}
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                   >
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded bg-sky-50 text-[#00668F] border border-sky-200 font-mono font-bold text-[10px]">
+                        {item.itemCode || 'ITEM 11'}
+                      </span>
+                    </td>
                     <td className="py-2.5 px-3">
                       <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
                         item.costType === 'indirecto'
@@ -794,6 +910,44 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         Reproceso / Calidad
                       </button>
                     </div>
+                  </div>
+
+                  {/* ITEM Contractual / Operativo */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">ITEM Contractual / Operativo</label>
+                    <CreatableSelect
+                      options={INTECKNO_PROJECT_ITEMS.map((it) => ({
+                        id: it.code,
+                        name: `${it.code} - ${it.name}`,
+                      }))}
+                      value={getItemDisplayName(itemForm.itemCode, itemForm.itemName)}
+                      onChange={(val) => {
+                        const matched = INTECKNO_PROJECT_ITEMS.find(
+                          (it) => it.code.toLowerCase() === val.toLowerCase() || `${it.code} - ${it.name}`.toLowerCase() === val.toLowerCase()
+                        );
+                        if (matched) {
+                          const suggestedCategory = matched.categoryDefault || itemForm.category;
+                          const meta = getCategoryMeta(suggestedCategory);
+                          setItemForm({
+                            ...itemForm,
+                            itemCode: matched.code,
+                            itemName: matched.name,
+                            category: suggestedCategory,
+                            unit: meta.defaultUnit,
+                            costType: meta.defaultCostType,
+                          });
+                        } else {
+                          setItemForm({
+                            ...itemForm,
+                            itemCode: val,
+                            itemName: val,
+                          });
+                        }
+                      }}
+                      placeholder="Seleccionar o escribir ITEM (ej. ITEM 11)..."
+                      isClearable={true}
+                      allowCustomText={true}
+                    />
                   </div>
 
                   {/* Categoría Financiera */}
@@ -1046,6 +1200,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         } : undefined}
         onClose={() => setSelectedCostDetail(null)}
         fields={selectedCostDetail ? [
+          { label: 'ITEM Contractual / Operativo', value: getItemDisplayName(selectedCostDetail.itemCode, selectedCostDetail.itemName), colSpan: 2 },
           { label: 'Concepto / Actividad / Proveedor', value: selectedCostDetail.concept, colSpan: 2 },
           { label: 'Tipo de Costo', value: selectedCostDetail.costType === 'indirecto' ? 'Costos Indirectos (Pólizas, Peajes)' : 'Costos Directos (MO, Obra, Insumos)' },
           { label: 'Categoría Financiera', value: selectedCostDetail.category.replace('_', ' ').toUpperCase() },

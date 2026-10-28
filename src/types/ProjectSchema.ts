@@ -307,6 +307,9 @@ export interface ProjectChangeOrder {
 
 export interface CostMatrixItem {
   id: string;
+  // ITEM contractual u operativo al que pertenece el rubro (ej. "ITEM 11", "ITEM 08", "AD-25")
+  itemCode?: string;
+  itemName?: string; // Nombre descriptivo del ITEM (ej. "Mantenimiento de fijaciones mecánicas")
   category: 
     | 'mano_obra' 
     | 'repuestos_materiales' 
@@ -323,7 +326,7 @@ export interface CostMatrixItem {
     | 'repuestos_fabricacion'
     | 'subcontratos_gruas'
     | 'imprevistos_contingencia';
-  concept: string;
+  concept: string; // Rubro / concepto / proveedor específico
   unit: string;
   plannedQuantity: number;
   plannedUnitCost: number;
