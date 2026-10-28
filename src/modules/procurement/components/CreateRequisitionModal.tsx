@@ -41,6 +41,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   const [reqType, setReqType] = useState<'project' | 'general'>('project');
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
   const [department, setDepartment] = useState<string>('Administración & Gerencia');
+  const [spendingNature, setSpendingNature] = useState<'PRESUPUESTO' | 'REPROCESO'>('PRESUPUESTO');
   const [requisitionType, setRequisitionType] = useState<string>('');
   const [priority, setPriority] = useState<string>('');
   const [neededDate, setNeededDate] = useState<string>(
@@ -150,6 +151,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
         unit: it.unit || 'unid',
         inStock,
         availableStock: matchProd?.availableStock || 0,
+        spendingNature,
       };
     });
 
@@ -167,8 +169,9 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
       neededDate,
       priority: effectivePriority,
       requisitionType: effectiveReqType,
+      spendingNature,
       items: formattedItems,
-      notes: justification || (isProj ? `Materiales [${effectiveReqType}] para ${selectedProject?.name}` : `Insumos [${effectiveReqType}] para ${department}`),
+      notes: justification || (isProj ? `Materiales [${effectiveReqType}] (${spendingNature}) para ${selectedProject?.name}` : `Insumos [${effectiveReqType}] (${spendingNature}) para ${department}`),
     });
 
     onClose();
@@ -361,6 +364,39 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                     onChange={(e) => setNeededDate(e.target.value)}
                     className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
                   />
+                </div>
+              </div>
+
+              {/* Naturaleza del Gasto (BD COMPRAS Inteckno) */}
+              <div className="pt-1 border-t border-slate-200/80">
+                <label className="font-bold text-slate-700 block mb-1 text-xs">
+                  Naturaleza del Gasto (Matriz BD COMPRAS Oficial):
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSpendingNature('PRESUPUESTO')}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      spendingNature === 'PRESUPUESTO'
+                        ? 'bg-[#003650] text-white border-[#003650] shadow-2xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>📘</span>
+                    <span>PRESUPUESTO (Partida de Obra)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSpendingNature('REPROCESO')}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      spendingNature === 'REPROCESO'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                        : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+                    }`}
+                  >
+                    <span>⚠️</span>
+                    <span>REPROCESO (Garantía / Retrabajo)</span>
+                  </button>
                 </div>
               </div>
             </div>

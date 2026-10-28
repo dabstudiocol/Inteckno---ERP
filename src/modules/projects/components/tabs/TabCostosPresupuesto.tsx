@@ -74,6 +74,13 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     return (project as any).costMatrix || [];
   });
 
+  // Mantener sincronizada la matriz si el proyecto cambia o se actualiza
+  React.useEffect(() => {
+    if ((project as any)?.costMatrix) {
+      setCostItems((project as any).costMatrix);
+    }
+  }, [project]);
+
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('todos');
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<CostMatrixItem | null>(null);
@@ -88,6 +95,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     plannedUnitCost: number;
     actualQuantity: number;
     actualUnitCost: number;
+    spendingNature: 'PRESUPUESTO' | 'REPROCESO';
   }>({
     category: 'mano_obra_itk',
     concept: '',
@@ -96,6 +104,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     plannedUnitCost: 65000,
     actualQuantity: 0,
     actualUnitCost: 65000,
+    spendingNature: 'PRESUPUESTO',
   });
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -118,6 +127,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       actualUnitCost: itemForm.actualUnitCost,
       actualTotal,
       variance,
+      spendingNature: itemForm.spendingNature,
     };
 
     const updated = [newItem, ...costItems];
@@ -135,6 +145,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       plannedUnitCost: 65000,
       actualQuantity: 0,
       actualUnitCost: 65000,
+      spendingNature: 'PRESUPUESTO',
     });
     setIsAddItemModalOpen(false);
   };
@@ -435,7 +446,20 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         );
                       })()}
                     </td>
-                    <td className="py-2.5 px-4 font-bold text-slate-800 group-hover:text-[#00668F] transition-colors">{item.concept}</td>
+                    <td className="py-2.5 px-4 font-bold text-slate-800 group-hover:text-[#00668F] transition-colors">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{item.concept}</span>
+                        {item.spendingNature === 'REPROCESO' ? (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300" title="Reproceso / Calidad (Garantía)">
+                            REPROCESO
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200" title="Partida de Presupuesto Inicial">
+                            PRESUPUESTO
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-2.5 px-4 text-center text-slate-500 font-mono text-[11px]">{item.unit}</td>
                     <td className="py-2.5 px-4 text-right font-mono">{item.plannedQuantity}</td>
                     <td className="py-2.5 px-4 text-right font-mono">{formatCOP(item.plannedUnitCost)}</td>
@@ -486,6 +510,33 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               </button>
             </div>
             <form onSubmit={handleAddItem} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Naturaleza del Gasto</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setItemForm({ ...itemForm, spendingNature: 'PRESUPUESTO' })}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                      itemForm.spendingNature === 'PRESUPUESTO'
+                        ? 'bg-[#00668F]/10 border-[#00668F] text-[#00668F]'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Presupuesto (Obra)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setItemForm({ ...itemForm, spendingNature: 'REPROCESO' })}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                      itemForm.spendingNature === 'REPROCESO'
+                        ? 'bg-rose-50 border-rose-400 text-rose-700'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Reproceso / Calidad
+                  </button>
+                </div>
+              </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Categoría</label>
                 <select

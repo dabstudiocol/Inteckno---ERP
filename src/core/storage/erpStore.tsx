@@ -81,6 +81,7 @@ import {
 } from '../services/firestoreSyncService';
 import { recordAuditEvent } from '../services/auditService';
 import { undoRedoService, UserUndoAction, SupportedCollection } from '../services/undoRedoService';
+import { templateManagerService } from '../services/templateManagerService';
 
 const STORAGE_KEY = 'ITK_ERP_STATE_V2';
 const SESSION_KEY = 'ITK_ERP_SESSION_V2';
@@ -1576,7 +1577,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supervisorName: customData?.supervisorName || 'Dairo Morales Villa',
         assignedTeamIds: customData?.assignedTeamIds || ['USR-18', 'USR-05', 'USR-16'],
         templateReused: true,
-        templateName: 'Plantilla Maestra STC - Mantenimiento Mayor y Desmontaje',
+        templateName: customData?.templateName || 'Familia 3: Mantenimiento Mayor y Desmontaje PLEM',
         closedDossierSigned: false,
         liquidationSigned: false,
         lessonLearnedDone: false,
@@ -1589,76 +1590,116 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         billingMethod: customData?.billingMethod || 'fixed_price',
         paymentMilestones: customData?.paymentMilestones,
         applicableRates: customData?.applicableRates,
+        quoteCode: (customData as any)?.quoteCode || opp.quotations?.[0]?.code || `COT-${opp.code}-01`,
+        contractCode: (customData as any)?.contractCode || `TL-OF-${new Date().getFullYear()}-${projectCode.slice(-3)}`,
+        costMatrix: (customData as any)?.costMatrix || (
+          opp.quotations?.[0]?.items?.map((it, idx) => ({
+            id: `COST-${Date.now()}-${idx}`,
+            category: it.category === 'Ensayos NDT/MRT' ? 'inspeccion_mrt' :
+                      it.category === 'Repuestos OEM' ? 'repuestos_fabricacion' :
+                      it.category === 'Viáticos & Logística' ? 'viaticos_transporte' : 'mano_obra_itk',
+            concept: it.description,
+            unit: 'Unidad',
+            plannedQuantity: it.qty,
+            plannedUnitCost: it.unitPrice,
+            plannedTotal: it.qty * it.unitPrice,
+            actualQuantity: 0,
+            actualUnitCost: it.unitPrice,
+            actualTotal: 0,
+            variance: it.qty * it.unitPrice,
+          })) || []
+        ),
       };
 
-      // Inyectar Estructura WBS Estándar Inteckno
-      const standardTasks: WBSTask[] = [
-        {
-          id: `TASK-${Date.now()}-1`,
-          projectId,
-          code: '1.0',
-          name: 'Gestión HSEQ, Permisos de Alturas y Plan de Izaje',
-          plannedHours: 40,
-          actualHours: 0,
-          progressPct: 0,
-          isCriticalPath: true,
-          predecessors: [],
-          status: 'pending',
-          assignedToName: 'Kelly Rojas',
-        },
-        {
-          id: `TASK-${Date.now()}-2`,
-          projectId,
-          code: '2.0',
-          name: 'Logística de Equipos Calibrados y Recepción de Repuestos',
-          plannedHours: 32,
-          actualHours: 0,
-          progressPct: 0,
-          isCriticalPath: true,
-          predecessors: ['1.0'],
-          status: 'pending',
-          assignedToName: 'Sebastián Vélez',
-        },
-        {
-          id: `TASK-${Date.now()}-3`,
-          projectId,
-          code: '3.0',
-          name: 'Intervención Electromecánica en Estaciones / Pilonas',
-          plannedHours: 120,
-          actualHours: 0,
-          progressPct: 0,
-          isCriticalPath: true,
-          predecessors: ['2.0'],
-          status: 'pending',
-          assignedToName: 'Dairo Morales',
-        },
-        {
-          id: `TASK-${Date.now()}-4`,
-          projectId,
-          code: '4.0',
-          name: 'Ensayos No Destructivos (NDT Magnetografía) y Pruebas de Carga',
-          plannedHours: 48,
-          actualHours: 0,
-          progressPct: 0,
-          isCriticalPath: true,
-          predecessors: ['3.0'],
-          status: 'pending',
-          assignedToName: 'Sebastián Ruiz',
-        },
-        {
-          id: `TASK-${Date.now()}-5`,
-          projectId,
-          code: '5.0',
-          name: 'Elaboración de Dossier de Calidad, Acta de Entrega y Cierre',
-          plannedHours: 24,
-          actualHours: 0,
-          progressPct: 0,
-          isCriticalPath: false,
-          predecessors: ['4.0'],
-          status: 'pending',
-          assignedToName: 'Wilson Alzate',
-        },
-      ];
+      // Inyectar Estructura WBS de la Plantilla Maestra Inteckno Seleccionada
+      const allTemplates = templateManagerService.getWbsTemplates();
+      const targetFamilyName = customData?.templateName || newProject.templateName || '';
+      const matchedTpl = allTemplates.find((t) =>
+        t.title.toLowerCase().includes(targetFamilyName.toLowerCase()) ||
+        targetFamilyName.toLowerCase().includes(t.title.toLowerCase())
+      ) || allTemplates[1] || allTemplates[0];
+
+      const standardTasks: WBSTask[] = (matchedTpl?.tasks && matchedTpl.tasks.length > 0)
+        ? matchedTpl.tasks.map((t, idx) => ({
+            id: `TASK-${Date.now()}-${idx + 1}`,
+            projectId,
+            code: t.code,
+            name: t.name,
+            plannedHours: t.plannedHours || 40,
+            actualHours: 0,
+            progressPct: 0,
+            isCriticalPath: t.isCriticalPath ?? true,
+            predecessors: t.predecessors || [],
+            status: 'pending',
+            assignedToName: t.assignedRole || 'Wilson Alzate',
+          }))
+        : [
+            {
+              id: `TASK-${Date.now()}-1`,
+              projectId,
+              code: '1.0',
+              name: 'Gestión HSEQ, Permisos de Alturas y Plan de Izaje',
+              plannedHours: 40,
+              actualHours: 0,
+              progressPct: 0,
+              isCriticalPath: true,
+              predecessors: [],
+              status: 'pending',
+              assignedToName: 'Kelly Rojas',
+            },
+            {
+              id: `TASK-${Date.now()}-2`,
+              projectId,
+              code: '2.0',
+              name: 'Logística de Equipos Calibrados y Recepción de Repuestos',
+              plannedHours: 32,
+              actualHours: 0,
+              progressPct: 0,
+              isCriticalPath: true,
+              predecessors: ['1.0'],
+              status: 'pending',
+              assignedToName: 'Sebastián Vélez',
+            },
+            {
+              id: `TASK-${Date.now()}-3`,
+              projectId,
+              code: '3.0',
+              name: 'Intervención Electromecánica en Estaciones / Pilonas',
+              plannedHours: 120,
+              actualHours: 0,
+              progressPct: 0,
+              isCriticalPath: true,
+              predecessors: ['2.0'],
+              status: 'pending',
+              assignedToName: 'Dairo Morales',
+            },
+            {
+              id: `TASK-${Date.now()}-4`,
+              projectId,
+              code: '4.0',
+              name: 'Ensayos No Destructivos (NDT Magnetografía) y Pruebas de Carga',
+              plannedHours: 48,
+              actualHours: 0,
+              progressPct: 0,
+              isCriticalPath: true,
+              predecessors: ['3.0'],
+              status: 'pending',
+              assignedToName: 'Sebastián Ruiz',
+            },
+            {
+              id: `TASK-${Date.now()}-5`,
+              projectId,
+              code: '5.0',
+              name: 'Elaboración de Dossier de Calidad, Acta de Entrega y Cierre',
+              plannedHours: 24,
+              actualHours: 0,
+              progressPct: 0,
+              isCriticalPath: false,
+              predecessors: ['4.0'],
+              status: 'pending',
+              assignedToName: 'Wilson Alzate',
+            },
+          ];
 
       setState((prev) => ({
         ...prev,

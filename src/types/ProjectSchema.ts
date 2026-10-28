@@ -332,6 +332,7 @@ export interface CostMatrixItem {
   actualUnitCost: number;
   actualTotal: number;
   variance: number;
+  spendingNature?: 'PRESUPUESTO' | 'REPROCESO';
 }
 
 // ---------------------------------------------------------------------------

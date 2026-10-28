@@ -87,18 +87,43 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
 
   // 3. Moneda y Monto dinámico con TRM
   const initialCurrency: 'USD' | 'COP' =
-    (opportunity as any).currency === 'COP' || (opportunity as any).moneda === 'COP' ? 'COP' : 'USD';
+    opportunity.currency === 'USD' ? 'USD' : 'COP';
 
   const [currency, setCurrency] = useState<'USD' | 'COP'>(initialCurrency);
   
-  // Guardamos el valor original de la oportunidad (en USD) para conversiones precisas
+  // Guardamos el valor original de la oportunidad para conversiones precisas
   const baseValueUSD = opportunity.estimatedValueUSD || 10000;
   
   const [contractAmount, setContractAmount] = useState<number>(() => {
+    if (opportunity.estimatedValue && opportunity.estimatedValue > 0) {
+      if (initialCurrency === 'COP') {
+        return opportunity.currency === 'COP' ? opportunity.estimatedValue : Math.round(opportunity.estimatedValue * currentTrm);
+      } else {
+        return opportunity.currency === 'USD' ? opportunity.estimatedValue : Math.round(opportunity.estimatedValue / (currentTrm || 4150));
+      }
+    }
     if (initialCurrency === 'COP') {
       return Math.round(baseValueUSD * currentTrm);
     }
     return baseValueUSD;
+  });
+
+  // 4. Plantilla de Proyecto WBS Inicial (Familias Inteckno)
+  const [selectedTemplateFamily, setSelectedTemplateFamily] = useState<string>(() => {
+    const text = (opportunity.title + ' ' + (opportunity.cableType || '')).toLowerCase();
+    if (text.includes('mrt') || text.includes('inspecc') || text.includes('end') || text.includes('ensayo')) {
+      return 'Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)';
+    }
+    if (text.includes('empalme') || text.includes('montaje') || text.includes('recorte')) {
+      return 'Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)';
+    }
+    if (text.includes('repuesto') || text.includes('suministro') || text.includes('patin') || text.includes('resorte')) {
+      return 'Familia 4: Suministro de Repuestos y Componentes OEM';
+    }
+    if (text.includes('consultor') || text.includes('interventor') || text.includes('asistencia')) {
+      return 'Familia 5: Consultoría, Interventoría y Asistencia Técnica';
+    }
+    return 'Familia 3: Mantenimiento Mayor y Desmontaje PLEM';
   });
 
   // Cambio dinámico de moneda: recalcula el monto según la TRM
@@ -132,11 +157,31 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
     const chosenLeader = erpUsers.find((u) => u.id === selectedLeaderId);
     const cleanCode = projectCode.trim().toUpperCase() || `PRJ-${Date.now()}`;
 
+    // Transferir partidas de la cotización activa si existen
+    const activeQuote = opportunity.quotations?.[0];
+    const initialCostMatrix = (activeQuote?.items || []).map((it, idx) => ({
+      id: `COST-${Date.now()}-${idx}`,
+      category: it.category === 'Ensayos NDT/MRT' ? 'inspeccion_mrt' :
+                it.category === 'Repuestos OEM' ? 'repuestos_fabricacion' :
+                it.category === 'Viáticos & Logística' ? 'viaticos_transporte' : 'mano_obra_itk',
+      concept: it.description,
+      unit: 'Unidad',
+      plannedQuantity: it.qty,
+      plannedUnitCost: it.unitPrice,
+      plannedTotal: it.qty * it.unitPrice,
+      actualQuantity: 0,
+      actualUnitCost: it.unitPrice,
+      actualTotal: 0,
+      variance: it.qty * it.unitPrice,
+    }));
+
     const projectPayload: Partial<Project> = {
       code: cleanCode,
       name: projectName,
       clientName: clientName,
       clientNit: clientNit,
+      quoteCode: activeQuote?.code || `COT-${opportunity.code}-01`,
+      contractCode: `TL-OF-${new Date().getFullYear()}-${cleanCode.slice(-3)}`,
       commercialContact: {
         name: clientContact,
         email: opportunity.clientEmail || '',
@@ -152,6 +197,8 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
       costCenter: `CC-${cleanCode}`,
       location: `${opportunity.country || 'Colombia'}`,
       serviceType: opportunity.cableType,
+      templateName: selectedTemplateFamily,
+      costMatrix: initialCostMatrix as any,
     };
 
     onConfirmAward(opportunity.id, projectPayload);
@@ -380,6 +427,42 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
                     : `Equiv: ${formatUSD(contractAmount / (currentTrm || 4000))}`}
                 </div>
               </div>
+            </div>
+
+            {/* Plantilla WBS & Estructura Operativa (Las 5 Familias Inteckno) */}
+            <div className="p-3.5 bg-sky-50/70 rounded-xl border border-sky-200/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block font-bold text-slate-800 text-xs">
+                  Plantilla de Fases & Cronograma WBS (Familia Inteckno)
+                </label>
+                <span className="text-[10px] font-bold text-[#00668F] bg-sky-100 px-2 py-0.5 rounded-full">
+                  Auto-estructurado
+                </span>
+              </div>
+              <select
+                value={selectedTemplateFamily}
+                onChange={(e) => setSelectedTemplateFamily(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-sky-300 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#00668F]"
+              >
+                <option value="Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)">
+                  Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)
+                </option>
+                <option value="Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)">
+                  Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)
+                </option>
+                <option value="Familia 3: Mantenimiento Mayor y Desmontaje PLEM">
+                  Familia 3: Mantenimiento Mayor y Desmontaje PLEM
+                </option>
+                <option value="Familia 4: Suministro de Repuestos y Componentes OEM">
+                  Familia 4: Suministro de Repuestos y Componentes OEM
+                </option>
+                <option value="Familia 5: Consultoría, Interventoría y Asistencia Técnica">
+                  Familia 5: Consultoría, Interventoría y Asistencia Técnica
+                </option>
+              </select>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                El proyecto se creará automáticamente con sus fases, tareas críticas, cálculo CPM y matriz de costos inicial transferida desde la oferta comercial.
+              </p>
             </div>
 
             {/* Pie del Formulario */}

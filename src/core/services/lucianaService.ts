@@ -3652,7 +3652,16 @@ export function calculateDealScore(
   // Factor 3: Rango de Valor Comercial vs Benchmark
   const ruleBudget = getRule('rule-optimal-budget');
   if (ruleBudget && ruleBudget.enabled) {
-    const valUSD = opp.estimatedValueUSD || 0;
+    // Normalizar a USD considerando si el valor fue ingresado en COP
+    let rawVal = opp.estimatedValue || opp.estimatedValueUSD || 0;
+    let valUSD = rawVal;
+    if (opp.currency === 'COP' || rawVal > 1000000) {
+      // Si fue ingresado en pesos colombianos, convertir a USD (~4150 COP)
+      valUSD = rawVal / 4150;
+    } else if (opp.currency === 'EUR') {
+      valUSD = rawVal * 1.08;
+    }
+
     if (valUSD >= 30000 && valUSD <= 400000) {
       score += ruleBudget.weight;
       factors.push({

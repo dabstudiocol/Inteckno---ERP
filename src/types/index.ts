@@ -10,6 +10,7 @@ import {
   ChemicalLotFEFO,
   EquipmentCheckEvent,
 } from './InventorySchema';
+import { CostMatrixItem } from './ProjectSchema';
 
 export type {
   PhysicalCableSegment,
@@ -17,6 +18,7 @@ export type {
   UnitConversionRule,
   ChemicalLotFEFO,
   EquipmentCheckEvent,
+  CostMatrixItem,
 };
 
 export type UserRole =
@@ -384,6 +386,7 @@ export interface Project {
   categoryId?: string;
   serviceId?: string;
   dynamicData?: Record<string, any>;
+  costMatrix?: CostMatrixItem[];
 }
 
 export type DependencyType = 'FC' | 'CC' | 'FF' | 'CF';
@@ -701,6 +704,7 @@ export interface PurchaseOrderItem {
   priceInflationPercent?: number; // > 10% activa warning visual
   priceInflationWarning?: boolean;
   rejectedAlternatives?: string[]; // IDs o SKUs descartados por ingeniería
+  spendingNature?: 'PRESUPUESTO' | 'REPROCESO';
 }
 
 export type PurchaseOrderStatus =
@@ -728,6 +732,7 @@ export interface PurchaseOrder {
   totalAmountCOP: number;
   status: PurchaseOrderStatus;
   originRequisitionId?: string;
+  spendingNature?: 'PRESUPUESTO' | 'REPROCESO';
   gmApproved: boolean;
   gmApprovedBy?: string;
   gmApprovedAt?: string;
@@ -810,6 +815,7 @@ export interface InternalRequisitionItem {
   homologatedWithName?: string;
   homologationNotes?: string;
   rejectedAlternatives?: string[]; // SKUs rechazados por el ingeniero para este ítem
+  spendingNature?: 'PRESUPUESTO' | 'REPROCESO';
 }
 
 // --------------------------------------------------------------------------
@@ -890,6 +896,7 @@ export interface InternalRequisition {
   neededDate: string; // Fecha estimada que lo necesitan
   priority: 'normal' | 'urgente' | string;
   requisitionType?: string; // Clasificación configurada en el módulo
+  spendingNature?: 'PRESUPUESTO' | 'REPROCESO';
   status: RequisitionStatus;
   targetApproverId?: string; // ID del aprobador asignado (Wilson, Clemencia, Gustavo, etc.)
   targetApproverName?: string; // Nombre del aprobador
@@ -1063,6 +1070,8 @@ export interface Opportunity {
   cableType: string;
   country: string;
   estimatedValueUSD: number;
+  currency?: 'COP' | 'USD' | 'EUR';
+  estimatedValue?: number;
   probabilityPct?: number;
   stage: OpportunityStage;
   expectedCloseDate: string;

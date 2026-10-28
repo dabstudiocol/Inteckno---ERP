@@ -47,6 +47,7 @@ import {
   HelpCircle,
   Info,
   MessageSquare,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import {
@@ -81,6 +82,36 @@ import {
   fetchLiveTRM,
   analyzeCustomsAndLogisticsWithLuciana,
 } from '../../core/services/geminiChatService';
+
+export function getOppFinancialBreakdown(opp: Opportunity, currentTrm: number) {
+  const trm = currentTrm > 0 ? currentTrm : 4150;
+  const rawCurr = opp.currency;
+  const isCop = rawCurr === 'COP' || (!rawCurr && (opp.estimatedValueUSD > 2000000 || (opp.estimatedValue && opp.estimatedValue > 2000000)));
+
+  if (isCop) {
+    const copVal = opp.estimatedValue || opp.estimatedValueUSD || 0;
+    const usdVal = Math.round(copVal / trm);
+    return {
+      primary: formatCOP(copVal),
+      secondary: formatUSD(usdVal),
+      copVal,
+      usdVal,
+      currency: 'COP',
+      isCop: true,
+    };
+  } else {
+    const usdVal = opp.estimatedValueUSD || opp.estimatedValue || 0;
+    const copVal = convertUSDToCOP(usdVal, trm);
+    return {
+      primary: formatCOP(copVal),
+      secondary: formatUSD(usdVal),
+      copVal,
+      usdVal,
+      currency: rawCurr || 'USD',
+      isCop: false,
+    };
+  }
+}
 
 function printQuotationPdf(opp: Opportunity, quote: OpportunityQuotation) {
   const printWindow = window.open('', '_blank');
@@ -464,10 +495,18 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     }
 
     let quotations = opp.quotations;
+    const isCo = (opp.country || '').toLowerCase().includes('colombia');
+    const quoteCurrency: 'COP' | 'USD' | 'EUR' = opp.currency || (isCo ? 'COP' : 'USD');
+    const trm = currentTrm > 0 ? currentTrm : 4150;
+
     if (!quotations || quotations.length === 0) {
-      const isCo = (opp.country || '').toLowerCase().includes('colombia');
       const opType = isCo ? 'nacional' : 'exportacion';
-      const subtotal = (opp.estimatedValueUSD || 45000) + 5000;
+      const isQuoteCop = quoteCurrency === 'COP';
+      const fin = getOppFinancialBreakdown(opp, trm);
+      
+      const item1Price = isQuoteCop ? Math.round(fin.copVal * 0.8) : (opp.estimatedValueUSD || 45000);
+      const item2Price = isQuoteCop ? Math.round(fin.copVal * 0.2) : 5000;
+      const subtotal = item1Price + item2Price;
       const taxRate = isCo ? 0.19 : 0;
       const taxAmount = subtotal * taxRate;
       const total = subtotal + taxAmount;
@@ -487,16 +526,16 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
               category: 'Servicio STC',
               description: `Servicio integral de mantenimiento e inspección técnica especializada para ${opp.cableType || 'sistema de teleférico'}`,
               qty: 1,
-              unitPrice: opp.estimatedValueUSD || 45000,
-              currency: isCo ? 'COP' : 'USD',
+              unitPrice: item1Price,
+              currency: quoteCurrency,
             },
             {
               id: `ITEM-2`,
               category: 'Ensayos NDT/MRT',
               description: 'Ensayos no destructivos (NDT Nivel II) y reporte técnico avalado con firmas de ingeniería',
               qty: 1,
-              unitPrice: 5000,
-              currency: isCo ? 'COP' : 'USD',
+              unitPrice: item2Price,
+              currency: quoteCurrency,
             },
           ],
           subtotal,
@@ -517,14 +556,20 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
           paymentTerms: '50% anticipo al ordenar, 50% contra entrega de informe técnico avalado',
           createdAt: new Date().toISOString().split('T')[0],
           incoterm: isCo ? 'Entrega en Instalaciones' : 'DDP En Sitio de Operación',
-          currency: isCo ? 'COP' : 'USD',
-          exchangeRateTRM: 4150,
+          currency: quoteCurrency,
+          exchangeRateTRM: trm,
           warranty: '12 meses sobre mano de obra especializada e integridad de diagnósticos NDT',
           notes: isCo
             ? 'Precios en COP para operación en territorio nacional.'
             : 'Precios en USD para exportación de servicios exentos de IVA (Art. 481 literal c E.T.).',
         },
       ];
+    } else {
+      // Saneamiento de cotizaciones existentes con TRM obsoleta (< 3800)
+      quotations = quotations.map((q) => ({
+        ...q,
+        exchangeRateTRM: (q.exchangeRateTRM && q.exchangeRateTRM >= 3800) ? q.exchangeRateTRM : trm,
+      }));
     }
 
     setEditingOpp({
@@ -689,7 +734,9 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     clientPhone: '',
     cableType: 'Aéreo Monocable Desembragable 10-MGD',
     country: 'Colombia',
-    estimatedValueUSD: 150000,
+    currency: 'COP' as 'COP' | 'USD' | 'EUR',
+    estimatedValue: 48500000,
+    estimatedValueUSD: 11687,
     stage: 'qualification' as OpportunityStage,
     expectedCloseDate: '2026-11-30',
     technicalSpecs: '',
@@ -856,8 +903,15 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     e.preventDefault();
     if (!oppForm.title || !oppForm.clientName) return;
 
+    const trm = currentTrm > 0 ? currentTrm : 4150;
+    const isCop = oppForm.currency === 'COP';
+    const numVal = Number(oppForm.estimatedValue) || 0;
+    const estUSD = isCop ? Math.round(numVal / trm) : numVal;
+
     createOpportunity({
       ...oppForm,
+      estimatedValue: numVal,
+      estimatedValueUSD: estUSD,
       clientId: `CLI-${Date.now()}`,
       assignedOwnerId: currentUser.id,
       assignedOwnerName: currentUser.name,
@@ -872,7 +926,9 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
       clientPhone: '',
       cableType: 'Aéreo Monocable Desembragable 10-MGD',
       country: 'Colombia',
-      estimatedValueUSD: 150000,
+      currency: 'COP',
+      estimatedValue: 48500000,
+      estimatedValueUSD: 11687,
       stage: 'qualification',
       expectedCloseDate: '2026-11-30',
       technicalSpecs: '',
@@ -936,8 +992,11 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
   const activeOpportunities = opportunities.filter(
     (o) => o.stage !== 'lost' && o.stage !== 'awarded' && !o.awardedProjectId
   );
-  const totalPipelineValue = activeOpportunities.reduce((sum, o) => sum + o.estimatedValueUSD, 0);
-  const totalPipelineValueCOP = convertUSDToCOP(totalPipelineValue, currentTrm);
+  const totalPipelineValueCOP = activeOpportunities.reduce(
+    (sum, o) => sum + getOppFinancialBreakdown(o, currentTrm).copVal,
+    0
+  );
+  const totalPipelineValue = Math.round(totalPipelineValueCOP / (currentTrm > 0 ? currentTrm : 4150));
 
   const awardedCount = opportunities.filter((o) => o.stage === 'awarded' || o.awardedProjectId).length;
   const lostCount = opportunities.filter((o) => o.stage === 'lost').length;
@@ -1068,8 +1127,9 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
               return matchStage && matchSearch;
             });
 
-            const stageTotalUSD = oppsInStage.reduce((sum, o) => sum + o.estimatedValueUSD, 0);
-            const stageTotalCOP = convertUSDToCOP(stageTotalUSD, currentTrm);
+            const stageBreakdowns = oppsInStage.map((o) => getOppFinancialBreakdown(o, currentTrm));
+            const stageTotalCOP = stageBreakdowns.reduce((sum, f) => sum + f.copVal, 0);
+            const stageTotalUSD = stageBreakdowns.reduce((sum, f) => sum + f.usdVal, 0);
 
             return (
               <div
@@ -1315,14 +1375,19 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                           )}
 
                           <div className="pt-1 border-t border-gray-100 flex items-center justify-between text-[11px]">
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-extrabold text-slate-900 text-xs truncate">
-                                {formatCOP(convertUSDToCOP(opp.estimatedValueUSD, currentTrm))}
-                              </span>
-                              <span className="text-[9.5px] text-slate-500 font-medium">
-                                {formatUSD(opp.estimatedValueUSD)}
-                              </span>
-                            </div>
+                            {(() => {
+                              const fin = getOppFinancialBreakdown(opp, currentTrm);
+                              return (
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-extrabold text-slate-900 text-xs truncate">
+                                    {fin.primary}
+                                  </span>
+                                  <span className="text-[9.5px] text-slate-500 font-medium">
+                                    {fin.secondary}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             <span className="text-[9px] text-gray-400 truncate ml-1 shrink-0">
                               {opp.expectedCloseDate}
                             </span>
@@ -1548,8 +1613,15 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     <td className="p-3 font-semibold text-gray-900">{opp.title}</td>
                     <td className="p-3 text-gray-600">{opp.clientName}</td>
                     <td className="p-3">
-                      <div className="font-bold text-gray-900">{formatCOP(convertUSDToCOP(opp.estimatedValueUSD, currentTrm))}</div>
-                      <div className="text-[10px] text-gray-400 font-medium">{formatUSD(opp.estimatedValueUSD)}</div>
+                      {(() => {
+                        const fin = getOppFinancialBreakdown(opp, currentTrm);
+                        return (
+                          <>
+                            <div className="font-bold text-gray-900">{fin.primary}</div>
+                            <div className="text-[10px] text-gray-400 font-medium">{fin.secondary}</div>
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
@@ -1661,11 +1733,33 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     <input
                       type="text"
                       required
+                      list="crm-contacts-datalist"
                       placeholder="Ej: Metro de Medellín"
                       value={oppForm.clientName}
-                      onChange={(e) => setOppForm({ ...oppForm, clientName: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const match = contacts.find((c) => c.company.toLowerCase() === val.toLowerCase());
+                        if (match) {
+                          setOppForm({
+                            ...oppForm,
+                            clientName: match.company,
+                            clientContactPerson: match.name || oppForm.clientContactPerson,
+                            clientEmail: match.email || oppForm.clientEmail,
+                            clientPhone: match.phone || oppForm.clientPhone,
+                            country: match.country || oppForm.country,
+                            cableType: match.stcSystem || oppForm.cableType,
+                          });
+                        } else {
+                          setOppForm({ ...oppForm, clientName: val });
+                        }
+                      }}
                       className="w-full text-xs p-2.5 rounded-xl bg-slate-100 text-gray-800 focus:bg-white focus:outline-hidden"
                     />
+                    <datalist id="crm-contacts-datalist">
+                      {contacts.map((c) => (
+                        <option key={c.id} value={c.company}>{c.name} ({c.country})</option>
+                      ))}
+                    </datalist>
                   </div>
                   <div>
                     <CreatableSelect
@@ -1720,18 +1814,64 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
                   <div>
-                    <label className="text-xs font-bold text-gray-700 mb-1 min-h-[22px] flex items-center">Valor Estimado (USD)</label>
+                    <label className="text-xs font-bold text-gray-700 mb-1 min-h-[22px] flex items-center">Moneda</label>
+                    <select
+                      value={oppForm.currency || 'COP'}
+                      onChange={(e) => {
+                        const newCurr = e.target.value as 'COP' | 'USD' | 'EUR';
+                        const trm = currentTrm > 0 ? currentTrm : 4150;
+                        let newVal = oppForm.estimatedValue;
+                        if (oppForm.currency === 'COP' && newCurr !== 'COP') {
+                          newVal = Math.round(oppForm.estimatedValue / trm);
+                        } else if (oppForm.currency !== 'COP' && newCurr === 'COP') {
+                          newVal = Math.round(oppForm.estimatedValue * trm);
+                        }
+                        const estUSD = newCurr === 'COP' ? Math.round(newVal / trm) : newVal;
+                        setOppForm({
+                          ...oppForm,
+                          currency: newCurr,
+                          estimatedValue: newVal,
+                          estimatedValueUSD: estUSD,
+                        });
+                      }}
+                      className="w-full text-xs p-2.5 rounded-xl bg-slate-100 text-gray-800 font-bold focus:bg-white focus:outline-hidden cursor-pointer"
+                    >
+                      <option value="COP">COP ($ Pesos)</option>
+                      <option value="USD">USD ($ Dólares)</option>
+                      <option value="EUR">EUR (€ Euros)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 mb-1 min-h-[22px] flex items-center justify-between">
+                      <span>Valor ({oppForm.currency})</span>
+                      <span className="text-[10px] text-gray-400 font-normal">
+                        {oppForm.currency === 'COP'
+                          ? `≈ ${formatUSD(Math.round((oppForm.estimatedValue || 0) / (currentTrm || 4150)))}`
+                          : `≈ ${formatCOP(convertUSDToCOP(oppForm.estimatedValue || 0, currentTrm))}`}
+                      </span>
+                    </label>
                     <input
                       type="number"
-                      min="1000"
+                      min="100"
                       required
-                      value={oppForm.estimatedValueUSD}
-                      onChange={(e) => setOppForm({ ...oppForm, estimatedValueUSD: Number(e.target.value) })}
-                      className="w-full text-xs p-2.5 rounded-xl bg-slate-100 text-gray-800 focus:bg-white focus:outline-hidden"
+                      value={oppForm.estimatedValue}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const trm = currentTrm > 0 ? currentTrm : 4150;
+                        const estUSD = oppForm.currency === 'COP' ? Math.round(val / trm) : val;
+                        setOppForm({
+                          ...oppForm,
+                          estimatedValue: val,
+                          estimatedValueUSD: estUSD,
+                        });
+                      }}
+                      className="w-full text-xs p-2.5 rounded-xl bg-slate-100 text-gray-800 font-semibold focus:bg-white focus:outline-hidden"
                     />
                   </div>
+
                   <div>
                     <label className="text-xs font-bold text-gray-700 mb-1 min-h-[22px] flex items-center">Fecha Estimada de Cierre</label>
                     <input
@@ -2563,10 +2703,32 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                       <input
                         type="text"
                         required
+                        list="editing-contacts-datalist"
                         value={editingOpp.clientName}
-                        onChange={(e) => setEditingOpp({ ...editingOpp, clientName: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const match = contacts.find((c) => c.company.toLowerCase() === val.toLowerCase());
+                          if (match) {
+                            setEditingOpp({
+                              ...editingOpp,
+                              clientName: match.company,
+                              clientContactPerson: match.name || editingOpp.clientContactPerson,
+                              clientEmail: match.email || editingOpp.clientEmail,
+                              clientPhone: match.phone || editingOpp.clientPhone,
+                              country: match.country || editingOpp.country,
+                              cableType: match.stcSystem || editingOpp.cableType,
+                            });
+                          } else {
+                            setEditingOpp({ ...editingOpp, clientName: val });
+                          }
+                        }}
                         className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
                       />
+                      <datalist id="editing-contacts-datalist">
+                        {contacts.map((c) => (
+                          <option key={c.id} value={c.company}>{c.name} ({c.country})</option>
+                        ))}
+                      </datalist>
                     </div>
 
                     <div>
@@ -2606,16 +2768,60 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Valor Estimado (USD)</label>
-                      <input
-                        type="number"
-                        required
-                        min={1000}
-                        value={editingOpp.estimatedValueUSD}
-                        onChange={(e) => setEditingOpp({ ...editingOpp, estimatedValueUSD: Number(e.target.value) })}
-                        className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Moneda</label>
+                        <select
+                          value={editingOpp.currency || 'USD'}
+                          onChange={(e) => {
+                            const newCurr = e.target.value as 'COP' | 'USD' | 'EUR';
+                            const trm = currentTrm > 0 ? currentTrm : 4150;
+                            const prevCurr = editingOpp.currency || 'USD';
+                            let newVal = editingOpp.estimatedValue || editingOpp.estimatedValueUSD;
+                            if (prevCurr === 'COP' && newCurr !== 'COP') {
+                              newVal = Math.round(newVal / trm);
+                            } else if (prevCurr !== 'COP' && newCurr === 'COP') {
+                              newVal = Math.round(newVal * trm);
+                            }
+                            const estUSD = newCurr === 'COP' ? Math.round(newVal / trm) : newVal;
+                            setEditingOpp({
+                              ...editingOpp,
+                              currency: newCurr,
+                              estimatedValue: newVal,
+                              estimatedValueUSD: estUSD,
+                            });
+                          }}
+                          className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white font-bold focus:outline-hidden focus:border-[#00668F]"
+                        >
+                          <option value="COP">COP ($ Pesos)</option>
+                          <option value="USD">USD ($ Dólares)</option>
+                          <option value="EUR">EUR (€ Euros)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1 truncate">
+                          <span>Valor ({editingOpp.currency || 'USD'})</span>
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          min={100}
+                          value={editingOpp.estimatedValue ?? editingOpp.estimatedValueUSD}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const trm = currentTrm > 0 ? currentTrm : 4150;
+                            const isCop = (editingOpp.currency || 'USD') === 'COP';
+                            const estUSD = isCop ? Math.round(val / trm) : val;
+                            setEditingOpp({
+                              ...editingOpp,
+                              estimatedValue: val,
+                              estimatedValueUSD: estUSD,
+                            });
+                          }}
+                          className="w-full text-xs p-2.5 rounded-xl border border-gray-300 font-semibold focus:outline-hidden focus:border-[#00668F]"
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -3294,17 +3500,19 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                         {/* Plantillas Rápidas para Ítems STC */}
                         <div className="flex flex-wrap items-center gap-1.5 p-2.5 rounded-xl bg-slate-50 border border-gray-200 text-xs">
                           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mr-1">
-                            Plantillas Rápidas STC:
+                            Plantillas Rápidas STC ({currentQuote.currency || 'USD'}):
                           </span>
                           <button
                             type="button"
                             onClick={() => {
+                              const isCop = currentQuote.currency === 'COP';
+                              const trm = currentQuote.exchangeRateTRM || currentTrm || 4150;
                               const item: OpportunityQuotationItem = {
                                 id: `ITEM-${Date.now()}`,
                                 category: 'Servicio STC',
                                 description: 'Empalme mayor en cable portador-tractor con certificación EN 12927',
                                 qty: 1,
-                                unitPrice: 38000,
+                                unitPrice: isCop ? Math.round(35000 * trm) : 35000,
                                 currency: currentQuote.currency || 'USD',
                                 discountPercent: 0,
                               };
@@ -3317,12 +3525,14 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                           <button
                             type="button"
                             onClick={() => {
+                              const isCop = currentQuote.currency === 'COP';
+                              const trm = currentQuote.exchangeRateTRM || currentTrm || 4150;
                               const item: OpportunityQuotationItem = {
                                 id: `ITEM-${Date.now()}`,
                                 category: 'Ensayos NDT/MRT',
                                 description: 'Ensayo magneto-inductivo (MRT) de cable de acero con informe de degradación',
                                 qty: 1,
-                                unitPrice: 12500,
+                                unitPrice: isCop ? Math.round(11680 * trm) : 11680,
                                 currency: currentQuote.currency || 'USD',
                                 discountPercent: 0,
                               };
@@ -3335,12 +3545,14 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                           <button
                             type="button"
                             onClick={() => {
+                              const isCop = currentQuote.currency === 'COP';
+                              const trm = currentQuote.exchangeRateTRM || currentTrm || 4150;
                               const item: OpportunityQuotationItem = {
                                 id: `ITEM-${Date.now()}`,
                                 category: 'Repuestos OEM',
                                 description: 'Kit de revestimiento de goma/polímero para poleas y balancines STC',
                                 qty: 16,
-                                unitPrice: 850,
+                                unitPrice: isCop ? Math.round(850 * trm) : 850,
                                 currency: currentQuote.currency || 'USD',
                                 discountPercent: 0,
                               };
@@ -3353,12 +3565,14 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                           <button
                             type="button"
                             onClick={() => {
+                              const isCop = currentQuote.currency === 'COP';
+                              const trm = currentQuote.exchangeRateTRM || currentTrm || 4150;
                               const item: OpportunityQuotationItem = {
                                 id: `ITEM-${Date.now()}`,
                                 category: 'Viáticos & Logística',
                                 description: 'Desplazamiento, hospedaje y viáticos en sitio de cuadrilla técnica (4 personas)',
                                 qty: 1,
-                                unitPrice: 4200,
+                                unitPrice: isCop ? Math.round(6000 * trm) : 6000,
                                 currency: currentQuote.currency || 'USD',
                                 discountPercent: 0,
                               };
@@ -3367,6 +3581,26 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                             className="px-2.5 py-1 bg-white hover:bg-slate-200 text-gray-700 font-semibold rounded-lg border border-gray-300 text-[11px] cursor-pointer"
                           >
                             + Viáticos Cuadrilla
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const isCop = currentQuote.currency === 'COP';
+                              const trm = currentQuote.exchangeRateTRM || currentTrm || 4150;
+                              const item: OpportunityQuotationItem = {
+                                id: `ITEM-${Date.now()}`,
+                                category: 'Servicio STC',
+                                description: 'Consultoría e Interventoría técnica especializada en sistemas de teleférico',
+                                qty: 1,
+                                unitPrice: isCop ? Math.round(4500 * trm) : 4500,
+                                currency: currentQuote.currency || 'USD',
+                                discountPercent: 0,
+                              };
+                              updateCurrentQuote({ items: [...(currentQuote.items || []), item] });
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-slate-200 text-gray-700 font-semibold rounded-lg border border-gray-300 text-[11px] cursor-pointer"
+                          >
+                            + Interventoría STC
                           </button>
                         </div>
 
@@ -3930,6 +4164,30 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                     </span>
                                   </div>
                                 )}
+
+                                <div className="pt-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const quoteTotal = Math.round(currentQuote.total || 0);
+                                      const qCurr = currentQuote.currency || 'COP';
+                                      const trm = currentTrm || 4150;
+                                      const valUSD = qCurr === 'COP' ? Math.round(quoteTotal / trm) : quoteTotal;
+                                      setEditingOpp((prev) => prev ? {
+                                        ...prev,
+                                        currency: qCurr,
+                                        estimatedValue: quoteTotal,
+                                        estimatedValueUSD: valUSD
+                                      } : prev);
+                                      notify?.('success', 'Valor Sincronizado', `La oportunidad se actualizó a ${quoteTotal.toLocaleString()} ${qCurr} según el total cotizado.`);
+                                    }}
+                                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                                    title="Sincronizar el valor de la oportunidad con el total calculado en esta cotización"
+                                  >
+                                    <ArrowRightLeft size={13} />
+                                    <span>Sincronizar Total Cotizado con la Oportunidad</span>
+                                  </button>
+                                </div>
                               </div>
                             </div>
 
@@ -4614,8 +4872,19 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                 <button
                   type="button"
                   onClick={() => {
-                    updateOpportunity(editingOpp.id, editingOpp);
-                    notify?.('success', 'Oportunidad Guardada', `Cambios en ${editingOpp.code} aplicados con éxito.`);
+                    // Auto-sincronizar valor con cotización activa si tiene ítems y total válido
+                    const activeQuote = (editingOpp.quotations || [])[activeQuotationIndex] || editingOpp.quotations?.[0];
+                    let finalOpp = { ...editingOpp };
+                    if (activeQuote && (activeQuote.items?.length ?? 0) > 0 && (activeQuote.total || 0) > 0) {
+                      const qTotal = Math.round(activeQuote.total);
+                      const qCurr = activeQuote.currency || finalOpp.currency || 'COP';
+                      finalOpp.currency = qCurr;
+                      finalOpp.estimatedValue = qTotal;
+                      const trm = currentTrm || 4150;
+                      finalOpp.estimatedValueUSD = qCurr === 'COP' ? Math.round(qTotal / trm) : qTotal;
+                    }
+                    updateOpportunity(finalOpp.id, finalOpp);
+                    notify?.('success', 'Oportunidad Guardada', `Cambios en ${finalOpp.code} aplicados con éxito.`);
                     setEditingOpp(null);
                   }}
                   className="px-5 py-2 text-xs font-bold bg-[#00668F] text-white rounded-xl shadow-xs hover:bg-[#005273] cursor-pointer"
