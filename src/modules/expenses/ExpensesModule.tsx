@@ -43,6 +43,7 @@ import {
 } from '../../core/services/moduleConfigService';
 import { ExpensesConfigModal } from './ExpensesConfigModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 export const ExpensesModule: React.FC = () => {
   const { expenses, projects, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
@@ -552,12 +553,23 @@ export const ExpensesModule: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 flex items-center justify-center transition-colors shrink-0 aspect-square cursor-pointer"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="Configurar sedes, rubros y métodos de pago"
+                >
+                  <Settings size={13} className="text-[#00668F]" />
+                  <span>Configuración</span>
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 flex items-center justify-center transition-colors shrink-0 aspect-square cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* PASO 1: SUBIR O TOMAR LA FOTO */}
@@ -744,50 +756,45 @@ export const ExpensesModule: React.FC = () => {
 
                   {imputationType === 'proyecto' ? (
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block font-semibold text-gray-600 text-[11px]">
-                          Asignar al Proyecto STC:
-                        </label>
-                      </div>
-                      <select
-                        value={selectedProjectId}
-                        onChange={(e) => setSelectedProjectId(e.target.value)}
-                        className="w-full p-2.5 rounded-xl bg-white font-medium text-gray-800 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden"
-                      >
-                        {projects.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.code} — {p.name} ({p.costCenter})
-                          </option>
-                        ))}
-                      </select>
+                      <CreatableSelect
+                        label="Asignar al Proyecto STC"
+                        required
+                        value={selectedProject ? `${selectedProject.code} — ${selectedProject.name}` : ''}
+                        onChange={(val) => {
+                          const match = projects.find((p) => `${p.code} — ${p.name}`.toLowerCase() === val.toLowerCase() || p.id === val);
+                          if (match) setSelectedProjectId(match.id);
+                        }}
+                        options={projects.map((p) => ({
+                          id: p.id,
+                          name: `${p.code} — ${p.name}`,
+                          code: p.costCenter,
+                        }))}
+                        placeholder="Buscar o seleccionar proyecto..."
+                        inputClassName="bg-white"
+                      />
                     </div>
                   ) : (
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block font-semibold text-gray-600 text-[11px]">
-                          Asignar a Sede / Oficina Administrativa:
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setIsConfigModalOpen(true)}
-                          className="text-[10px] text-[#00668F] font-bold hover:underline flex items-center gap-1"
-                        >
-                          <Settings size={11} /> <span>Personalizar sedes</span>
-                        </button>
-                      </div>
-                      <select
-                        value={selectedOfficeId}
-                        onChange={(e) => setSelectedOfficeId(e.target.value)}
-                        className="w-full p-2.5 rounded-xl bg-white font-medium text-gray-800 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden"
-                      >
-                        {moduleConfig.offices
+                      <CreatableSelect
+                        label="Asignar a Sede / Oficina Administrativa"
+                        required
+                        value={selectedOffice ? `${selectedOffice.name} — Código: ${selectedOffice.code}` : ''}
+                        onChange={(val) => {
+                          const match = moduleConfig.offices.find(
+                            (o) => `${o.name} — Código: ${o.code}`.toLowerCase() === val.toLowerCase() || o.id === val || o.name.toLowerCase() === val.toLowerCase()
+                          );
+                          if (match) setSelectedOfficeId(match.id);
+                        }}
+                        options={moduleConfig.offices
                           .filter((o) => o.isActive)
-                          .map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {o.name} — Código: {o.code}
-                            </option>
-                          ))}
-                      </select>
+                          .map((o) => ({
+                            id: o.id,
+                            name: `${o.name} — Código: ${o.code}`,
+                            code: o.code,
+                          }))}
+                        placeholder="Buscar o seleccionar sede..."
+                        inputClassName="bg-white"
+                      />
                     </div>
                   )}
                 </div>
@@ -850,31 +857,18 @@ export const ExpensesModule: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block font-bold text-gray-700 text-[11px]">
-                        Método de Pago
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setIsConfigModalOpen(true)}
-                        className="text-[10px] text-[#00668F] font-bold hover:underline flex items-center gap-1"
-                      >
-                        <Settings size={11} /> <span>Editar</span>
-                      </button>
-                    </div>
-                    <select
+                    <CreatableSelect
+                      label="Método de Pago"
+                      required
                       value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 font-medium text-gray-900 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden"
-                    >
-                      {moduleConfig.paymentMethods
+                      onChange={(val) => setPaymentMethod(val)}
+                      options={moduleConfig.paymentMethods
                         .filter((p) => p.isActive)
-                        .map((p) => (
-                          <option key={p.id} value={p.name}>
-                            {p.name}
-                          </option>
-                        ))}
-                    </select>
+                        .map((p) => ({ id: p.id, name: p.name }))}
+                      placeholder="Seleccionar o escribir método de pago..."
+                      allowCustomText={true}
+                      inputClassName="bg-slate-50"
+                    />
                   </div>
                 </div>
 
@@ -1088,31 +1082,23 @@ export const ExpensesModule: React.FC = () => {
                 {/* CATEGORÍA Y DESCRIPCIÓN */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block font-bold text-gray-700 text-[11px]">
-                        Rubro / Categoría
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setIsConfigModalOpen(true)}
-                        className="text-[10px] text-[#00668F] font-bold hover:underline flex items-center gap-1"
-                      >
-                        <Settings size={11} /> <span>Editar</span>
-                      </button>
-                    </div>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 font-medium text-gray-900 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden"
-                    >
-                      {moduleConfig.categories
+                    <CreatableSelect
+                      label="Rubro / Categoría"
+                      required
+                      value={moduleConfig.categories.find((c) => c.key === category)?.label || category}
+                      onChange={(val) => {
+                        const match = moduleConfig.categories.find(
+                          (c) => c.label.toLowerCase() === val.toLowerCase() || c.key.toLowerCase() === val.toLowerCase()
+                        );
+                        setCategory((match?.key || val) as any);
+                      }}
+                      options={moduleConfig.categories
                         .filter((c) => c.isActive)
-                        .map((c) => (
-                          <option key={c.id} value={c.key}>
-                            {c.label}
-                          </option>
-                        ))}
-                    </select>
+                        .map((c) => ({ id: c.key, name: c.label }))}
+                      placeholder="Seleccionar o escribir categoría..."
+                      allowCustomText={true}
+                      inputClassName="bg-slate-50"
+                    />
                   </div>
 
                   <div className="sm:col-span-2">
