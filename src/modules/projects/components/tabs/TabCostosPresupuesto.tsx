@@ -667,16 +667,11 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     project.advancePaymentPercentage ? (contractAmountCOP * project.advancePaymentPercentage / 100) : 0
   );
 
-  // Lista consolidada de todos los ITEMS disponibles (Oficiales de catálogo + personalizados del proyecto + usados en costos/facturación)
+  // Lista de ITEMS creados o existentes en el proyecto (CERO mock data / CERO pre-poblado masivo sin haber sido creado)
   const allAvailableItems = (() => {
     const map = new Map<string, { code: string; name: string; budgetPlanned?: number }>();
     
-    // 1. Agregar catálogo oficial de 21 ITEMS
-    INTECKNO_PROJECT_ITEMS.forEach((it) => {
-      map.set(it.code.toUpperCase(), { code: it.code, name: it.name, budgetPlanned: 0 });
-    });
-
-    // 2. Agregar o sobrescribir con carpetas guardadas en project.projectItems
+    // 1. Agregar las carpetas guardadas explícitamente en el proyecto
     projectItems.forEach((f) => {
       map.set(f.code.toUpperCase(), {
         code: f.code,
@@ -685,7 +680,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       });
     });
 
-    // 3. Incluir cualquier ITEM que aparezca en los costos existentes
+    // 2. Incluir cualquier ITEM que aparezca en los costos existentes del proyecto
     costItems.forEach((c) => {
       if (c.itemCode) {
         const upper = c.itemCode.toUpperCase();
@@ -693,6 +688,20 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           map.set(upper, {
             code: c.itemCode,
             name: c.itemName || c.itemCode,
+            budgetPlanned: 0,
+          });
+        }
+      }
+    });
+
+    // 3. Incluir cualquier ITEM que aparezca en la facturación existente del proyecto
+    billingItems.forEach((b) => {
+      if (b.itemCode) {
+        const upper = b.itemCode.toUpperCase();
+        if (!map.has(upper)) {
+          map.set(upper, {
+            code: b.itemCode,
+            name: getItemDisplayName(b.itemCode),
             budgetPlanned: 0,
           });
         }
@@ -898,83 +907,120 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             </div>
           </div>
 
-          {/* Grid de Carpetas de ITEMS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {allAvailableItems.map((itemDef) => {
-              const itemDirects = costItems.filter(
-                (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType !== 'indirecto'
-              );
-              const itemIndirects = costItems.filter(
-                (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType === 'indirecto'
-              );
-              const itemBills = billingItems.filter(
-                (b) => (b.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase()
-              );
+          {/* Grid de Carpetas de ITEMS o Estado Vacío */}
+          {allAvailableItems.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-12 text-center text-slate-400 space-y-3">
+              <Folder size={40} className="mx-auto text-slate-300" />
+              <div>
+                <h4 className="text-sm font-bold text-slate-700">No hay ITEMS creados en este proyecto</h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                  Para comenzar con el control financiero, haz clic en "Añadir ITEM / Carpeta" y crea el primer ITEM contractual de la obra (ej. ITEM 01, ITEM 11).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setFolderForm({ code: '', name: '', budgetPlanned: 0, observations: '' });
+                  setIsCreateFolderModalOpen(true);
+                }}
+                className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <FolderPlus size={14} />
+                <span>Crear Primer ITEM</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {allAvailableItems.map((itemDef) => {
+                const itemDirects = costItems.filter(
+                  (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType !== 'indirecto'
+                );
+                const itemIndirects = costItems.filter(
+                  (c) => (c.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase() && c.costType === 'indirecto'
+                );
+                const itemBills = billingItems.filter(
+                  (b) => (b.itemCode || 'ITEM 11').toUpperCase() === itemDef.code.toUpperCase()
+                );
 
-              const totalDir = itemDirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
-              const totalInd = itemIndirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
-              const totalCost = totalDir + totalInd;
-              const totalFact = itemBills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
+                const totalDir = itemDirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
+                const totalInd = itemIndirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
+                const totalCost = totalDir + totalInd;
+                const totalFact = itemBills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
 
-              const budgetPlan = itemDef.budgetPlanned || itemDirects.reduce((s, c) => s + c.plannedTotal, 0) + itemIndirects.reduce((s, c) => s + c.plannedTotal, 0);
-              const balancePct = budgetPlan > 0 ? (totalCost / budgetPlan) * 100 : 0;
+                const budgetPlan = itemDef.budgetPlanned || itemDirects.reduce((s, c) => s + c.plannedTotal, 0) + itemIndirects.reduce((s, c) => s + c.plannedTotal, 0);
+                const balancePct = budgetPlan > 0 ? (totalCost / budgetPlan) * 100 : 0;
 
-              return (
-                <div
-                  key={itemDef.code}
-                  onClick={() => setSelectedFolderCode(itemDef.code)}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-4 hover:border-[#00668F] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="p-2 rounded-xl bg-sky-50 text-[#00668F] group-hover:bg-[#00668F] group-hover:text-white transition-colors">
-                          <Folder size={18} />
-                        </span>
-                        <div>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-slate-100 text-[#00668F] border border-slate-200">
-                            {itemDef.code}
+                return (
+                  <div
+                    key={itemDef.code}
+                    onClick={() => setSelectedFolderCode(itemDef.code)}
+                    className="bg-white rounded-2xl border border-slate-200/80 p-4 hover:border-[#00668F] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between relative"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <span className="p-2 rounded-xl bg-sky-50 text-[#00668F] group-hover:bg-[#00668F] group-hover:text-white transition-colors">
+                            <Folder size={18} />
+                          </span>
+                          <div>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-slate-100 text-[#00668F] border border-slate-200">
+                              {itemDef.code}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setFolderToDelete({
+                              id: `ITEM-${itemDef.code}`,
+                              code: itemDef.code,
+                              name: itemDef.name,
+                            })}
+                            className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                            title="Eliminar este ITEM y sus registros"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                          <span className="text-[10px] text-slate-400 group-hover:text-[#00668F] font-bold flex items-center gap-0.5 ml-1">
+                            Abrir <ChevronRight size={13} />
                           </span>
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-400 group-hover:text-[#00668F] font-bold flex items-center gap-0.5">
-                        Abrir <ChevronRight size={13} />
-                      </span>
-                    </div>
 
-                    <h4 className="text-xs font-bold text-slate-800 mt-2.5 line-clamp-2 min-h-[32px] group-hover:text-[#00668F] transition-colors">
-                      {itemDef.name}
-                    </h4>
+                      <h4 className="text-xs font-bold text-slate-800 mt-2.5 line-clamp-2 min-h-[32px] group-hover:text-[#00668F] transition-colors">
+                        {itemDef.name}
+                      </h4>
 
-                    {/* Resumen de costos */}
-                    <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px]">
-                      <div>
-                        <span className="text-[10px] text-slate-400 block">Costos Totales</span>
-                        <span className="font-bold text-slate-900 font-mono">{formatCOP(totalCost)}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 block">Facturación</span>
-                        <span className="font-bold text-emerald-700 font-mono">{formatCOP(totalFact)}</span>
+                      {/* Resumen de costos */}
+                      <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px]">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">Costos Totales</span>
+                          <span className="font-bold text-slate-900 font-mono">{formatCOP(totalCost)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">Facturación</span>
+                          <span className="font-bold text-emerald-700 font-mono">{formatCOP(totalFact)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mt-3 pt-2 border-t border-slate-100/80 flex items-center justify-between text-[10px]">
-                    <span className="text-slate-400">
-                      {itemDirects.length + itemIndirects.length} rubros • {itemBills.length} facturas
-                    </span>
-                    {budgetPlan > 0 && (
-                      <span className={`font-mono font-bold px-1.5 py-0.5 rounded ${
-                        balancePct <= 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                      }`}>
-                        Balance: {balancePct.toFixed(0)}%
+                    <div className="mt-3 pt-2 border-t border-slate-100/80 flex items-center justify-between text-[10px]">
+                      <span className="text-slate-400">
+                        {itemDirects.length + itemIndirects.length} rubros • {itemBills.length} facturas
                       </span>
-                    )}
+                      {budgetPlan > 0 && (
+                        <span className={`font-mono font-bold px-1.5 py-0.5 rounded ${
+                          balancePct <= 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                        }`}>
+                          Balance: {balancePct.toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : (
         /* VISTA INTERNA DE LA CARPETA DEL ITEM CON LAS 3 TABLAS */
@@ -1052,6 +1098,22 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               >
                 <Plus size={14} />
                 <span>Añadir Facturación</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
+                  setFolderToDelete({
+                    id: `ITEM-${selectedFolderCode}`,
+                    code: selectedFolderCode,
+                    name: target?.name || selectedFolderCode,
+                  });
+                }}
+                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 active:scale-95 text-xs font-bold rounded-xl border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Eliminar este ITEM y todos sus rubros"
+              >
+                <Trash2 size={14} />
+                <span>Eliminar ITEM</span>
               </button>
             </div>
           </div>
@@ -2055,8 +2117,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         isOpen={Boolean(itemToDelete)}
         title="¿Eliminar Rubro Financiero?"
         itemName={itemToDelete ? itemToDelete.concept : ''}
-        description="Esta acción eliminará el concepto de costo de la matriz financiera del proyecto. ¿Deseas confirmar la eliminación?"
-        requireConfirmWord={false}
+        description="Esta acción eliminará el concepto de costo de la matriz financiera del proyecto. Para confirmar, escribe BORRAR a continuación:"
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Rubro"
         onConfirm={() => {
           if (itemToDelete) {
@@ -2071,13 +2134,52 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         onCancel={() => setItemToDelete(null)}
       />
 
+      {/* Modal Confirmación de Eliminación de Carpeta de ITEM */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(folderToDelete)}
+        title="¿Eliminar Carpeta de ITEM Contractual?"
+        itemName={folderToDelete ? `${folderToDelete.code} - ${folderToDelete.name}` : ''}
+        description="Esta acción eliminará el ITEM completo junto con todos sus rubros de costos directos, costos indirectos y facturación asociada. Para confirmar, escribe BORRAR a continuación:"
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        confirmText="Eliminar ITEM Completo"
+        onConfirm={() => {
+          if (folderToDelete) {
+            const codeToDel = folderToDelete.code.toUpperCase();
+            const updatedFolders = projectItems.filter((f) => f.code.toUpperCase() !== codeToDel);
+            const updatedCosts = costItems.filter((c) => (c.itemCode || 'ITEM 11').toUpperCase() !== codeToDel);
+            const updatedBills = billingItems.filter((b) => (b.itemCode || 'ITEM 11').toUpperCase() !== codeToDel);
+
+            setProjectItems(updatedFolders);
+            setCostItems(updatedCosts);
+            setBillingItems(updatedBills);
+
+            if (selectedFolderCode?.toUpperCase() === codeToDel) {
+              setSelectedFolderCode(null);
+            }
+
+            if (onUpdateProject) {
+              onUpdateProject({
+                ...project,
+                projectItems: updatedFolders as any,
+                costMatrix: updatedCosts as any,
+                billingItems: updatedBills as any,
+              } as any);
+            }
+            setFolderToDelete(null);
+          }
+        }}
+        onCancel={() => setFolderToDelete(null)}
+      />
+
       {/* Modal Confirmación de Eliminación de Factura */}
       <ConfirmDeleteModal
         isOpen={Boolean(billingToDelete)}
         title="¿Eliminar Registro de Factura?"
         itemName={billingToDelete ? `Factura N° ${billingToDelete.invoiceNumber}` : ''}
-        description="Esta acción eliminará el registro de facturación asociado a este ITEM. ¿Deseas confirmar la eliminación?"
-        requireConfirmWord={false}
+        description="Esta acción eliminará el registro de facturación asociado a este ITEM. Para confirmar, escribe BORRAR a continuación:"
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Factura"
         onConfirm={() => {
           if (billingToDelete) {
