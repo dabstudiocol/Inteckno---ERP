@@ -1255,20 +1255,22 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-gray-700 font-semibold mb-1">Tipo de Cuenta</label>
-                      <select
+                      <CreatableSelect
+                        options={[
+                          { id: 'Corriente', name: 'Corriente' },
+                          { id: 'Ahorros', name: 'Ahorros' },
+                          { id: 'Internacional', name: 'Internacional (USD)' },
+                        ]}
                         value={newBankAccount.accountType}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setNewBankAccount({
                             ...newBankAccount,
-                            accountType: e.target.value as ContactBankAccount['accountType'],
+                            accountType: val as ContactBankAccount['accountType'],
                           })
                         }
-                        className="w-full p-2 bg-white rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
-                      >
-                        <option value="Corriente">Corriente</option>
-                        <option value="Ahorros">Ahorros</option>
-                        <option value="Internacional">Internacional (USD)</option>
-                      </select>
+                        allowCustomText={true}
+                        placeholder="Tipo de cuenta..."
+                      />
                     </div>
                     <div>
                       <label className="block text-gray-700 font-semibold mb-1">Número de Cuenta *</label>
@@ -1283,20 +1285,22 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-gray-700 font-semibold mb-1">Moneda</label>
-                      <select
+                      <CreatableSelect
+                        options={catalogCurrencies.length > 0 ? catalogCurrencies.map(c => ({ id: c.name, name: c.name })) : [
+                          { id: 'COP', name: 'COP ($)' },
+                          { id: 'USD', name: 'USD ($)' },
+                          { id: 'EUR', name: 'EUR (€)' },
+                        ]}
                         value={newBankAccount.currency}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setNewBankAccount({
                             ...newBankAccount,
-                            currency: e.target.value as ContactBankAccount['currency'],
+                            currency: val as ContactBankAccount['currency'],
                           })
                         }
-                        className="w-full p-2 bg-white rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
-                      >
-                        <option value="COP">COP ($)</option>
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                      </select>
+                        allowCustomText={true}
+                        placeholder="Moneda..."
+                      />
                     </div>
                   </div>
                   <div className="flex justify-end pt-1">
