@@ -891,28 +891,29 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">Vendedor Asignado</label>
-                  <select
-                    value={formData.salesPurchases?.assignedSalespersonId || ''}
-                    onChange={(e) => {
-                      const user = erpUsers.find((u) => u.id === e.target.value);
+                  <CreatableSelect
+                    label="Vendedor Asignado"
+                    value={formData.salesPurchases?.assignedSalespersonName || ''}
+                    onChange={(val) => {
+                      const user = erpUsers.find((u) => u.name.toLowerCase() === val.toLowerCase() || u.id === val);
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          assignedSalespersonId: e.target.value,
-                          assignedSalespersonName: user?.name || '',
+                          assignedSalespersonId: user?.id || val,
+                          assignedSalespersonName: user?.name || val,
                         },
                       });
                     }}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
-                  >
-                    {erpUsers.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.role})
-                      </option>
-                    ))}
-                  </select>
+                    options={erpUsers.map((u) => ({
+                      id: u.id,
+                      name: u.name,
+                      code: u.role,
+                    }))}
+                    placeholder="Seleccionar o escribir vendedor..."
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
+                  />
                 </div>
 
                 <div>
@@ -1009,26 +1010,27 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">Incoterm Internacional</label>
-                  <select
+                  <CreatableSelect
+                    label="Incoterm Internacional"
                     value={formData.salesPurchases?.incoterm || 'DDP'}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         salesPurchases: {
                           ...formData.salesPurchases,
-                          incoterm: e.target.value,
+                          incoterm: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F]"
-                  >
-                    {INCOTERMS_PRESETS.map((inc) => (
-                      <option key={inc.code} value={inc.code}>
-                        {inc.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={INCOTERMS_PRESETS.map((inc) => ({
+                      id: inc.code,
+                      name: inc.name,
+                      code: inc.code,
+                    }))}
+                    placeholder="Seleccionar Incoterm..."
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50"
+                  />
                 </div>
 
                 <div>
@@ -1489,30 +1491,24 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                   </p>
                 </div>
 
-                {/* Régimen Fiscal */}
                 <div>
-                  <label className="block text-gray-700 font-bold mb-1">
-                    Régimen Fiscal <span className="text-[#00668F] font-normal">(IVA, No aplica, IC, IVA e IC)</span>
-                  </label>
-                  <select
+                  <CreatableSelect
+                    label="Régimen Fiscal (IVA, No aplica, IC, IVA e IC)"
                     value={formData.dianBilling?.fiscalRegime || 'IVA'}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
                         dianBilling: {
                           ...formData.dianBilling,
-                          fiscalRegime: e.target.value,
+                          fiscalRegime: val,
                         },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl bg-slate-50 focus:outline-hidden focus:ring-1 focus:ring-[#00668F] font-semibold text-gray-900"
-                  >
-                    {FISCAL_REGIME_OPTIONS.map((regime) => (
-                      <option key={regime} value={regime}>
-                        {regime}
-                      </option>
-                    ))}
-                  </select>
+                    options={FISCAL_REGIME_OPTIONS.map((regime) => ({ id: regime, name: regime }))}
+                    placeholder="Seleccionar régimen fiscal..."
+                    allowCustomText={true}
+                    inputClassName="bg-slate-50 font-semibold"
+                  />
                   <p className="text-[11px] text-gray-500 mt-1">
                     Régimen de impuesto sobre las ventas e impuesto nacional al consumo.
                   </p>

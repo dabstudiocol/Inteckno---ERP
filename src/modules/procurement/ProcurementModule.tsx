@@ -1119,13 +1119,24 @@ export const ProcurementModule: React.FC = () => {
                 <Building2 size={18} />
                 <h3 className="font-bold text-sm text-white">Homologar Nuevo Proveedor</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsNewSupplierModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer"
-              >
-                <X size={15} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(true)}
+                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Configurar catálogos de compras"
+                >
+                  <Settings size={12} />
+                  <span>Configuración</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsNewSupplierModalOpen(false)}
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSaveNewSupplier} className="p-5 overflow-y-auto space-y-3.5 text-xs">
@@ -1165,63 +1176,33 @@ export const ProcurementModule: React.FC = () => {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-slate-700">Línea o Categoría (Catálogo)</label>
-                  <button
-                    type="button"
-                    onClick={() => setIsConfigModalOpen(true)}
-                    className="text-[11px] text-[#00668F] font-bold hover:underline cursor-pointer flex items-center gap-1"
-                  >
-                    <Settings size={11} /> Configurar
-                  </button>
-                </div>
-                <select
+                <CreatableSelect
+                  label="Línea o Categoría de Suministro"
+                  required
                   value={supplierForm.category}
-                  onChange={(e) => setSupplierForm({ ...supplierForm, category: e.target.value })}
-                  className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900"
-                >
-                  {catalogSupplierCategories.length > 0 ? (
-                    catalogSupplierCategories.map((c) => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="Repuestos & Cables STC">Repuestos & Cables STC</option>
-                      <option value="Herramientas y Equipos Especializados">Herramientas y Equipos Especializados</option>
-                      <option value="Servicios de Maquinado & Taller">Servicios de Maquinado & Taller</option>
-                    </>
-                  )}
-                </select>
+                  onChange={(val) => setSupplierForm({ ...supplierForm, category: val })}
+                  options={catalogSupplierCategories.map((c) => ({ id: c.id, name: c.name }))}
+                  placeholder="Seleccionar o escribir categoría..."
+                  moduleId="compras"
+                  catalogKey="supplierCategories"
+                  allowCustomText={true}
+                  inputClassName="bg-white border-slate-300"
+                />
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-slate-700">Condición de Pago Acordada</label>
-                  <button
-                    type="button"
-                    onClick={() => setIsConfigModalOpen(true)}
-                    className="text-[11px] text-[#00668F] font-bold hover:underline cursor-pointer flex items-center gap-1"
-                  >
-                    <Settings size={11} /> Configurar
-                  </button>
-                </div>
-                <select
+                <CreatableSelect
+                  label="Condición de Pago Acordada"
+                  required
                   value={supplierForm.paymentTerms}
-                  onChange={(e) => setSupplierForm({ ...supplierForm, paymentTerms: e.target.value })}
-                  className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900"
-                >
-                  {catalogPaymentTerms.length > 0 ? (
-                    catalogPaymentTerms.map((pt) => (
-                      <option key={pt.id} value={pt.name}>{pt.name}</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="Contado Comercial (Anticipado)">Contado Comercial (Anticipado)</option>
-                      <option value="15 días F/F">15 días fecha factura</option>
-                      <option value="30 días F/F">30 días fecha factura</option>
-                    </>
-                  )}
-                </select>
+                  onChange={(val) => setSupplierForm({ ...supplierForm, paymentTerms: val })}
+                  options={catalogPaymentTerms.map((pt) => ({ id: pt.id, name: pt.name, code: pt.code }))}
+                  placeholder="Seleccionar o escribir plazo de pago..."
+                  moduleId="compras"
+                  catalogKey="paymentTerms"
+                  allowCustomText={true}
+                  inputClassName="bg-white border-slate-300"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

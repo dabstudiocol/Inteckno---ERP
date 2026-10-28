@@ -18,6 +18,7 @@ import {
 import { PurchaseOrder, Partner, Product, Project, PurchaseOrderItem, InternalRequisition } from '../../../types';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface PoItemRow {
   id: string;
@@ -690,26 +691,21 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
             </div>
 
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Forma de Pago</label>
-              <select
+              <CreatableSelect
+                label="Forma / Plazo de Pago"
                 value={paymentTermType}
-                onChange={(e) => setPaymentTermType(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
-              >
-                {paymentTermsOptions.length > 0 ? (
-                  paymentTermsOptions.map((term) => (
-                    <option key={term.id} value={term.name}>
-                      {term.name} {term.code ? `(${term.code})` : ''}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="credito">Crédito (30/60 días)</option>
-                    <option value="anticipo">Anticipo 50% + 50%</option>
-                    <option value="contado">Contado Inmediato</option>
-                  </>
-                )}
-              </select>
+                onChange={(val) => setPaymentTermType(val)}
+                options={paymentTermsOptions.map((term) => ({
+                  id: term.id,
+                  name: term.name,
+                  code: term.code,
+                }))}
+                placeholder="Seleccionar o escribir forma de pago..."
+                moduleId="compras"
+                catalogKey="paymentTerms"
+                allowCustomText={true}
+                inputClassName="bg-white border-slate-300"
+              />
             </div>
 
             <div>
