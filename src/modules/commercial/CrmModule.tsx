@@ -1813,10 +1813,15 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
                   <div>
                     <label className="text-xs font-bold text-gray-700 mb-1 min-h-[22px] flex items-center">Moneda</label>
-                    <select
+                    <CreatableSelect
+                      options={[
+                        { id: 'COP', name: 'COP ($ Pesos)' },
+                        { id: 'USD', name: 'USD ($ Dólares)' },
+                        { id: 'EUR', name: 'EUR (€ Euros)' },
+                      ]}
                       value={oppForm.currency || 'COP'}
-                      onChange={(e) => {
-                        const newCurr = e.target.value as 'COP' | 'USD' | 'EUR';
+                      onChange={(val) => {
+                        const newCurr = val as 'COP' | 'USD' | 'EUR';
                         const trm = currentTrm > 0 ? currentTrm : 4150;
                         let newVal = oppForm.estimatedValue;
                         if (oppForm.currency === 'COP' && newCurr !== 'COP') {
@@ -1832,12 +1837,8 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                           estimatedValueUSD: estUSD,
                         });
                       }}
-                      className="w-full text-xs p-2.5 rounded-xl bg-slate-100 text-gray-800 font-bold focus:bg-white focus:outline-hidden cursor-pointer"
-                    >
-                      <option value="COP">COP ($ Pesos)</option>
-                      <option value="USD">USD ($ Dólares)</option>
-                      <option value="EUR">EUR (€ Euros)</option>
-                    </select>
+                      placeholder="Moneda..."
+                    />
                   </div>
 
                   <div>
@@ -2767,10 +2768,15 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
                         <label className="block text-xs font-bold text-gray-700 mb-1">Moneda</label>
-                        <select
+                        <CreatableSelect
+                          options={[
+                            { id: 'COP', name: 'COP ($ Pesos)' },
+                            { id: 'USD', name: 'USD ($ Dólares)' },
+                            { id: 'EUR', name: 'EUR (€ Euros)' },
+                          ]}
                           value={editingOpp.currency || 'USD'}
-                          onChange={(e) => {
-                            const newCurr = e.target.value as 'COP' | 'USD' | 'EUR';
+                          onChange={(val) => {
+                            const newCurr = val as 'COP' | 'USD' | 'EUR';
                             const trm = currentTrm > 0 ? currentTrm : 4150;
                             const prevCurr = editingOpp.currency || 'USD';
                             let newVal = editingOpp.estimatedValue || editingOpp.estimatedValueUSD;
@@ -2787,12 +2793,8 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                               estimatedValueUSD: estUSD,
                             });
                           }}
-                          className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white font-bold focus:outline-hidden focus:border-[#00668F]"
-                        >
-                          <option value="COP">COP ($ Pesos)</option>
-                          <option value="USD">USD ($ Dólares)</option>
-                          <option value="EUR">EUR (€ Euros)</option>
-                        </select>
+                          placeholder="Moneda..."
+                        />
                       </div>
 
                       <div>
@@ -2822,17 +2824,16 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
 
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">Etapa en el Pipeline</label>
-                      <select
+                      <CreatableSelect
+                        options={stages.map((stg) => ({
+                          id: stg.id,
+                          name: stg.label,
+                          code: stg.id
+                        }))}
                         value={editingOpp.stage}
-                        onChange={(e) => setEditingOpp({ ...editingOpp, stage: e.target.value as OpportunityStage })}
-                        className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F] font-medium"
-                      >
-                        {stages.map((stg) => (
-                          <option key={stg.id} value={stg.id}>
-                            {stg.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => setEditingOpp({ ...editingOpp, stage: val as OpportunityStage })}
+                        placeholder="Seleccionar etapa..."
+                      />
                     </div>
 
                     <div>
@@ -2992,19 +2993,20 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                       <div>
                         <label className="block text-[11px] font-semibold text-gray-600 mb-1">Tipo de Actividad</label>
-                        <select
+                        <CreatableSelect
+                          options={[
+                            { id: 'call', name: '📞 Llamada Telefónica' },
+                            { id: 'email', name: '✉️ Correo Electrónico' },
+                            { id: 'meeting', name: '🤝 Reunión / Mesa Técnica' },
+                            { id: 'document_sent', name: '📄 Envío de Documento' },
+                            { id: 'note', name: '📝 Nota Interna' },
+                          ]}
                           value={newActivityForm.type}
-                          onChange={(e) =>
-                            setNewActivityForm({ ...newActivityForm, type: e.target.value as any })
+                          onChange={(val) =>
+                            setNewActivityForm({ ...newActivityForm, type: val as any })
                           }
-                          className="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F]"
-                        >
-                          <option value="call">📞 Llamada Telefónica</option>
-                          <option value="email">✉️ Correo Electrónico</option>
-                          <option value="meeting">🤝 Reunión / Mesa Técnica</option>
-                          <option value="document_sent">📄 Envío de Documento</option>
-                          <option value="note">📝 Nota Interna</option>
-                        </select>
+                          placeholder="Tipo de actividad..."
+                        />
                       </div>
                       <div className="sm:col-span-3">
                         <label className="block text-[11px] font-semibold text-gray-600 mb-1">
@@ -3376,15 +3378,18 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
 
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="text-[11px] font-medium text-gray-500">Moneda:</span>
-                              <select
-                                value={currentQuote.currency || 'USD'}
-                                onChange={(e) => updateCurrentQuote({ currency: e.target.value as 'USD' | 'COP' | 'EUR' })}
-                                className="text-xs font-bold p-1.5 rounded-xl border border-gray-300 bg-slate-50 text-gray-800"
-                              >
-                                <option value="USD">USD ($ Dólar)</option>
-                                <option value="COP">COP ($ Peso Col)</option>
-                                <option value="EUR">EUR (€ Euro)</option>
-                              </select>
+                              <div className="min-w-[130px]">
+                                <CreatableSelect
+                                  options={[
+                                    { id: 'USD', name: 'USD ($ Dólar)' },
+                                    { id: 'COP', name: 'COP ($ Peso Col)' },
+                                    { id: 'EUR', name: 'EUR (€ Euro)' },
+                                  ]}
+                                  value={currentQuote.currency || 'USD'}
+                                  onChange={(val) => updateCurrentQuote({ currency: val as 'USD' | 'COP' | 'EUR' })}
+                                  placeholder="Moneda..."
+                                />
+                              </div>
 
                               {/* Widget TRM Oficial en Tiempo Real */}
                               <div className="flex items-center gap-1.5 bg-slate-50 border border-gray-200 px-2 py-1 rounded-xl">
@@ -3882,10 +3887,19 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                 </span>
                               </div>
 
-                              <select
+                              <CreatableSelect
+                                options={[
+                                  { id: 'anticipo_50_50', name: '50% Anticipo + 50% Entrega (Estándar Inteckno - 0% recargo)' },
+                                  { id: 'contado', name: '100% Contado / Pronto Pago (-2.0% Descuento Financiero)' },
+                                  { id: 'credito_30', name: 'Crédito a 30 días (+2.0% Costo Financiero de Capital)' },
+                                  { id: 'credito_60', name: 'Crédito a 60 días (+4.5% Costo Financiero de Capital)' },
+                                  { id: 'credito_90', name: 'Crédito a 90 días (+7.0% Costo Financiero Licitaciones)' },
+                                  { id: 'contra_entrega', name: '100% Contra entrega a satisfacción (0% recargo)' },
+                                  { id: 'personalizado', name: 'Personalizado (Definir texto y recargo)' },
+                                ]}
                                 value={currentQuote.paymentTermType || 'anticipo_50_50'}
-                                onChange={(e) => {
-                                  const type = e.target.value as any;
+                                onChange={(val) => {
+                                  const type = val as any;
                                   let paymentTermsText = currentQuote.paymentTerms;
                                   if (type === 'anticipo_50_50') paymentTermsText = '50% anticipo al ordenar, 50% contra entrega de informe técnico avalado';
                                   else if (type === 'contado') paymentTermsText = '100% anticipado / contado contra orden de compra formal';
@@ -3899,16 +3913,8 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                     paymentTerms: paymentTermsText,
                                   });
                                 }}
-                                className="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white font-medium text-gray-800 focus:outline-hidden focus:border-[#00668F]"
-                              >
-                                <option value="anticipo_50_50">50% Anticipo + 50% Entrega (Estándar Inteckno - 0% recargo)</option>
-                                <option value="contado">100% Contado / Pronto Pago (-2.0% Descuento Financiero)</option>
-                                <option value="credito_30">Crédito a 30 días (+2.0% Costo Financiero de Capital)</option>
-                                <option value="credito_60">Crédito a 60 días (+4.5% Costo Financiero de Capital)</option>
-                                <option value="credito_90">Crédito a 90 días (+7.0% Costo Financiero Licitaciones)</option>
-                                <option value="contra_entrega">100% Contra entrega a satisfacción (0% recargo)</option>
-                                <option value="personalizado">Personalizado (Definir texto y recargo)</option>
-                              </select>
+                                placeholder="Condición de pago..."
+                              />
 
                               <div className="grid grid-cols-4 gap-2">
                                 <input
@@ -3941,10 +3947,18 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                 <span className="text-[10px] text-gray-500 font-bold">Incoterms® 2020</span>
                               </div>
 
-                              <select
+                              <CreatableSelect
+                                options={[
+                                  { id: 'DDP', name: 'DDP - Delivered Duty Paid (En Sitio con flete, seguro y aduana)' },
+                                  { id: 'DAP', name: 'DAP - Delivered at Place (Puesto en sitio sin desaduanar)' },
+                                  { id: 'CIF', name: 'CIF / CIP - Cost, Insurance & Freight (Puerto/Aeropuerto destino)' },
+                                  { id: 'FOB', name: 'FOB / FCA - Libre a Bordo (Puerto/Aeropuerto de origen)' },
+                                  { id: 'EXW', name: 'EXW - En Fábrica / Taller Inteckno Medellín (Cliente retira)' },
+                                  { id: 'personalizado', name: 'Incoterm Personalizado' },
+                                ]}
                                 value={currentQuote.incotermType || 'DDP'}
-                                onChange={(e) => {
-                                  const type = e.target.value as any;
+                                onChange={(val) => {
+                                  const type = val as any;
                                   let incotermText = currentQuote.incoterm || '';
                                   if (type === 'EXW') incotermText = 'EXW Fábrica Inteckno (Medellín, Colombia)';
                                   else if (type === 'FOB') incotermText = 'FOB Puerto de Embarque / Aeropuerto Origen';
@@ -3957,15 +3971,8 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                     incoterm: incotermText,
                                   });
                                 }}
-                                className="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white font-medium text-gray-800 focus:outline-hidden focus:border-[#00668F]"
-                              >
-                                <option value="DDP">DDP - Delivered Duty Paid (En Sitio con flete, seguro y aduana)</option>
-                                <option value="DAP">DAP - Delivered at Place (Puesto en sitio sin desaduanar)</option>
-                                <option value="CIF">CIF / CIP - Cost, Insurance & Freight (Puerto/Aeropuerto destino)</option>
-                                <option value="FOB">FOB / FCA - Libre a Bordo (Puerto/Aeropuerto de origen)</option>
-                                <option value="EXW">EXW - En Fábrica / Taller Inteckno Medellín (Cliente retira)</option>
-                                <option value="personalizado">Incoterm Personalizado</option>
-                              </select>
+                                placeholder="Incoterm..."
+                              />
 
                               <div className="grid grid-cols-2 gap-2">
                                 <input
