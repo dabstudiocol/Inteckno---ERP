@@ -173,15 +173,62 @@ export const INTECKNO_OFFICIAL_CATEGORIES: {
 ];
 
 export function getCategoryMeta(cat: string) {
-  const normalized = 
-    cat === 'mano_obra' ? 'mano_obra_itk' :
-    cat === 'repuestos_materiales' ? 'repuestos_fabricacion' :
-    cat === 'subcontratos' ? 'subcontratos_gruas' :
-    cat === 'viaticos' ? 'viaticos_transporte' : cat;
-  return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === normalized) || {
-    key: normalized as any,
-    label: normalized.replace('_', ' ').toUpperCase(),
-    shortLabel: normalized.replace('_', ' ').toUpperCase(),
+  if (!cat) {
+    return INTECKNO_OFFICIAL_CATEGORIES[0];
+  }
+  const cleanCat = cat.trim().toLowerCase();
+  
+  // Buscar primero por coincidencia exacta de key
+  const matchByKey = INTECKNO_OFFICIAL_CATEGORIES.find(
+    (c) => c.key.toLowerCase() === cleanCat
+  );
+  if (matchByKey) return matchByKey;
+
+  // Buscar por coincidencia exacta o normalizada de label o shortLabel
+  const matchByLabel = INTECKNO_OFFICIAL_CATEGORIES.find(
+    (c) => c.label.toLowerCase() === cleanCat || c.shortLabel.toLowerCase() === cleanCat
+  );
+  if (matchByLabel) return matchByLabel;
+
+  // Mapeos heredados o abreviados
+  if (cleanCat.includes('viatic') || cleanCat.includes('pasaje') || cleanCat.includes('transporte')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'viaticos_transporte')!;
+  }
+  if (cleanCat.includes('itk') || (cleanCat.includes('mano') && !cleanCat.includes('extern'))) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'mano_obra_itk')!;
+  }
+  if (cleanCat.includes('extern')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'mano_obra_externa')!;
+  }
+  if (cleanCat.includes('consumibl') || cleanCat.includes('taller')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'consumibles_taller')!;
+  }
+  if (cleanCat.includes('mrt') || cleanCat.includes('cable')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'inspeccion_mrt')!;
+  }
+  if (cleanCat.includes('end') || cleanCat.includes('ensayo') || cleanCat.includes('ndt')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'ensayos_end')!;
+  }
+  if (cleanCat.includes('vibrac') || cleanCat.includes('tribolog')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'analisis_vibraciones')!;
+  }
+  if (cleanCat.includes('termogra')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'termografia')!;
+  }
+  if (cleanCat.includes('repuesto') || cleanCat.includes('fabricac') || cleanCat.includes('material')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'repuestos_fabricacion')!;
+  }
+  if (cleanCat.includes('subcontrat') || cleanCat.includes('grua')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'subcontratos_gruas')!;
+  }
+  if (cleanCat.includes('imprevist') || cleanCat.includes('contingenc')) {
+    return INTECKNO_OFFICIAL_CATEGORIES.find((c) => c.key === 'imprevistos_contingencia')!;
+  }
+
+  return {
+    key: cat as any,
+    label: cat,
+    shortLabel: cat,
     color: 'bg-slate-100 text-slate-700 border-slate-200',
     defaultUnit: 'unid',
     allowedUnits: ['unid', 'Horas', 'Días', 'Global', 'Servicio'],
@@ -751,24 +798,18 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
                   {/* Categoría Financiera */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block font-bold text-slate-700">Categoría Financiera</label>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${catMeta.color}`}>
-                        {catMeta.shortLabel}
-                      </span>
-                    </div>
+                    <label className="block font-bold text-slate-700 mb-1">Categoría Financiera</label>
                     <CreatableSelect
                       options={INTECKNO_OFFICIAL_CATEGORIES.map((cat) => ({
                         id: cat.key,
                         name: cat.label
                       }))}
-                      value={itemForm.category}
+                      value={catMeta.label}
                       onChange={(val) => {
-                        const newCat = val as CostMatrixItem['category'];
-                        const meta = getCategoryMeta(newCat);
+                        const meta = getCategoryMeta(val);
                         setItemForm({
                           ...itemForm,
-                          category: newCat,
+                          category: meta.key,
                           unit: meta.defaultUnit,
                           costType: meta.defaultCostType,
                         });
@@ -847,6 +888,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Unidad</label>
                       <CreatableSelect
+                        key={`unit-${itemForm.category}`}
                         value={itemForm.unit}
                         onChange={(val) => setItemForm({ ...itemForm, unit: val })}
                         options={catMeta.allowedUnits}
