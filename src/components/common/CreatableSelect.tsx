@@ -183,19 +183,27 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
           } ${inputClassName}`}
         />
 
-        <div className="absolute right-2 flex items-center gap-1">
-          {value && !disabled && (
+        <div className="absolute right-2 flex items-center gap-1 z-10">
+          {(value || searchTerm) && !disabled && (
             <button
               type="button"
-              onClick={() => {
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 onChange('');
                 setSearchTerm('');
-                inputRef.current?.focus();
+                if (isOpen) {
+                  inputRef.current?.focus();
+                }
               }}
               title="Limpiar"
-              className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-slate-200/60 transition-colors"
+              className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-slate-200/80 transition-colors cursor-pointer"
             >
-              <X size={13} />
+              <X size={14} />
             </button>
           )}
 

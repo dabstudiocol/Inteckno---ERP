@@ -88,6 +88,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const [isModuleConfigOpen, setIsModuleConfigOpen] = useState(false);
+  const [customModuleConfigId, setCustomModuleConfigId] = useState<string | null>(null);
   const [isUserAlertsModalOpen, setIsUserAlertsModalOpen] = useState(false);
   const lastNotifiedUserRef = useRef<string | null>(null);
 
@@ -238,9 +239,14 @@ export const AppShell: React.FC<AppShellProps> = ({
     };
   }, []);
 
-  // Escuchar evento para abrir modal de configuración desde cualquier combobox
+  // Escuchar evento para abrir modal de configuración desde cualquier combobox o submódulo
   useEffect(() => {
-    const handleOpenConfig = () => {
+    const handleOpenConfig = (e: any) => {
+      if (e?.detail?.moduleId) {
+        setCustomModuleConfigId(e.detail.moduleId);
+      } else {
+        setCustomModuleConfigId(null);
+      }
       setIsModuleConfigOpen(true);
     };
     window.addEventListener('inteckno:open-module-config', handleOpenConfig);
@@ -1131,9 +1137,12 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Modal Universal de Configuración de Módulos */}
       <UniversalModuleConfigModal
         isOpen={isModuleConfigOpen}
-        onClose={() => setIsModuleConfigOpen(false)}
-        moduleId={activeModuleId}
-        moduleTitle={activeTitle}
+        onClose={() => {
+          setIsModuleConfigOpen(false);
+          setCustomModuleConfigId(null);
+        }}
+        moduleId={customModuleConfigId || activeModuleId}
+        moduleTitle={customModuleConfigId ? undefined : activeTitle}
       />
 
       {/* Pop-up de Notificación de Mensaje en Tiempo Real (Estilo WhatsApp) en la Esquina Inferior Derecha */}

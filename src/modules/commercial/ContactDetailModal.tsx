@@ -108,7 +108,8 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
   onSave,
 }) => {
   const catalogCountries = useModuleCatalog('crm', 'countries');
-  const catalogPaymentTerms = useModuleCatalog('compras', 'paymentTerms');
+  const catalogCurrencies = useModuleCatalog('crm', 'currencies');
+  const catalogPaymentTerms = useModuleCatalog('crm', 'paymentTerms');
 
   const [activeTab, setActiveTab] = useState<
     'contactos' | 'ventas_compras' | 'facturacion' | 'notas' | 'dian'
@@ -353,9 +354,9 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
+            onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config', { detail: { moduleId: 'crm' } }))}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
-            title="Personalizar catálogos y opciones comerciales"
+            title="Personalizar catálogos y opciones comerciales (Países, Monedas, Términos de Pago)"
           >
             <Settings size={14} />
             <span className="hidden sm:inline">Configurar Opciones</span>
@@ -926,14 +927,24 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                         },
                       })
                     }
-                    options={[
-                      { id: 'USD', name: 'USD ($ - Dólar Estadounidense)', code: 'USD' },
-                      { id: 'COP', name: 'COP ($ - Peso Colombiano)', code: 'COP' },
-                      { id: 'EUR', name: 'EUR (€ - Euro)', code: 'EUR' },
-                      { id: 'MXN', name: 'MXN ($ - Peso Mexicano)', code: 'MXN' },
-                      { id: 'BOB', name: 'BOB (Bs - Boliviano)', code: 'BOB' },
-                    ]}
-                    allowCustomText={false}
+                    options={
+                      catalogCurrencies.length > 0
+                        ? catalogCurrencies.map((c) => ({ id: c.code || c.id, name: c.name, code: c.code }))
+                        : [
+                            { id: 'USD', name: 'USD ($ - Dólar Estadounidense)', code: 'USD' },
+                            { id: 'COP', name: 'COP ($ - Peso Colombiano)', code: 'COP' },
+                            { id: 'EUR', name: 'EUR (€ - Euro Europeo)', code: 'EUR' },
+                            { id: 'MXN', name: 'MXN ($ - Peso Mexicano)', code: 'MXN' },
+                            { id: 'BOB', name: 'BOB (Bs - Boliviano)', code: 'BOB' },
+                            { id: 'CLP', name: 'CLP ($ - Peso Chileno)', code: 'CLP' },
+                            { id: 'PEN', name: 'PEN (S/ - Sol Peruano)', code: 'PEN' },
+                            { id: 'CHF', name: 'CHF (Fr - Franco Suizo)', code: 'CHF' },
+                          ]
+                    }
+                    placeholder="Buscar o escribir moneda..."
+                    moduleId="crm"
+                    catalogKey="currencies"
+                    allowCustomText={true}
                     inputClassName="bg-slate-50"
                   />
                 </div>
@@ -957,7 +968,7 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                         : PAYMENT_TERMS_PRESETS.map((p) => ({ id: p, name: p }))
                     }
                     placeholder="Seleccionar o escribir término de pago..."
-                    moduleId="compras"
+                    moduleId="crm"
                     catalogKey="paymentTerms"
                     allowCustomText={true}
                     inputClassName="bg-slate-50"
