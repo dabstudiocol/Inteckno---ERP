@@ -1729,15 +1729,11 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                   <div>
-                    <label className="text-xs font-bold text-gray-700 mb-1 min-h-[22px] flex items-center">Cliente / Operador</label>
-                    <input
-                      type="text"
+                    <CreatableSelect
+                      label="Cliente / Operador STC"
                       required
-                      list="crm-contacts-datalist"
-                      placeholder="Ej: Metro de Medellín"
                       value={oppForm.clientName}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) => {
                         const match = contacts.find((c) => c.company.toLowerCase() === val.toLowerCase());
                         if (match) {
                           setOppForm({
@@ -1753,13 +1749,14 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                           setOppForm({ ...oppForm, clientName: val });
                         }
                       }}
-                      className="w-full text-xs p-2.5 rounded-xl bg-slate-100 text-gray-800 focus:bg-white focus:outline-hidden"
+                      options={contacts.map((c) => ({
+                        id: c.id,
+                        name: c.company,
+                        code: c.country,
+                      }))}
+                      placeholder="Seleccionar o escribir cliente..."
+                      allowCustomText={true}
                     />
-                    <datalist id="crm-contacts-datalist">
-                      {contacts.map((c) => (
-                        <option key={c.id} value={c.company}>{c.name} ({c.country})</option>
-                      ))}
-                    </datalist>
                   </div>
                   <div>
                     <CreatableSelect
@@ -1770,7 +1767,6 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                       moduleId="crm"
                       catalogKey="countries"
                       placeholder="Seleccionar o escribir país..."
-                      onOpenConfig={() => setIsConfigModalOpen(true)}
                     />
                   </div>
                 </div>
@@ -2699,14 +2695,11 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Cliente / Operador</label>
-                      <input
-                        type="text"
+                      <CreatableSelect
+                        label="Cliente / Operador STC"
                         required
-                        list="editing-contacts-datalist"
                         value={editingOpp.clientName}
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) => {
                           const match = contacts.find((c) => c.company.toLowerCase() === val.toLowerCase());
                           if (match) {
                             setEditingOpp({
@@ -2722,23 +2715,26 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                             setEditingOpp({ ...editingOpp, clientName: val });
                           }
                         }}
-                        className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
+                        options={contacts.map((c) => ({
+                          id: c.id,
+                          name: c.company,
+                          code: c.country,
+                        }))}
+                        placeholder="Seleccionar o escribir cliente..."
+                        allowCustomText={true}
                       />
-                      <datalist id="editing-contacts-datalist">
-                        {contacts.map((c) => (
-                          <option key={c.id} value={c.company}>{c.name} ({c.country})</option>
-                        ))}
-                      </datalist>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">País</label>
-                      <input
-                        type="text"
+                      <CreatableSelect
+                        label="País"
                         required
                         value={editingOpp.country}
-                        onChange={(e) => setEditingOpp({ ...editingOpp, country: e.target.value })}
-                        className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
+                        onChange={(val) => setEditingOpp({ ...editingOpp, country: val })}
+                        options={catalogCountries}
+                        moduleId="crm"
+                        catalogKey="countries"
+                        placeholder="Seleccionar o escribir país..."
                       />
                     </div>
 

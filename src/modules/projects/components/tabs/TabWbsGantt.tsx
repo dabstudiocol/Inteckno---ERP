@@ -25,6 +25,7 @@ import { UniversalModuleConfigModal } from '../../../../components/common/Univer
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { TemplateManagerModal } from '../../../../components/common/TemplateManagerModal';
+import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { INTECKNO_WBS_TEMPLATES_5_FAMILIAS } from '../../../../core/config/intecknoDomainCatalog';
 
 interface TabWbsGanttProps {
@@ -1449,22 +1450,16 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Entregable Clave Asociado
-                    </label>
-                    <input
-                      type="text"
-                      list="entregables-datalist"
+                    <CreatableSelect
+                      label="Entregable Clave Asociado"
                       value={taskForm.deliverable}
-                      onChange={(e) => setTaskForm({ ...taskForm, deliverable: e.target.value })}
+                      onChange={(val) => setTaskForm({ ...taskForm, deliverable: val })}
+                      options={customEntregables.map((ent) => ({ id: ent, name: ent }))}
+                      moduleId="projects"
+                      catalogKey="entregables"
                       placeholder="Seleccionar o escribir entregable..."
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                      allowCustomText={true}
                     />
-                    <datalist id="entregables-datalist">
-                      {customEntregables.map((ent, idx) => (
-                        <option key={idx} value={ent} />
-                      ))}
-                    </datalist>
                   </div>
                 </div>
 
@@ -1659,24 +1654,18 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Responsable Técnico
-                    </label>
-                    <input
-                      type="text"
-                      list="users-datalist-inteckno"
+                    <CreatableSelect
+                      label="Responsable Técnico"
                       value={taskForm.assignedToName}
-                      onChange={(e) => setTaskForm({ ...taskForm, assignedToName: e.target.value })}
+                      onChange={(val) => setTaskForm({ ...taskForm, assignedToName: val })}
+                      options={(erpUsers || []).map((u) => ({
+                        id: u.id,
+                        name: u.name,
+                        code: u.roleLabel || undefined,
+                      }))}
                       placeholder="Seleccionar o escribir..."
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                      allowCustomText={true}
                     />
-                    <datalist id="users-datalist-inteckno">
-                      {erpUsers.map((u) => (
-                        <option key={u.id} value={u.name}>
-                          {u.name} {u.roleLabel ? `(${u.roleLabel})` : ''}
-                        </option>
-                      ))}
-                    </datalist>
                   </div>
 
                   <div>
@@ -1767,22 +1756,16 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                 )}
 
                 <div>
-                  <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Recursos Técnicos / Cuadrilla y Equipos
-                  </label>
-                  <input
-                    type="text"
-                    list="recursos-datalist-inteckno"
+                  <CreatableSelect
+                    label="Recursos Técnicos / Cuadrilla y Equipos"
                     value={taskForm.assignedResources}
-                    onChange={(e) => setTaskForm({ ...taskForm, assignedResources: e.target.value })}
+                    onChange={(val) => setTaskForm({ ...taskForm, assignedResources: val })}
+                    options={customRecursos.map((rec) => ({ id: rec, name: rec }))}
+                    moduleId="projects"
+                    catalogKey="recursos"
                     placeholder="Seleccionar o escribir cuadrilla y equipos..."
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                    allowCustomText={true}
                   />
-                  <datalist id="recursos-datalist-inteckno">
-                    {customRecursos.map((rec, idx) => (
-                      <option key={idx} value={rec} />
-                    ))}
-                  </datalist>
                 </div>
               </div>
 

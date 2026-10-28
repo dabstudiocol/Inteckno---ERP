@@ -20,6 +20,7 @@ import { Project, Opportunity, User, Partner } from '../../../types';
 import { INTECKNO_PORTFOLIO } from '../../../core/config/portfolioCatalog';
 import { INTECKNO_CLIENTES_REALES } from '../../../core/config/intecknoDomainCatalog';
 import { formatUSD } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface ProjectDynamicFormProps {
   opportunities: Opportunity[];
@@ -415,30 +416,19 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
         {/* Fila 2: Cliente con conexión a Base de Datos de Clientes y escritura libre */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-              <span>Cliente / Razón Social *</span>
-              <span className="text-[10px] text-slate-400 font-normal">
-                Selecciona de la lista o escribe uno nuevo
-              </span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                required
-                list="itk-clients-datalist"
-                value={clientName}
-                onChange={(e) => handleClientNameChange(e.target.value)}
-                placeholder="Escribe o selecciona cliente (ej. Metro de Medellín)..."
-                className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
-              />
-              <datalist id="itk-clients-datalist">
-                {knownClients.map(c => (
-                  <option key={c.name} value={c.name}>
-                    {c.taxId ? `${c.name} (NIT: ${c.taxId})` : c.name}
-                  </option>
-                ))}
-              </datalist>
-            </div>
+            <CreatableSelect
+              label="Cliente / Razón Social"
+              required
+              value={clientName}
+              onChange={(val) => handleClientNameChange(val)}
+              options={knownClients.map(c => ({
+                id: c.name,
+                name: c.name,
+                code: c.taxId ? `NIT: ${c.taxId}` : undefined,
+              }))}
+              placeholder="Escribe o selecciona cliente (ej. Metro de Medellín)..."
+              allowCustomText={true}
+            />
           </div>
 
           <div>
@@ -458,30 +448,19 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
         {/* Fila 3: Líder de Proyecto con desplegable de personal de la empresa + escritura libre, Ubicación y Centro de Costos */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-              <span>Líder / Director del Proyecto *</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                required
-                list="itk-team-datalist"
-                value={supervisorName}
-                onChange={(e) => setSupervisorName(e.target.value)}
-                placeholder="Seleccionar o escribir líder..."
-                className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
-              />
-              <datalist id="itk-team-datalist">
-                {erpUsers.map(u => (
-                  <option key={u.id} value={u.name}>
-                    {u.name} {u.roleLabel ? `(${u.roleLabel})` : u.department ? `(${u.department})` : ''}
-                  </option>
-                ))}
-              </datalist>
-            </div>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">
-              Desplegable con personal de Inteckno o escribe cualquier persona.
-            </span>
+            <CreatableSelect
+              label="Líder / Director del Proyecto"
+              required
+              value={supervisorName}
+              onChange={(val) => setSupervisorName(val)}
+              options={erpUsers.map(u => ({
+                id: u.id,
+                name: u.name,
+                code: u.roleLabel || u.department || undefined,
+              }))}
+              placeholder="Seleccionar o escribir líder..."
+              allowCustomText={true}
+            />
           </div>
 
           <div>
