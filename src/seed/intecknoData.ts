@@ -2538,22 +2538,6 @@ export const SEED_TIMESHEETS: TimesheetEntry[] = [
 
 export const SEED_EXPENSES: ExpenseEntry[] = [
   {
-    id: 'EXP-01',
-    userId: 'USR-05',
-    userName: 'Dairo Morales',
-    projectId: 'PRJ-02',
-    projectCode: 'PRJ-2026-LPZ-01',
-    costCenter: 'CC-BOL-LPZ-MITEL',
-    date: '2026-09-21',
-    category: 'alojamiento',
-    categoryLabel: 'Alojamiento en Campo',
-    amount: 140,
-    currency: 'USD',
-    receiptPhotoUrl: '/receipt-hotel.jpg',
-    description: 'Hotel Presidente La Paz - 2 noches personal técnico en comisión de servicio.',
-    status: 'pending',
-  },
-  {
     id: 'EXP-PC-01',
     userId: 'USR-04',
     userName: 'Sebastian Velez',
