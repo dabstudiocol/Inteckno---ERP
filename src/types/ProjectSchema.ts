@@ -330,9 +330,18 @@ export interface CostMatrixItem {
   plannedTotal: number;
   actualQuantity: number;
   actualUnitCost: number;
-  actualTotal: number;
+  actualTotal?: number;
   variance: number;
   spendingNature?: 'PRESUPUESTO' | 'REPROCESO';
+  // Atributos de Control Financiero Real Inteckno (P23, P25, P26)
+  costType?: 'directo' | 'indirecto'; // Costos Directos vs Indirectos (Pólizas, Peajes)
+  date?: string; // Fecha del gasto o corte
+  invoiceNumber?: string; // N° Recibo / Factura / Soporte
+  ivaAmount?: number; // IVA (19%) Si aplica
+  retentionAmount?: number; // Retención en la fuente si aplica
+  observations?: string; // Observaciones de obra / notas
+  splitPercentage?: number; // % Asignado a este proyecto (ej. 50% si se comparte con otro)
+  splitWithProjectCode?: string; // Proyecto con el que se comparte (ej. P25-21)
 }
 
 // ---------------------------------------------------------------------------

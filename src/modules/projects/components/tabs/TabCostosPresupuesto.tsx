@@ -87,9 +87,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const [itemToDelete, setItemToDelete] = useState<CostMatrixItem | null>(null);
   const [selectedCostDetail, setSelectedCostDetail] = useState<CostMatrixItem | null>(null);
 
-  // Formulario de nuevo rubro financiero
+  // Formulario de nuevo rubro financiero (Alineado a BD Control de Proyectos Inteckno P23, P25, P26)
   const [itemForm, setItemForm] = useState<{
     category: CostMatrixItem['category'];
+    costType: 'directo' | 'indirecto';
     concept: string;
     unit: string;
     plannedQuantity: number;
@@ -97,8 +98,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     actualQuantity: number;
     actualUnitCost: number;
     spendingNature: 'PRESUPUESTO' | 'REPROCESO';
+    date: string;
+    invoiceNumber: string;
+    ivaAmount: number;
+    retentionAmount: number;
+    observations: string;
+    splitPercentage: number;
+    splitWithProjectCode: string;
   }>({
     category: 'mano_obra_itk',
+    costType: 'directo',
     concept: '',
     unit: 'Horas',
     plannedQuantity: 40,
@@ -106,19 +115,30 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     actualQuantity: 0,
     actualUnitCost: 65000,
     spendingNature: 'PRESUPUESTO',
+    date: new Date().toISOString().split('T')[0],
+    invoiceNumber: '',
+    ivaAmount: 0,
+    retentionAmount: 0,
+    observations: '',
+    splitPercentage: 100,
+    splitWithProjectCode: '',
   });
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemForm.concept) return;
 
-    const plannedTotal = itemForm.plannedQuantity * itemForm.plannedUnitCost;
-    const actualTotal = itemForm.actualQuantity * itemForm.actualUnitCost;
+    const rawPlanned = itemForm.plannedQuantity * itemForm.plannedUnitCost;
+    const rawActual = itemForm.actualQuantity * itemForm.actualUnitCost;
+    const factor = (itemForm.splitPercentage || 100) / 100;
+    const plannedTotal = rawPlanned * factor;
+    const actualTotal = rawActual * factor;
     const variance = plannedTotal - actualTotal;
 
     const newItem: CostMatrixItem = {
       id: `COST-${Date.now()}`,
       category: itemForm.category,
+      costType: itemForm.costType,
       concept: itemForm.concept,
       unit: itemForm.unit,
       plannedQuantity: itemForm.plannedQuantity,
@@ -129,6 +149,13 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       actualTotal,
       variance,
       spendingNature: itemForm.spendingNature,
+      date: itemForm.date,
+      invoiceNumber: itemForm.invoiceNumber,
+      ivaAmount: itemForm.ivaAmount,
+      retentionAmount: itemForm.retentionAmount,
+      observations: itemForm.observations,
+      splitPercentage: itemForm.splitPercentage,
+      splitWithProjectCode: itemForm.splitWithProjectCode,
     };
 
     const updated = [newItem, ...costItems];
@@ -140,6 +167,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
     setItemForm({
       category: 'mano_obra_itk',
+      costType: 'directo',
       concept: '',
       unit: 'Horas',
       plannedQuantity: 40,
@@ -147,6 +175,13 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       actualQuantity: 0,
       actualUnitCost: 65000,
       spendingNature: 'PRESUPUESTO',
+      date: new Date().toISOString().split('T')[0],
+      invoiceNumber: '',
+      ivaAmount: 0,
+      retentionAmount: 0,
+      observations: '',
+      splitPercentage: 100,
+      splitWithProjectCode: '',
     });
     setIsAddItemModalOpen(false);
   };
@@ -419,15 +454,17 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             <table className="w-full text-xs text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Tipo</th>
+                  <th className="py-2.5 px-3">Fecha / Soporte</th>
                   <th className="py-2.5 px-4">Categoría</th>
-                  <th className="py-2.5 px-4">Concepto / Actividad</th>
-                  <th className="py-2.5 px-4 text-center">Unidad</th>
-                  <th className="py-2.5 px-4 text-right">Cant. Plan</th>
-                  <th className="py-2.5 px-4 text-right">Costo Unit. Plan</th>
-                  <th className="py-2.5 px-4 text-right">Total Planificado</th>
-                  <th className="py-2.5 px-4 text-right">Total Real</th>
-                  <th className="py-2.5 px-4 text-right">Desviación</th>
-                  <th className="py-2.5 px-4 text-right">Acciones</th>
+                  <th className="py-2.5 px-4">Concepto / Actividad / Proveedor</th>
+                  <th className="py-2.5 px-3 text-center">Unidad</th>
+                  <th className="py-2.5 px-3 text-right">Cant. Plan</th>
+                  <th className="py-2.5 px-3 text-right">Costo Plan</th>
+                  <th className="py-2.5 px-3 text-right">Total Plan</th>
+                  <th className="py-2.5 px-3 text-right">Total Real</th>
+                  <th className="py-2.5 px-3 text-right">Desviación</th>
+                  <th className="py-2.5 px-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -437,6 +474,25 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     onClick={() => setSelectedCostDetail(item)}
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                   >
+                    <td className="py-2.5 px-3">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                        item.costType === 'indirecto'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : 'bg-sky-50 text-[#00668F] border border-sky-200'
+                      }`}>
+                        {item.costType === 'indirecto' ? 'INDIRECTO' : 'DIRECTO'}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <div className="font-mono text-[11px] font-semibold text-slate-700">
+                        {item.date || '—'}
+                      </div>
+                      {item.invoiceNumber && (
+                        <div className="font-mono text-[10px] text-slate-400">
+                          {item.invoiceNumber}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-2.5 px-4">
                       {(() => {
                         const meta = getCategoryMeta(item.category);
@@ -450,6 +506,11 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     <td className="py-2.5 px-4 font-bold text-slate-800 group-hover:text-[#00668F] transition-colors">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span>{item.concept}</span>
+                        {item.splitPercentage && item.splitPercentage < 100 && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title={`Prorrateado ${item.splitPercentage}% con ${item.splitWithProjectCode || 'otro proyecto'}`}>
+                            {item.splitPercentage}% {item.splitWithProjectCode ? `(${item.splitWithProjectCode})` : ''}
+                          </span>
+                        )}
                         {item.spendingNature === 'REPROCESO' ? (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300" title="Reproceso / Calidad (Garantía)">
                             REPROCESO
@@ -460,13 +521,18 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           </span>
                         )}
                       </div>
+                      {item.observations && (
+                        <div className="text-[10px] text-slate-400 font-normal mt-0.5 italic">
+                          {item.observations}
+                        </div>
+                      )}
                     </td>
-                    <td className="py-2.5 px-4 text-center text-slate-500 font-mono text-[11px]">{item.unit}</td>
-                    <td className="py-2.5 px-4 text-right font-mono">{item.plannedQuantity}</td>
-                    <td className="py-2.5 px-4 text-right font-mono">{formatCOP(item.plannedUnitCost)}</td>
-                    <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900">{formatCOP(item.plannedTotal)}</td>
-                    <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900">{formatCOP(item.actualTotal)}</td>
-                    <td className={`py-2.5 px-4 text-right font-mono font-bold ${item.variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <td className="py-2.5 px-3 text-center text-slate-500 font-mono text-[11px]">{item.unit}</td>
+                    <td className="py-2.5 px-3 text-right font-mono">{item.plannedQuantity}</td>
+                    <td className="py-2.5 px-3 text-right font-mono">{formatCOP(item.plannedUnitCost)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatCOP(item.plannedTotal)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatCOP(item.actualTotal)}</td>
+                    <td className={`py-2.5 px-3 text-right font-mono font-bold ${item.variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {item.variance >= 0 ? '+' : ''}{formatCOP(item.variance)}
                     </td>
                     <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -538,8 +604,37 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   </button>
                 </div>
               </div>
+              {/* Tipo de Costo: Directo vs Indirecto (Real Inteckno) */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Categoría</label>
+                <label className="block font-bold text-slate-700 mb-1">Tipo de Costo</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setItemForm({ ...itemForm, costType: 'directo' })}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                      itemForm.costType === 'directo'
+                        ? 'bg-sky-50 border-[#00668F] text-[#00668F]'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Costos Directos (MO, Obra, Insumos)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setItemForm({ ...itemForm, costType: 'indirecto' })}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                      itemForm.costType === 'indirecto'
+                        ? 'bg-purple-50 border-purple-500 text-purple-700'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Costos Indirectos (Pólizas, Peajes)
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Categoría Financiera</label>
                 <CreatableSelect
                   options={INTECKNO_OFFICIAL_CATEGORIES.map((cat) => ({
                     id: cat.key,
@@ -550,25 +645,52 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   placeholder="Seleccionar o buscar categoría..."
                 />
               </div>
+
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Concepto / Descripción</label>
+                <label className="block font-bold text-slate-700 mb-1">Concepto / Actividad / Proveedor</label>
                 <input
                   type="text"
                   required
-                  placeholder="ej. Soldador 6G Calificado ASME IX"
+                  placeholder="ej. Ruben Arcos / Cía Mundial de Seguros / SKF"
                   value={itemForm.concept}
                   onChange={(e) => setItemForm({ ...itemForm, concept: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Fecha</label>
+                  <input
+                    type="date"
+                    value={itemForm.date}
+                    onChange={(e) => setItemForm({ ...itemForm, date: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Recibo / Factura / DS</label>
+                  <input
+                    type="text"
+                    placeholder="ej. FE-3098 / DS-1035"
+                    value={itemForm.invoiceNumber}
+                    onChange={(e) => setItemForm({ ...itemForm, invoiceNumber: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Unidad</label>
-                  <input
-                    type="text"
+                  <CreatableSelect
                     value={itemForm.unit}
-                    onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                    onChange={(val) => setItemForm({ ...itemForm, unit: val })}
+                    options={['Horas', 'Días', 'Meses', 'unid', 'm', 'gal', 'Servicio', 'Póliza']}
+                    placeholder="Unidad..."
+                    allowCustomText={true}
+                    isClearable={false}
+                    inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
                   />
                 </div>
                 <div>
@@ -582,6 +704,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   />
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Costo Unitario Plan (COP)</label>
@@ -598,7 +721,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   <input
                     type="number"
                     min="0"
-                    value={itemForm.actualUnitCost * itemForm.actualQuantity}
+                    value={itemForm.actualUnitCost * (itemForm.actualQuantity || 1)}
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setItemForm({
@@ -607,9 +730,51 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         actualUnitCost: val,
                       });
                     }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800"
                   />
                 </div>
+              </div>
+
+              {/* Prorrateo entre Proyectos (Regla Real Inteckno ej. P25-20 y P25-21) */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 text-xs">Prorrateo / División entre Proyectos</label>
+                  <span className="text-[10px] font-bold text-[#00668F] font-mono">{itemForm.splitPercentage}% a este proyecto</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-slate-500 mb-0.5">% Asignado a {project.code}</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={itemForm.splitPercentage}
+                      onChange={(e) => setItemForm({ ...itemForm, splitPercentage: Number(e.target.value) || 100 })}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-500 mb-0.5">Compartido con Proyecto (ej. P25-21)</label>
+                    <input
+                      type="text"
+                      placeholder="ej. P25 - 21"
+                      value={itemForm.splitWithProjectCode}
+                      onChange={(e) => setItemForm({ ...itemForm, splitWithProjectCode: e.target.value })}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Observaciones / Notas de Obra</label>
+                <input
+                  type="text"
+                  placeholder="ej. Mano de obra personal con corte al 5/12/2025"
+                  value={itemForm.observations}
+                  onChange={(e) => setItemForm({ ...itemForm, observations: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                />
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
@@ -663,8 +828,12 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         } : undefined}
         onClose={() => setSelectedCostDetail(null)}
         fields={selectedCostDetail ? [
-          { label: 'Concepto / Actividad', value: selectedCostDetail.concept, colSpan: 2 },
+          { label: 'Concepto / Actividad / Proveedor', value: selectedCostDetail.concept, colSpan: 2 },
+          { label: 'Tipo de Costo', value: selectedCostDetail.costType === 'indirecto' ? 'Costos Indirectos (Pólizas, Peajes)' : 'Costos Directos (MO, Obra, Insumos)' },
           { label: 'Categoría Financiera', value: selectedCostDetail.category.replace('_', ' ').toUpperCase() },
+          { label: 'Fecha de Corte / Gasto', value: selectedCostDetail.date || 'No registrada' },
+          { label: 'N° Recibo / Factura / Soporte', value: selectedCostDetail.invoiceNumber || 'Sin soporte asignado', isMono: true },
+          { label: 'Prorrateo / División', value: selectedCostDetail.splitPercentage ? `${selectedCostDetail.splitPercentage}% a este proyecto ${selectedCostDetail.splitWithProjectCode ? `(Compartido con ${selectedCostDetail.splitWithProjectCode})` : ''}` : '100% Imputado a este proyecto' },
           { label: 'Unidad de Medida', value: selectedCostDetail.unit, isMono: true },
           { label: 'Cantidad Planificada', value: selectedCostDetail.plannedQuantity.toString(), isMono: true },
           { label: 'Costo Unitario Plan', value: formatCOP(selectedCostDetail.plannedUnitCost), isMono: true },
@@ -673,6 +842,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           { label: 'Costo Unitario Real', value: formatCOP(selectedCostDetail.actualUnitCost), isMono: true },
           { label: 'Total Real Incurrido', value: formatCOP(selectedCostDetail.actualTotal), isMono: true },
           { label: 'Desviación Presupuestal', value: `${selectedCostDetail.variance >= 0 ? '+' : ''}${formatCOP(selectedCostDetail.variance)}`, isMono: true },
+          { label: 'Observaciones / Notas', value: selectedCostDetail.observations || 'Sin observaciones.', colSpan: 2 },
         ] : []}
       />
     </div>
