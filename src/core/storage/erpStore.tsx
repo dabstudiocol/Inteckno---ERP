@@ -78,6 +78,7 @@ import {
   subscribeToCloudModule,
   syncInventoryToCloud,
   subscribeToCloudInventory,
+  loadAllModulesFromCloud,
 } from '../services/firestoreSyncService';
 import { recordAuditEvent } from '../services/auditService';
 import { undoRedoService, UserUndoAction, SupportedCollection } from '../services/undoRedoService';
@@ -644,6 +645,70 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     let isMounted = true;
 
+    // 0. CARGA INICIAL FORZADA DESDE GOOGLE CLOUD FIRESTORE (CLOUD-FIRST):
+    // Garantiza que cualquier navegador, PC o celular descargue la base de datos central antes de cualquier cosa.
+    loadAllModulesFromCloud().then((cloudData) => {
+      if (!isMounted || !cloudData) return;
+      isRemoteUpdateRef.current = true;
+      setState((prev) => {
+        const next: ErpState = { ...prev };
+        let hasChanges = false;
+
+        // Projects
+        if (cloudData.projects) {
+          if (Array.isArray(cloudData.projects.projects)) { next.projects = cloudData.projects.projects; hasChanges = true; }
+          if (Array.isArray(cloudData.projects.tasks)) { next.tasks = cloudData.projects.tasks; hasChanges = true; }
+          if (Array.isArray(cloudData.projects.milestones)) { next.milestones = cloudData.projects.milestones; hasChanges = true; }
+        }
+
+        // Procurement
+        if (cloudData.procurement) {
+          if (Array.isArray(cloudData.procurement.purchaseOrders)) { next.purchaseOrders = cloudData.procurement.purchaseOrders; hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.requisitions)) { next.requisitions = cloudData.procurement.requisitions; hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.equipment)) { next.equipment = cloudData.procurement.equipment; hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.partners)) { next.partners = cloudData.procurement.partners; hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.inventoryAuditLogs)) { next.inventoryAuditLogs = cloudData.procurement.inventoryAuditLogs; hasChanges = true; }
+        }
+
+        // Products / Inventory
+        if (Array.isArray(cloudData.products) && cloudData.products.length > 0) {
+          next.products = cloudData.products;
+          hasChanges = true;
+        }
+
+        // Operations
+        if (cloudData.operations) {
+          if (Array.isArray(cloudData.operations.timesheets)) { next.timesheets = cloudData.operations.timesheets; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.expenses)) { next.expenses = cloudData.operations.expenses; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.ddrs)) { next.ddrs = cloudData.operations.ddrs; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.remissions)) { next.remissions = cloudData.operations.remissions; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.maintenancePlans)) { next.maintenancePlans = cloudData.operations.maintenancePlans; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.employees)) { next.employees = cloudData.operations.employees; hasChanges = true; }
+        }
+
+        // Commercial
+        if (cloudData.commercial) {
+          if (Array.isArray(cloudData.commercial.opportunities)) { next.opportunities = cloudData.commercial.opportunities; hasChanges = true; }
+          if (Array.isArray(cloudData.commercial.contacts)) { next.contacts = cloudData.commercial.contacts; hasChanges = true; }
+          if (Array.isArray(cloudData.commercial.leads)) { next.leads = cloudData.commercial.leads; hasChanges = true; }
+        }
+
+        // Productivity
+        if (cloudData.productivity) {
+          if (Array.isArray(cloudData.productivity.todos)) { next.todos = cloudData.productivity.todos; hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.calendarEvents)) { next.calendarEvents = cloudData.productivity.calendarEvents; hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.documents)) { next.documents = cloudData.productivity.documents; hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.articles)) { next.articles = cloudData.productivity.articles; hasChanges = true; }
+        }
+
+        return hasChanges ? next : prev;
+      });
+      isCloudLoadedRef.current = true;
+    }).catch((err) => {
+      console.warn('[CloudSync] Error en carga inicial forzada de módulos:', err);
+      isCloudLoadedRef.current = true;
+    });
+
     // 1. Sincronización automática de usuarios locales hacia la nube de Google Cloud:
     // Si este dispositivo tiene datos personalizados (foto, RH, teléfono), los sube para que el celular los vea
     syncLocalCustomUsersToCloud(state.users).catch((err) => {
@@ -868,6 +933,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ddrs: Array.isArray(data.ddrs) ? data.ddrs : prev.ddrs,
         remissions: Array.isArray(data.remissions) ? data.remissions : prev.remissions,
         maintenancePlans: Array.isArray(data.maintenancePlans) ? data.maintenancePlans : prev.maintenancePlans,
+        employees: Array.isArray(data.employees) ? data.employees : prev.employees,
       }));
     });
 
@@ -910,11 +976,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const isRemoteUpdateRef = useRef(false);
+  const isCloudLoadedRef = useRef(false);
 
   // SINCRONIZADOR REACTIVO MODULAR: Cualquier adición, edición o eliminación local se transmite a la nube
   useEffect(() => {
+    // Si la actualización vino desde la nube, no rebotarla
     if (isRemoteUpdateRef.current) {
       isRemoteUpdateRef.current = false;
+      return;
+    }
+
+    // PROTECCIÓN CRÍTICA ANTI-SOBRESCRITURA DE ARRANQUE:
+    // Nunca transmitir un estado local vacío a la nube hasta haber completado la carga inicial desde Firestore
+    if (!isCloudLoadedRef.current) {
       return;
     }
 
@@ -944,6 +1018,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ddrs: state.ddrs,
         remissions: state.remissions,
         maintenancePlans: state.maintenancePlans,
+        employees: state.employees,
       }, currentUserId);
 
       syncModuleToCloud('commercial', {
@@ -975,6 +1050,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.ddrs,
     state.remissions,
     state.maintenancePlans,
+    state.employees,
     state.opportunities,
     state.contacts,
     state.leads,

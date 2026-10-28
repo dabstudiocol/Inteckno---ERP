@@ -389,6 +389,98 @@ export function subscribeToCloudModule(
   }
 }
 
+/**
+ * Carga directa de un módulo desde Cloud Firestore
+ */
+export async function loadModuleFromCloud(moduleKey: ErpModuleKey): Promise<Record<string, any> | null> {
+  const db = getFirebaseDb();
+  if (!db) return null;
+
+  try {
+    const modRef = doc(db, 'erp_modules', moduleKey);
+    const snap = await getDoc(modRef);
+    if (snap.exists()) {
+      return snap.data() || null;
+    }
+    return null;
+  } catch (err) {
+    console.warn(`[FirestoreSync] Error cargando módulo ${moduleKey} desde Cloud:`, err);
+    return null;
+  }
+}
+
+/**
+ * Carga directa del inventario particionado completo desde Cloud Firestore
+ */
+export async function loadInventoryFromCloud(): Promise<Product[] | null> {
+  const db = getFirebaseDb();
+  if (!db) return null;
+
+  try {
+    const metaRef = doc(db, 'erp_inventory', 'meta');
+    const metaSnap = await getDoc(metaRef);
+    if (!metaSnap.exists()) return null;
+
+    const meta = metaSnap.data();
+    const chunkCount = Number(meta?.chunkCount) || 0;
+    if (chunkCount === 0) return [];
+
+    const chunkReads = [];
+    for (let i = 0; i < chunkCount; i++) {
+      const cRef = doc(db, 'erp_inventory', `chunk_${i}`);
+      chunkReads.push(getDoc(cRef));
+    }
+
+    const chunkSnaps = await Promise.all(chunkReads);
+    const reconstructed: Product[] = [];
+
+    chunkSnaps.forEach((cs) => {
+      if (cs.exists()) {
+        const cData = cs.data();
+        if (Array.isArray(cData?.items)) {
+          reconstructed.push(...cData.items);
+        }
+      }
+    });
+
+    return reconstructed;
+  } catch (err) {
+    console.warn('[FirestoreSync] Error cargando inventario desde Cloud:', err);
+    return null;
+  }
+}
+
+/**
+ * Descarga inicial completa de todos los módulos del ERP desde Cloud Firestore
+ * Garantiza que cualquier navegador o dispositivo arranque con la información central de la empresa.
+ */
+export async function loadAllModulesFromCloud(): Promise<{
+  projects?: Record<string, any> | null;
+  procurement?: Record<string, any> | null;
+  operations?: Record<string, any> | null;
+  commercial?: Record<string, any> | null;
+  productivity?: Record<string, any> | null;
+  products?: Product[] | null;
+}> {
+  const [projects, procurement, operations, commercial, productivity, products] = await Promise.all([
+    loadModuleFromCloud('projects'),
+    loadModuleFromCloud('procurement'),
+    loadModuleFromCloud('operations'),
+    loadModuleFromCloud('commercial'),
+    loadModuleFromCloud('productivity'),
+    loadInventoryFromCloud(),
+  ]);
+
+  return {
+    projects,
+    procurement,
+    operations,
+    commercial,
+    productivity,
+    products,
+  };
+}
+
 // =============================================================================
 // INVENTARIO MASIVO PARTICIONADO (Soporta 10.000+ artículos sin superar el límite de 1MB de Firestore)
 // =============================================================================
