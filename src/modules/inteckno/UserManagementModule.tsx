@@ -1120,29 +1120,31 @@ export const UserManagementModule: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
-              <select
-                value={filterDepartment}
-                onChange={(e) => setFilterDepartment(e.target.value)}
-                className="px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium text-gray-700 focus:bg-white focus:outline-none flex-1 md:flex-none cursor-pointer"
-              >
-                <option value="all">Todos los Deptos ({departments.length})</option>
-                {departments.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+              <div className="w-48">
+                <CreatableSelect
+                  value={filterDepartment}
+                  options={[
+                    { id: 'all', name: `Todos los Deptos (${departments.length})` },
+                    ...departments.map((d) => ({ id: d, name: d })),
+                  ]}
+                  onChange={(val) => setFilterDepartment(val || 'all')}
+                  placeholder="Departamento"
+                />
+              </div>
 
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium text-gray-700 focus:bg-white focus:outline-none cursor-pointer"
-              >
-                <option value="all">Todos los Estados</option>
-                <option value="activa">Activas</option>
-                <option value="suspendida">Suspendidas</option>
-                <option value="desactivada">Desactivadas</option>
-              </select>
+              <div className="w-44">
+                <CreatableSelect
+                  value={filterStatus}
+                  options={[
+                    { id: 'all', name: 'Todos los Estados' },
+                    { id: 'activa', name: 'Activas' },
+                    { id: 'suspendida', name: 'Suspendidas' },
+                    { id: 'desactivada', name: 'Desactivadas' },
+                  ]}
+                  onChange={(val) => setFilterStatus((val as any) || 'all')}
+                  placeholder="Estado"
+                />
+              </div>
 
               {/* Selector de Modo de Vista */}
               <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
@@ -1837,20 +1839,23 @@ export const UserManagementModule: React.FC = () => {
                 className="px-3 py-1.5 bg-slate-100 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none"
               />
 
-              <select
-                value={auditFilterAction}
-                onChange={(e) => setAuditFilterAction(e.target.value)}
-                className="px-3 py-1.5 bg-slate-100 rounded-xl text-xs text-gray-700 focus:bg-white focus:outline-none cursor-pointer"
-              >
-                <option value="all">Todas las acciones</option>
-                <option value="user_created">Usuario Creado</option>
-                <option value="user_updated">Usuario Modificado</option>
-                <option value="role_changed">Cambio de Rol</option>
-                <option value="password_reset">Reset Contraseña</option>
-                <option value="account_deactivated">Desactivación</option>
-                <option value="account_reactivated">Reactivación</option>
-                <option value="permission_changed">Permiso Cambiado</option>
-              </select>
+              <div className="w-52">
+                <CreatableSelect
+                  value={auditFilterAction}
+                  options={[
+                    { id: 'all', name: 'Todas las acciones' },
+                    { id: 'user_created', name: 'Usuario Creado' },
+                    { id: 'user_updated', name: 'Usuario Modificado' },
+                    { id: 'role_changed', name: 'Cambio de Rol' },
+                    { id: 'password_reset', name: 'Reset Contraseña' },
+                    { id: 'account_deactivated', name: 'Desactivación' },
+                    { id: 'account_reactivated', name: 'Reactivación' },
+                    { id: 'permission_changed', name: 'Permiso Cambiado' },
+                  ]}
+                  onChange={(val) => setAuditFilterAction(val || 'all')}
+                  placeholder="Acción auditada"
+                />
+              </div>
 
               <button
                 type="button"
@@ -2116,18 +2121,19 @@ export const UserManagementModule: React.FC = () => {
                   <label className="block text-xs font-bold text-gray-700 mb-1">
                     Vincular con Ficha de Cargo Oficial (Módulo de Cargos):
                   </label>
-                  <select
+                  <CreatableSelect
                     value={newUserData.jobPositionId}
-                    onChange={(e) => handleSelectJobPositionInWizard(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs font-bold text-[#00668F] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00668F]/30 cursor-pointer"
-                  >
-                    <option value="">-- Seleccionar Ficha Oficial de Cargo --</option>
-                    {officialPositions.map((job) => (
-                      <option key={job.id} value={job.id}>
-                        {job.code} - {job.title} ({job.department})
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { id: '', name: '-- Seleccionar Ficha Oficial de Cargo --' },
+                      ...officialPositions.map((job) => ({
+                        id: job.id,
+                        name: `${job.code} - ${job.title} (${job.department})`,
+                      })),
+                    ]}
+                    onChange={(val) => handleSelectJobPositionInWizard(val)}
+                    placeholder="Buscar ficha oficial de cargo..."
+
+                  />
                 </div>
 
                 {/* Resumen de la Ficha Seleccionada */}
@@ -2171,24 +2177,23 @@ export const UserManagementModule: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Perfil de Seguridad RBAC:</label>
-                  <select
+                  <CreatableSelect
                     value={newUserData.role}
-                    onChange={(e) => {
-                      const opt = ROLE_OPTIONS.find((r) => r.role === e.target.value);
+                    options={ROLE_OPTIONS.map((r) => ({
+                      id: r.role,
+                      name: `${r.label} (${r.defaultDept})`,
+                    }))}
+                    onChange={(val) => {
+                      const opt = ROLE_OPTIONS.find((r) => r.role === val);
                       setNewUserData({
                         ...newUserData,
-                        role: e.target.value as UserRole,
+                        role: (val || 'auxiliar_tecnico') as UserRole,
                         roleLabel: opt ? opt.label : newUserData.roleLabel,
                       });
                     }}
-                    className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none cursor-pointer"
-                  >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r.role} value={r.role}>
-                        {r.label} ({r.defaultDept})
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Seleccionar rol de seguridad..."
+
+                  />
                 </div>
               </div>
             )}
@@ -2248,17 +2253,16 @@ export const UserManagementModule: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Grupo Sanguíneo & RH:</label>
-                    <select
+                    <CreatableSelect
                       value={newUserData.bloodType}
-                      onChange={(e) => setNewUserData({ ...newUserData, bloodType: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none cursor-pointer"
-                    >
-                      {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((bt) => (
-                        <option key={bt} value={bt}>
-                          {bt}
-                        </option>
-                      ))}
-                    </select>
+                      options={['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((bt) => ({
+                        id: bt,
+                        name: bt,
+                      }))}
+                      onChange={(val) => setNewUserData({ ...newUserData, bloodType: val || 'O+' })}
+                      placeholder="RH..."
+
+                    />
                   </div>
 
                   <div>
@@ -2789,10 +2793,17 @@ export const UserManagementModule: React.FC = () => {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Ficha Oficial de Cargo:</label>
-                  <select
+                  <CreatableSelect
                     value={editingUser.jobPositionId || editingUser.jobPosition?.id || ''}
-                    onChange={(e) => {
-                      const pos = officialPositions.find((p) => p.id === e.target.value);
+                    options={[
+                      { id: '', name: '-- Sin Ficha de Cargo Vinculada --' },
+                      ...officialPositions.map((pos) => ({
+                        id: pos.id,
+                        name: `${pos.code} - ${pos.title}`,
+                      })),
+                    ]}
+                    onChange={(val) => {
+                      const pos = officialPositions.find((p) => p.id === val);
                       setEditingUser({
                         ...editingUser,
                         jobPositionId: pos?.id,
@@ -2801,15 +2812,9 @@ export const UserManagementModule: React.FC = () => {
                         department: pos?.department || editingUser.department,
                       });
                     }}
-                    className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs font-bold text-[#00668F] focus:bg-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="">-- Sin Ficha de Cargo Vinculada --</option>
-                    {officialPositions.map((pos) => (
-                      <option key={pos.id} value={pos.id}>
-                        {pos.code} - {pos.title}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Buscar ficha oficial de cargo..."
+
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2838,17 +2843,16 @@ export const UserManagementModule: React.FC = () => {
                 {isFullAdmin && (
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Rol RBAC de Seguridad:</label>
-                    <select
+                    <CreatableSelect
                       value={editingUser.role}
-                      onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as UserRole })}
-                      className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none cursor-pointer"
-                    >
-                      {ROLE_OPTIONS.map((r) => (
-                        <option key={r.role} value={r.role}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={ROLE_OPTIONS.map((r) => ({
+                        id: r.role,
+                        name: r.label,
+                      }))}
+                      onChange={(val) => setEditingUser({ ...editingUser, role: (val || 'auxiliar_tecnico') as UserRole })}
+                      placeholder="Seleccionar rol..."
+
+                    />
                   </div>
                 )}
               </div>
@@ -2910,17 +2914,16 @@ export const UserManagementModule: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Grupo Sanguíneo & RH:</label>
-                    <select
+                    <CreatableSelect
                       value={editingUser.bloodType || 'O+'}
-                      onChange={(e) => setEditingUser({ ...editingUser, bloodType: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none cursor-pointer"
-                    >
-                      {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((bt) => (
-                        <option key={bt} value={bt}>
-                          {bt}
-                        </option>
-                      ))}
-                    </select>
+                      options={['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((bt) => ({
+                        id: bt,
+                        name: bt,
+                      }))}
+                      onChange={(val) => setEditingUser({ ...editingUser, bloodType: val || 'O+' })}
+                      placeholder="RH..."
+
+                    />
                   </div>
                 </div>
 
@@ -2952,21 +2955,23 @@ export const UserManagementModule: React.FC = () => {
               <div className="space-y-3">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                   <label className="block text-xs font-bold text-gray-700 mb-1">Estado de la Cuenta:</label>
-                  <select
+                  <CreatableSelect
                     value={editingUser.accountStatus || (editingUser.isActive ? 'activa' : 'desactivada')}
-                    onChange={(e) =>
+                    options={[
+                      { id: 'activa', name: 'Activa (Acceso Habilitado)' },
+                      { id: 'suspendida', name: 'Suspendida Temporalmente' },
+                      { id: 'desactivada', name: 'Desactivada (Baja Definitiva)' },
+                    ]}
+                    onChange={(val) =>
                       setEditingUser({
                         ...editingUser,
-                        accountStatus: e.target.value as any,
-                        isActive: e.target.value === 'activa',
+                        accountStatus: (val as any) || 'activa',
+                        isActive: val === 'activa',
                       })
                     }
-                    className="w-full px-3 py-2 bg-white rounded-xl text-xs font-bold text-gray-900 border border-slate-300 focus:outline-none cursor-pointer"
-                  >
-                    <option value="activa">Activa (Acceso Habilitado)</option>
-                    <option value="suspendida">Suspendida Temporalmente</option>
-                    <option value="desactivada">Desactivada (Baja Definitiva)</option>
-                  </select>
+                    placeholder="Estado de la cuenta..."
+
+                  />
                 </div>
 
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">

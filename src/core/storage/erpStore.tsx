@@ -630,6 +630,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return undoRedoService.getNextRedoAction(state.currentUser?.id || '');
   }, [state.currentUser?.id, undoVersion]);
 
+  // Control de sincronización en la nube (Cloud-First)
+  const isRemoteUpdateRef = useRef(false);
+  const isCloudLoadedRef = useRef(false);
+
   // Registro persistente en memoria y almacenamiento local de IDs de mensajes eliminados
   const deletedChatIdsRef = useRef<Set<string>>((() => {
     try {
@@ -929,7 +933,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 5.1 Suscribirse al Catálogo de Inventario en Cloud Firestore (particionado por lotes seguros)
     const unsubInventory = subscribeToCloudInventory((remoteProducts) => {
-      if (!isMounted || !remoteProducts || remoteProducts.length === 0) return;
+      if (!isMounted || !Array.isArray(remoteProducts)) return;
       isRemoteUpdateRef.current = true;
       setState((prev) => ({
         ...prev,
@@ -989,9 +993,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubProductivity) unsubProductivity();
     };
   }, []);
-
-  const isRemoteUpdateRef = useRef(false);
-  const isCloudLoadedRef = useRef(false);
 
   // SINCRONIZADOR REACTIVO MODULAR: Cualquier adición, edición o eliminación local se transmite a la nube
   useEffect(() => {

@@ -52,6 +52,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { useErp, playNotificationChime, DEFAULT_USER_PREFERENCES } from '../../core/storage/erpStore';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 import type {
   User as ErpUser,
   UserPreferences,
@@ -1543,23 +1544,22 @@ export const UserProfileModule: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1.5">Grupo Sanguíneo y Factor RH</label>
-                <div className="relative">
-                  <Heart size={15} className="absolute left-3.5 top-3.5 text-rose-500" />
-                  <select
-                    value={bloodType}
-                    onChange={(e) => setBloodType(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-100 rounded-xl text-xs text-gray-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00668F]/30 cursor-pointer"
-                  >
-                    <option value="O+">O Positivo (O+)</option>
-                    <option value="O-">O Negativo (O-)</option>
-                    <option value="A+">A Positivo (A+)</option>
-                    <option value="A-">A Negativo (A-)</option>
-                    <option value="B+">B Positivo (B+)</option>
-                    <option value="B-">B Negativo (B-)</option>
-                    <option value="AB+">AB Positivo (AB+)</option>
-                    <option value="AB-">AB Negativo (AB-)</option>
-                  </select>
-                </div>
+                <CreatableSelect
+                  value={bloodType}
+                  options={[
+                    { id: 'O+', name: 'O Positivo (O+)' },
+                    { id: 'O-', name: 'O Negativo (O-)' },
+                    { id: 'A+', name: 'A Positivo (A+)' },
+                    { id: 'A-', name: 'A Negativo (A-)' },
+                    { id: 'B+', name: 'B Positivo (B+)' },
+                    { id: 'B-', name: 'B Negativo (B-)' },
+                    { id: 'AB+', name: 'AB Positivo (AB+)' },
+                    { id: 'AB-', name: 'AB Negativo (AB-)' },
+                  ]}
+                  onChange={(val) => setBloodType(val || 'O+')}
+                  placeholder="RH..."
+
+                />
               </div>
 
               <div>
@@ -2145,18 +2145,20 @@ export const UserProfileModule: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Nivel Educativo:</label>
-                    <select
+                    <CreatableSelect
                       value={newEduLevel}
-                      onChange={(e) => setNewEduLevel(e.target.value)}
-                      className="w-full px-3 py-2 bg-white rounded-xl text-xs border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00668F]/30 cursor-pointer"
-                    >
-                      <option value="Bachiller">Bachiller</option>
-                      <option value="Técnico Laboral">Técnico Laboral</option>
-                      <option value="Tecnólogo">Tecnólogo</option>
-                      <option value="Profesional Universitario">Profesional Universitario</option>
-                      <option value="Especialización">Especialización</option>
-                      <option value="Maestría">Maestría</option>
-                    </select>
+                      options={[
+                        { id: 'Bachiller', name: 'Bachiller' },
+                        { id: 'Técnico Laboral', name: 'Técnico Laboral' },
+                        { id: 'Tecnólogo', name: 'Tecnólogo' },
+                        { id: 'Profesional Universitario', name: 'Profesional Universitario' },
+                        { id: 'Especialización', name: 'Especialización' },
+                        { id: 'Maestría', name: 'Maestría' },
+                      ]}
+                      onChange={(val) => setNewEduLevel(val || 'Profesional Universitario')}
+                      placeholder="Nivel educativo..."
+                      isClearable={false}
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Año de Graduación / Estado:</label>
@@ -2385,16 +2387,18 @@ export const UserProfileModule: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Nivel de Dominio:</label>
-                    <select
+                    <CreatableSelect
                       value={newSkillLevel}
-                      onChange={(e) => setNewSkillLevel(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-white rounded-xl text-xs border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00668F]/30 cursor-pointer"
-                    >
-                      <option value="Básico">Básico</option>
-                      <option value="Intermedio">Intermedio</option>
-                      <option value="Avanzado">Avanzado</option>
-                      <option value="Experto">Experto</option>
-                    </select>
+                      options={[
+                        { id: 'Básico', name: 'Básico' },
+                        { id: 'Intermedio', name: 'Intermedio' },
+                        { id: 'Avanzado', name: 'Avanzado' },
+                        { id: 'Experto', name: 'Experto' },
+                      ]}
+                      onChange={(val) => setNewSkillLevel((val as any) || 'Intermedio')}
+                      placeholder="Dominio..."
+                      isClearable={false}
+                    />
                   </div>
                 </div>
 
@@ -2538,16 +2542,18 @@ export const UserProfileModule: React.FC = () => {
                   placeholder="ej. Inglés / Francés / Alemán"
                   className="px-3 py-2 bg-white rounded-xl text-xs border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00668F]/30"
                 />
-                <select
+                <CreatableSelect
                   value={newLangLevel}
-                  onChange={(e) => setNewLangLevel(e.target.value)}
-                  className="px-3 py-2 bg-white rounded-xl text-xs border border-slate-300 focus:outline-none cursor-pointer"
-                >
-                  <option value="Básico (A1-A2)">Básico (A1-A2)</option>
-                  <option value="Intermedio (B1-B2)">Intermedio (B1-B2)</option>
-                  <option value="Avanzado (C1)">Avanzado (C1)</option>
-                  <option value="Bilingüe / Nativo (C2)">Bilingüe / Nativo (C2)</option>
-                </select>
+                  options={[
+                    { id: 'Básico (A1-A2)', name: 'Básico (A1-A2)' },
+                    { id: 'Intermedio (B1-B2)', name: 'Intermedio (B1-B2)' },
+                    { id: 'Avanzado (C1)', name: 'Avanzado (C1)' },
+                    { id: 'Bilingüe / Nativo (C2)', name: 'Bilingüe / Nativo (C2)' },
+                  ]}
+                  onChange={(val) => setNewLangLevel(val || 'Intermedio (B1-B2)')}
+                  placeholder="Nivel idioma..."
+                  isClearable={false}
+                />
                 <button
                   type="button"
                   onClick={handleAddLanguage}

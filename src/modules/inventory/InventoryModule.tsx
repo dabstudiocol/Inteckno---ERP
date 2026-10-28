@@ -72,8 +72,7 @@ import {
   convertUSDToCOP,
   convertCOPToUSD,
 } from '../../core/services/trmService';
-import { syncInventoryToCloud, loadInventoryFromCloud } from '../../core/services/firestoreSyncService';
-import { Cloud, RefreshCw } from 'lucide-react';
+import { syncInventoryToCloud } from '../../core/services/firestoreSyncService';
 
 // Base de datos de cédulas de identidad oficiales de Inteckno S.A.S.
 const PERSON_CEDULAS: Record<string, string> = {
@@ -139,50 +138,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
 
   const defaultTab = initialTab || (activeModuleId === 'codigo-barras' ? 'barcode' : 'unified');
   const [activeTab, setActiveTab] = useState<'unified' | 'dispatch' | 'return' | 'history' | 'barcode' | 'audit' | 'writeoffs'>(defaultTab);
-
-  // Estado de sincronización en vivo con Google Cloud Firestore
-  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
-
-  // Función para forzar la subida del inventario local a Cloud Firestore para toda la empresa
-  const handleForceSyncToCloud = async () => {
-    if (products.length === 0) {
-      notify('warning', 'Inventario Vacío', 'No hay artículos en memoria local para sincronizar con la nube.');
-      return;
-    }
-    setIsSyncingCloud(true);
-    try {
-      const ok = await syncInventoryToCloud(products, currentUser?.id);
-      if (ok) {
-        notify('success', 'Nube Actualizada', `Se sincronizaron con éxito los ${products.length} artículos en Google Cloud Firestore para toda la empresa.`);
-      } else {
-        notify('urgent', 'Error de Nube', 'No se pudo completar la sincronización con Firestore. Verifica la conexión.');
-      }
-    } catch (err) {
-      console.error('[Inventory] Error sincronizando con Firestore:', err);
-      notify('urgent', 'Error', 'Ocurrió un error al contactar Google Cloud.');
-    } finally {
-      setIsSyncingCloud(false);
-    }
-  };
-
-  // Función para forzar la descarga de los artículos desde Cloud Firestore
-  const handleForcePullFromCloud = async () => {
-    setIsSyncingCloud(true);
-    try {
-      const remoteProducts = await loadInventoryFromCloud();
-      if (remoteProducts && remoteProducts.length > 0) {
-        setAllProducts(remoteProducts);
-        notify('success', 'Catálogo Descargado', `Se descargaron ${remoteProducts.length} artículos desde la base de datos central de Google Cloud.`);
-      } else {
-        notify('info', 'Nube Vacía', 'No se encontraron artículos almacenados en Google Cloud Firestore actualmente.');
-      }
-    } catch (err) {
-      console.error('[Inventory] Error descargando desde Firestore:', err);
-      notify('urgent', 'Error', 'No se pudo descargar el inventario desde Google Cloud.');
-    } finally {
-      setIsSyncingCloud(false);
-    }
-  };
 
   React.useEffect(() => {
     if (initialTab) {
@@ -927,36 +882,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
 
           {/* Botones de Acción Rápida con Flex-Wrap Seguro */}
           <div className="flex items-center flex-wrap gap-2 shrink-0">
-            {/* Botón Sincronizar / Descargar Nube Cloud Firestore */}
-            <button
-              type="button"
-              onClick={products.length > 0 ? handleForceSyncToCloud : handleForcePullFromCloud}
-              disabled={isSyncingCloud}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 ${
-                products.length > 0
-                  ? 'bg-sky-600 hover:bg-sky-700 text-white'
-                  : 'bg-amber-600 hover:bg-amber-700 text-white'
-              }`}
-              title={
-                products.length > 0
-                  ? 'Subir y actualizar el catálogo local hacia Google Cloud Firestore para que toda la empresa lo tenga'
-                  : 'Descargar el catálogo central de artículos desde Google Cloud Firestore'
-              }
-            >
-              {isSyncingCloud ? (
-                <Loader2 size={14} className="animate-spin text-white" />
-              ) : (
-                <Cloud size={14} className="text-white" />
-              )}
-              <span>
-                {isSyncingCloud
-                  ? 'Sincronizando...'
-                  : products.length > 0
-                  ? `Nube (${products.length})`
-                  : 'Descargar de Nube'}
-              </span>
-            </button>
-
             {/* Botón Cargar Archivo Excel Inicial */}
             <button
               type="button"
@@ -1047,15 +972,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 </p>
               </div>
               <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleForcePullFromCloud}
-                  disabled={isSyncingCloud}
-                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-sm active:scale-95 transition-all"
-                >
-                  {isSyncingCloud ? <Loader2 size={15} className="animate-spin" /> : <Cloud size={15} />}
-                  <span>Descargar Catálogo desde la Nube</span>
-                </button>
                 <button
                   type="button"
                   onClick={() => setIsExcelUploadModalOpen(true)}
