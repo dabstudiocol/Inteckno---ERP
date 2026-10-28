@@ -15,6 +15,7 @@ import { BOMDiffResult } from '../../../types';
 import { calculateBOMDiff, RawBOMItem } from '../../../utils/bomDiff';
 import { extractBOMWithLuciana } from '../../../core/services/lucianaService';
 import { useErp } from '../../../core/storage/erpStore';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface BomExtractorDiffModalProps {
   isOpen: boolean;
@@ -162,17 +163,18 @@ export const BomExtractorDiffModal: React.FC<BomExtractorDiffModalProps> = ({
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shrink-0">
           <div className="flex items-center gap-2 flex-1 max-w-md">
             <span className="font-bold text-slate-700 whitespace-nowrap">Proyecto STC:</span>
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-semibold text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} — {p.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex-1">
+              <CreatableSelect
+                options={projects.map((p) => ({
+                  id: p.id,
+                  name: `${p.code} — ${p.name}`,
+                  code: p.code
+                }))}
+                value={selectedProjectId}
+                onChange={(val) => setSelectedProjectId(val)}
+                placeholder="Seleccionar proyecto STC..."
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 bg-slate-200 p-1 rounded-xl">
