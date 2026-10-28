@@ -198,11 +198,10 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 e.stopPropagation();
                 onChange('');
                 setSearchTerm('');
-                if (isOpen) {
-                  inputRef.current?.focus();
-                }
+                setIsOpen(true);
+                inputRef.current?.focus();
               }}
-              title="Limpiar"
+              title="Limpiar y ver todas las opciones"
               className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-slate-200/80 transition-colors cursor-pointer"
             >
               <X size={14} />

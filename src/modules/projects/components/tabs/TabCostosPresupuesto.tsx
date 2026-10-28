@@ -894,7 +894,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         options={catMeta.allowedUnits}
                         placeholder="Unidad..."
                         allowCustomText={true}
-                        isClearable={false}
+                        isClearable={true}
                         inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
                       />
                     </div>
