@@ -29,6 +29,7 @@ import {
   HelpCircle,
   Database,
   Coins,
+  Settings,
 } from 'lucide-react';
 import {
   InternationalCalculationState,
@@ -57,6 +58,9 @@ import { calculateQuoteBreakdown } from '../services/costCalculatorEngine';
 import { QuotePdfModal } from './QuotePdfModal';
 import { AiDataSourceInspector } from './AiDataSourceInspector';
 import { fetchLiveExchangeRates, LiveForexResult } from '../services/exchangeRateService';
+import { useModuleCatalog } from '../../../core/services/moduleConfigService';
+import { UniversalModuleConfigModal } from '../../../components/common/UniversalModuleConfigModal';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface InternationalCalculatorProps {
   initialOpportunity?: GlobalOpportunity | null;
@@ -235,8 +239,24 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
   const [apiKeyTestResult, setApiKeyTestResult] = useState<{ testing: boolean; valid?: boolean; message?: string }>({ testing: false });
   const hasGeminiApiKey = Boolean(getGeminiApiKey());
 
-  // Modal PDF
+  // Modal PDF y Configuración de Módulo
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  // Catálogos configurados del módulo
+  const configuredOriginCountries = useModuleCatalog('international', 'originCountries');
+  const configuredDestCountries = useModuleCatalog('international', 'destinationCountries');
+  const configuredCurrencies = useModuleCatalog('international', 'currencies');
+
+  const originCountryOptions = useMemo(() => {
+    const list = configuredOriginCountries.map((c) => c.name);
+    return list.length > 0 ? list : ['Colombia', 'Austria', 'Francia', 'Suiza', 'China', 'Italia', 'Alemania', 'Estados Unidos', 'España'];
+  }, [configuredOriginCountries]);
+
+  const destinationCountryOptions = useMemo(() => {
+    const list = configuredDestCountries.map((c) => c.name);
+    return list.length > 0 ? list : ['México', 'Bolivia', 'Ecuador', 'Estados Unidos', 'Chile', 'Perú', 'Colombia', 'España', 'Suiza', 'Panamá'];
+  }, [configuredDestCountries]);
 
   // Cálculo en Tiempo Real
   const breakdown = useMemo(() => calculateQuoteBreakdown(state), [state]);
@@ -448,18 +468,29 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
         <div className="flex items-center gap-2">
           {/* Selector de Moneda de Salida */}
           <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-xl text-xs">
-            <span className="text-slate-500 font-bold">Moneda Cotización:</span>
-            <select
-              value={state.quoteCurrency}
-              onChange={(e) => setState({ ...state, quoteCurrency: e.target.value as CurrencyCode })}
-              className="bg-white font-bold text-[#00668F] px-2.5 py-1 rounded-lg border-0 outline-none cursor-pointer shadow-2xs"
-            >
-              <option value="USD">USD ($ Dólar)</option>
-              <option value="EUR">EUR (€ Euro)</option>
-              <option value="COP">COP ($ Pesos Col)</option>
-              <option value="MXN">MXN ($ Pesos Mex)</option>
-              <option value="CLP">CLP ($ Pesos Ch)</option>
-            </select>
+            <span className="text-slate-500 font-bold shrink-0">Moneda Cotización:</span>
+            <div className="w-36">
+              <CreatableSelect
+                value={state.quoteCurrency}
+                onChange={(val) => {
+                  if (val) setState({ ...state, quoteCurrency: val as CurrencyCode });
+                }}
+                options={[
+                  { id: 'USD', name: 'USD ($ Dólar)', code: 'USD' },
+                  { id: 'EUR', name: 'EUR (€ Euro)', code: 'EUR' },
+                  { id: 'COP', name: 'COP ($ Pesos Col)', code: 'COP' },
+                  { id: 'MXN', name: 'MXN ($ Pesos Mex)', code: 'MXN' },
+                  { id: 'CLP', name: 'CLP ($ Pesos Ch)', code: 'CLP' },
+                  { id: 'PEN', name: 'PEN (S/ Soles)', code: 'PEN' },
+                  { id: 'BOB', name: 'BOB (Bs. Bolivianos)', code: 'BOB' },
+                  { id: 'CHF', name: 'CHF (Franco Suizo)', code: 'CHF' },
+                ]}
+                placeholder="Moneda..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-white font-bold text-[#00668F] py-1 px-2.5 rounded-lg border-0 shadow-2xs"
+              />
+            </div>
           </div>
         </div>
 
@@ -501,6 +532,17 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
           >
             <Printer size={15} />
             <span>Generar Oferta PDF</span>
+          </button>
+
+          {/* Botón Universal de Configuración del Módulo */}
+          <button
+            type="button"
+            onClick={() => setIsConfigModalOpen(true)}
+            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-[#00668F] hover:bg-slate-50 hover:border-[#00668F]/30 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+            title="Configuración de Módulo"
+          >
+            <Settings size={16} />
+            <span className="hidden sm:inline">Configuración</span>
           </button>
         </div>
       </div>
@@ -601,37 +643,28 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
 
           <div>
             <label className="block text-[11px] font-bold text-gray-700 mb-1">País de Origen (Fabricación)</label>
-            <select
+            <CreatableSelect
               value={state.originCountry}
-              onChange={(e) => setState({ ...state, originCountry: e.target.value })}
-              className="w-full h-11 px-3.5 py-0 bg-slate-100 rounded-xl font-semibold text-xs text-slate-800 leading-normal focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00668F]/25"
-            >
-              <option value="Colombia">Colombia (Planta Inteckno - Medellín)</option>
-              <option value="Austria">Austria (Doppelmayr HQ)</option>
-              <option value="Francia">Francia (Poma / BMF)</option>
-              <option value="Suiza">Suiza (Garaventa / Fatzer)</option>
-              <option value="China">China (Fabricación Estructuras)</option>
-            </select>
+              onChange={(val) => setState({ ...state, originCountry: val })}
+              options={originCountryOptions}
+              placeholder="País de origen..."
+              allowCustomText={true}
+              isClearable={false}
+              inputClassName="h-11 px-3.5 bg-slate-100 rounded-xl font-semibold text-xs text-slate-800"
+            />
           </div>
 
           <div>
             <label className="block text-[11px] font-bold text-gray-700 mb-1">País de Destino</label>
-            <select
+            <CreatableSelect
               value={state.destinationCountry}
-              onChange={(e) => handleDestinationCountryChange(e.target.value)}
-              className="w-full h-11 px-3.5 py-0 bg-slate-100 rounded-xl font-bold text-xs text-[#00668F] leading-normal focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00668F]/25"
-            >
-              <option value="México">México</option>
-              <option value="Bolivia">Bolivia</option>
-              <option value="Ecuador">Ecuador</option>
-              <option value="Estados Unidos">Estados Unidos</option>
-              <option value="Chile">Chile</option>
-              <option value="Perú">Perú</option>
-              <option value="Colombia">Colombia</option>
-              <option value="España">España</option>
-              <option value="Suiza">Suiza</option>
-              <option value="Panamá">Panamá</option>
-            </select>
+              onChange={(val) => handleDestinationCountryChange(val)}
+              options={destinationCountryOptions}
+              placeholder="País de destino..."
+              allowCustomText={true}
+              isClearable={false}
+              inputClassName="h-11 px-3.5 bg-slate-100 rounded-xl font-bold text-xs text-[#00668F]"
+            />
           </div>
 
           <div className="lg:col-span-2">
@@ -882,17 +915,33 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="font-bold text-slate-800">Cálculo Automático de Espacio & Capacidad:</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-500 font-medium">Contenedor Seleccionado:</span>
-                  <select
-                    value={state.targetContainer}
-                    onChange={(e) => setState({ ...state, targetContainer: e.target.value as ContainerType })}
-                    className="p-1 rounded-lg border border-gray-300 bg-white font-bold text-xs"
-                  >
-                    <option value="20ft">20ft Standard (33.2 m³ / 28 ton)</option>
-                    <option value="40ft">40ft Standard (67.7 m³ / 26.6 ton)</option>
-                    <option value="40hc">40ft High Cube (76.4 m³ / 26.4 ton)</option>
-                    <option value="flat_rack">Flat Rack (Sobredimensionado)</option>
-                  </select>
+                  <span className="text-gray-500 font-medium shrink-0">Contenedor Seleccionado:</span>
+                  <div className="w-64">
+                    <CreatableSelect
+                      value={
+                        state.targetContainer === '20ft' ? '20ft Standard (33.2 m³ / 28 ton)' :
+                        state.targetContainer === '40ft' ? '40ft Standard (67.7 m³ / 26.6 ton)' :
+                        state.targetContainer === '40hc' ? '40ft High Cube (76.4 m³ / 26.4 ton)' :
+                        'Flat Rack (Sobredimensionado)'
+                      }
+                      onChange={(val) => {
+                        if (val.includes('40ft Standard')) setState({ ...state, targetContainer: '40ft' });
+                        else if (val.includes('40ft High Cube')) setState({ ...state, targetContainer: '40hc' });
+                        else if (val.includes('Flat Rack')) setState({ ...state, targetContainer: 'flat_rack' });
+                        else setState({ ...state, targetContainer: '20ft' });
+                      }}
+                      options={[
+                        '20ft Standard (33.2 m³ / 28 ton)',
+                        '40ft Standard (67.7 m³ / 26.6 ton)',
+                        '40ft High Cube (76.4 m³ / 26.4 ton)',
+                        'Flat Rack (Sobredimensionado)',
+                      ]}
+                      placeholder="Contenedor..."
+                      allowCustomText={false}
+                      isClearable={false}
+                      inputClassName="p-1 rounded-lg border border-gray-300 bg-white font-bold text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1484,17 +1533,35 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
                   <span className="text-[10px] text-gray-500">Plazo de pago diferido a cliente</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={state.creditTermDays}
-                    onChange={(e) => setState({ ...state, creditTermDays: Number(e.target.value) as any })}
-                    className="p-1.5 rounded-lg border border-gray-300 bg-white font-bold text-xs"
-                  >
-                    <option value={0}>De contado (0 días)</option>
-                    <option value={30}>30 Días</option>
-                    <option value={60}>60 Días</option>
-                    <option value={90}>90 Días</option>
-                    <option value={120}>120 Días</option>
-                  </select>
+                  <div className="w-44">
+                    <CreatableSelect
+                      value={
+                        state.creditTermDays === 0 ? 'De contado (0 días)' :
+                        state.creditTermDays === 30 ? '30 Días' :
+                        state.creditTermDays === 60 ? '60 Días' :
+                        state.creditTermDays === 90 ? '90 Días' :
+                        '120 Días'
+                      }
+                      onChange={(val) => {
+                        if (val === '30 Días') setState({ ...state, creditTermDays: 30 });
+                        else if (val === '60 Días') setState({ ...state, creditTermDays: 60 });
+                        else if (val === '90 Días') setState({ ...state, creditTermDays: 90 });
+                        else if (val === '120 Días') setState({ ...state, creditTermDays: 120 });
+                        else setState({ ...state, creditTermDays: 0 });
+                      }}
+                      options={[
+                        'De contado (0 días)',
+                        '30 Días',
+                        '60 Días',
+                        '90 Días',
+                        '120 Días',
+                      ]}
+                      placeholder="Plazo..."
+                      allowCustomText={false}
+                      isClearable={false}
+                      inputClassName="p-1 rounded-lg border border-gray-300 bg-white font-bold text-xs"
+                    />
+                  </div>
                   {state.creditTermDays > 0 && (
                     <span className="text-xs font-bold text-purple-700">
                       +${breakdown.financingCostUSD.toLocaleString()} USD
@@ -1728,6 +1795,13 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
           </div>
         </div>
       )}
+
+      {/* Modal Universal de Configuración del Módulo */}
+      <UniversalModuleConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        moduleId="international"
+      />
     </div>
   );
 };

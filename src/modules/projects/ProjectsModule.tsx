@@ -40,6 +40,7 @@ import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../components/common/DetailModal';
 import { TemplateManagerModal } from '../../components/common/TemplateManagerModal';
 import { formatCOP, getStoredTRM } from '../../core/services/trmService';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 type GlobalViewMode = 'table' | 'kanban' | 'gantt';
 type InternalTab = 'dashboard' | 'wbs' | 'costos' | 'suministros' | 'horas' | 'hseq' | 'cambios' | 'documentos' | 'asistentes';
@@ -357,19 +358,39 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                 <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                   {selectedProject.name}
                 </h1>
-                <select
-                  value={selectedProject.status}
-                  onChange={(e) => handleUpdateCurrentProject({ status: e.target.value as any })}
-                  className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border cursor-pointer focus:outline-none transition-colors ${getStatusBadge(selectedProject.status).color}`}
-                  title={getStatusBadge(selectedProject.status).description}
-                >
-                  <option value="active">En ejecución</option>
-                  <option value="in_adjustments">En ajustes</option>
-                  <option value="on_hold">En espera (En pausa)</option>
-                  <option value="cancelled">Cancelado</option>
-                  <option value="completed">Cerrado / Finalizado</option>
-                  <option value="archived">Archivado</option>
-                </select>
+                <div className="w-44">
+                  <CreatableSelect
+                    value={
+                      selectedProject.status === 'active' ? 'En ejecución' :
+                      selectedProject.status === 'in_adjustments' ? 'En ajustes' :
+                      selectedProject.status === 'on_hold' ? 'En espera (En pausa)' :
+                      selectedProject.status === 'cancelled' ? 'Cancelado' :
+                      selectedProject.status === 'completed' ? 'Cerrado / Finalizado' :
+                      selectedProject.status === 'archived' ? 'Archivado' :
+                      selectedProject.status
+                    }
+                    onChange={(val) => {
+                      if (val === 'En ejecución') handleUpdateCurrentProject({ status: 'active' });
+                      else if (val === 'En ajustes') handleUpdateCurrentProject({ status: 'in_adjustments' });
+                      else if (val === 'En espera (En pausa)') handleUpdateCurrentProject({ status: 'on_hold' });
+                      else if (val === 'Cancelado') handleUpdateCurrentProject({ status: 'cancelled' });
+                      else if (val === 'Cerrado / Finalizado') handleUpdateCurrentProject({ status: 'completed' });
+                      else if (val === 'Archivado') handleUpdateCurrentProject({ status: 'archived' });
+                    }}
+                    options={[
+                      'En ejecución',
+                      'En ajustes',
+                      'En espera (En pausa)',
+                      'Cancelado',
+                      'Cerrado / Finalizado',
+                      'Archivado',
+                    ]}
+                    placeholder="Estado..."
+                    allowCustomText={false}
+                    isClearable={false}
+                    inputClassName={`text-[11px] font-semibold py-1 px-2.5 rounded-full border ${getStatusBadge(selectedProject.status).color}`}
+                  />
+                </div>
               </div>
               <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span>Cliente: <strong className="text-slate-700 dark:text-slate-300">{selectedProject.clientName}</strong></span>
@@ -712,61 +733,78 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
 
         {/* Status Filter */}
         <div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
-          >
-            <option value="all">Todos los Estados</option>
-            <option value="active">En ejecución</option>
-            <option value="in_adjustments">En ajustes</option>
-            <option value="on_hold">En espera (En pausa)</option>
-            <option value="cancelled">Cancelado</option>
-            <option value="completed">Cerrado / Finalizado</option>
-            <option value="archived">Archivado</option>
-          </select>
+          <CreatableSelect
+            value={
+              statusFilter === 'all' ? 'Todos los Estados' :
+              statusFilter === 'active' ? 'En ejecución' :
+              statusFilter === 'in_adjustments' ? 'En ajustes' :
+              statusFilter === 'on_hold' ? 'En espera (En pausa)' :
+              statusFilter === 'cancelled' ? 'Cancelado' :
+              statusFilter === 'completed' ? 'Cerrado / Finalizado' :
+              'Archivado'
+            }
+            onChange={(val) => {
+              if (val === 'En ejecución') setStatusFilter('active');
+              else if (val === 'En ajustes') setStatusFilter('in_adjustments');
+              else if (val === 'En espera (En pausa)') setStatusFilter('on_hold');
+              else if (val === 'Cancelado') setStatusFilter('cancelled');
+              else if (val === 'Cerrado / Finalizado') setStatusFilter('completed');
+              else if (val === 'Archivado') setStatusFilter('archived');
+              else setStatusFilter('all');
+            }}
+            options={[
+              'Todos los Estados',
+              'En ejecución',
+              'En ajustes',
+              'En espera (En pausa)',
+              'Cancelado',
+              'Cerrado / Finalizado',
+              'Archivado',
+            ]}
+            placeholder="Filtrar por estado..."
+            allowCustomText={false}
+            isClearable={false}
+            inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+          />
         </div>
 
         {/* PM Filter */}
         <div>
-          <select
-            value={pmFilter}
-            onChange={(e) => setPmFilter(e.target.value)}
-            className="w-full text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
-          >
-            <option value="all">Todos los Responsables</option>
-            {uniquePMs.map(pm => (
-              <option key={pm} value={pm}>{pm}</option>
-            ))}
-          </select>
+          <CreatableSelect
+            value={pmFilter === 'all' ? 'Todos los Responsables' : pmFilter}
+            onChange={(val) => setPmFilter(!val || val === 'Todos los Responsables' ? 'all' : val)}
+            options={['Todos los Responsables', ...uniquePMs]}
+            placeholder="Filtrar por responsable..."
+            allowCustomText={false}
+            isClearable={false}
+            inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+          />
         </div>
 
         {/* Cliente Filter */}
         <div>
-          <select
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="w-full text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
-          >
-            <option value="all">Todos los Clientes ({uniqueClients.length})</option>
-            {uniqueClients.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          <CreatableSelect
+            value={clientFilter === 'all' ? `Todos los Clientes (${uniqueClients.length})` : clientFilter}
+            onChange={(val) => setClientFilter(!val || val.startsWith('Todos los Clientes') ? 'all' : val)}
+            options={[`Todos los Clientes (${uniqueClients.length})`, ...uniqueClients]}
+            placeholder="Filtrar por cliente..."
+            allowCustomText={false}
+            isClearable={false}
+            inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+          />
         </div>
 
         {/* País / Jurisdicción Filter */}
         <div>
-          <select
-            value={countryFilter}
-            onChange={(e) => setCountryFilter(e.target.value)}
-            className="w-full text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
-          >
-            <option value="all">Todos los Países ({uniqueCountries.length})</option>
-            {uniqueCountries.map(cty => (
-              <option key={cty} value={cty}>{cty}</option>
-            ))}
-          </select>
+          <CreatableSelect
+            value={countryFilter === 'all' ? `Todos los Países (${uniqueCountries.length})` : countryFilter}
+            onChange={(val) => setCountryFilter(!val || val.startsWith('Todos los Países') ? 'all' : val)}
+            options={[`Todos los Países (${uniqueCountries.length})`, ...uniqueCountries]}
+            placeholder="Filtrar por país..."
+            allowCustomText={false}
+            isClearable={false}
+            inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+          />
         </div>
       </div>
 
@@ -857,20 +895,38 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                           <span className="font-mono text-[11px] text-slate-600 dark:text-slate-300">{progress}%</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                        <select
-                          value={proj.status}
-                          onChange={(e) => updateProject(proj.id, { status: e.target.value as any })}
-                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer focus:outline-none transition-colors ${badge.color}`}
-                          title={badge.description}
-                        >
-                          <option value="active">En ejecución</option>
-                          <option value="in_adjustments">En ajustes</option>
-                          <option value="on_hold">En espera (En pausa)</option>
-                          <option value="cancelled">Cancelado</option>
-                          <option value="completed">Cerrado / Finalizado</option>
-                          <option value="archived">Archivado</option>
-                        </select>
+                      <td className="py-3 px-4 min-w-[150px]" onClick={(e) => e.stopPropagation()}>
+                        <CreatableSelect
+                          value={
+                            proj.status === 'active' ? 'En ejecución' :
+                            proj.status === 'in_adjustments' ? 'En ajustes' :
+                            proj.status === 'on_hold' ? 'En espera (En pausa)' :
+                            proj.status === 'cancelled' ? 'Cancelado' :
+                            proj.status === 'completed' ? 'Cerrado / Finalizado' :
+                            proj.status === 'archived' ? 'Archivado' :
+                            proj.status
+                          }
+                          onChange={(val) => {
+                            if (val === 'En ejecución') updateProject(proj.id, { status: 'active' });
+                            else if (val === 'En ajustes') updateProject(proj.id, { status: 'in_adjustments' });
+                            else if (val === 'En espera (En pausa)') updateProject(proj.id, { status: 'on_hold' });
+                            else if (val === 'Cancelado') updateProject(proj.id, { status: 'cancelled' });
+                            else if (val === 'Cerrado / Finalizado') updateProject(proj.id, { status: 'completed' });
+                            else if (val === 'Archivado') updateProject(proj.id, { status: 'archived' });
+                          }}
+                          options={[
+                            'En ejecución',
+                            'En ajustes',
+                            'En espera (En pausa)',
+                            'Cancelado',
+                            'Cerrado / Finalizado',
+                            'Archivado',
+                          ]}
+                          placeholder="Estado..."
+                          allowCustomText={false}
+                          isClearable={false}
+                          inputClassName={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.color}`}
+                        />
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>

@@ -34,6 +34,7 @@ import {
   StructuresDynamicData,
   TanksDynamicData,
 } from './types/ProjectSTCSchema';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 export type STCActiveTab = 'dashboard' | 'wbs_gantt' | 'costos' | 'suministros_qc' | 'personal_horas' | 'hseq_offline' | 'addendums';
 
@@ -333,17 +334,30 @@ export const ProjectsLayout: React.FC = () => {
               No hay proyectos registrados en Firestore. Crea el primero con el botón superior.
             </span>
           ) : (
-            <select
-              value={selectedProjectId || ''}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer font-medium max-w-md"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  [{p.code}] {p.name} - {p.client} ({p.projectType.toUpperCase()})
-                </option>
-              ))}
-            </select>
+            <div className="w-full max-w-md">
+              <CreatableSelect
+                value={
+                  selectedProject
+                    ? `[${selectedProject.code}] ${selectedProject.name} - ${selectedProject.client} (${selectedProject.projectType.toUpperCase()})`
+                    : ''
+                }
+                onChange={(val) => {
+                  const match = projects.find(
+                    (p) => `[${p.code}] ${p.name} - ${p.client} (${p.projectType.toUpperCase()})` === val || p.id === val || p.code === val
+                  );
+                  if (match) setSelectedProjectId(match.id);
+                }}
+                options={projects.map((p) => ({
+                  id: p.id,
+                  name: `[${p.code}] ${p.name} - ${p.client} (${p.projectType.toUpperCase()})`,
+                  code: p.code,
+                }))}
+                placeholder="Seleccionar proyecto activo..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-amber-500 font-medium"
+              />
+            </div>
           )}
         </div>
 
@@ -671,16 +685,30 @@ export const ProjectsLayout: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-slate-400 mb-1 font-semibold">Línea de Negocio / Especialidad *</label>
-                  <select
-                    value={newProjectForm.projectType}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, projectType: e.target.value as STCProjectType })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 font-semibold"
-                  >
-                    <option value="piping">Tuberías de Alta Presión (Piping)</option>
-                    <option value="estructuras">Estructuras Metálicas Pesadas</option>
-                    <option value="tanques">Tanques de Almacenamiento (API 650)</option>
-                    <option value="montaje_integral">Montaje Industrial Integral</option>
-                  </select>
+                  <CreatableSelect
+                    value={
+                      newProjectForm.projectType === 'piping' ? 'Tuberías de Alta Presión (Piping)' :
+                      newProjectForm.projectType === 'estructuras' ? 'Estructuras Metálicas Pesadas' :
+                      newProjectForm.projectType === 'tanques' ? 'Tanques de Almacenamiento (API 650)' :
+                      'Montaje Industrial Integral'
+                    }
+                    onChange={(val) => {
+                      if (val.includes('Piping')) setNewProjectForm({ ...newProjectForm, projectType: 'piping' });
+                      else if (val.includes('Estructuras')) setNewProjectForm({ ...newProjectForm, projectType: 'estructuras' });
+                      else if (val.includes('Tanques')) setNewProjectForm({ ...newProjectForm, projectType: 'tanques' });
+                      else setNewProjectForm({ ...newProjectForm, projectType: 'montaje_integral' });
+                    }}
+                    options={[
+                      'Tuberías de Alta Presión (Piping)',
+                      'Estructuras Metálicas Pesadas',
+                      'Tanques de Almacenamiento (API 650)',
+                      'Montaje Industrial Integral',
+                    ]}
+                    placeholder="Especialidad..."
+                    allowCustomText={false}
+                    isClearable={false}
+                    inputClassName="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold"
+                  />
                 </div>
               </div>
 
@@ -749,16 +777,15 @@ export const ProjectsLayout: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-slate-400 mb-1 text-[10px]">Cédula (Schedule)</label>
-                      <select
+                      <CreatableSelect
                         value={newProjectForm.pipingSchedule}
-                        onChange={(e) => setNewProjectForm({ ...newProjectForm, pipingSchedule: e.target.value as any })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white"
-                      >
-                        <option value="SCH 10">SCH 10</option>
-                        <option value="SCH 40">SCH 40</option>
-                        <option value="SCH 80">SCH 80</option>
-                        <option value="SCH 160">SCH 160</option>
-                      </select>
+                        onChange={(val) => setNewProjectForm({ ...newProjectForm, pipingSchedule: (val || 'SCH 40') as any })}
+                        options={['SCH 10', 'SCH 40', 'SCH 80', 'SCH 160']}
+                        placeholder="Schedule..."
+                        allowCustomText={false}
+                        isClearable={false}
+                        inputClassName="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-white text-[11px]"
+                      />
                     </div>
                   </div>
                 )}
@@ -800,15 +827,27 @@ export const ProjectsLayout: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-slate-400 mb-1 text-[10px]">Norma Constructiva</label>
-                      <select
-                        value={newProjectForm.tanksStandard}
-                        onChange={(e) => setNewProjectForm({ ...newProjectForm, tanksStandard: e.target.value as any })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white"
-                      >
-                        <option value="API 650">API 650 (Tanques Soldados de Petróleo/Agua)</option>
-                        <option value="API 620">API 620 (Baja Presión)</option>
-                        <option value="UL 142">UL 142 (Tanques Aéreos Combustible)</option>
-                      </select>
+                      <CreatableSelect
+                        value={
+                          newProjectForm.tanksStandard === 'API 650' ? 'API 650 (Tanques Soldados de Petróleo/Agua)' :
+                          newProjectForm.tanksStandard === 'API 620' ? 'API 620 (Baja Presión)' :
+                          'UL 142 (Tanques Aéreos Combustible)'
+                        }
+                        onChange={(val) => {
+                          if (val.includes('API 650')) setNewProjectForm({ ...newProjectForm, tanksStandard: 'API 650' });
+                          else if (val.includes('API 620')) setNewProjectForm({ ...newProjectForm, tanksStandard: 'API 620' });
+                          else setNewProjectForm({ ...newProjectForm, tanksStandard: 'UL 142' });
+                        }}
+                        options={[
+                          'API 650 (Tanques Soldados de Petróleo/Agua)',
+                          'API 620 (Baja Presión)',
+                          'UL 142 (Tanques Aéreos Combustible)',
+                        ]}
+                        placeholder="Norma..."
+                        allowCustomText={false}
+                        isClearable={false}
+                        inputClassName="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-white text-[11px]"
+                      />
                     </div>
                   </div>
                 )}

@@ -28,6 +28,7 @@ import {
   ArrowUpDown,
   Sliders,
   BadgePercent,
+  Settings,
 } from 'lucide-react';
 import { GlobalOpportunity, OpportunityCategory } from '../types';
 import {
@@ -37,6 +38,8 @@ import {
 import { useErp } from '../../../core/storage/erpStore';
 import { getGeminiApiKey } from '../../../core/services/aiVisionExpenseService';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
+import { UniversalModuleConfigModal } from '../../../components/common/UniversalModuleConfigModal';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 import {
   fetchLiveExchangeRates,
   getCachedRates,
@@ -79,6 +82,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
   const [convertedIds, setConvertedIds] = useState<Record<string, boolean>>({});
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [verifyingOpportunity, setVerifyingOpportunity] = useState<GlobalOpportunity | null>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   const hasGeminiApiKey = Boolean(getGeminiApiKey());
 
@@ -295,6 +299,16 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
               {uniqueCountriesCount} Países
             </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsConfigModalOpen(true)}
+            className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-[#00668F] hover:bg-slate-50 hover:border-[#00668F]/30 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
+            title="Configuración de Módulo"
+          >
+            <Settings size={16} />
+            <span className="hidden sm:inline">Configuración</span>
+          </button>
         </div>
       </div>
 
@@ -355,35 +369,29 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
             </div>
 
             {/* Filtro por País (Alimentado dinámicamente de la configuración) */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-2xl text-xs text-slate-700 font-medium">
-              <Globe2 size={13} className="text-slate-400" />
-              <select
+            <div className="w-[180px]">
+              <CreatableSelect
                 value={selectedCountry}
-                onChange={(e) => setSelectedCountry(e.target.value)}
-                className="bg-transparent border-none text-xs text-slate-700 focus:outline-none cursor-pointer"
-              >
-                {availableCountries.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedCountry(val || 'Todos')}
+                options={availableCountries}
+                placeholder="País..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-slate-50 py-1.5 px-3 rounded-2xl text-xs text-slate-700 font-medium border border-slate-200"
+              />
             </div>
 
             {/* Filtro por Categoría */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-2xl text-xs text-slate-700 font-medium">
-              <Filter size={13} className="text-slate-400" />
-              <select
+            <div className="w-[200px]">
+              <CreatableSelect
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-transparent border-none text-xs text-slate-700 focus:outline-none cursor-pointer max-w-[190px] truncate"
-              >
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedCategory(val || 'Todas')}
+                options={availableCategories}
+                placeholder="Categoría..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-slate-50 py-1.5 px-3 rounded-2xl text-xs text-slate-700 font-medium border border-slate-200"
+              />
             </div>
 
             {/* Botón para Desplegar Filtros Avanzados (Precio, Fecha, Afinidad, Orden) */}
@@ -425,17 +433,33 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
               <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
                 Presupuesto Estimado
               </label>
-              <select
-                value={priceRange}
-                onChange={(e) => setPriceRange(e.target.value)}
-                className="w-full bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium focus:outline-none"
-              >
-                <option value="todos">Cualquier Presupuesto</option>
-                <option value="lt100k">Hasta $100,000 USD</option>
-                <option value="100k-250k">$100,000 - $250,000 USD</option>
-                <option value="250k-500k">$250,000 - $500,000 USD</option>
-                <option value="gt500k">Más de $500,000 USD</option>
-              </select>
+              <CreatableSelect
+                value={
+                  priceRange === 'todos' ? 'Cualquier Presupuesto' :
+                  priceRange === 'lt100k' ? 'Hasta $100,000 USD' :
+                  priceRange === '100k-250k' ? '$100,000 - $250,000 USD' :
+                  priceRange === '250k-500k' ? '$250,000 - $500,000 USD' :
+                  'Más de $500,000 USD'
+                }
+                onChange={(val) => {
+                  if (val === 'Hasta $100,000 USD') setPriceRange('lt100k');
+                  else if (val === '$100,000 - $250,000 USD') setPriceRange('100k-250k');
+                  else if (val === '$250,000 - $500,000 USD') setPriceRange('250k-500k');
+                  else if (val === 'Más de $500,000 USD') setPriceRange('gt500k');
+                  else setPriceRange('todos');
+                }}
+                options={[
+                  'Cualquier Presupuesto',
+                  'Hasta $100,000 USD',
+                  '$100,000 - $250,000 USD',
+                  '$250,000 - $500,000 USD',
+                  'Más de $500,000 USD',
+                ]}
+                placeholder="Presupuesto..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
+              />
             </div>
 
             {/* Plazo de Cierre */}
@@ -443,16 +467,30 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
               <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
                 Plazo de Presentación
               </label>
-              <select
-                value={deadlineFilter}
-                onChange={(e) => setDeadlineFilter(e.target.value)}
-                className="w-full bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium focus:outline-none"
-              >
-                <option value="todos">Cualquier Fecha</option>
-                <option value="urgent15">Cierre Urgente (&lt; 15 días)</option>
-                <option value="next30">Próximo Mes (&lt; 30 días)</option>
-                <option value="gt30">Más de 30 días</option>
-              </select>
+              <CreatableSelect
+                value={
+                  deadlineFilter === 'todos' ? 'Cualquier Fecha' :
+                  deadlineFilter === 'urgent15' ? 'Cierre Urgente (< 15 días)' :
+                  deadlineFilter === 'next30' ? 'Próximo Mes (< 30 días)' :
+                  'Más de 30 días'
+                }
+                onChange={(val) => {
+                  if (val === 'Cierre Urgente (< 15 días)') setDeadlineFilter('urgent15');
+                  else if (val === 'Próximo Mes (< 30 días)') setDeadlineFilter('next30');
+                  else if (val === 'Más de 30 días') setDeadlineFilter('gt30');
+                  else setDeadlineFilter('todos');
+                }}
+                options={[
+                  'Cualquier Fecha',
+                  'Cierre Urgente (< 15 días)',
+                  'Próximo Mes (< 30 días)',
+                  'Más de 30 días',
+                ]}
+                placeholder="Plazo de presentación..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
+              />
             </div>
 
             {/* Afinidad Inteckno */}
@@ -460,15 +498,27 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
               <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
                 Afinidad con Inteckno
               </label>
-              <select
-                value={matchFilter}
-                onChange={(e) => setMatchFilter(e.target.value)}
-                className="w-full bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium focus:outline-none"
-              >
-                <option value="todos">Todos los Matches</option>
-                <option value="gt90">Alta Afinidad (≥ 90%)</option>
-                <option value="gt80">Afinidad Fuerte (≥ 80%)</option>
-              </select>
+              <CreatableSelect
+                value={
+                  matchFilter === 'todos' ? 'Todos los Matches' :
+                  matchFilter === 'gt90' ? 'Alta Afinidad (≥ 90%)' :
+                  'Afinidad Fuerte (≥ 80%)'
+                }
+                onChange={(val) => {
+                  if (val === 'Alta Afinidad (≥ 90%)') setMatchFilter('gt90');
+                  else if (val === 'Afinidad Fuerte (≥ 80%)') setMatchFilter('gt80');
+                  else setMatchFilter('todos');
+                }}
+                options={[
+                  'Todos los Matches',
+                  'Alta Afinidad (≥ 90%)',
+                  'Afinidad Fuerte (≥ 80%)',
+                ]}
+                placeholder="Afinidad..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
+              />
             </div>
 
             {/* Ordenamiento */}
@@ -476,17 +526,33 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
               <label className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
                 Ordenar Resultados
               </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium focus:outline-none"
-              >
-                <option value="match">Mayor Afinidad (% Match)</option>
-                <option value="budget_desc">Mayor Presupuesto ($ USD)</option>
-                <option value="budget_asc">Menor Presupuesto ($ USD)</option>
-                <option value="deadline_asc">Cierre más Próximo</option>
-                <option value="published_desc">Más Recientes Publicados</option>
-              </select>
+              <CreatableSelect
+                value={
+                  sortBy === 'match' ? 'Mayor Afinidad (% Match)' :
+                  sortBy === 'budget_desc' ? 'Mayor Presupuesto ($ USD)' :
+                  sortBy === 'budget_asc' ? 'Menor Presupuesto ($ USD)' :
+                  sortBy === 'deadline_asc' ? 'Cierre más Próximo' :
+                  'Más Recientes Publicados'
+                }
+                onChange={(val) => {
+                  if (val === 'Mayor Presupuesto ($ USD)') setSortBy('budget_desc');
+                  else if (val === 'Menor Presupuesto ($ USD)') setSortBy('budget_asc');
+                  else if (val === 'Cierre más Próximo') setSortBy('deadline_asc');
+                  else if (val === 'Más Recientes Publicados') setSortBy('published_desc');
+                  else setSortBy('match');
+                }}
+                options={[
+                  'Mayor Afinidad (% Match)',
+                  'Mayor Presupuesto ($ USD)',
+                  'Menor Presupuesto ($ USD)',
+                  'Cierre más Próximo',
+                  'Más Recientes Publicados',
+                ]}
+                placeholder="Ordenar por..."
+                allowCustomText={false}
+                isClearable={false}
+                inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
+              />
             </div>
           </div>
         )}
@@ -908,6 +974,13 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal Universal de Configuración del Módulo */}
+      <UniversalModuleConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        moduleId="radar-oportunidades"
+      />
     </div>
   );
 };

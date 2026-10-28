@@ -22,6 +22,7 @@ import {
 import { useErp } from '../../../core/storage/erpStore';
 import { Project, Product, InternalRequisition, InternalRequisitionItem } from '../../../types';
 import { extractBOMFromPdfWithLuciana } from '../../../core/services/lucianaService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface EngineeringBomFunnelProps {
   project: Project;
@@ -511,17 +512,26 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
               </div>
 
               {projectRequisitions.length > 0 && (
-                <select
-                  value={activeReq?.id || ''}
-                  onChange={(e) => setSelectedReqId(e.target.value)}
-                  className="p-1.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-xs"
-                >
-                  {projectRequisitions.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.reqNumber} ({r.items.length} ítems - {r.status})
-                    </option>
-                  ))}
-                </select>
+                <div className="w-64">
+                  <CreatableSelect
+                    value={activeReq ? `${activeReq.reqNumber} (${activeReq.items.length} ítems - ${activeReq.status})` : ''}
+                    onChange={(val) => {
+                      const found = projectRequisitions.find(
+                        (r) => `${r.reqNumber} (${r.items.length} ítems - ${r.status})` === val || r.id === val || r.reqNumber === val
+                      );
+                      if (found) setSelectedReqId(found.id);
+                    }}
+                    options={projectRequisitions.map((r) => ({
+                      id: r.id,
+                      name: `${r.reqNumber} (${r.items.length} ítems - ${r.status})`,
+                      code: r.reqNumber,
+                    }))}
+                    placeholder="Seleccionar requisición..."
+                    allowCustomText={false}
+                    isClearable={false}
+                    inputClassName="p-1.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-xs"
+                  />
+                </div>
               )}
             </div>
 
