@@ -19,6 +19,7 @@ import { EmployeeRecord } from '../../types';
 import { AiDocumentUploader } from '../../components/ui/AiDocumentUploader';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 interface TalentoHumanoProps {
   initialTab?: 'empleados' | 'vacaciones' | 'encuestas' | 'nomina';
@@ -295,9 +296,20 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   title="Escanear Cédula o Certificado Alturas SST"
                   description="La IA extrae automáticamente los datos del colaborador y vigencias de curso de alturas."
                 />
-                <button onClick={() => setIsNewEmpModalOpen(false)} className="text-gray-400 text-lg font-bold">
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsConfigModalOpen(true)}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                    title="Configurar departamentos y cargos"
+                  >
+                    <Settings size={13} className="text-[#00668F]" />
+                    <span>Configuración</span>
+                  </button>
+                  <button onClick={() => setIsNewEmpModalOpen(false)} className="text-gray-400 text-lg font-bold">
+                    ✕
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -327,53 +339,36 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-gray-700">Cargo Técnico</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsConfigModalOpen(true)}
-                      className="text-[10px] text-[#00668F] hover:underline font-bold"
-                    >
-                      ⚙️ Editar
-                    </button>
-                  </div>
-                  <select
+                  <CreatableSelect
+                    label="Cargo Técnico"
+                    required
                     value={empForm.role}
-                    onChange={(e) => setEmpForm({ ...empForm, role: e.target.value })}
-                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white"
-                  >
-                    <option value="">-- Seleccionar Cargo --</option>
-                    {catalogRoles.map((r) => (
-                      <option key={r.id} value={r.name}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setEmpForm({ ...empForm, role: val })}
+                    options={catalogRoles.map((r) => ({ id: r.id, name: r.name }))}
+                    moduleId="empleados"
+                    catalogKey="roles"
+                    placeholder="Seleccionar o escribir cargo..."
+                    allowCustomText={true}
+                  />
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-gray-700">Departamento / Área</label>
-                  <button
-                    type="button"
-                    onClick={() => setIsConfigModalOpen(true)}
-                    className="text-[10px] text-[#00668F] hover:underline font-bold"
-                  >
-                    ⚙️ Editar
-                  </button>
-                </div>
-                <select
+                <CreatableSelect
+                  label="Departamento / Área"
+                  required
                   value={empForm.department}
-                  onChange={(e) => setEmpForm({ ...empForm, department: e.target.value })}
-                  className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white"
-                >
-                  {catalogDepartments.map((d) => (
-                    <option key={d.id} value={d.name}>
-                      {d.name} {d.code ? `(${d.code})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setEmpForm({ ...empForm, department: val })}
+                  options={catalogDepartments.map((d) => ({
+                    id: d.id,
+                    name: d.name,
+                    code: d.code,
+                  }))}
+                  moduleId="empleados"
+                  catalogKey="departments"
+                  placeholder="Seleccionar o escribir departamento..."
+                  allowCustomText={true}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -429,12 +424,23 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                 </span>
                 <h3 className="text-base font-bold text-gray-900">Editar Ficha de Empleado</h3>
               </div>
-              <button
-                onClick={() => setEditingEmployee(null)}
-                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-200/60 text-sm font-bold cursor-pointer"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="Configurar departamentos y cargos"
+                >
+                  <Settings size={13} className="text-[#00668F]" />
+                  <span>Configuración</span>
+                </button>
+                <button
+                  onClick={() => setEditingEmployee(null)}
+                  className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-200/60 text-sm font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Contenido Desplazable */}
@@ -460,50 +466,34 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-gray-700">Cargo / Especialidad</label>
-                      <button
-                        type="button"
-                        onClick={() => setIsConfigModalOpen(true)}
-                        className="text-[10px] text-[#00668F] hover:underline font-bold"
-                      >
-                        ⚙️ Editar
-                      </button>
-                    </div>
-                    <select
+                    <CreatableSelect
+                      label="Cargo / Especialidad"
+                      required
                       value={editingEmployee.role}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })}
-                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F]"
-                    >
-                      {catalogRoles.map((r) => (
-                        <option key={r.id} value={r.name}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setEditingEmployee({ ...editingEmployee, role: val })}
+                      options={catalogRoles.map((r) => ({ id: r.id, name: r.name }))}
+                      moduleId="empleados"
+                      catalogKey="roles"
+                      placeholder="Seleccionar o escribir cargo..."
+                      allowCustomText={true}
+                    />
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-gray-700">Departamento</label>
-                      <button
-                        type="button"
-                        onClick={() => setIsConfigModalOpen(true)}
-                        className="text-[10px] text-[#00668F] hover:underline font-bold"
-                      >
-                        ⚙️ Editar
-                      </button>
-                    </div>
-                    <select
+                    <CreatableSelect
+                      label="Departamento / Área"
+                      required
                       value={editingEmployee.department}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
-                      className="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F]"
-                    >
-                      {catalogDepartments.map((d) => (
-                        <option key={d.id} value={d.name}>
-                          {d.name} {d.code ? `(${d.code})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setEditingEmployee({ ...editingEmployee, department: val })}
+                      options={catalogDepartments.map((d) => ({
+                        id: d.id,
+                        name: d.name,
+                        code: d.code,
+                      }))}
+                      moduleId="empleados"
+                      catalogKey="departments"
+                      placeholder="Seleccionar o escribir departamento..."
+                      allowCustomText={true}
+                    />
                   </div>
                 </div>
 
