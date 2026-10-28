@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Partner, Project } from '../../../types';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 export interface VendorQuoteCandidate {
   id: string;
@@ -152,17 +153,16 @@ export const QuoteComparisonModal: React.FC<Props> = ({
             <label className="block text-slate-700 font-bold mb-1">
               Proyecto / Centro de Costos Imputado *
             </label>
-            <select
+            <CreatableSelect
+              options={projects.map((p) => ({
+                id: p.id,
+                name: `${p.code} — ${p.name} (${p.clientName})`,
+                code: p.code
+              }))}
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-800"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} — {p.name} ({p.clientName})
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedProjectId(val)}
+              placeholder="Seleccionar o buscar proyecto..."
+            />
           </div>
 
           <div>

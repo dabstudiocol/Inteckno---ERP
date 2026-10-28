@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { PurchaseOrder, PurchaseOrderItem } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface WarehouseReceiptModalProps {
   isOpen: boolean;
@@ -244,42 +245,39 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
                   <label className="font-bold text-slate-800 block mb-1">
                     Seleccionar Orden de Compra Pendiente de Ingreso
                   </label>
-                  <select
+                  <CreatableSelect
+                    options={pendingPOs.length === 0 ? [] : pendingPOs.map((po) => ({
+                      id: po.id,
+                      name: `${po.orderNumber} — Proveedor: ${po.supplierName} (${po.projectCode ? `Proyecto: ${po.projectCode}` : 'Gasto General'}) — Estado: ${po.status.toUpperCase()}`,
+                      code: po.orderNumber
+                    }))}
                     value={selectedPOId}
-                    onChange={(e) => setSelectedPOId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-semibold text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                  >
-                    {pendingPOs.length === 0 ? (
-                      <option value="">No hay órdenes pendientes de recepción</option>
-                    ) : (
-                      pendingPOs.map((po) => (
-                        <option key={po.id} value={po.id}>
-                          {po.orderNumber} — Proveedor: {po.supplierName} ({po.projectCode ? `Proyecto: ${po.projectCode}` : 'Gasto General'}) — Estado: {po.status.toUpperCase()}
-                        </option>
-                      ))
-                    )}
-                  </select>
+                    onChange={(val) => setSelectedPOId(val)}
+                    placeholder="Buscar y seleccionar orden de compra..."
+                  />
                 </div>
 
                 <div>
                   <label className="font-bold text-slate-800 block mb-1">
                     Sede / Bodega de Ingreso
                   </label>
-                  <select
+                  <CreatableSelect
+                    options={[
+                      { id: 'Almacén Central Medellín (Sede Poblado)', name: 'Almacén Central Medellín (Sede Poblado)' },
+                      { id: 'Taller Central Guayabal (Banco de Ensayos & Maquinado)', name: 'Taller Central Guayabal (Banco de Ensayos)' },
+                      { id: 'Bodega de Campo Metro de Medellín (Patios Bello / Línea K)', name: 'Bodega Metro Medellín (Patios Bello Línea K)' },
+                      { id: 'Bodega Internacional Mi Teleférico La Paz (Bolivia)', name: 'Bodega Internacional La Paz (Bolivia)' },
+                      { id: 'Bodega Internacional Inteckno RD (Santo Domingo)', name: 'Bodega Internacional Rep. Dominicana' },
+                      { id: 'Contenedor Móvil de Obra (Sistemas de Cable)', name: 'Contenedor Móvil de Obra' },
+                    ]}
                     value={targetWarehouse}
-                    onChange={(e) => {
-                      setTargetWarehouse(e.target.value);
+                    onChange={(val) => {
+                      setTargetWarehouse(val);
                       setHasUnsavedChanges(true);
                     }}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-semibold text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                  >
-                    <option value="Almacén Central Medellín (Sede Poblado)">Almacén Central Medellín (Sede Poblado)</option>
-                    <option value="Taller Central Guayabal (Banco de Ensayos & Maquinado)">Taller Central Guayabal (Banco de Ensayos)</option>
-                    <option value="Bodega de Campo Metro de Medellín (Patios Bello / Línea K)">Bodega Metro Medellín (Patios Bello Línea K)</option>
-                    <option value="Bodega Internacional Mi Teleférico La Paz (Bolivia)">Bodega Internacional La Paz (Bolivia)</option>
-                    <option value="Bodega Internacional Inteckno RD (Santo Domingo)">Bodega Internacional Rep. Dominicana</option>
-                    <option value="Contenedor Móvil de Obra (Sistemas de Cable)">Contenedor Móvil de Obra</option>
-                  </select>
+                    allowCustomText={true}
+                    placeholder="Seleccionar o escribir bodega..."
+                  />
                 </div>
 
                 <div>

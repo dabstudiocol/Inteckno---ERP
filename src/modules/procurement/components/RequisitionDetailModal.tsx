@@ -15,10 +15,12 @@ import {
   Clock,
   ShieldCheck,
   UserCheck,
+  Settings,
 } from 'lucide-react';
 import { InternalRequisition, InternalRequisitionItem } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface RequisitionDetailModalProps {
   isOpen: boolean;
@@ -246,15 +248,26 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Botón de cerrar - Círculo perfecto */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-            title="Cerrar"
-          >
-            <X size={16} />
-          </button>
+          {/* Botones de acción cabecera */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
+              className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 transition-colors cursor-pointer text-xs font-semibold"
+              title="Configurar opciones de requisiciones"
+            >
+              <Settings size={14} />
+              <span>Configuración</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Cerrar"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Contenido Desplazable */}
@@ -305,52 +318,40 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">
                   Tipo de Requisición
                 </label>
-                <select
+                <CreatableSelect
+                  options={requisitionTypeOptions.length > 0 ? (
+                    requisitionTypeOptions.map((t) => ({ id: t.name, name: t.name }))
+                  ) : [
+                    { id: 'Repuesto Crítico STC', name: 'Repuesto Crítico STC' },
+                    { id: 'Herramienta e Instrumentación', name: 'Herramienta e Instrumentación' },
+                    { id: 'EPP y Alturas', name: 'EPP y Alturas' },
+                    { id: 'Insumo y Consumible Químico', name: 'Insumo y Consumible Químico' },
+                    { id: 'Servicio Externo de Taller', name: 'Servicio Externo de Taller' },
+                  ]}
                   value={requisitionType}
-                  onChange={(e) => setRequisitionType(e.target.value)}
-                  className="w-full h-8 px-2 rounded-lg border border-slate-300 bg-white font-bold text-xs focus:outline-hidden focus:border-[#003650]"
-                >
-                  {requisitionTypeOptions.length > 0 ? (
-                    requisitionTypeOptions.map((t) => (
-                      <option key={t.id} value={t.name}>
-                        {t.name}
-                      </option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="Repuesto Crítico STC">Repuesto Crítico STC</option>
-                      <option value="Herramienta e Instrumentación">Herramienta e Instrumentación</option>
-                      <option value="EPP y Alturas">EPP y Alturas</option>
-                      <option value="Insumo y Consumible Químico">Insumo y Consumible Químico</option>
-                      <option value="Servicio Externo de Taller">Servicio Externo de Taller</option>
-                    </>
-                  )}
-                </select>
+                  onChange={(val) => setRequisitionType(val)}
+                  allowCustomText={true}
+                  placeholder="Seleccionar tipo..."
+                />
               </div>
 
               <div>
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">
                   Nivel de Urgencia
                 </label>
-                <select
+                <CreatableSelect
+                  options={urgencyOptions.length > 0 ? (
+                    urgencyOptions.map((u) => ({ id: u.name, name: u.name }))
+                  ) : [
+                    { id: 'Inmediata (Parada de Operación STC)', name: 'Inmediata (Parada de Operación STC)' },
+                    { id: 'Alta (Requerida ≤ 24 Horas)', name: 'Alta (Requerida ≤ 24 Horas)' },
+                    { id: 'Normal (Atención en Ventana Regular)', name: 'Normal (Atención en Ventana Regular)' },
+                  ]}
                   value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className="w-full h-8 px-2 rounded-lg border border-slate-300 bg-white font-bold text-xs focus:outline-hidden focus:border-[#003650]"
-                >
-                  {urgencyOptions.length > 0 ? (
-                    urgencyOptions.map((u) => (
-                      <option key={u.id} value={u.name}>
-                        {u.name}
-                      </option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="Inmediata (Parada de Operación STC)">Inmediata (Parada de Operación STC)</option>
-                      <option value="Alta (Requerida ≤ 24 Horas)">Alta (Requerida ≤ 24 Horas)</option>
-                      <option value="Normal (Atención en Ventana Regular)">Normal (Atención en Ventana Regular)</option>
-                    </>
-                  )}
-                </select>
+                  onChange={(val) => setPriority(val)}
+                  allowCustomText={true}
+                  placeholder="Seleccionar prioridad..."
+                />
               </div>
             </div>
           </div>
@@ -523,24 +524,25 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
             </button>
 
             {/* SELECTOR DE APROBADOR Y NOTIFICACIÓN FORMAL */}
-            <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
-              <span className="text-[11px] font-bold text-slate-600 pl-2">Aprobador:</span>
-              <select
-                value={selectedApproverId}
-                onChange={(e) => setSelectedApproverId(e.target.value)}
-                className="h-8 px-2 rounded-lg border border-slate-300 bg-white font-bold text-xs text-slate-900 focus:outline-hidden"
-              >
-                {approverOptions.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.shortName} ({a.role})
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+              <span className="text-[11px] font-bold text-slate-600 pl-1 whitespace-nowrap">Aprobador:</span>
+              <div className="min-w-[200px]">
+                <CreatableSelect
+                  options={approverOptions.map((a) => ({
+                    id: a.id,
+                    name: `${a.shortName} (${a.role})`,
+                    code: a.id
+                  }))}
+                  value={selectedApproverId}
+                  onChange={(val) => setSelectedApproverId(val)}
+                  placeholder="Seleccionar aprobador..."
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleNotifyApprover}
                 disabled={isSubmitting}
-                className="px-3.5 py-1.5 rounded-lg bg-[#003650] hover:bg-[#00283c] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all whitespace-nowrap"
+                className="px-3.5 py-2 rounded-lg bg-[#003650] hover:bg-[#00283c] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all whitespace-nowrap"
                 title={`Notificar formalmente a ${currentApprover.name}`}
               >
                 <Send size={13} />

@@ -461,20 +461,18 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
               </div>
 
               {supplierType === 'registered' ? (
-                <select
-                  required
-                  value={selectedSupplierId}
-                  onChange={(e) => setSelectedSupplierId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-800"
-                >
-                  {partners
+                <CreatableSelect
+                  options={partners
                     .filter((p) => p.type === 'supplier' || p.type === 'both')
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} {p.isHomologatedTechnical ? '✓ (Homologado)' : '⚠ (No Homologado)'}
-                      </option>
-                    ))}
-                </select>
+                    .map((p) => ({
+                      id: p.id,
+                      name: `${p.name} ${p.isHomologatedTechnical ? '✓ (Homologado)' : '⚠ (No Homologado)'}`,
+                      code: p.taxId || p.id
+                    }))}
+                  value={selectedSupplierId}
+                  onChange={(val) => setSelectedSupplierId(val)}
+                  placeholder="Seleccionar o buscar proveedor registrado..."
+                />
               ) : (
                 <div className="space-y-2">
                   <input
@@ -504,18 +502,16 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
               <label className="block font-bold text-slate-800 mb-1">
                 Proyecto / Centro de Costos Imputado * (1 Proyecto = 1 Centro de Costos)
               </label>
-              <select
-                required
+              <CreatableSelect
+                options={projects.map((p) => ({
+                  id: p.id,
+                  name: `${p.code} — ${p.name} (${p.clientName})`,
+                  code: p.code
+                }))}
                 value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-800"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.code} — {p.name} ({p.clientName})
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedProjectId(val)}
+                placeholder="Seleccionar o buscar proyecto..."
+              />
 
               {/* Semáforo Presupuestal en Vivo */}
               <div className="mt-2 p-2.5 rounded-lg bg-white border border-slate-200 flex items-center justify-between">
@@ -606,18 +602,19 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
             <div>
               <label className="block text-slate-700 font-semibold mb-1"># SOLPED de Origen</label>
-              <select
+              <CreatableSelect
+                options={[
+                  { id: '', name: 'Sin SOLPED vinculada' },
+                  ...requisitions.map((r) => ({
+                    id: r.id,
+                    name: `${r.reqNumber} — ${r.projectName}`,
+                    code: r.reqNumber
+                  }))
+                ]}
                 value={originReqId}
-                onChange={(e) => handleOriginReqChange(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white"
-              >
-                <option value="">Sin SOLPED vinculada</option>
-                {requisitions.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.reqNumber} — {r.projectName}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => handleOriginReqChange(val)}
+                placeholder="Buscar o vincular SOLPED..."
+              />
             </div>
           </div>
 
@@ -647,31 +644,25 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
             <div>
               <label className="block text-slate-700 font-semibold mb-1">Rubro de Costo</label>
-              <select
+              <CreatableSelect
+                options={supplierCategoriesOptions.length > 0 ? (
+                  supplierCategoriesOptions.map((cat) => ({ id: cat.name, name: cat.name }))
+                ) : [
+                  { id: 'Repuestos & Fabricación STC', name: 'Repuestos & Fabricación STC' },
+                  { id: 'Consumibles & EPP', name: 'Consumibles & EPP' },
+                  { id: 'Viáticos & Movilidad', name: 'Viáticos & Movilidad' },
+                  { id: 'Inspección Cables (MRT)', name: 'Inspección Cables (MRT)' },
+                  { id: 'Ensayos NDT / END', name: 'Ensayos NDT / END' },
+                  { id: 'Mano de Obra ITK', name: 'Mano de Obra ITK' },
+                  { id: 'Mano de Obra Externa', name: 'Mano de Obra Externa' },
+                  { id: 'Subcontratos & Grúas', name: 'Subcontratos & Grúas' },
+                  { id: 'Imprevistos de Obra', name: 'Imprevistos de Obra' },
+                ]}
                 value={costCategory}
-                onChange={(e) => setCostCategory(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
-              >
-                {supplierCategoriesOptions.length > 0 ? (
-                  supplierCategoriesOptions.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="repuestos_fabricacion">Repuestos & Fabricación STC</option>
-                    <option value="consumibles_taller">Consumibles & EPP</option>
-                    <option value="viaticos_transporte">Viáticos & Movilidad</option>
-                    <option value="inspeccion_mrt">Inspección Cables (MRT)</option>
-                    <option value="ensayos_end">Ensayos NDT / END</option>
-                    <option value="mano_obra_itk">Mano de Obra ITK</option>
-                    <option value="mano_obra_externa">Mano de Obra Externa</option>
-                    <option value="subcontratos_gruas">Subcontratos & Grúas</option>
-                    <option value="imprevistos_contingencia">Imprevistos de Obra</option>
-                  </>
-                )}
-              </select>
+                onChange={(val) => setCostCategory(val)}
+                allowCustomText={true}
+                placeholder="Seleccionar rubro..."
+              />
             </div>
 
             <div>
@@ -765,20 +756,20 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
                             onChange={(e) => handleUpdateItem(it.id, 'name', e.target.value)}
                             className="w-full px-2 py-1 text-xs border border-slate-300 rounded bg-white font-semibold text-slate-800"
                           />
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) handleSelectProduct(it.id, e.target.value);
-                            }}
-                            value={it.productId || ''}
-                            className="w-full px-2 py-0.5 text-[11px] border border-slate-200 rounded bg-slate-50 text-slate-600 font-medium"
-                          >
-                            <option value="">Buscar en catálogo existente...</option>
-                            {products.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name} ({p.sku})
-                              </option>
-                            ))}
-                          </select>
+                          <div className="pt-0.5">
+                            <CreatableSelect
+                              options={products.map((p) => ({
+                                id: p.id,
+                                name: `${p.name} (${p.sku})`,
+                                code: p.sku
+                              }))}
+                              value={it.productId || ''}
+                              onChange={(val) => {
+                                if (val) handleSelectProduct(it.id, val);
+                              }}
+                              placeholder="Buscar en catálogo existente..."
+                            />
+                          </div>
                         </td>
 
                         <td className="p-2 w-28">

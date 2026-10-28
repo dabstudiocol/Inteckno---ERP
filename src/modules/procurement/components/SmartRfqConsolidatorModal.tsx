@@ -17,6 +17,7 @@ import { InternalRequisition, Product, Partner, SmartConsolidatedGroup, Purchase
 import { useErp } from '../../../core/storage/erpStore';
 import { groupRequisitionsForVolumePurchasing, detectPriceInflation } from '../../../utils/rfqOptimizer';
 import { formatCOP, formatUSD, getStoredTRM } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface SmartRfqConsolidatorModalProps {
   isOpen: boolean;
@@ -239,19 +240,18 @@ export const SmartRfqConsolidatorModal: React.FC<SmartRfqConsolidatorModalProps>
                 {/* Proveedor */}
                 <div>
                   <label className="font-bold text-gray-700 block mb-1">Proveedor a Cotizar</label>
-                  <select
-                    value={selectedSupplierId}
-                    onChange={(e) => setSelectedSupplierId(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-white border border-gray-200 text-xs font-medium"
-                  >
-                    {safePartners
+                  <CreatableSelect
+                    options={safePartners
                       .filter((p) => p && (p.type === 'supplier' || p.type === 'both'))
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.taxId})
-                        </option>
-                      ))}
-                  </select>
+                      .map((p) => ({
+                        id: p.id,
+                        name: `${p.name} (${p.taxId})`,
+                        code: p.taxId
+                      }))}
+                    value={selectedSupplierId}
+                    onChange={(val) => setSelectedSupplierId(val)}
+                    placeholder="Seleccionar o buscar proveedor..."
+                  />
                 </div>
 
                 {/* Precio Histórico */}

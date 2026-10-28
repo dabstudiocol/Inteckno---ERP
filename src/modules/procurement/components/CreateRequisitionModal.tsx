@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useErp } from '../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface CreateRequisitionModalProps {
   isOpen: boolean;
@@ -196,14 +197,25 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-            title="Cerrar modal"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold px-2.5"
+              title="Configurar opciones de requisiciones"
+            >
+              <Settings size={15} />
+              <span>Configuración</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              title="Cerrar modal"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden text-xs">
@@ -216,15 +228,6 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                 <label className="font-bold text-slate-800 block text-xs">
                   1. Selecciona el Tipo y Destino de la Petición:
                 </label>
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
-                  className="inline-flex items-center gap-1.5 text-[11px] text-[#00668F] hover:text-[#004e6e] font-bold hover:underline cursor-pointer"
-                  title="Personalizar tipos de requisición y niveles de urgencia"
-                >
-                  <Settings size={13} />
-                  <span>Configurar Opciones del Módulo</span>
-                </button>
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -266,36 +269,37 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                 {reqType === 'project' ? (
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">Proyecto STC Asociado:</label>
-                    <select
+                    <CreatableSelect
+                      options={projects.map((p) => ({
+                        id: p.id,
+                        name: `${p.code} — ${p.name}`,
+                        code: p.code
+                      }))}
                       value={selectedProjectId}
-                      onChange={(e) => setSelectedProjectId(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                    >
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.code} — {p.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setSelectedProjectId(val)}
+                      placeholder="Seleccionar o buscar proyecto STC..."
+                    />
                   </div>
                 ) : (
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">Área o Departamento Solicitante:</label>
-                    <select
+                    <CreatableSelect
+                      options={[
+                        { id: 'Administración & Gerencia', name: 'Dirección General & Gerencia' },
+                        { id: 'Ingeniería & Proyectos', name: 'Ingeniería & Proyectos STC' },
+                        { id: 'Operaciones & Mantenimiento', name: 'Operaciones & Mantenimiento' },
+                        { id: 'Taller Central Guayabal', name: 'Taller Central Guayabal (Banco de Ensayos & Maquinado)' },
+                        { id: 'Sistemas & TI', name: 'Sistemas & TI (Equipos, licencias, consumibles)' },
+                        { id: 'Gestión Humana & SST', name: 'Gestión Humana & SST (Dotaciones, botiquín, aseo)' },
+                        { id: 'Comercial & Licitaciones', name: 'Comercial & Licitaciones' },
+                        { id: 'Cadena de Suministro', name: 'Cadena de Suministro & Almacén' },
+                        { id: 'Negocios Internacionales', name: 'Negocios Internacionales & Exportación' },
+                      ]}
                       value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650] cursor-pointer"
-                    >
-                      <option value="Administración & Gerencia">Dirección General & Gerencia</option>
-                      <option value="Ingeniería & Proyectos">Ingeniería & Proyectos STC</option>
-                      <option value="Operaciones & Mantenimiento">Operaciones & Mantenimiento</option>
-                      <option value="Taller Central Guayabal">Taller Central Guayabal (Banco de Ensayos & Maquinado)</option>
-                      <option value="Sistemas & TI">Sistemas & TI (Equipos, licencias, consumibles)</option>
-                      <option value="Gestión Humana & SST">Gestión Humana & SST (Dotaciones, botiquín, aseo)</option>
-                      <option value="Comercial & Licitaciones">Comercial & Licitaciones</option>
-                      <option value="Cadena de Suministro">Cadena de Suministro & Almacén</option>
-                      <option value="Negocios Internacionales">Negocios Internacionales & Exportación</option>
-                    </select>
+                      onChange={(val) => setDepartment(val)}
+                      allowCustomText={true}
+                      placeholder="Seleccionar o escribir área..."
+                    />
                   </div>
                 )}
 
@@ -303,27 +307,21 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                   <label className="font-bold text-slate-700 block mb-1">
                     Tipo de Requisición (Catálogo Configurable):
                   </label>
-                  <select
+                  <CreatableSelect
+                    options={requisitionTypeOptions.length > 0 ? (
+                      requisitionTypeOptions.map((opt) => ({ id: opt.name, name: opt.name }))
+                    ) : [
+                      { id: 'Repuesto Crítico STC', name: 'Repuesto Crítico STC' },
+                      { id: 'Herramienta e Instrumentación', name: 'Herramienta e Instrumentación' },
+                      { id: 'EPP y Alturas', name: 'EPP y Alturas' },
+                      { id: 'Insumo y Consumible Químico', name: 'Insumo y Consumible Químico' },
+                      { id: 'Servicio Externo de Taller', name: 'Servicio Externo de Taller' },
+                    ]}
                     value={requisitionType}
-                    onChange={(e) => setRequisitionType(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                  >
-                    {requisitionTypeOptions.length > 0 ? (
-                      requisitionTypeOptions.map((opt) => (
-                        <option key={opt.id} value={opt.name}>
-                          {opt.name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="Repuesto Crítico STC">Repuesto Crítico STC</option>
-                        <option value="Herramienta e Instrumentación">Herramienta e Instrumentación</option>
-                        <option value="EPP y Alturas">EPP y Alturas</option>
-                        <option value="Insumo y Consumible Químico">Insumo y Consumible Químico</option>
-                        <option value="Servicio Externo de Taller">Servicio Externo de Taller</option>
-                      </>
-                    )}
-                  </select>
+                    onChange={(val) => setRequisitionType(val)}
+                    allowCustomText={true}
+                    placeholder="Seleccionar o buscar tipo..."
+                  />
                 </div>
               </div>
 
@@ -332,25 +330,19 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                   <label className="font-bold text-slate-700 block mb-1">
                     Nivel de Urgencia / Prioridad (Catálogo Configurable):
                   </label>
-                  <select
+                  <CreatableSelect
+                    options={urgencyOptions.length > 0 ? (
+                      urgencyOptions.map((urg) => ({ id: urg.name, name: urg.name }))
+                    ) : [
+                      { id: 'Inmediata (Parada de Operación STC)', name: 'Inmediata (Parada de Operación STC)' },
+                      { id: 'Alta (Requerida ≤ 24 Horas)', name: 'Alta (Requerida ≤ 24 Horas)' },
+                      { id: 'Normal (Atención en Ventana Regular)', name: 'Normal (Atención en Ventana Regular)' },
+                    ]}
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 text-xs focus:outline-hidden focus:border-[#003650]"
-                  >
-                    {urgencyOptions.length > 0 ? (
-                      urgencyOptions.map((urg) => (
-                        <option key={urg.id} value={urg.name}>
-                          {urg.name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="Inmediata (Parada de Operación STC)">Inmediata (Parada de Operación STC)</option>
-                        <option value="Alta (Requerida ≤ 24 Horas)">Alta (Requerida ≤ 24 Horas)</option>
-                        <option value="Normal (Atención en Ventana Regular)">Normal (Atención en Ventana Regular)</option>
-                      </>
-                    )}
-                  </select>
+                    onChange={(val) => setPriority(val)}
+                    allowCustomText={true}
+                    placeholder="Seleccionar prioridad..."
+                  />
                 </div>
 
                 <div>
@@ -450,20 +442,20 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                           className="w-full h-9 px-2.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-900 text-xs focus:outline-hidden"
                         />
                         {products.length > 0 && (
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) handleSelectFromCatalog(item.id, e.target.value);
-                            }}
-                            defaultValue=""
-                            className="w-full h-7 px-2 text-[10px] text-slate-500 rounded-lg bg-slate-100 border border-slate-200"
-                          >
-                            <option value="" disabled>Seleccionar de catálogo existente (opcional)...</option>
-                            {products.slice(0, 50).map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.sku} — {p.name.substring(0, 40)}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="pt-0.5">
+                            <CreatableSelect
+                              options={products.map((p) => ({
+                                id: p.id,
+                                name: `${p.sku ? `[${p.sku}] ` : ''}${p.name}`,
+                                code: p.sku
+                              }))}
+                              value=""
+                              onChange={(val) => {
+                                if (val) handleSelectFromCatalog(item.id, val);
+                              }}
+                              placeholder="Buscar y cargar desde catálogo..."
+                            />
+                          </div>
                         )}
                       </div>
 

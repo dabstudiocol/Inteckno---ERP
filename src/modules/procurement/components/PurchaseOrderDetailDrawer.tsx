@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { PurchaseOrder, Partner, Project } from '../../../types';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
+import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface Props {
   po: PurchaseOrder;
@@ -469,17 +470,19 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
                   </div>
                   <div>
                     <label className="block text-slate-700 font-semibold mb-1">Causa del Rechazo</label>
-                    <select
+                    <CreatableSelect
+                      options={[
+                        { id: 'Falta de Certificado Mill Test', name: 'Falta de Certificado Mill Test / Calidad' },
+                        { id: 'Golpe o daño en transporte', name: 'Golpe o daño severo en transporte' },
+                        { id: 'Medida o diámetro dimensional erróneo', name: 'Medida o diámetro dimensional erróneo' },
+                        { id: 'Referencia distinta a la especificada en plano', name: 'Referencia distinta a la especificada en plano' },
+                        { id: 'Oxidación o defecto superficial', name: 'Oxidación o defecto superficial' }
+                      ]}
                       value={nonConformingReason}
-                      onChange={(e) => setNonConformingReason(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white"
-                    >
-                      <option value="Falta de Certificado Mill Test">Falta de Certificado Mill Test / Calidad</option>
-                      <option value="Golpe o daño en transporte">Golpe o daño severo en transporte</option>
-                      <option value="Medida o diámetro dimensional erróneo">Medida o diámetro dimensional erróneo</option>
-                      <option value="Referencia distinta a la especificada en plano">Referencia distinta a la especificada en plano</option>
-                      <option value="Oxidación o defecto superficial">Oxidación o defecto superficial</option>
-                    </select>
+                      onChange={(val) => setNonConformingReason(val)}
+                      allowCustomText={true}
+                      placeholder="Seleccionar o escribir causa..."
+                    />
                   </div>
                 </div>
 
@@ -739,19 +742,21 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-700 font-semibold mb-1">Empresa Transportadora</label>
-                    <select
+                    <CreatableSelect
+                      options={[
+                        { id: 'Envía Colvanes', name: 'Envía Colvanes' },
+                        { id: 'Servientrega', name: 'Servientrega' },
+                        { id: 'Coordinadora Mercantil', name: 'Coordinadora Mercantil' },
+                        { id: 'TCC', name: 'TCC (Transportadora Comercial Colombia)' },
+                        { id: 'InterRapidísimo', name: 'InterRapidísimo' },
+                        { id: 'Camioneta Propia Inteckno', name: 'Camioneta Propia Inteckno (Cuadrilla STC)' },
+                        { id: 'Transporte Internacional / Agente de Carga', name: 'Transporte Internacional / Agente de Carga' },
+                      ]}
                       value={carrier}
-                      onChange={(e) => setCarrier(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-medium"
-                    >
-                      <option value="Envía Colvanes">Envía Colvanes</option>
-                      <option value="Servientrega">Servientrega</option>
-                      <option value="Coordinadora Mercantil">Coordinadora Mercantil</option>
-                      <option value="TCC">TCC (Transportadora Comercial Colombia)</option>
-                      <option value="InterRapidísimo">InterRapidísimo</option>
-                      <option value="Camioneta Propia Inteckno">Camioneta Propia Inteckno (Cuadrilla STC)</option>
-                      <option value="Transporte Internacional / Agente de Carga">Transporte Internacional / Agente de Carga</option>
-                    </select>
+                      onChange={(val) => setCarrier(val)}
+                      allowCustomText={true}
+                      placeholder="Seleccionar o escribir transportadora..."
+                    />
                   </div>
 
                   <div>
