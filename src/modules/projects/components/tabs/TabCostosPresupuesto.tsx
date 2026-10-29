@@ -28,6 +28,11 @@ import {
   Calculator,
   Save,
   Check,
+  Camera,
+  Image as ImageIcon,
+  ExternalLink,
+  Eye,
+  X,
 } from 'lucide-react';
 import { Project } from '../../../../types';
 import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
@@ -398,6 +403,17 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     } as any);
   };
 
+  // Modales y estados de Consolidado de Oferta
+  const [isAddOfferItemModalOpen, setIsAddOfferItemModalOpen] = useState(false);
+  const [offerItemForm, setOfferItemForm] = useState<{ rubroName: string; description: string }>({
+    rubroName: '',
+    description: '',
+  });
+  const [offerItemToDelete, setOfferItemToDelete] = useState<ProjectOfferBudgetItem | null>(null);
+
+  // Visor de fotos de soporte / factura
+  const [viewingReceiptPhotos, setViewingReceiptPhotos] = useState<{ title: string; invoiceNumber?: string; photos: string[] } | null>(null);
+
   // Navegación: Vista general de carpetas o Carpeta de ITEM abierta
   const [selectedFolderCode, setSelectedFolderCode] = useState<string | null>(null);
 
@@ -469,6 +485,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     observations: string;
     splitPercentage: number;
     splitWithProjectCode: string;
+    receiptPhotos: string[];
   }>({
     itemCode: '',
     itemName: '',
@@ -487,7 +504,125 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     observations: '',
     splitPercentage: 100,
     splitWithProjectCode: '',
+    receiptPhotos: [],
   });
+
+  // Procesamiento y compresión de fotos de soporte / factura a base64 liviano
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+            setItemForm((prev) => ({
+              ...prev,
+              receiptPhotos: [...(prev.receiptPhotos || []), compressedDataUrl],
+            }));
+          }
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemovePhoto = (indexToRemove: number) => {
+    setItemForm((prev) => ({
+      ...prev,
+      receiptPhotos: prev.receiptPhotos.filter((_, idx) => idx !== indexToRemove),
+    }));
+  };
+
+  // Manejador para agregar nuevo rubro al Consolidado de Oferta (Presupuesto)
+  const handleAddOfferItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!offerItemForm.rubroName.trim()) return;
+
+    const newItem: ProjectOfferBudgetItem = {
+      id: `offer-${Date.now()}`,
+      rubroName: offerItemForm.rubroName.trim().toUpperCase(),
+      description: offerItemForm.description.trim(),
+      suppliersCost: 0,
+      indirectCost: 0,
+      totalBudgetedCost: 0,
+      budgetedProfit: 0,
+      subtotal: 0,
+      ivaAmount: 0,
+      totalOfferValue: 0,
+    };
+
+    const updatedItems = [...offerBudget.items, newItem];
+    const newOfferBudget: ProjectOfferBudget = {
+      ...offerBudget,
+      items: updatedItems,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    setOfferBudget(newOfferBudget);
+    onUpdateProject?.({
+      ...project,
+      offerBudget: newOfferBudget as any,
+    } as any);
+
+    setOfferItemForm({ rubroName: '', description: '' });
+    setIsAddOfferItemModalOpen(false);
+  };
+
+  // Manejador para eliminar rubro del Consolidado de Oferta
+  const handleConfirmDeleteOfferItem = () => {
+    if (!offerItemToDelete) return;
+    const updatedItems = offerBudget.items.filter((it) => it.id !== offerItemToDelete.id);
+
+    const sumSuppliers = updatedItems.reduce((acc, it) => acc + (it.suppliersCost || 0), 0);
+    const sumIndirect = updatedItems.reduce((acc, it) => acc + (it.indirectCost || 0), 0);
+    const sumTotalCost = updatedItems.reduce((acc, it) => acc + (it.totalBudgetedCost || 0), 0);
+    const sumProfit = updatedItems.reduce((acc, it) => acc + (it.budgetedProfit || 0), 0);
+    const sumSubtotal = updatedItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
+    const sumIva = updatedItems.reduce((acc, it) => acc + (it.ivaAmount || 0), 0);
+    const sumGrand = updatedItems.reduce((acc, it) => acc + (it.totalOfferValue || 0), 0);
+
+    const newOfferBudget: ProjectOfferBudget = {
+      items: updatedItems,
+      totalSuppliersCost: sumSuppliers,
+      totalIndirectCost: sumIndirect,
+      totalBudgetedCost: sumTotalCost,
+      totalBudgetedProfit: sumProfit,
+      subtotal: sumSubtotal,
+      ivaAmount: sumIva,
+      grandTotalOffer: sumGrand,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    setOfferBudget(newOfferBudget);
+    onUpdateProject?.({
+      ...project,
+      offerBudget: newOfferBudget as any,
+    } as any);
+
+    setOfferItemToDelete(null);
+  };
 
   // Manejador para crear una nueva Carpeta de ITEM
   const handleCreateFolder = (e: React.FormEvent) => {
@@ -611,6 +746,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       observations: itemForm.observations,
       splitPercentage: itemForm.splitPercentage,
       splitWithProjectCode: itemForm.splitWithProjectCode,
+      receiptPhotos: itemForm.receiptPhotos || [],
     };
 
     const updated = [newItem, ...costItems];
@@ -654,6 +790,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       observations: '',
       splitPercentage: 100,
       splitWithProjectCode: '',
+      receiptPhotos: [],
     });
     setIsAddItemModalOpen(false);
   };
@@ -993,6 +1130,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-100 text-[#00668F] font-mono">
                 IVA {projectTaxRate.countryName}: {projectTaxRate.label}
               </span>
+              <button
+                type="button"
+                onClick={() => setIsAddOfferItemModalOpen(true)}
+                className="px-3 py-1.5 bg-[#00668F] hover:bg-[#005273] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95"
+              >
+                <Plus size={14} />
+                <span>Añadir Rubro Presupuestal</span>
+              </button>
             </div>
           </div>
 
@@ -1008,67 +1153,95 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   <th className="py-3 px-3 text-right font-bold">Valor Subtotal</th>
                   <th className="py-3 px-3 text-right">IVA ({projectTaxRate.label})</th>
                   <th className="py-3 px-4 text-right bg-[#00668F]/10 text-[#00668F] font-bold">Valor Total</th>
+                  <th className="py-3 px-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">
-                {offerBudget.items.map((row, idx) => (
-                  <tr key={row.id || idx} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-2.5 px-4 font-bold text-slate-800 whitespace-nowrap">
-                      {row.rubroName}
-                    </td>
-                    <td className="py-2 px-2 text-right">
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={row.suppliersCost || ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : Number(e.target.value);
-                          handleUpdateOfferBudgetItem(idx, 'suppliersCost', val);
-                        }}
-                        className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
-                      />
-                    </td>
-                    <td className="py-2 px-2 text-right">
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={row.indirectCost || ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : Number(e.target.value);
-                          handleUpdateOfferBudgetItem(idx, 'indirectCost', val);
-                        }}
-                        className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
-                      />
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 bg-slate-50/50">
-                      {formatCOP(row.totalBudgetedCost)}
-                    </td>
-                    <td className="py-2 px-2 text-right">
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={row.budgetedProfit || ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : Number(e.target.value);
-                          handleUpdateOfferBudgetItem(idx, 'budgetedProfit', val);
-                        }}
-                        className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs text-emerald-700 font-semibold focus:bg-white focus:border-[#00668F] transition-all"
-                      />
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
-                      {formatCOP(row.subtotal)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-slate-600">
-                      {formatCOP(row.ivaAmount)}
-                    </td>
-                    <td className="py-2.5 px-4 text-right font-mono font-black text-[#00668F] bg-[#00668F]/5">
-                      {formatCOP(row.totalOfferValue)}
-                    </td>
-                  </tr>
-                ))}
+                {offerBudget.items.map((row, idx) => {
+                  const isImprevistos = (row.rubroName || '').toLowerCase().includes('imprevist');
+                  return (
+                    <tr key={row.id || idx} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2.5 px-4 font-bold text-slate-800">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span>{row.rubroName}</span>
+                            {isImprevistos && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
+                                Mandatorio
+                              </span>
+                            )}
+                          </div>
+                          {row.description && (
+                            <p className="text-[10px] text-slate-400 font-normal mt-0.5 line-clamp-2">
+                              {row.description}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 px-2 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={row.suppliersCost || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : Number(e.target.value);
+                            handleUpdateOfferBudgetItem(idx, 'suppliersCost', val);
+                          }}
+                          className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
+                        />
+                      </td>
+                      <td className="py-2 px-2 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={row.indirectCost || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : Number(e.target.value);
+                            handleUpdateOfferBudgetItem(idx, 'indirectCost', val);
+                          }}
+                          className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
+                        />
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 bg-slate-50/50">
+                        {formatCOP(row.totalBudgetedCost)}
+                      </td>
+                      <td className="py-2 px-2 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={row.budgetedProfit || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : Number(e.target.value);
+                            handleUpdateOfferBudgetItem(idx, 'budgetedProfit', val);
+                          }}
+                          className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs text-emerald-700 font-semibold focus:bg-white focus:border-[#00668F] transition-all"
+                        />
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                        {formatCOP(row.subtotal)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                        {formatCOP(row.ivaAmount)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-mono font-black text-[#00668F] bg-[#00668F]/5">
+                        {formatCOP(row.totalOfferValue)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setOfferItemToDelete(row)}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          title="Eliminar rubro presupuestal"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
@@ -1440,7 +1613,26 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                               {formatCOP(granTotal)}
                             </td>
                             <td className="py-2.5 px-3 font-mono text-slate-600">
-                              {c.invoiceNumber || '—'}
+                              {c.receiptPhotos && c.receiptPhotos.length > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingReceiptPhotos({
+                                    title: c.concept,
+                                    invoiceNumber: c.invoiceNumber,
+                                    photos: c.receiptPhotos || [],
+                                  })}
+                                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#00668F] font-bold text-xs transition-colors cursor-pointer group"
+                                  title="Ver fotos de la factura/soporte"
+                                >
+                                  <ImageIcon size={13} className="group-hover:scale-110 transition-transform text-[#00668F]" />
+                                  <span>{c.invoiceNumber || 'Factura'}</span>
+                                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#00668F] text-white font-mono">
+                                    {c.receiptPhotos.length}
+                                  </span>
+                                </button>
+                              ) : (
+                                <span>{c.invoiceNumber || '—'}</span>
+                              )}
                             </td>
                             <td className="py-2.5 px-4 text-slate-500 text-[11px] italic">
                               {c.observations || '—'}
@@ -1575,7 +1767,26 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                               {formatCOP(granTotal)}
                             </td>
                             <td className="py-2.5 px-3 font-mono text-slate-600">
-                              {c.invoiceNumber || '—'}
+                              {c.receiptPhotos && c.receiptPhotos.length > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingReceiptPhotos({
+                                    title: c.concept,
+                                    invoiceNumber: c.invoiceNumber,
+                                    photos: c.receiptPhotos || [],
+                                  })}
+                                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition-colors cursor-pointer group"
+                                  title="Ver fotos de la factura/soporte"
+                                >
+                                  <ImageIcon size={13} className="group-hover:scale-110 transition-transform text-purple-600" />
+                                  <span>{c.invoiceNumber || 'Factura'}</span>
+                                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-700 text-white font-mono">
+                                    {c.receiptPhotos.length}
+                                  </span>
+                                </button>
+                              ) : (
+                                <span>{c.invoiceNumber || '—'}</span>
+                              )}
                             </td>
                             <td className="py-2.5 px-4 text-slate-500 text-[11px] italic">
                               {c.observations || '—'}
@@ -2164,6 +2375,59 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     </div>
                   </div>
 
+                  {/* Subir Fotos de la Factura / Soporte */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                        <Camera size={14} className="text-[#00668F]" />
+                        <span>Fotos de la Factura / Recibo / Soporte</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {itemForm.receiptPhotos.length} {itemForm.receiptPhotos.length === 1 ? 'foto adjunta' : 'fotos adjuntas'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#00668F] rounded-xl text-xs font-semibold text-slate-600 hover:text-[#00668F] cursor-pointer transition-all">
+                        <ImageIcon size={15} />
+                        <span>Adjuntar fotos desde este dispositivo...</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {/* Previsualización en miniaturas con botón eliminar */}
+                    {itemForm.receiptPhotos.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 pt-1">
+                        {itemForm.receiptPhotos.map((photo, pIdx) => (
+                          <div key={pIdx} className="relative group rounded-lg overflow-hidden border border-slate-200 aspect-square bg-slate-100">
+                            <img
+                              src={photo}
+                              alt={`Foto ${pIdx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(pIdx)}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-slate-900/70 hover:bg-rose-600 text-white transition-colors cursor-pointer"
+                              title="Remover foto"
+                            >
+                              <X size={11} />
+                            </button>
+                            <span className="absolute bottom-1 left-1 px-1 py-0.2 bg-black/60 text-white rounded text-[9px] font-mono">
+                              #{pIdx + 1}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Unidad y Cantidad (Grid 2 columnas simétrico) */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -2503,6 +2767,150 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         }}
         onCancel={() => setBillingToDelete(null)}
       />
+
+      {/* Modal Confirmación de Eliminación de Rubro Presupuestal de Oferta */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(offerItemToDelete)}
+        title="¿Eliminar Rubro del Presupuesto Comercial?"
+        itemName={offerItemToDelete ? offerItemToDelete.rubroName : ''}
+        description="Esta acción eliminará este rubro del Consolidado de Oferta y recalculará automáticamente los subtotales, IVA y el Gran Total. Para confirmar, escribe BORRAR a continuación:"
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        confirmText="Eliminar Rubro de Oferta"
+        onConfirm={handleConfirmDeleteOfferItem}
+        onCancel={() => setOfferItemToDelete(null)}
+      />
+
+      {/* Modal: Añadir Rubro al Consolidado de Oferta (Presupuesto) */}
+      {isAddOfferItemModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-[#00668F]/10 text-[#00668F]">
+                  <FileSpreadsheet size={16} />
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">Añadir Rubro Presupuestal a la Oferta</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddOfferItemModalOpen(false)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddOfferItem} className="p-5 space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nombre del Rubro Presupuestal *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="ej. 6. TRANSPORTE Y LOGÍSTICA DE MAQUINARIA"
+                  value={offerItemForm.rubroName}
+                  onChange={(e) => setOfferItemForm({ ...offerItemForm, rubroName: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:border-[#00668F] transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Descripción / Alcance del Rubro (Opcional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="ej. Traslado terrestre de equipos pesados, alquiler de cama baja y escolta técnica en ruta nacional."
+                  value={offerItemForm.description}
+                  onChange={(e) => setOfferItemForm({ ...offerItemForm, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#00668F] transition-all resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddOfferItemModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-colors cursor-pointer text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] active:scale-95 text-white font-bold rounded-xl transition-all cursor-pointer text-xs shadow-xs"
+                >
+                  Añadir Rubro
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Visor de Fotos de Factura / Soporte */}
+      {viewingReceiptPhotos && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-slate-50 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-sky-100 text-[#00668F]">
+                  <ImageIcon size={18} />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Soportes y Factura: {viewingReceiptPhotos.invoiceNumber || viewingReceiptPhotos.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {viewingReceiptPhotos.title} • {viewingReceiptPhotos.photos.length} {viewingReceiptPhotos.photos.length === 1 ? 'foto registrada' : 'fotos registradas'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingReceiptPhotos(null)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {viewingReceiptPhotos.photos.map((photo, idx) => (
+                  <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+                    <div className="p-2 border-b border-slate-100 flex items-center justify-between bg-slate-50 text-[11px] font-mono text-slate-500">
+                      <span>Foto #{idx + 1}</span>
+                      <a
+                        href={photo}
+                        download={`soporte_${viewingReceiptPhotos.invoiceNumber || 'factura'}_${idx + 1}.jpg`}
+                        className="text-[#00668F] font-bold hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink size={12} />
+                        <span>Descargar</span>
+                      </a>
+                    </div>
+                    <div className="p-2 flex items-center justify-center bg-slate-900/5 min-h-[220px]">
+                      <img
+                        src={photo}
+                        alt={`Soporte ${idx + 1}`}
+                        className="max-h-[380px] w-auto object-contain rounded-lg shadow-2xs"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewingReceiptPhotos(null)}
+                className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
+              >
+                Cerrar Visor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Detalle Completo de Rubro */}
       <DetailModal

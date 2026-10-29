@@ -345,6 +345,7 @@ export interface CostMatrixItem {
   observations?: string; // Observaciones de obra / notas
   splitPercentage?: number; // % Asignado a este proyecto (ej. 50% si se comparte con otro)
   splitWithProjectCode?: string; // Proyecto con el que se comparte (ej. P25-21)
+  receiptPhotos?: string[]; // URLs o Data URLs de fotos de la factura / recibo / comprobante
 }
 
 // Facturación asociada a un ITEM (Hojas de Facturación Inteckno)
@@ -377,6 +378,7 @@ export interface ProjectItemFolder {
 export interface ProjectOfferBudgetItem {
   id: string;
   rubroName: string; // ej. "1. RECURSO HUMANO", "2. VIÁTICOS Y GASTOS DE VIAJE", etc.
+  description?: string; // Descripción detallada del rubro presupuestal
   suppliersCost: number; // Proveedores
   indirectCost: number; // Costos Indirectos
   totalBudgetedCost: number; // Costos Totales Presupuestados
