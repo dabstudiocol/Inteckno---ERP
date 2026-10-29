@@ -1205,14 +1205,21 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="w-full text-xs text-left border-collapse table-fixed">
+              <colgroup>
+                <col className="w-[28%]" />
+                <col />
+                <col className="w-32" />
+                <col className="w-56" />
+                <col className="w-20" />
+              </colgroup>
               <thead>
                 <tr className="bg-slate-100/90 border-b border-slate-200 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <th className="py-3 px-4 w-64">Rubro</th>
+                  <th className="py-3 px-4">Rubro</th>
                   <th className="py-3 px-4">Descripción</th>
-                  <th className="py-3 px-3 text-center w-28">¿Aplica IVA?</th>
-                  <th className="py-3 px-4 text-right w-48">Valor Presupuestado</th>
-                  <th className="py-3 px-3 text-center w-24">Acciones</th>
+                  <th className="py-3 px-3 text-center">¿Aplica IVA?</th>
+                  <th className="py-3 px-4 text-right">Valor Presupuestado</th>
+                  <th className="py-3 px-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">
@@ -1261,18 +1268,26 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         </button>
                       </td>
                       <td className="py-3 px-4 text-right align-top">
-                        <div className="flex items-center justify-end">
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="0"
-                            value={row.budgetPlanned || ''}
-                            onChange={(e) => {
-                              const val = e.target.value === '' ? 0 : Number(e.target.value);
-                              handleUpdateOfferBudgetValue(idx, val);
-                            }}
-                            className="w-40 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-right font-mono font-bold text-xs text-slate-800 focus:bg-white focus:border-[#00668F] transition-all"
-                          />
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="relative w-full max-w-[180px]">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400 pointer-events-none">$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={row.budgetPlanned || ''}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                handleUpdateOfferBudgetValue(idx, val);
+                              }}
+                              className="w-full pl-6 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-right font-mono font-bold text-xs text-slate-800 focus:bg-white focus:border-[#00668F] transition-all"
+                            />
+                          </div>
+                          {row.budgetPlanned > 0 && (
+                            <span className="text-[10px] font-mono text-slate-400 font-medium">
+                              {formatCOP(row.budgetPlanned)}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-3 text-center align-middle">
@@ -1314,25 +1329,35 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
                 {/* 2. Utilidad Total Presupuestada (Permite ingresar o ajustar la utilidad estimada de la oferta) */}
                 <tr className="bg-emerald-50/40 font-bold text-slate-800 border-b border-slate-200">
-                  <td colSpan={3} className="py-2 px-4 uppercase text-[11px] tracking-wider text-emerald-900 flex items-center gap-2">
-                    <span>Utilidad Total Presupuestada</span>
-                    <span className="text-[10px] text-emerald-700 font-normal">
-                      ({offerBudget.totalBudgetedCost > 0 ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(1) : 0}% sobre costos)
-                    </span>
+                  <td colSpan={3} className="py-2 px-4 uppercase text-[11px] tracking-wider text-emerald-900">
+                    <div className="flex items-center gap-2">
+                      <span>Utilidad Total Presupuestada</span>
+                      <span className="text-[10px] text-emerald-700 font-normal">
+                        ({offerBudget.totalBudgetedCost > 0 ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(1) : 0}% sobre costos)
+                      </span>
+                    </div>
                   </td>
                   <td className="py-2 px-4 text-right">
-                    <div className="flex items-center justify-end">
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={offerBudget.totalBudgetedProfit || ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : Number(e.target.value);
-                          handleUpdateOfferProfit(val);
-                        }}
-                        className="w-40 px-3 py-1 bg-white border border-emerald-300 rounded-xl text-right font-mono font-bold text-xs text-emerald-700 focus:bg-white focus:border-emerald-600 transition-all"
-                      />
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="relative w-full max-w-[180px]">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-600 pointer-events-none">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={offerBudget.totalBudgetedProfit || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : Number(e.target.value);
+                            handleUpdateOfferProfit(val);
+                          }}
+                          className="w-full pl-6 pr-2.5 py-1 bg-white border border-emerald-300 rounded-xl text-right font-mono font-bold text-xs text-emerald-700 focus:bg-white focus:border-emerald-600 transition-all"
+                        />
+                      </div>
+                      {offerBudget.totalBudgetedProfit > 0 && (
+                        <span className="text-[10px] font-mono text-emerald-600 font-medium">
+                          {formatCOP(offerBudget.totalBudgetedProfit)}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td></td>
@@ -1351,9 +1376,11 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
                 {/* 4. IVA (% según país del proyecto calculado sobre rubros con IVA) */}
                 <tr className="bg-slate-50 font-bold text-slate-800 border-b border-slate-200">
-                  <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700 flex items-center gap-2">
-                    <span>IVA ({projectTaxRate.countryName}: {projectTaxRate.label})</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Calculado solo en rubros gravados</span>
+                  <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700">
+                    <div className="flex items-center gap-2">
+                      <span>IVA ({projectTaxRate.countryName}: {projectTaxRate.label})</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Calculado solo en rubros gravados</span>
+                    </div>
                   </td>
                   <td className="py-2.5 px-4 text-right font-mono text-sm text-slate-700">
                     {formatCOP(offerBudget.ivaAmount)}
