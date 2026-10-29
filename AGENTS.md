@@ -36,9 +36,13 @@ Todo agente que trabaje en esta base de código DEBE obedecer estrictamente esto
 2.1. **Facilidad y Armonía (User-Centric):**
 - El ERP debe ser extremadamente fácil de usar y entender. La tecnología debe facilitar el trabajo y reducir el estrés administrativo, creando armonía en la empresa.
 
-2.2. **Interconexión Profunda:**
-- Ningún módulo es una isla. La información fluye automáticamente:
-  - CRM adjudica oportunidad ➔ Pasa a Proyectos (mismo código = mismo centro de costos) ➔ Solicita inventario de Compras ➔ Valida certificados y aptitud en Talento Humano / SST.
+2.2. **Interconexión Profunda y Prohibición de Datos Huérfanos / Desconectados:**
+- **Ningún módulo es una isla.** La información debe fluir de forma lógica y automática entre todos los módulos del ERP:
+  - **RRHH / Usuarios ➔ Hojas de Horas (Timesheets) y Remisiones:** Los nombres, identificaciones, cargos y tarifas del personal deben consumirse directamente de la base de usuarios y empleados reales (`users` / `employees`). Prohibido colocar campos de texto libre o listas estáticas con nombres inventados.
+  - **Compras (OC) ➔ Proyectos (Matrices de Costos Reales):** Toda orden de compra emitida a un proveedor para un proyecto debe registrarse y sumar automáticamente en la matriz de costos reales del proyecto (`costMatrix`), vinculándose a su ITEM y rubro presupuestal exacto.
+  - **Inventario ➔ Compras y Requisiciones:** Toda solicitud de materiales o repuestos debe consultar las existencias reales en tiempo real (`products`), descontando stock o disparando la orden de compra respectiva.
+  - **CRM Comercial ➔ Proyectos:** Al adjudicar una cotización u oportunidad, pasa a Proyectos respetando la regla inmutable: Código de Proyecto = Centro de Costos.
+- **Prohibición de Selectores con Opciones Inventadas:** Todo selector desplegable debe alimentarse del estado global (`erpStore`), catálogos oficiales (`useModuleCatalog`) o colecciones maestras. Prohibido "quemar" listas hardcodeadas en componentes cuando los datos ya existen en otro módulo.
 
 2.3. **Alineación Literal y Nicho Estricto:**
 - Todo catálogo, opción o flujo debe reflejar fielmente la operación real de Inteckno S.A.S. (Teleféricos, Sistemas de Cable, Ensayos No Destructivos END/MRT, trabajo en alturas, equipos calibrados).
