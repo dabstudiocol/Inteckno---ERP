@@ -305,23 +305,44 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     return (project as any).billingItems || [];
   });
 
-  // Presupuesto Estimado Inicial / Consolidado de Oferta (Excel oficial de Inteckno)
+  // Presupuesto Estimado Inicial / Consolidado de Oferta (Estructura oficial Inteckno: Rubro, Descripción, Valor Presupuestado)
   const defaultOfferBudgetItems: ProjectOfferBudgetItem[] = [
-    { id: 'pres-1', rubroName: '1. RECURSO HUMANO', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
-    { id: 'pres-2', rubroName: '2. VIÁTICOS Y GASTOS DE VIAJE', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
-    { id: 'pres-3', rubroName: '3. PROVEEDORES DE BIENES Y SERVICIOS', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
-    { id: 'pres-4', rubroName: '4. COSTOS INDIRECTOS DE FABRICACIÓN', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
-    { id: 'pres-5', rubroName: '5. IMPREVISTOS Y CONTINGENCIA', suppliersCost: 0, indirectCost: 0, totalBudgetedCost: 0, budgetedProfit: 0, subtotal: 0, ivaAmount: 0, totalOfferValue: 0 },
+    { id: 'pres-1', rubroName: '1. RECURSO HUMANO', description: 'Personal técnico de campo, cuadrillas, ingenieros y supervisores.', budgetPlanned: 0 },
+    { id: 'pres-2', rubroName: '2. VIÁTICOS Y GASTOS DE VIAJE', description: 'Transporte aéreo/terrestre, hospedajes, alimentación y traslados de personal.', budgetPlanned: 0 },
+    { id: 'pres-3', rubroName: '3. PROVEEDORES DE BIENES Y SERVICIOS', description: 'Compra de materiales, consumibles, repuestos e insumos de ferretería.', budgetPlanned: 0 },
+    { id: 'pres-4', rubroName: '4. COSTOS INDIRECTOS DE FABRICACIÓN', description: 'Pólizas contractuales, arriendos de equipos, peajes, grúas y servicios auxiliares.', budgetPlanned: 0 },
+    { id: 'pres-5', rubroName: '5. IMPREVISTOS Y CONTINGENCIA', description: 'Fondo de imprevistos operativos y contingencias técnicas en campo.', budgetPlanned: 0 },
   ];
 
   const [offerBudget, setOfferBudget] = useState<ProjectOfferBudget>(() => {
-    if ((project as any).offerBudget && (project as any).offerBudget.items?.length > 0) {
-      return (project as any).offerBudget;
+    const existing = (project as any).offerBudget;
+    if (existing && existing.items?.length > 0) {
+      // Normalizar items en caso de datos anteriores
+      const normalizedItems: ProjectOfferBudgetItem[] = existing.items.map((it: any) => ({
+        id: it.id,
+        rubroName: it.rubroName,
+        description: it.description || '',
+        budgetPlanned: Number(it.budgetPlanned ?? it.totalBudgetedCost ?? (it.suppliersCost || 0) + (it.indirectCost || 0)) || 0,
+      }));
+      const totalBudgetedCost = normalizedItems.reduce((acc, it) => acc + (it.budgetPlanned || 0), 0);
+      const totalBudgetedProfit = Number(existing.totalBudgetedProfit) || 0;
+      const subtotal = totalBudgetedCost + totalBudgetedProfit;
+      const taxRate = getProjectTaxRate(project.location).rate;
+      const ivaAmount = Math.round(subtotal * taxRate);
+      const grandTotalOffer = subtotal + ivaAmount;
+
+      return {
+        ...existing,
+        items: normalizedItems,
+        totalBudgetedCost,
+        totalBudgetedProfit,
+        subtotal,
+        ivaAmount,
+        grandTotalOffer,
+      };
     }
     return {
       items: defaultOfferBudgetItems,
-      totalSuppliersCost: 0,
-      totalIndirectCost: 0,
       totalBudgetedCost: 0,
       totalBudgetedProfit: 0,
       subtotal: 0,
@@ -351,48 +372,52 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     }
   }, [project]);
 
-  // Recalcular fila y totales del Consolidado de Oferta
-  const handleUpdateOfferBudgetItem = (index: number, field: keyof ProjectOfferBudgetItem, val: number) => {
+  // Recalcular fila y totales del Consolidado de Oferta según la estructura de 3 columnas (Rubro, Descripción, Valor Presupuestado)
+  const handleUpdateOfferBudgetValue = (index: number, val: number) => {
     const updatedItems = [...offerBudget.items];
-    const current = { ...updatedItems[index], [field]: val };
-    
-    // Total costos presupuestados = Proveedores + Indirectos
-    const sup = field === 'suppliersCost' ? val : (current.suppliersCost || 0);
-    const ind = field === 'indirectCost' ? val : (current.indirectCost || 0);
-    const totalCost = sup + ind;
-    
-    // Subtotal = Costos Totales + Utilidad
-    const prof = field === 'budgetedProfit' ? val : (current.budgetedProfit || 0);
-    const sub = totalCost + prof;
-    
-    // IVA = Subtotal * tasa del país
+    updatedItems[index] = {
+      ...updatedItems[index],
+      budgetPlanned: val,
+    };
+
+    const sumCost = updatedItems.reduce((acc, it) => acc + (it.budgetPlanned || 0), 0);
+    const profit = offerBudget.totalBudgetedProfit || 0;
+    const sub = sumCost + profit;
     const taxRate = getProjectTaxRate(project.location).rate;
     const iva = Math.round(sub * taxRate);
-    const total = sub + iva;
-
-    current.totalBudgetedCost = totalCost;
-    current.subtotal = sub;
-    current.ivaAmount = iva;
-    current.totalOfferValue = total;
-    updatedItems[index] = current;
-
-    const sumSuppliers = updatedItems.reduce((acc, it) => acc + (it.suppliersCost || 0), 0);
-    const sumIndirect = updatedItems.reduce((acc, it) => acc + (it.indirectCost || 0), 0);
-    const sumTotalCost = updatedItems.reduce((acc, it) => acc + (it.totalBudgetedCost || 0), 0);
-    const sumProfit = updatedItems.reduce((acc, it) => acc + (it.budgetedProfit || 0), 0);
-    const sumSubtotal = updatedItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
-    const sumIva = updatedItems.reduce((acc, it) => acc + (it.ivaAmount || 0), 0);
-    const sumGrand = updatedItems.reduce((acc, it) => acc + (it.totalOfferValue || 0), 0);
+    const grand = sub + iva;
 
     const newOfferBudget: ProjectOfferBudget = {
+      ...offerBudget,
       items: updatedItems,
-      totalSuppliersCost: sumSuppliers,
-      totalIndirectCost: sumIndirect,
-      totalBudgetedCost: sumTotalCost,
-      totalBudgetedProfit: sumProfit,
-      subtotal: sumSubtotal,
-      ivaAmount: sumIva,
-      grandTotalOffer: sumGrand,
+      totalBudgetedCost: sumCost,
+      subtotal: sub,
+      ivaAmount: iva,
+      grandTotalOffer: grand,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    setOfferBudget(newOfferBudget);
+    onUpdateProject?.({
+      ...project,
+      offerBudget: newOfferBudget as any,
+    } as any);
+  };
+
+  // Actualizar Utilidad Total Presupuestada (Fila resumen)
+  const handleUpdateOfferProfit = (profitVal: number) => {
+    const sumCost = offerBudget.totalBudgetedCost || 0;
+    const sub = sumCost + profitVal;
+    const taxRate = getProjectTaxRate(project.location).rate;
+    const iva = Math.round(sub * taxRate);
+    const grand = sub + iva;
+
+    const newOfferBudget: ProjectOfferBudget = {
+      ...offerBudget,
+      totalBudgetedProfit: profitVal,
+      subtotal: sub,
+      ivaAmount: iva,
+      grandTotalOffer: grand,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -405,9 +430,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   // Modales y estados de Consolidado de Oferta
   const [isAddOfferItemModalOpen, setIsAddOfferItemModalOpen] = useState(false);
-  const [offerItemForm, setOfferItemForm] = useState<{ rubroName: string; description: string }>({
+  const [offerItemForm, setOfferItemForm] = useState<{ rubroName: string; description: string; budgetPlanned: number }>({
     rubroName: '',
     description: '',
+    budgetPlanned: 0,
   });
   const [offerItemToDelete, setOfferItemToDelete] = useState<ProjectOfferBudgetItem | null>(null);
 
@@ -564,19 +590,24 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       id: `offer-${Date.now()}`,
       rubroName: offerItemForm.rubroName.trim().toUpperCase(),
       description: offerItemForm.description.trim(),
-      suppliersCost: 0,
-      indirectCost: 0,
-      totalBudgetedCost: 0,
-      budgetedProfit: 0,
-      subtotal: 0,
-      ivaAmount: 0,
-      totalOfferValue: 0,
+      budgetPlanned: Number(offerItemForm.budgetPlanned) || 0,
     };
 
     const updatedItems = [...offerBudget.items, newItem];
+    const sumCost = updatedItems.reduce((acc, it) => acc + (it.budgetPlanned || 0), 0);
+    const profit = offerBudget.totalBudgetedProfit || 0;
+    const sub = sumCost + profit;
+    const taxRate = getProjectTaxRate(project.location).rate;
+    const iva = Math.round(sub * taxRate);
+    const grand = sub + iva;
+
     const newOfferBudget: ProjectOfferBudget = {
       ...offerBudget,
       items: updatedItems,
+      totalBudgetedCost: sumCost,
+      subtotal: sub,
+      ivaAmount: iva,
+      grandTotalOffer: grand,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -586,7 +617,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       offerBudget: newOfferBudget as any,
     } as any);
 
-    setOfferItemForm({ rubroName: '', description: '' });
+    setOfferItemForm({ rubroName: '', description: '', budgetPlanned: 0 });
     setIsAddOfferItemModalOpen(false);
   };
 
@@ -595,23 +626,20 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     if (!offerItemToDelete) return;
     const updatedItems = offerBudget.items.filter((it) => it.id !== offerItemToDelete.id);
 
-    const sumSuppliers = updatedItems.reduce((acc, it) => acc + (it.suppliersCost || 0), 0);
-    const sumIndirect = updatedItems.reduce((acc, it) => acc + (it.indirectCost || 0), 0);
-    const sumTotalCost = updatedItems.reduce((acc, it) => acc + (it.totalBudgetedCost || 0), 0);
-    const sumProfit = updatedItems.reduce((acc, it) => acc + (it.budgetedProfit || 0), 0);
-    const sumSubtotal = updatedItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
-    const sumIva = updatedItems.reduce((acc, it) => acc + (it.ivaAmount || 0), 0);
-    const sumGrand = updatedItems.reduce((acc, it) => acc + (it.totalOfferValue || 0), 0);
+    const sumCost = updatedItems.reduce((acc, it) => acc + (it.budgetPlanned || 0), 0);
+    const profit = offerBudget.totalBudgetedProfit || 0;
+    const sub = sumCost + profit;
+    const taxRate = getProjectTaxRate(project.location).rate;
+    const iva = Math.round(sub * taxRate);
+    const grand = sub + iva;
 
     const newOfferBudget: ProjectOfferBudget = {
+      ...offerBudget,
       items: updatedItems,
-      totalSuppliersCost: sumSuppliers,
-      totalIndirectCost: sumIndirect,
-      totalBudgetedCost: sumTotalCost,
-      totalBudgetedProfit: sumProfit,
-      subtotal: sumSubtotal,
-      ivaAmount: sumIva,
-      grandTotalOffer: sumGrand,
+      totalBudgetedCost: sumCost,
+      subtotal: sub,
+      ivaAmount: iva,
+      grandTotalOffer: grand,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -1145,15 +1173,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             <table className="w-full text-xs text-left border-collapse">
               <thead>
                 <tr className="bg-slate-100/90 border-b border-slate-200 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <th className="py-3 px-4">Rubro Presupuestal</th>
-                  <th className="py-3 px-3 text-right">Proveedores</th>
-                  <th className="py-3 px-3 text-right">Costos Indirectos</th>
-                  <th className="py-3 px-3 text-right bg-slate-200/60 font-bold">Costos Totales Presupuestados</th>
-                  <th className="py-3 px-3 text-right">Utilidad Total Presupuestada</th>
-                  <th className="py-3 px-3 text-right font-bold">Valor Subtotal</th>
-                  <th className="py-3 px-3 text-right">IVA ({projectTaxRate.label})</th>
-                  <th className="py-3 px-4 text-right bg-[#00668F]/10 text-[#00668F] font-bold">Valor Total</th>
-                  <th className="py-3 px-3 text-center">Acciones</th>
+                  <th className="py-3 px-4 w-72">Rubro</th>
+                  <th className="py-3 px-4">Descripción</th>
+                  <th className="py-3 px-4 text-right w-52">Valor Presupuestado</th>
+                  <th className="py-3 px-3 text-center w-20">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">
@@ -1161,114 +1184,131 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   const isImprevistos = (row.rubroName || '').toLowerCase().includes('imprevist');
                   return (
                     <tr key={row.id || idx} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4 font-bold text-slate-800">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span>{row.rubroName}</span>
-                            {isImprevistos && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
-                                Mandatorio
-                              </span>
-                            )}
-                          </div>
-                          {row.description && (
-                            <p className="text-[10px] text-slate-400 font-normal mt-0.5 line-clamp-2">
-                              {row.description}
-                            </p>
+                      <td className="py-3 px-4 font-bold text-slate-800 align-top">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-900">{row.rubroName}</span>
+                          {isImprevistos && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 shrink-0">
+                              Mandatorio
+                            </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-2 px-2 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={row.suppliersCost || ''}
+                      <td className="py-3 px-4 text-slate-600 align-top">
+                        <textarea
+                          rows={2}
+                          value={row.description || ''}
+                          placeholder="Descripción o alcance de este rubro..."
                           onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : Number(e.target.value);
-                            handleUpdateOfferBudgetItem(idx, 'suppliersCost', val);
+                            const newItems = [...offerBudget.items];
+                            newItems[idx] = { ...newItems[idx], description: e.target.value };
+                            const updated = { ...offerBudget, items: newItems };
+                            setOfferBudget(updated);
+                            onUpdateProject?.({ ...project, offerBudget: updated as any } as any);
                           }}
-                          className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
+                          className="w-full px-2.5 py-1.5 bg-slate-50 border border-transparent hover:border-slate-200 focus:border-[#00668F] focus:bg-white rounded-lg text-xs transition-all resize-none leading-relaxed"
                         />
                       </td>
-                      <td className="py-2 px-2 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={row.indirectCost || ''}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : Number(e.target.value);
-                            handleUpdateOfferBudgetItem(idx, 'indirectCost', val);
-                          }}
-                          className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
-                        />
+                      <td className="py-3 px-4 text-right align-top">
+                        <div className="flex items-center justify-end">
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={row.budgetPlanned || ''}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : Number(e.target.value);
+                              handleUpdateOfferBudgetValue(idx, val);
+                            }}
+                            className="w-44 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-right font-mono font-bold text-xs text-slate-800 focus:bg-white focus:border-[#00668F] transition-all"
+                          />
+                        </div>
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 bg-slate-50/50">
-                        {formatCOP(row.totalBudgetedCost)}
-                      </td>
-                      <td className="py-2 px-2 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={row.budgetedProfit || ''}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : Number(e.target.value);
-                            handleUpdateOfferBudgetItem(idx, 'budgetedProfit', val);
-                          }}
-                          className="w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-xs text-emerald-700 font-semibold focus:bg-white focus:border-[#00668F] transition-all"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
-                        {formatCOP(row.subtotal)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-slate-600">
-                        {formatCOP(row.ivaAmount)}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono font-black text-[#00668F] bg-[#00668F]/5">
-                        {formatCOP(row.totalOfferValue)}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-3 px-3 text-center align-middle">
                         <button
                           type="button"
                           onClick={() => setOfferItemToDelete(row)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           title="Eliminar rubro presupuestal"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={14} />
                         </button>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
-              <tfoot>
-                <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
-                  <td className="py-3 px-4 font-bold uppercase tracking-wider text-slate-800">
-                    Total Presupuesto Oferta
+              {/* FILAS DE TOTALES Y RESUMEN CALCULADOS DE LA COLUMNA VALOR PRESUPUESTADO */}
+              <tfoot className="border-t-2 border-slate-300">
+                {/* 1. Costos Totales Presupuestados */}
+                <tr className="bg-slate-50 font-bold text-slate-800 border-b border-slate-200">
+                  <td colSpan={2} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700">
+                    Costos Totales Presupuestados
                   </td>
-                  <td className="py-3 px-2 text-right font-mono">
-                    {formatCOP(offerBudget.totalSuppliersCost)}
-                  </td>
-                  <td className="py-3 px-2 text-right font-mono">
-                    {formatCOP(offerBudget.totalIndirectCost)}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-900 bg-slate-200/50">
+                  <td className="py-2.5 px-4 text-right font-mono text-sm text-slate-900 font-bold">
                     {formatCOP(offerBudget.totalBudgetedCost)}
                   </td>
-                  <td className="py-3 px-2 text-right font-mono text-emerald-800">
-                    {formatCOP(offerBudget.totalBudgetedProfit)}
+                  <td></td>
+                </tr>
+
+                {/* 2. Utilidad Total Presupuestada (Permite ingresar o ajustar la utilidad estimada de la oferta) */}
+                <tr className="bg-emerald-50/40 font-bold text-slate-800 border-b border-slate-200">
+                  <td colSpan={2} className="py-2 px-4 uppercase text-[11px] tracking-wider text-emerald-900 flex items-center gap-2">
+                    <span>Utilidad Total Presupuestada</span>
+                    <span className="text-[10px] text-emerald-700 font-normal">
+                      ({offerBudget.totalBudgetedCost > 0 ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(1) : 0}% sobre costos)
+                    </span>
                   </td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-900">
+                  <td className="py-2 px-4 text-right">
+                    <div className="flex items-center justify-end">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={offerBudget.totalBudgetedProfit || ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          handleUpdateOfferProfit(val);
+                        }}
+                        className="w-44 px-3 py-1 bg-white border border-emerald-300 rounded-xl text-right font-mono font-bold text-xs text-emerald-700 focus:bg-white focus:border-emerald-600 transition-all"
+                      />
+                    </div>
+                  </td>
+                  <td></td>
+                </tr>
+
+                {/* 3. Valor Subtotal (Costos Totales + Utilidad) */}
+                <tr className="bg-slate-100 font-bold text-slate-900 border-b border-slate-200">
+                  <td colSpan={2} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-800">
+                    Valor Subtotal
+                  </td>
+                  <td className="py-2.5 px-4 text-right font-mono text-sm text-slate-900 font-black">
                     {formatCOP(offerBudget.subtotal)}
                   </td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-700">
+                  <td></td>
+                </tr>
+
+                {/* 4. IVA (% según país del proyecto) */}
+                <tr className="bg-slate-50 font-bold text-slate-800 border-b border-slate-200">
+                  <td colSpan={2} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700 flex items-center gap-2">
+                    <span>IVA ({projectTaxRate.countryName}: {projectTaxRate.label})</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Cálculo automático</span>
+                  </td>
+                  <td className="py-2.5 px-4 text-right font-mono text-sm text-slate-700">
                     {formatCOP(offerBudget.ivaAmount)}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-black text-[#00668F] bg-[#00668F]/15 text-sm">
+                  <td></td>
+                </tr>
+
+                {/* 5. Valor Total (Subtotal + IVA) */}
+                <tr className="bg-[#00668F]/10 font-bold text-slate-900 border-b border-[#00668F]/20">
+                  <td colSpan={2} className="py-3 px-4 uppercase text-xs tracking-wider text-[#00668F] font-black">
+                    Valor Total de la Oferta
+                  </td>
+                  <td className="py-3 px-4 text-right font-mono text-base font-black text-[#00668F]">
                     {formatCOP(offerBudget.grandTotalOffer)}
                   </td>
+                  <td></td>
                 </tr>
               </tfoot>
             </table>
@@ -2822,6 +2862,18 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   value={offerItemForm.description}
                   onChange={(e) => setOfferItemForm({ ...offerItemForm, description: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#00668F] transition-all resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Valor Presupuestado (COP)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={offerItemForm.budgetPlanned || ''}
+                  onChange={(e) => setOfferItemForm({ ...offerItemForm, budgetPlanned: e.target.value === '' ? 0 : Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
                 />
               </div>
 

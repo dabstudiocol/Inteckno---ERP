@@ -377,26 +377,29 @@ export interface ProjectItemFolder {
 // Consolidado de Oferta / Presupuesto Estimado Inicial (Excel oficial de Inteckno)
 export interface ProjectOfferBudgetItem {
   id: string;
-  rubroName: string; // ej. "1. RECURSO HUMANO", "2. VIÁTICOS Y GASTOS DE VIAJE", etc.
+  rubroName: string; // ej. "1. RECURSO HUMANO", "2. VIÁTICOS Y GASTOS DE VIAJE", "5. IMPREVISTOS Y CONTINGENCIA", etc.
   description?: string; // Descripción detallada del rubro presupuestal
-  suppliersCost: number; // Proveedores
-  indirectCost: number; // Costos Indirectos
-  totalBudgetedCost: number; // Costos Totales Presupuestados
-  budgetedProfit: number; // Utilidad Total Presupuestada
-  subtotal: number; // Valor subtotal
-  ivaAmount: number; // IVA
-  totalOfferValue: number; // Valor Total
+  budgetPlanned: number; // Valor Presupuestado de la fila
+  suppliersCost?: number; // Compatibilidad heredada
+  indirectCost?: number; // Compatibilidad heredada
+  totalBudgetedCost?: number; // Compatibilidad heredada
+  budgetedProfit?: number; // Compatibilidad heredada
+  subtotal?: number; // Compatibilidad heredada
+  ivaAmount?: number; // Compatibilidad heredada
+  totalOfferValue?: number; // Compatibilidad heredada
 }
 
 export interface ProjectOfferBudget {
   items: ProjectOfferBudgetItem[];
-  totalSuppliersCost: number;
-  totalIndirectCost: number;
-  totalBudgetedCost: number;
-  totalBudgetedProfit: number;
-  subtotal: number;
-  ivaAmount: number;
-  grandTotalOffer: number;
+  totalBudgetedCost: number; // Costos Totales Presupuestados (Suma de la columna Valor Presupuestado)
+  budgetedProfitPercent?: number; // % Utilidad Presupuestada (ej. 15%)
+  totalBudgetedProfit: number; // Utilidad Total Presupuestada
+  subtotal: number; // Valor Subtotal (Costos Totales Presupuestados + Utilidad)
+  ivaPercent?: number; // % IVA según país (ej. 19%)
+  ivaAmount: number; // IVA calculado
+  grandTotalOffer: number; // Valor Total (Valor Subtotal + IVA)
+  totalSuppliersCost?: number; // Compatibilidad
+  totalIndirectCost?: number; // Compatibilidad
   lastUpdated?: string;
 }
 
