@@ -1321,15 +1321,17 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700">
                     Costos Totales Presupuestados
                   </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-sm text-slate-900 font-bold">
-                    {formatCOP(offerBudget.totalBudgetedCost)}
+                  <td className="py-2.5 px-4 text-right">
+                    <div className="flex justify-end font-mono text-sm text-slate-900 font-bold pr-2.5">
+                      {formatCOP(offerBudget.totalBudgetedCost)}
+                    </div>
                   </td>
                   <td></td>
                 </tr>
 
                 {/* 2. Utilidad Total Presupuestada (Permite ingresar o ajustar la utilidad estimada de la oferta) */}
                 <tr className="bg-emerald-50/40 font-bold text-slate-800 border-b border-slate-200">
-                  <td colSpan={3} className="py-2 px-4 uppercase text-[11px] tracking-wider text-emerald-900">
+                  <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-emerald-900">
                     <div className="flex items-center gap-2">
                       <span>Utilidad Total Presupuestada</span>
                       <span className="text-[10px] text-emerald-700 font-normal">
@@ -1338,7 +1340,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     </div>
                   </td>
                   <td className="py-2 px-4 text-right">
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex justify-end">
                       <div className="relative w-full max-w-[180px]">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-600 pointer-events-none">$</span>
                         <input
@@ -1350,14 +1352,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             const val = e.target.value === '' ? 0 : Number(e.target.value);
                             handleUpdateOfferProfit(val);
                           }}
-                          className="w-full pl-6 pr-2.5 py-1 bg-white border border-emerald-300 rounded-xl text-right font-mono font-bold text-xs text-emerald-700 focus:bg-white focus:border-emerald-600 transition-all"
+                          className="w-full pl-6 pr-2.5 py-1.5 bg-white border border-emerald-300 rounded-xl text-right font-mono font-bold text-xs text-emerald-700 focus:bg-white focus:border-emerald-600 transition-all"
                         />
                       </div>
-                      {offerBudget.totalBudgetedProfit > 0 && (
-                        <span className="text-[10px] font-mono text-emerald-600 font-medium">
-                          {formatCOP(offerBudget.totalBudgetedProfit)}
-                        </span>
-                      )}
                     </div>
                   </td>
                   <td></td>
@@ -1368,8 +1365,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-800">
                     Valor Subtotal
                   </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-sm text-slate-900 font-black">
-                    {formatCOP(offerBudget.subtotal)}
+                  <td className="py-2.5 px-4 text-right">
+                    <div className="flex justify-end font-mono text-sm text-slate-900 font-black pr-2.5">
+                      {formatCOP(offerBudget.subtotal)}
+                    </div>
                   </td>
                   <td></td>
                 </tr>
@@ -1382,8 +1381,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       <span className="text-[10px] text-slate-400 font-normal">Calculado solo en rubros gravados</span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-sm text-slate-700">
-                    {formatCOP(offerBudget.ivaAmount)}
+                  <td className="py-2.5 px-4 text-right">
+                    <div className="flex justify-end font-mono text-sm text-slate-700 font-bold pr-2.5">
+                      {formatCOP(offerBudget.ivaAmount)}
+                    </div>
                   </td>
                   <td></td>
                 </tr>
@@ -1393,8 +1394,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   <td colSpan={3} className="py-3 px-4 uppercase text-xs tracking-wider text-[#00668F] font-black">
                     Valor Total de la Oferta
                   </td>
-                  <td className="py-3 px-4 text-right font-mono text-base font-black text-[#00668F]">
-                    {formatCOP(offerBudget.grandTotalOffer)}
+                  <td className="py-3 px-4 text-right">
+                    <div className="flex justify-end font-mono text-base font-black text-[#00668F] pr-2.5">
+                      {formatCOP(offerBudget.grandTotalOffer)}
+                    </div>
                   </td>
                   <td></td>
                 </tr>
