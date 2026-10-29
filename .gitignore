@@ -44,3 +44,5 @@ public/uploads/
 build/
 vendor/
 venv/
+
+external_skills/
