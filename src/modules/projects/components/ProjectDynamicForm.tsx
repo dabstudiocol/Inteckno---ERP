@@ -150,7 +150,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   
   // Mantenimiento y Montaje Especializado / Implementación
   const [cableInterventionLengthMeters, setCableInterventionLengthMeters] = useState<number>(
-    (initialData?.dynamicData as any)?.cableInterventionLengthMeters || 3100
+    (initialData?.dynamicData as any)?.cableInterventionLengthMeters || 0
   );
   const [componentIntervened, setComponentIntervened] = useState<
     'Balancines' | 'Volantes' | 'Reductores' | 'Mordazas' | 'Pilonas_Torres' | 'Cable_Tractor_Portador' | 'Cabinas_Vehiculos'
@@ -161,7 +161,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
     (initialData?.dynamicData as any)?.applicableStandard || 'UNE EN 12927'
   );
   const [measurementEquipmentName, setMeasurementEquipmentName] = useState<string>(
-    (initialData?.dynamicData as any)?.measurementEquipmentName || 'Cabezal MRT MH-60 (Rango 30-65mm)'
+    (initialData?.dynamicData as any)?.measurementEquipmentName || ''
   );
 
   // Consultoría / Proyectos Especiales de Herramientas
@@ -171,7 +171,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
 
   // Formación Técnica Especializada
   const [trainingTopic, setTrainingTopic] = useState<string>(
-    (initialData?.dynamicData as any)?.trainingTopic || 'Operación Segura y Mantenimiento de Teleféricos'
+    (initialData?.dynamicData as any)?.trainingTopic || ''
   );
 
   const handleCategoryChange = (newCat: string) => {

@@ -10,7 +10,7 @@ import {
   ChemicalLotFEFO,
   EquipmentCheckEvent,
 } from './InventorySchema';
-import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from './ProjectSchema';
+import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem, StaffAssignment } from './ProjectSchema';
 
 export type {
   PhysicalCableSegment,
@@ -23,6 +23,7 @@ export type {
   ProjectBillingItem,
   ProjectOfferBudget,
   ProjectOfferBudgetItem,
+  StaffAssignment,
 };
 
 export type UserRole =
@@ -391,6 +392,7 @@ export interface Project {
   serviceId?: string;
   dynamicData?: Record<string, any>;
   costMatrix?: CostMatrixItem[];
+  staffAssignments?: StaffAssignment[];
 }
 
 export type DependencyType = 'FC' | 'CC' | 'FF' | 'CF';

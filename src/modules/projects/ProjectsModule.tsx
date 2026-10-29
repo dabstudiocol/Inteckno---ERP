@@ -510,6 +510,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
           {currentTab === 'cuadrilla' && (
             <TabCuadrilla 
               project={selectedProject} 
+              onUpdateProject={handleUpdateCurrentProject}
             />
           )}
 

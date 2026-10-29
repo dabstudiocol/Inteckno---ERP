@@ -456,7 +456,23 @@ export interface STCFullProject {
   projectItems?: ProjectItemFolder[];
   billingItems?: ProjectBillingItem[];
   offerBudget?: ProjectOfferBudget;
+  staffAssignments?: StaffAssignment[];
 
   createdAt: string;
   updatedAt: string;
 }
+
+export interface StaffAssignment {
+  id: string;
+  employeeName: string;
+  role: string;
+  department: string;
+  projectCode: string;
+  projectName: string;
+  location: string;
+  weekStart: string; // ej. S01 a S52
+  weekEnd: string;
+  allocationPct: number; // 25%, 50%, 100%
+  status: 'confirmado' | 'propuesto' | 'completado';
+}
+
