@@ -288,6 +288,20 @@ export function getItemDisplayName(code?: string, name?: string) {
   return code || name || 'Sin ITEM';
 }
 
+// Formateador con puntos de miles para inputs numéricos de moneda (ej: 5000000 -> 5.000.000)
+export function formatThousands(val: number | string | undefined | null): string {
+  if (val === undefined || val === null || val === '' || val === 0) return '';
+  const numStr = String(val).replace(/\D/g, '');
+  if (!numStr) return '';
+  return Number(numStr).toLocaleString('es-CO');
+}
+
+export function parseThousands(str: string): number {
+  if (!str) return 0;
+  const clean = str.replace(/\./g, '').replace(/,/g, '').replace(/\D/g, '');
+  return clean ? Number(clean) : 0;
+}
+
 export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   project,
   currentTrm,
@@ -1268,26 +1282,21 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         </button>
                       </td>
                       <td className="py-3 px-4 text-right align-top">
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex justify-end">
                           <div className="relative w-full max-w-[180px]">
                             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400 pointer-events-none">$</span>
                             <input
-                              type="number"
-                              min="0"
+                              type="text"
+                              inputMode="numeric"
                               placeholder="0"
-                              value={row.budgetPlanned || ''}
+                              value={formatThousands(row.budgetPlanned)}
                               onChange={(e) => {
-                                const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                const val = parseThousands(e.target.value);
                                 handleUpdateOfferBudgetValue(idx, val);
                               }}
                               className="w-full pl-6 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-right font-mono font-bold text-xs text-slate-800 focus:bg-white focus:border-[#00668F] transition-all"
                             />
                           </div>
-                          {row.budgetPlanned > 0 && (
-                            <span className="text-[10px] font-mono text-slate-400 font-medium">
-                              {formatCOP(row.budgetPlanned)}
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="py-3 px-3 text-center align-middle">
@@ -1344,12 +1353,12 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       <div className="relative w-full max-w-[180px]">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-emerald-600 pointer-events-none">$</span>
                         <input
-                          type="number"
-                          min="0"
+                          type="text"
+                          inputMode="numeric"
                           placeholder="0"
-                          value={offerBudget.totalBudgetedProfit || ''}
+                          value={formatThousands(offerBudget.totalBudgetedProfit)}
                           onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : Number(e.target.value);
+                            const val = parseThousands(e.target.value);
                             handleUpdateOfferProfit(val);
                           }}
                           className="w-full pl-6 pr-2.5 py-1.5 bg-white border border-emerald-300 rounded-xl text-right font-mono font-bold text-xs text-emerald-700 focus:bg-white focus:border-emerald-600 transition-all"
@@ -3060,14 +3069,17 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Valor Presupuestado (COP)</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={offerItemForm.budgetPlanned || ''}
-                  onChange={(e) => setOfferItemForm({ ...offerItemForm, budgetPlanned: e.target.value === '' ? 0 : Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400 pointer-events-none">$</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={formatThousands(offerItemForm.budgetPlanned)}
+                    onChange={(e) => setOfferItemForm({ ...offerItemForm, budgetPlanned: parseThousands(e.target.value) })}
+                    className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:bg-white focus:border-[#00668F] transition-all"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -3183,16 +3195,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Valor Presupuestado (COP)</label>
                 <input
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="0"
-                  value={editingOfferItem.item.budgetPlanned || ''}
+                  value={formatThousands(editingOfferItem.item.budgetPlanned)}
                   onChange={(e) =>
                     setEditingOfferItem({
                       ...editingOfferItem,
                       item: {
                         ...editingOfferItem.item,
-                        budgetPlanned: e.target.value === '' ? 0 : Number(e.target.value),
+                        budgetPlanned: parseThousands(e.target.value),
                       },
                     })
                   }
