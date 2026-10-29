@@ -380,6 +380,7 @@ export interface ProjectOfferBudgetItem {
   rubroName: string; // ej. "1. RECURSO HUMANO", "2. VIÁTICOS Y GASTOS DE VIAJE", "5. IMPREVISTOS Y CONTINGENCIA", etc.
   description?: string; // Descripción detallada del rubro presupuestal
   budgetPlanned: number; // Valor Presupuestado de la fila
+  hasIva?: boolean; // Si el rubro causa IVA o está exento/excluido (por defecto true)
   suppliersCost?: number; // Compatibilidad heredada
   indirectCost?: number; // Compatibilidad heredada
   totalBudgetedCost?: number; // Compatibilidad heredada
