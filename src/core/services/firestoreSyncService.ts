@@ -77,6 +77,11 @@ export async function syncUserToCloud(user: User): Promise<boolean> {
     if (user.accountStatus) payload.accountStatus = user.accountStatus;
     if (user.m365AccountSynced !== undefined) payload.m365AccountSynced = user.m365AccountSynced;
     if (user.forcePasswordChange !== undefined) payload.forcePasswordChange = user.forcePasswordChange;
+    if (user.password) payload.password = user.password;
+    if (user.performanceEvaluations) payload.performanceEvaluations = user.performanceEvaluations;
+    if (user.dataPrivacyConsent) payload.dataPrivacyConsent = user.dataPrivacyConsent;
+    if (user.inductionPath) payload.inductionPath = user.inductionPath;
+    if (user.onboardingCompleted !== undefined) payload.onboardingCompleted = user.onboardingCompleted;
 
     await setDoc(userRef, payload, { merge: true });
     return true;

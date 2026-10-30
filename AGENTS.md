@@ -44,7 +44,14 @@ Todo agente que trabaje en esta base de código DEBE obedecer estrictamente esto
   - **CRM Comercial ➔ Proyectos:** Al adjudicar una cotización u oportunidad, pasa a Proyectos respetando la regla inmutable: Código de Proyecto = Centro de Costos.
 - **Prohibición de Selectores con Opciones Inventadas:** Todo selector desplegable debe alimentarse del estado global (`erpStore`), catálogos oficiales (`useModuleCatalog`) o colecciones maestras. Prohibido "quemar" listas hardcodeadas en componentes cuando los datos ya existen en otro módulo.
 
-2.3. **Alineación Literal y Nicho Estricto:**
+2.3. **Agente Especializado Guardián: `inteckno_data_guardian` (Protección Absoluta e Inmutabilidad de Datos):**
+- Todo agente o desarrollador que modifique la capa de persistencia, sincronización, base de datos o componentes de interfaz asume obligatoriamente el rol de `inteckno_data_guardian`.
+- **Principio Sagrado Cero Pérdida de Datos:** Ningún cambio de código, actualización, limpieza de mocks o despliegue puede provocar la pérdida, vaciado o reinicio de un solo registro de la empresa.
+- **Visión Central Unificada para Todos:** Queda terminantemente prohibido almacenar datos únicamente en un navegador local. Toda la información debe sincronizarse inmediata y bidireccionalmente con Google Cloud Firestore para que cualquier colaborador vea exactamente los mismos datos.
+- **Fusión No Destructiva (`Non-Destructive Deep Merge`):** Jamás reemplazar arreglos u objetos locales que contengan información (`projectItems`, `costMatrix`, `billingItems`, `offerBudget`, `staffAssignments`) con arreglos vacíos de la nube o snapshots desactualizados.
+- **Sistema de Respaldo Continuo (Backups Automáticos):** Cada cambio financiero o contractual relevante debe generar un snapshot histórico de respaldo accesible para recuperación instantánea ante cualquier contingencia.
+
+2.4. **Alineación Literal y Nicho Estricto:**
 - Todo catálogo, opción o flujo debe reflejar fielmente la operación real de Inteckno S.A.S. (Teleféricos, Sistemas de Cable, Ensayos No Destructivos END/MRT, trabajo en alturas, equipos calibrados).
 - **Pertinencia Absoluta al Nicho:** Prohibido inventar procesos genéricos de manufactura pesada que Inteckno no realiza (no construyen vigas, no rastrean coladas de fundición, etc.).
 

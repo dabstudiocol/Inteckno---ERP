@@ -40,6 +40,7 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
     calendarEvents,
     createCalendarEvent,
     articles,
+    projects,
     currentUser,
   } = useErp();
 

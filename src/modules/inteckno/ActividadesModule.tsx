@@ -38,6 +38,7 @@ import { TodoItem, TodoStatus, TodoChecklistItem, TodoPhotoEvidence } from '../.
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { MargaritaIcon } from '../../components/common/MargaritaIcon';
 import {
   generateTechnicalChecklistWithLuciana,
@@ -128,7 +129,8 @@ export const ActividadesModule: React.FC = () => {
   const [category, setCategory] = useState<string>('Operativa de Campo');
   const [dueDate, setDueDate] = useState<string>(() => getSystemDate().dateStr);
   const [assignedToUserId, setAssignedToUserId] = useState<string>(currentUser.id);
-  const [projectCode, setProjectCode] = useState<string>('PRJ-2026-MED-K');
+  const [projectCode, setProjectCode] = useState<string>(projects[0]?.code || 'DOCS-CORP');
+  const [todoToDelete, setTodoToDelete] = useState<TodoItem | null>(null);
   const [notes, setNotes] = useState('');
   const [initialChecklist, setInitialChecklist] = useState<string[]>([]);
   const [newChecklistInput, setNewChecklistInput] = useState('');
@@ -995,7 +997,7 @@ export const ActividadesModule: React.FC = () => {
                     onMoveRight={() => handleMoveStatus(todo.id, 'en_curso')}
                     onSyncM365={() => handleSyncToMicrosoftToDo(todo)}
                     onProjectCalendar={() => handleProjectInCalendar(todo)}
-                    onDelete={() => deleteTodo(todo.id)}
+                    onDelete={() => setTodoToDelete(todo)}
                   />
                 ))}
             </div>
@@ -1027,7 +1029,7 @@ export const ActividadesModule: React.FC = () => {
                     onMoveRight={() => handleMoveStatus(todo.id, 'en_revision')}
                     onSyncM365={() => handleSyncToMicrosoftToDo(todo)}
                     onProjectCalendar={() => handleProjectInCalendar(todo)}
-                    onDelete={() => deleteTodo(todo.id)}
+                    onDelete={() => setTodoToDelete(todo)}
                   />
                 ))}
             </div>
@@ -1059,7 +1061,7 @@ export const ActividadesModule: React.FC = () => {
                     onMoveRight={() => handleMoveStatus(todo.id, 'completada')}
                     onSyncM365={() => handleSyncToMicrosoftToDo(todo)}
                     onProjectCalendar={() => handleProjectInCalendar(todo)}
-                    onDelete={() => deleteTodo(todo.id)}
+                    onDelete={() => setTodoToDelete(todo)}
                   />
                 ))}
             </div>
@@ -1090,7 +1092,7 @@ export const ActividadesModule: React.FC = () => {
                     onMoveLeft={() => handleMoveStatus(todo.id, 'en_revision')}
                     onSyncM365={() => handleSyncToMicrosoftToDo(todo)}
                     onProjectCalendar={() => handleProjectInCalendar(todo)}
-                    onDelete={() => deleteTodo(todo.id)}
+                    onDelete={() => setTodoToDelete(todo)}
                   />
                 ))}
             </div>
@@ -1312,7 +1314,7 @@ export const ActividadesModule: React.FC = () => {
                       {/* Eliminar */}
                       <button
                         type="button"
-                        onClick={() => deleteTodo(todo.id)}
+                        onClick={() => setTodoToDelete(todo)}
                         title="Eliminar actividad"
                         className="p-1.5 rounded-xl text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                       >
@@ -1858,19 +1860,9 @@ export const ActividadesModule: React.FC = () => {
               )}
             </div>
 
-            {/* Acciones de Integración: Microsoft 365, Teams, Calendario */}
+            {/* Acciones de Integración: Teams, Calendario */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Sincronizar To Do */}
-                <button
-                  type="button"
-                  onClick={() => handleSyncToMicrosoftToDo(selectedTodoForModal)}
-                  className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
-                >
-                  <Share2 size={13} />
-                  <span>Sincronizar Microsoft To Do</span>
-                </button>
-
                 {/* Notificar por Teams */}
                 <a
                   href={getTeamsTodoAlertUrl(
@@ -1914,6 +1906,23 @@ export const ActividadesModule: React.FC = () => {
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="actividades"
         moduleTitle="Actividades y Tareas Operativas"
+      />
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(todoToDelete)}
+        title="Eliminar Actividad Operativa"
+        itemName={todoToDelete?.title || ''}
+        description="Esta acción eliminará permanentemente la actividad y su lista de verificación."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (todoToDelete) {
+            deleteTodo(todoToDelete.id);
+            if (selectedTodoForModal?.id === todoToDelete.id) setSelectedTodoForModal(null);
+            setTodoToDelete(null);
+          }
+        }}
+        onClose={() => setTodoToDelete(null)}
       />
     </div>
   );

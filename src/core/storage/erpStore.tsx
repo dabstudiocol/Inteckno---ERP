@@ -83,6 +83,7 @@ import {
 import { recordAuditEvent } from '../services/auditService';
 import { undoRedoService, UserUndoAction, SupportedCollection } from '../services/undoRedoService';
 import { templateManagerService } from '../services/templateManagerService';
+import { createSystemBackup } from '../services/backupService';
 
 const STORAGE_KEY = 'ITK_ERP_STATE_V2';
 const SESSION_KEY = 'ITK_ERP_SESSION_V2';
@@ -736,6 +737,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.productivity.calendarEvents)) { next.calendarEvents = cloudData.productivity.calendarEvents; hasChanges = true; }
           if (Array.isArray(cloudData.productivity.documents)) { next.documents = cloudData.productivity.documents; hasChanges = true; }
           if (Array.isArray(cloudData.productivity.articles)) { next.articles = cloudData.productivity.articles; hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.chatGroups)) { next.chatGroups = cloudData.productivity.chatGroups; hasChanges = true; }
         }
 
         // Reconciliación bidireccional inmediata con Firestore:
@@ -835,6 +837,16 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             };
           }
           return localUser;
+        });
+
+        // Incorporar usuarios creados en otros dispositivos que aún no estaban en prev.users
+        cloudUsers.forEach((cu) => {
+          const exists = mergedUsers.some(
+            (mu) => mu.id === cu.id || (mu.email && cu.email && mu.email.toLowerCase() === cu.email.toLowerCase())
+          );
+          if (!exists && cu.id && cu.email) {
+            mergedUsers.push(cu);
+          }
         });
 
         const updatedCurrent =
@@ -944,27 +956,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isRemoteUpdateRef.current = true;
       setState((prev) => {
         let mergedProjects = prev.projects;
-        if (Array.isArray(data.projects) && data.projects.length > 0) {
+        if (Array.isArray(data.projects)) {
           mergedProjects = data.projects.map((remoteP: Project) => {
             const localP = prev.projects.find((lp) => lp.id === remoteP.id);
             if (!localP) return remoteP;
             return {
               ...remoteP,
-              projectItems: (Array.isArray((localP as any).projectItems) && (localP as any).projectItems.length > 0)
-                ? (localP as any).projectItems
-                : (remoteP as any).projectItems,
-              costMatrix: (Array.isArray((localP as any).costMatrix) && (localP as any).costMatrix.length > 0)
-                ? (localP as any).costMatrix
-                : (remoteP as any).costMatrix,
-              billingItems: (Array.isArray((localP as any).billingItems) && (localP as any).billingItems.length > 0)
-                ? (localP as any).billingItems
-                : (remoteP as any).billingItems,
-              offerBudget: ((localP as any)?.offerBudget?.items?.some((it: any) => it.budgetPlanned > 0))
-                ? (localP as any).offerBudget
-                : ((remoteP as any).offerBudget || (localP as any).offerBudget),
-              staffAssignments: (Array.isArray((localP as any).staffAssignments) && (localP as any).staffAssignments.length > 0)
-                ? (localP as any).staffAssignments
-                : (remoteP as any).staffAssignments,
+              projectItems: Array.isArray((remoteP as any).projectItems)
+                ? (remoteP as any).projectItems
+                : (localP as any).projectItems,
+              costMatrix: Array.isArray((remoteP as any).costMatrix)
+                ? (remoteP as any).costMatrix
+                : (localP as any).costMatrix,
+              billingItems: Array.isArray((remoteP as any).billingItems)
+                ? (remoteP as any).billingItems
+                : (localP as any).billingItems,
+              offerBudget: (remoteP as any).offerBudget || (localP as any).offerBudget,
+              staffAssignments: Array.isArray((remoteP as any).staffAssignments)
+                ? (remoteP as any).staffAssignments
+                : (localP as any).staffAssignments,
             };
           });
         }
@@ -972,8 +982,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...prev,
           projects: mergedProjects,
-          tasks: Array.isArray(data.tasks) && data.tasks.length > 0 ? data.tasks : prev.tasks,
-          milestones: Array.isArray(data.milestones) && data.milestones.length > 0 ? data.milestones : prev.milestones,
+          tasks: Array.isArray(data.tasks) ? data.tasks : prev.tasks,
+          milestones: Array.isArray(data.milestones) ? data.milestones : prev.milestones,
         };
       });
     });
@@ -988,7 +998,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         requisitions: Array.isArray(data.requisitions) ? data.requisitions : prev.requisitions,
         equipment: Array.isArray(data.equipment) ? data.equipment : prev.equipment,
         partners: Array.isArray(data.partners) ? data.partners : prev.partners,
-        inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) && data.inventoryAuditLogs.length > 0 ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
+        inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
       }));
     });
 
@@ -1029,7 +1039,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
     });
 
-    // 8. Suscribirse a Productividad (Tareas To-Do, Calendario, Documentos, Wiki) en tiempo real
+    // 8. Suscribirse a Productividad (Tareas To-Do, Calendario, Documentos, Wiki, Canales de Chat) en tiempo real
     const unsubProductivity = subscribeToCloudModule('productivity', (data) => {
       if (!isMounted || !data) return;
       isRemoteUpdateRef.current = true;
@@ -1039,6 +1049,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         calendarEvents: Array.isArray(data.calendarEvents) ? data.calendarEvents : prev.calendarEvents,
         documents: Array.isArray(data.documents) ? data.documents : prev.documents,
         articles: Array.isArray(data.articles) ? data.articles : prev.articles,
+        chatGroups: Array.isArray(data.chatGroups) ? data.chatGroups : prev.chatGroups,
       }));
     });
 
@@ -1109,6 +1120,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         calendarEvents: state.calendarEvents,
         documents: state.documents,
         articles: state.articles,
+        chatGroups: state.chatGroups,
       }, currentUserId);
     }, 450);
 
@@ -1135,6 +1147,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.calendarEvents,
     state.documents,
     state.articles,
+    state.chatGroups,
     state.currentUser?.id,
   ]);
 
@@ -1370,15 +1383,23 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetUserPassword = useCallback((userId: string, newPassword: string) => {
     setState((prev) => {
+      let targetUser: User | null = null;
       const updatedUsers = prev.users.map((u) => {
         if (u.id === userId) {
-          return { ...u, password: newPassword };
+          targetUser = { ...u, password: newPassword };
+          return targetUser;
         }
         return u;
       });
 
       const updatedCurrent =
         prev.currentUser.id === userId ? { ...prev.currentUser, password: newPassword } : prev.currentUser;
+
+      if (targetUser) {
+        syncUserToCloud(targetUser).catch((err) => {
+          console.warn('[CloudSync] Error sincronizando cambio de clave:', err);
+        });
+      }
 
       return {
         ...prev,
@@ -1410,6 +1431,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       competencies: userData.competencies || ['Inducción General STC'],
     };
 
+    syncUserToCloud(newUser).catch((err) => {
+      console.warn('[CloudSync] Error sincronizando nuevo usuario:', err);
+    });
+
     setState((prev) => ({
       ...prev,
       users: [...prev.users, newUser],
@@ -1420,9 +1445,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const toggleUserStatus = useCallback((userId: string) => {
     setState((prev) => {
+      let targetUser: User | null = null;
       const updatedUsers = prev.users.map((u) => {
         if (u.id === userId) {
-          return { ...u, isActive: u.isActive === false ? true : false };
+          targetUser = { ...u, isActive: u.isActive === false ? true : false };
+          return targetUser;
         }
         return u;
       });
@@ -1431,6 +1458,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         prev.currentUser.id === userId
           ? { ...prev.currentUser, isActive: prev.currentUser.isActive === false ? true : false }
           : prev.currentUser;
+
+      if (targetUser) {
+        syncUserToCloud(targetUser).catch((err) => {
+          console.warn('[CloudSync] Error sincronizando estado de usuario:', err);
+        });
+      }
 
       return {
         ...prev,
@@ -4256,6 +4289,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           tasks: prev.tasks,
           milestones: prev.milestones,
         }, prev.currentUser?.id || 'USR-01').catch(console.warn);
+
+        // Agente Guardián: Respaldo continuo automático en Google Cloud Firestore e IndexedDB
+        if (targetUpdated) {
+          createSystemBackup(
+            'projects',
+            `Actualización de proyecto ${targetUpdated.code || id}: ITEMS, matriz o presupuesto`,
+            targetUpdated,
+            prev.currentUser?.id || 'USR-01',
+            prev.currentUser?.name || 'Sistema Inteckno'
+          ).catch(console.warn);
+        }
       }
 
       return {
