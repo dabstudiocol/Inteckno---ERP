@@ -1174,62 +1174,204 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           </div>
         </div>
 
-        {/* SECCIÓN INTERACTIVA: Termómetro Visual de Distribución y Salud del Proyecto (Estilo Happyhour Bento) */}
+        {/* SECCIÓN INTERACTIVA: GRÁFICO DE DONA BENTO (ESTILO HAPPYHOUR / STIMULSOFT BI) */}
         {(() => {
-          const costBurnPct = contractAmountCOP > 0 ? Math.min(100, (totalIncurred / contractAmountCOP) * 100) : 0;
-          const invoicedPct = contractAmountCOP > 0 ? Math.min(100, (totalInvoiced / contractAmountCOP) * 100) : 0;
-          const profitProjectedPct = contractAmountCOP > 0 ? Math.max(0, Math.min(100, (grossProfitCOP / contractAmountCOP) * 100)) : 0;
+          // Porcentajes reales sobre el Valor Contractual Vigente (100%)
+          const pctCost = contractAmountCOP > 0 ? Math.min(100, (totalIncurred / contractAmountCOP) * 100) : 0;
+          const budgetedProfitVal = offerBudget.totalBudgetedProfit > 0 ? offerBudget.totalBudgetedProfit : grossProfitCOP;
+          const pctProfit = contractAmountCOP > 0 ? Math.min(100, Math.max(0, (budgetedProfitVal / contractAmountCOP) * 100)) : 0;
+          const pctInvoiced = contractAmountCOP > 0 ? Math.min(100, (totalInvoiced / contractAmountCOP) * 100) : 0;
+          const pctRemaining = Math.max(0, 100 - (pctCost + pctProfit));
+
+          // Datos para la dona interactiva con segmentos segmentados y estilizados
+          const controlDonutData = [
+            {
+              name: 'Costos Incurridos',
+              value: totalIncurred,
+              pct: pctCost,
+              color: '#f43f5e', // Rose
+              bg: 'bg-rose-500',
+              label: 'Ejecutado',
+            },
+            {
+              name: 'Utilidad Presupuestada',
+              value: budgetedProfitVal,
+              pct: pctProfit,
+              color: '#10b981', // Emerald
+              bg: 'bg-emerald-500',
+              label: 'Margen Esperado',
+            },
+            {
+              name: 'Facturación Realizada',
+              value: totalInvoiced,
+              pct: pctInvoiced,
+              color: '#06b6d4', // Cyan
+              bg: 'bg-cyan-500',
+              label: 'Cobrado / Facturado',
+            },
+            {
+              name: 'Saldo Contractual Libre',
+              value: Math.max(0, contractAmountCOP - (totalIncurred + budgetedProfitVal)),
+              pct: pctRemaining,
+              color: '#3b82f6', // Blue
+              bg: 'bg-blue-500',
+              label: 'Disponible',
+            },
+          ].filter((d) => d.value > 0);
 
           return (
-            <div className="p-4 bg-white/[0.05] rounded-2xl border border-white/10 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                <div>
-                  <span className="font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                    Flujo de Control del Proyecto • Balance Dinámico (Contrato 100%)
-                  </span>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">
-                    Proporción en tiempo real de lo facturado, costos ejecutados y utilidad reservada
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 font-mono text-[11px]">
-                  <span className="flex items-center gap-1.5 text-rose-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Costos: {costBurnPct.toFixed(1)}%
-                  </span>
-                  <span className="flex items-center gap-1.5 text-cyan-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Facturado: {invoicedPct.toFixed(1)}%
-                  </span>
-                  <span className="flex items-center gap-1.5 text-emerald-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Utilidad: {profitProjectedPct.toFixed(1)}%
-                  </span>
-                </div>
-              </div>
+            <div className="p-5 bg-white/[0.05] rounded-3xl border border-white/10 backdrop-blur-md">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                
+                {/* 1. GRÁFICO DE DONA INTERACTIVO ESTILO HAPPYHOUR CON CENTRO TECNOLÓGICO */}
+                <div className="lg:col-span-5 flex flex-col items-center justify-center relative min-h-[260px]">
+                  <div className="w-[240px] h-[240px] relative flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={controlDonutData.length > 0 ? controlDonutData : [{ name: 'Sin registros', value: 1, color: '#334155' }]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={70}
+                          outerRadius={98}
+                          paddingAngle={5}
+                          dataKey="value"
+                          stroke="none"
+                          cornerRadius={6}
+                        >
+                          {(controlDonutData.length > 0 ? controlDonutData : [{ color: '#334155' }]).map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: any, name: any) => [
+                            `${formatCOP(Number(value) || 0)}`,
+                            name,
+                          ]}
+                          contentStyle={{
+                            backgroundColor: '#0f172a',
+                            borderRadius: '12px',
+                            border: '1px solid #334155',
+                            color: '#ffffff',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
 
-              {/* Barra Multicapa Tecnológica con Marcadores */}
-              <div className="space-y-1.5">
-                <div className="h-3.5 w-full bg-slate-800/80 rounded-full overflow-hidden flex p-0.5 border border-white/10 shadow-inner">
-                  <div
-                    style={{ width: `${costBurnPct}%` }}
-                    className="bg-gradient-to-r from-rose-500 to-rose-400 rounded-l-full h-full transition-all duration-500"
-                    title={`Costos Incurridos: ${costBurnPct.toFixed(1)}%`}
-                  />
-                  <div
-                    style={{ width: `${profitProjectedPct}%` }}
-                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500"
-                    title={`Margen Proyectado: ${profitProjectedPct.toFixed(1)}%`}
-                  />
-                  <div
-                    style={{ width: `${Math.max(0, 100 - (costBurnPct + profitProjectedPct))}%` }}
-                    className="bg-slate-700/50 rounded-r-full h-full"
-                    title="Remanente / Saldo contractual"
-                  />
+                    {/* Centro Tecnológico de la Dona */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                        Margen Real
+                      </span>
+                      <span className="text-2xl font-black font-mono text-white tracking-tight">
+                        {grossMarginPct.toFixed(1)}%
+                      </span>
+                      <span className="text-[9px] font-mono text-cyan-300">
+                        {formatCOP(contractAmountCOP)}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1 font-medium">
+                    Distribución interactiva sobre el 100% del contrato
+                  </span>
                 </div>
 
-                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                  <span>0% (Inicio)</span>
-                  <span>50% Ejecución</span>
-                  <span>100% Contrato ({formatCOP(contractAmountCOP)})</span>
+                {/* 2. BARRAS DE PROGRESO Y DESGLOSE INTERACTIVO (ESTILO HAPPYHOUR / STIMULSOFT) */}
+                <div className="lg:col-span-7 space-y-3.5">
+                  <div className="border-b border-white/10 pb-2">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                      Desglose Visual de Control Financiero
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      Balance en tiempo real de los componentes contractuales
+                    </p>
+                  </div>
+
+                  {/* Fila 1: Costos Incurridos */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                        <span className="font-semibold text-slate-200">Costos Incurridos</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-slate-400 text-[11px]">{pctCost.toFixed(1)}%</span>
+                        <span className="font-bold text-rose-300">{formatCOP(totalIncurred)}</span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden p-0.5">
+                      <div
+                        style={{ width: `${pctCost}%` }}
+                        className="bg-gradient-to-r from-rose-500 to-rose-400 h-full rounded-full transition-all duration-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fila 2: Utilidad Presupuestada */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span className="font-semibold text-slate-200">Utilidad Presupuestada</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-slate-400 text-[11px]">{pctProfit.toFixed(1)}%</span>
+                        <span className="font-bold text-emerald-300">{formatCOP(budgetedProfitVal)}</span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden p-0.5">
+                      <div
+                        style={{ width: `${pctProfit}%` }}
+                        className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fila 3: Facturación Realizada */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                        <span className="font-semibold text-slate-200">Facturación & Cobro</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-slate-400 text-[11px]">{pctInvoiced.toFixed(1)}%</span>
+                        <span className="font-bold text-cyan-200">{formatCOP(totalInvoiced)}</span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden p-0.5">
+                      <div
+                        style={{ width: `${pctInvoiced}%` }}
+                        className="bg-gradient-to-r from-cyan-500 to-sky-400 h-full rounded-full transition-all duration-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fila 4: Saldo Contractual Disponible */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                        <span className="font-semibold text-slate-200">Saldo Contractual Disponible</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-slate-400 text-[11px]">{pctRemaining.toFixed(1)}%</span>
+                        <span className="font-bold text-blue-300">{formatCOP(Math.max(0, contractAmountCOP - (totalIncurred + budgetedProfitVal)))}</span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden p-0.5">
+                      <div
+                        style={{ width: `${pctRemaining}%` }}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-500"
+                      />
+                    </div>
+                  </div>
                 </div>
+
               </div>
             </div>
           );
