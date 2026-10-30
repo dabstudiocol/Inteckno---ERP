@@ -20,7 +20,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   title,
   description = 'Esta acción no se puede deshacer. Se eliminará el registro de forma permanente de la base de datos.',
   itemName,
-  requireConfirmWord = false,
+  requireConfirmWord = true,
   confirmWord = 'BORRAR',
   confirmText = 'Eliminar permanentemente',
   cancelText = 'Cancelar',
