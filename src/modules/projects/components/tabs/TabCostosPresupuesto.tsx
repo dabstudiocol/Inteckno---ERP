@@ -1049,17 +1049,26 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3.5">
-          {/* Valor Contractual */}
+          {/* Valor Contractual y Comparación con Presupuesto Construido */}
           <div className="p-3 bg-white/5 rounded-xl border border-white/10">
             <span className="text-[10px] text-sky-300 uppercase font-semibold block">Valor Contractual Vigente</span>
             <div className="text-sm font-bold text-white mt-0.5">
               {currency === 'COP' ? formatCOP(contractAmountCOP) : `${currency} $${rawContractAmount.toLocaleString('en-US')}`}
             </div>
-            {currency !== 'COP' && (
-              <div className="text-[10px] text-cyan-300 mt-0.5">
-                ≈ {formatCOP(contractAmountCOP)} (TRM {currentTrm.toLocaleString('es-CO')})
-              </div>
-            )}
+            <div className="text-[10px] text-slate-300 mt-0.5 flex items-center justify-between">
+              {offerBudget.subtotal > 0 ? (
+                <>
+                  <span>Oferta Subt: {formatCOP(offerBudget.subtotal)}</span>
+                  <span className={`text-[9px] font-mono font-bold ${
+                    contractAmountCOP >= offerBudget.subtotal ? 'text-emerald-300' : 'text-amber-300'
+                  }`}>
+                    {contractAmountCOP >= offerBudget.subtotal ? '✓ Cubierto' : '⚠️ Desviación'}
+                  </span>
+                </>
+              ) : (
+                <span className="text-slate-400">Sin presupuesto construido aún</span>
+              )}
+            </div>
           </div>
 
           {/* Costos Reales Incurridos */}
