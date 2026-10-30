@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   DollarSign,
   Plus,
@@ -938,10 +938,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const projectCountry = project.clientCountry || (project as any).country || ((project as any).client as any)?.country || 'Colombia';
   const projectTaxRate = getProjectTaxRate(projectCountry);
 
-  const totalIncurred = totalActual;
-  // Margen bruto proyectado = (Contrato - EAC) / Contrato. Sin ETC formal, EAC = max(costo real, costo planeado).
-  // Sin costos registrados el margen no es calculable (evita mostrar 100% enganoso).
-  const estimateAtCompletion = Math.max(totalIncurred, totalPlanned);
+    const totalIncurred = totalActual;
+  // Presupuesto de Costos Planificado:
+  // Si ya se crearon ITEMS con costos planeados (totalPlanned > 0), ese es el presupuesto establecido real.
+  // Si aún no se han creado ITEMS pero se definió un presupuesto inicial global (project.budgetPV), se toma como techo estimado.
+  const initialCostBudget = project.budgetPV || 0;
+  const activeCostBudgetPlan = totalPlanned > 0 ? totalPlanned : initialCostBudget;
+
+  // Margen bruto proyectado = (Contrato - EAC) / Contrato.
+  // EAC (Estimate at Completion) = max(Costo Real Incurrido, Presupuesto de Costos Planificado).
+  const estimateAtCompletion = Math.max(totalIncurred, activeCostBudgetPlan);
   const hasCostData = estimateAtCompletion > 0;
   const grossProfitCOP = hasCostData ? contractAmountCOP - estimateAtCompletion : 0;
   const grossMarginPct = hasCostData && contractAmountCOP > 0 ? (grossProfitCOP / contractAmountCOP) * 100 : 0;
@@ -1052,8 +1058,13 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             <div className="text-sm font-bold text-rose-300 mt-0.5">
               {formatCOP(totalIncurred)}
             </div>
-            <div className="text-[10px] text-slate-300 mt-0.5">
-              Presupuesto Plan: {formatCOP(totalPlanned)}
+            <div className="text-[10px] text-slate-300 mt-0.5 flex items-center justify-between">
+              <span>Presupuesto Plan: {formatCOP(activeCostBudgetPlan)}</span>
+              {totalPlanned > 0 ? (
+                <span className="text-[9px] text-cyan-300 font-semibold">(Por ITEMS)</span>
+              ) : initialCostBudget > 0 ? (
+                <span className="text-[9px] text-amber-300 font-semibold">(Techo Inicial)</span>
+              ) : null}
             </div>
           </div>
 

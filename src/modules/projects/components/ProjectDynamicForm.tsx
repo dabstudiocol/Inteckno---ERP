@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { 
   Building2, 
   Calendar, 
@@ -196,11 +196,11 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
     if (opp.expectedCloseDate) setEndDate(opp.expectedCloseDate);
     if (opp.estimatedValue && opp.currency === 'COP') {
       setContractAmount(opp.estimatedValue);
-      setBudgetCOP(opp.estimatedValue);
+      setBudgetCOP(0);
     } else if (opp.estimatedValueUSD) {
       const copVal = Math.round(opp.estimatedValueUSD * currentTrm);
       setContractAmount(opp.currency === 'USD' ? opp.estimatedValueUSD : copVal);
-      setBudgetCOP(copVal);
+      setBudgetCOP(0);
     }
   };
 
@@ -533,7 +533,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Presupuesto Planificado (PV) COP *
+              Presupuesto Inicial de Costos (BAC) COP
             </label>
             <div className="relative">
               <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">$</span>
@@ -545,7 +545,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
                   const raw = e.target.value.replace(/\D/g, '');
                   setBudgetCOP(raw ? Number(raw) : 0);
                 }}
-                placeholder="0"
+                placeholder="0 (Se consolida con los ITEMS)"
                 className="w-full text-xs font-mono pl-7 pr-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
               />
             </div>
@@ -587,21 +587,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
                 className="w-full text-xs font-mono px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Moneda Contractual
-              </label>
-              <CreatableSelect
-                options={[
-                  { id: 'COP', name: 'COP ($ Pesos Colombianos)' },
-                  { id: 'USD', name: 'USD ($ Dólares Americanos)' },
-                  { id: 'EUR', name: 'EUR (€ Euros)' },
-                ]}
-                value={currency}
-                onChange={(val) => setCurrency(val as any)}
-                placeholder="Seleccionar moneda..."
-              />
-            </div>
+            
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
