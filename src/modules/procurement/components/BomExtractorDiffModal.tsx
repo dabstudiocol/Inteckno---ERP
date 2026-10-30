@@ -39,21 +39,9 @@ export const BomExtractorDiffModal: React.FC<BomExtractorDiffModalProps> = ({
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
 
-  // Versiones de referencia para comparación de ingeniería STC
-  const [v1Items, setV1Items] = useState<RawBOMItem[]>([
-    { sku: 'ITK-ROP-52', name: 'Cable tractor 52mm alma de acero galvanizado FATZER', qty: 100, unit: 'm' },
-    { sku: 'ITK-POL-600', name: 'Polea motriz fundición nodular 600mm', qty: 2, unit: 'unid' },
-    { sku: 'ITK-ROD-222', name: 'Rodamiento oscilante de rodillos 22215 EK SKF', qty: 4, unit: 'unid' },
-    { sku: 'ITK-GRP-012', name: 'Grapas forjadas de alta resistencia 1/2 pulgada', qty: 20, unit: 'unid' },
-  ]);
-
-  const [v2Items, setV2Items] = useState<RawBOMItem[]>([
-    { sku: 'ITK-ROP-52', name: 'Cable tractor 52mm alma de acero galvanizado FATZER', qty: 125, unit: 'm' },
-    { sku: 'ITK-POL-600', name: 'Polea motriz fundición nodular 600mm', qty: 2, unit: 'unid' },
-    { sku: 'ITK-ROD-222', name: 'Rodamiento oscilante de rodillos 22215 EK SKF', qty: 6, unit: 'unid' },
-    { sku: 'ITK-GRP-012', name: 'Grapas forjadas de alta resistencia 1/2 pulgada', qty: 28, unit: 'unid' },
-    { sku: 'ITK-SEN-M18', name: 'Sensor inductivo de sobrevelocidad IP67 M18', qty: 2, unit: 'unid' },
-  ]);
+  // Versiones de referencia para comparación de ingeniería STC (sin mock data inicial)
+  const [v1Items, setV1Items] = useState<RawBOMItem[]>([]);
+  const [v2Items, setV2Items] = useState<RawBOMItem[]>([]);
 
   const diffResult: BOMDiffResult = calculateBOMDiff(
     v1Items,

@@ -51,54 +51,49 @@ export const QuoteComparisonModal: React.FC<Props> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
   const [needDescription, setNeedDescription] = useState('Suministro de Repuestos y Cables para Mantenimiento Mayor STC');
 
-  // 3 cotizaciones para comparar
-  const [candidates, setCandidates] = useState<VendorQuoteCandidate[]>([
-    {
-      id: 'quote-1',
-      supplierName: partners[0]?.name || 'FATZER AG Wire Ropes',
-      supplierTaxId: partners[0]?.taxId || 'CHE-101.234.567',
-      isHomologated: true,
-      totalCOP: 18500000,
-      totalUSD: Math.round(18500000 / currentTrm),
-      deliveryDays: 15,
-      paymentTerms: '50% Anticipo / 50% Contra Entrega',
-      technicalCompliance: true,
-      warrantyMonths: 24,
-      notes: 'Fabricante original suizo. Incluye certificado Mill Test EN 10204 3.1.',
-    },
-    {
-      id: 'quote-2',
-      supplierName: partners[1]?.name || 'Ferretería Industrial del Cable S.A.S.',
-      supplierTaxId: partners[1]?.taxId || '901.882.334-1',
-      isHomologated: false,
-      totalCOP: 16200000,
-      totalUSD: Math.round(16200000 / currentTrm),
-      deliveryDays: 5,
-      paymentTerms: 'Contado contra entrega',
-      technicalCompliance: true,
-      warrantyMonths: 12,
-      notes: 'Distribuidor local en Medellín. Entrega inmediata pero no es fabricante directo.',
-    },
-    {
-      id: 'quote-3',
-      supplierName: 'Importaciones y Cables Andinos Ltda.',
-      supplierTaxId: '900.551.229-8',
-      isHomologated: false,
-      totalCOP: 21000000,
-      totalUSD: Math.round(21000000 / currentTrm),
-      deliveryDays: 30,
-      paymentTerms: '30 días factura fecha',
-      technicalCompliance: false,
-      warrantyMonths: 6,
-      notes: 'Precio superior y no garantiza certificado de calidad en origen.',
-    },
-  ]);
+  // Cotizaciones para comparar (inicializadas desde proveedores reales o en limpio)
+  const [candidates, setCandidates] = useState<VendorQuoteCandidate[]>(() =>
+    partners.length > 0
+      ? partners.slice(0, 3).map((p, idx) => ({
+          id: `quote-${idx + 1}`,
+          supplierName: p.name,
+          supplierTaxId: p.nit || p.taxId || '',
+          isHomologated: true,
+          totalCOP: 0,
+          totalUSD: 0,
+          deliveryDays: 1,
+          paymentTerms: '30 días factura fecha',
+          technicalCompliance: true,
+          warrantyMonths: 12,
+          notes: '',
+        }))
+      : []
+  );
+
+  const handleAddCandidate = () => {
+    setCandidates((prev) => [
+      ...prev,
+      {
+        id: `quote-${Date.now()}`,
+        supplierName: '',
+        supplierTaxId: '',
+        isHomologated: true,
+        totalCOP: 0,
+        totalUSD: 0,
+        deliveryDays: 1,
+        paymentTerms: '30 días factura fecha',
+        technicalCompliance: true,
+        warrantyMonths: 12,
+        notes: '',
+      },
+    ]);
+  };
 
   if (!isOpen) return null;
 
-  // Encontrar la mejor oferta (menor precio con cumplimiento técnico)
-  const compliantQuotes = candidates.filter((c) => c.technicalCompliance);
-  const bestPriceQuote = compliantQuotes.reduce((min, c) => (c.totalCOP < min.totalCOP ? c : min), compliantQuotes[0] || candidates[0]);
+  // Encontrar la mejor oferta (menor precio > 0 con cumplimiento técnico)
+  const compliantQuotes = candidates.filter((c) => c.technicalCompliance && c.totalCOP > 0);
+  const bestPriceQuote = compliantQuotes.reduce((min, c) => (c.totalCOP < min.totalCOP ? c : min), compliantQuotes[0]);
 
   const handleAward = (candidate: VendorQuoteCandidate) => {
     if (!selectedProjectId) {
@@ -180,6 +175,20 @@ export const QuoteComparisonModal: React.FC<Props> = ({
 
         {/* CUERPO DEL CUADRO COMPARATIVO */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleAddCandidate}
+              className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#00668F] font-bold text-xs flex items-center gap-1.5 border border-sky-200 cursor-pointer"
+            >
+              <Plus size={13} /> Agregar Oferta de Proveedor
+            </button>
+          </div>
+          {candidates.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              No hay cotizaciones cargadas. Haz clic en <strong>"Agregar Oferta de Proveedor"</strong> para iniciar la evaluación comparativa.
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {candidates.map((cand, idx) => {
               const isBest = cand.id === bestPriceQuote?.id && cand.technicalCompliance;
@@ -204,14 +213,34 @@ export const QuoteComparisonModal: React.FC<Props> = ({
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         Cotización #{idx + 1}
                       </span>
-                      <input
-                        type="text"
-                        value={cand.supplierName}
-                        onChange={(e) => handleUpdateCandidate(cand.id, 'supplierName', e.target.value)}
-                        className="font-bold text-sm text-slate-900 w-full mt-0.5 bg-transparent border-b border-dashed border-slate-300 focus:border-[#00668F]"
-                      />
+                      <div className="mt-1">
+                        <CreatableSelect
+                          options={partners.map((p) => ({
+                            id: p.name,
+                            name: `${p.name} (${p.nit || p.taxId || 'NIT'})`,
+                            code: p.nit || p.taxId,
+                          }))}
+                          value={cand.supplierName}
+                          onChange={(val) => {
+                            const found = partners.find((p) => p.name === val);
+                            setCandidates((prev) =>
+                              prev.map((c) =>
+                                c.id === cand.id
+                                  ? {
+                                      ...c,
+                                      supplierName: val,
+                                      supplierTaxId: found?.nit || found?.taxId || c.supplierTaxId,
+                                    }
+                                  : c
+                              )
+                            );
+                          }}
+                          allowCustomText={true}
+                          placeholder="Seleccionar o escribir proveedor..."
+                        />
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="font-mono text-[11px] text-slate-500">{cand.supplierTaxId}</span>
+                        <span className="font-mono text-[11px] text-slate-500">{cand.supplierTaxId || 'NIT pendiente'}</span>
                         {cand.isHomologated ? (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
                             Homologado
@@ -226,12 +255,26 @@ export const QuoteComparisonModal: React.FC<Props> = ({
 
                     {/* Precios */}
                     <div className="p-3 rounded-xl bg-slate-50 space-y-1">
-                      <div className="text-[11px] text-slate-500 font-medium">Importe Total Cotizado</div>
-                      <div className="text-lg font-black text-slate-900 font-mono">
-                        {formatCOP(cand.totalCOP)}
-                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium">Importe Total Cotizado (COP)</div>
+                      <input
+                        type="number"
+                        min={0}
+                        value={cand.totalCOP || ''}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const cop = Number(e.target.value) || 0;
+                          setCandidates((prev) =>
+                            prev.map((c) =>
+                              c.id === cand.id
+                                ? { ...c, totalCOP: cop, totalUSD: Math.round(cop / currentTrm) }
+                                : c
+                            )
+                          );
+                        }}
+                        className="w-full px-2 py-1 rounded border border-slate-200 bg-white font-mono text-sm font-black text-slate-900"
+                      />
                       <div className="text-xs text-slate-500 font-mono">
-                        ≈ {formatUSD(cand.totalUSD)} USD
+                        {formatCOP(cand.totalCOP)} ≈ {formatUSD(cand.totalUSD)} USD
                       </div>
                     </div>
 
@@ -310,6 +353,7 @@ export const QuoteComparisonModal: React.FC<Props> = ({
               );
             })}
           </div>
+          )}
         </div>
 
         {/* PIE DEL MODAL */}

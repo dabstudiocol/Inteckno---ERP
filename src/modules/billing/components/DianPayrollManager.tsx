@@ -14,21 +14,49 @@ import { DianPayrollDocument } from '../../../types';
 import { DianPayrollService } from '../../hr/services/dianPayrollService';
 import { LightTable } from '../../../components/ui/LightTable';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { ConfirmDeleteModal } from '../../../components/common/ConfirmDeleteModal';
 import { useErp } from '../../../core/storage/erpStore';
 
 export const DianPayrollManager: React.FC = () => {
-  const { users } = useErp();
+  const { users, employees } = useErp();
   const [payrollRecords, setPayrollRecords] = useState<DianPayrollDocument[]>(() =>
     DianPayrollService.getPayrollRecords()
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DianPayrollDocument | null>(null);
+
+  // Combinar colaboradores de sistema y empleados de nómina/RRHH
+  const staffPool = React.useMemo(() => {
+    const map = new Map<string, { name: string; documentId: string; salary: number }>();
+    (users || []).forEach((u) => {
+      if (u.name) {
+        map.set(u.name.toLowerCase(), {
+          name: u.name,
+          documentId: u.nationalId || (u as any).documentNumber || '',
+          salary: 0,
+        });
+      }
+    });
+    (employees || []).forEach((emp) => {
+      const empName = emp.fullName || emp.name;
+      if (empName) {
+        const existing = map.get(empName.toLowerCase());
+        map.set(empName.toLowerCase(), {
+          name: empName,
+          documentId: emp.documentId || existing?.documentId || '',
+          salary: emp.monthlyBaseSalary || emp.baseSalaryCOP || existing?.salary || 0,
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [users, employees]);
 
   // Formulario nuevo comprobante de nómina
   const [employeeName, setEmployeeName] = useState('');
   const [employeeDocumentNumber, setEmployeeDocumentNumber] = useState('');
-  const [basicSalary, setBasicSalary] = useState(3500000);
-  const [overtime, setOvertime] = useState(250000);
-  const [periodMonth, setPeriodMonth] = useState('2026-03');
+  const [basicSalary, setBasicSalary] = useState(0);
+  const [overtime, setOvertime] = useState(0);
+  const [periodMonth, setPeriodMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
   // Cálculos dinámicos
   const appliesTransport = basicSalary <= 2 * 1423500;
@@ -197,12 +225,7 @@ export const DianPayrollManager: React.FC = () => {
               render: (r) => (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm(`¿Deseas eliminar el comprobante de nómina ${r.prefix}-${r.consecutive}?`)) {
-                      const updated = DianPayrollService.deletePayrollRecord(r.id);
-                      setPayrollRecords(updated);
-                    }
-                  }}
+                  onClick={() => setDeleteTarget(r)}
                   title="Eliminar comprobante"
                   className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 text-xs transition-colors cursor-pointer"
                 >
@@ -268,12 +291,13 @@ export const DianPayrollManager: React.FC = () => {
                   value={employeeName}
                   onChange={(val) => {
                     setEmployeeName(val);
-                    const found = (users || []).find((u) => u.name.toLowerCase() === val.toLowerCase());
-                    if (found && (found as any).documentNumber) {
-                      setEmployeeDocumentNumber((found as any).documentNumber);
+                    const found = staffPool.find((u) => u.name.toLowerCase() === val.toLowerCase());
+                    if (found) {
+                      if (found.documentId) setEmployeeDocumentNumber(found.documentId);
+                      if (found.salary > 0) setBasicSalary(found.salary);
                     }
                   }}
-                  options={(users || []).map((u) => u.name)}
+                  options={staffPool.map((u) => u.name)}
                   placeholder="Seleccionar o escribir colaborador..."
                   isClearable={true}
                   allowCustomText={true}
@@ -286,11 +310,12 @@ export const DianPayrollManager: React.FC = () => {
                   <label className="block font-bold text-gray-700 mb-1">Salario Básico (COP)</label>
                   <input
                     type="number"
-                    min="1423500"
+                    min="0"
                     step="10000"
                     required
-                    value={basicSalary}
-                    onChange={(e) => setBasicSalary(Number(e.target.value))}
+                    value={basicSalary || ''}
+                    placeholder="0"
+                    onChange={(e) => setBasicSalary(Number(e.target.value) || 0)}
                     className="w-full p-2.5 rounded-xl border border-gray-200 font-bold focus:outline-hidden focus:border-emerald-600"
                   />
                 </div>
@@ -300,8 +325,9 @@ export const DianPayrollManager: React.FC = () => {
                     type="number"
                     min="0"
                     step="5000"
-                    value={overtime}
-                    onChange={(e) => setOvertime(Number(e.target.value))}
+                    value={overtime || ''}
+                    placeholder="0"
+                    onChange={(e) => setOvertime(Number(e.target.value) || 0)}
                     className="w-full p-2.5 rounded-xl border border-gray-200 font-bold focus:outline-hidden focus:border-emerald-600"
                   />
                 </div>
@@ -343,6 +369,26 @@ export const DianPayrollManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        title="Eliminar Comprobante de Nómina Electrónica"
+        message={
+          deleteTarget
+            ? `¿Estás seguro de eliminar el comprobante ${deleteTarget.prefix}-${deleteTarget.consecutive} de "${deleteTarget.employeeName}"?`
+            : ''
+        }
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            const updated = DianPayrollService.deletePayrollRecord(deleteTarget.id);
+            setPayrollRecords(updated);
+            setDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 };

@@ -326,13 +326,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   });
 
   // Presupuesto Estimado Inicial / Consolidado de Oferta (Estructura oficial Inteckno: Rubro, Descripción, Valor Presupuestado, IVA Opcional)
-  const defaultOfferBudgetItems: ProjectOfferBudgetItem[] = [
-    { id: 'pres-1', rubroName: '1. RECURSO HUMANO', description: 'Personal técnico de campo, cuadrillas, ingenieros y supervisores.', budgetPlanned: 0, hasIva: true },
-    { id: 'pres-2', rubroName: '2. VIÁTICOS Y GASTOS DE VIAJE', description: 'Transporte aéreo/terrestre, hospedajes, alimentación y traslados de personal.', budgetPlanned: 0, hasIva: true },
-    { id: 'pres-3', rubroName: '3. PROVEEDORES DE BIENES Y SERVICIOS', description: 'Compra de materiales, consumibles, repuestos e insumos de ferretería.', budgetPlanned: 0, hasIva: true },
-    { id: 'pres-4', rubroName: '4. COSTOS INDIRECTOS DE FABRICACIÓN', description: 'Pólizas contractuales, arriendos de equipos, peajes, grúas y servicios auxiliares.', budgetPlanned: 0, hasIva: true },
-    { id: 'pres-5', rubroName: '5. IMPREVISTOS Y CONTINGENCIA', description: 'Fondo de imprevistos operativos y contingencias técnicas en campo.', budgetPlanned: 0, hasIva: true },
-  ];
+  // CERO DATOS DE PRUEBA: Por defecto inicia completamente limpio (sin filas prellenadas).
+  // Si el usuario desea agregar rubros, usa el botón "Añadir Rubro Presupuestal".
+  const defaultOfferBudgetItems: ProjectOfferBudgetItem[] = [];
 
   // Helper para recalcular el Consolidado de Oferta
   // Si un rubro tiene hasIva === false, NO genera IVA.
@@ -340,7 +336,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const recalculateOfferBudget = (items: ProjectOfferBudgetItem[], profit: number): ProjectOfferBudget => {
     const totalBudgetedCost = items.reduce((acc, it) => acc + (Number(it.budgetPlanned) || 0), 0);
     const subtotal = totalBudgetedCost + profit;
-    const taxRate = getProjectTaxRate(project.location).rate;
+    const taxRate = getProjectTaxRate((project as any).country || project.location).rate;
 
     // Base gravable: suma de costos que tienen IVA
     const taxableCost = items
@@ -407,7 +403,12 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       setBillingItems((project as any).billingItems);
     }
     if ((project as any)?.offerBudget?.items?.length > 0) {
-      setOfferBudget((project as any).offerBudget);
+      const existing = (project as any).offerBudget;
+      const normalizedItems: ProjectOfferBudgetItem[] = existing.items.map((it: any) => ({
+        ...it,
+        hasIva: it.hasIva !== false,
+      }));
+      setOfferBudget(recalculateOfferBudget(normalizedItems, Number(existing.totalBudgetedProfit) || 0));
     }
   }, [project]);
 
@@ -520,6 +521,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('todos');
   const [activeItemFilter, setActiveItemFilter] = useState<string>('todos');
   const [hasIva, setHasIva] = useState<boolean>(true);
+  const [billingHasIva, setBillingHasIva] = useState<boolean>(true);
 
   // Formulario de nuevo rubro financiero (Alineado a ITEMS y Rubros de Control de Proyectos Inteckno P23, P25, P26)
   const [itemForm, setItemForm] = useState<{
@@ -758,6 +760,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       observations: '',
       paymentDate: '',
     });
+    setBillingHasIva(true);
     setIsAddBillingModalOpen(false);
   };
 
@@ -794,7 +797,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         variance,
         date: itemForm.date,
         invoiceNumber: itemForm.invoiceNumber,
-        ivaAmount: itemForm.ivaAmount,
+        hasIva,
+        ivaAmount: hasIva ? itemForm.ivaAmount : 0,
         retentionAmount: itemForm.retentionAmount,
         observations: itemForm.observations,
         splitPercentage: itemForm.splitPercentage,
@@ -820,7 +824,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         variance,
         date: itemForm.date,
         invoiceNumber: itemForm.invoiceNumber,
-        ivaAmount: itemForm.ivaAmount,
+        hasIva,
+        ivaAmount: hasIva ? itemForm.ivaAmount : 0,
         retentionAmount: itemForm.retentionAmount,
         observations: itemForm.observations,
         splitPercentage: itemForm.splitPercentage,
@@ -1241,7 +1246,20 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">
-                {offerBudget.items.map((row, idx) => {
+                {offerBudget.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <FileSpreadsheet size={32} className="opacity-30 text-slate-400" />
+                        <p className="font-bold text-xs text-slate-600">No hay rubros en el presupuesto de este proyecto</p>
+                        <p className="text-[11px] text-slate-400 max-w-md">
+                          Haz clic en el botón superior <strong className="text-slate-700">"Añadir Rubro Presupuestal"</strong> para agregar los conceptos estimados de la oferta comercial (ej. Recurso Humano, Viáticos, Proveedores, Imprevistos).
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  offerBudget.items.map((row, idx) => {
                   const isImprevistos = (row.rubroName || '').toLowerCase().includes('imprevist');
                   const itemHasIva = row.hasIva !== false;
                   return (
@@ -1325,22 +1343,25 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       </td>
                     </tr>
                   );
-                })}
+                })
+                )}
               </tbody>
               {/* FILAS DE TOTALES Y RESUMEN CALCULADOS DE LA COLUMNA VALOR PRESUPUESTADO */}
               <tfoot className="border-t-2 border-slate-300">
-                {/* 1. Costos Totales Presupuestados */}
-                <tr className="bg-slate-50 font-bold text-slate-800 border-b border-slate-200">
-                  <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700">
-                    Costos Totales Presupuestados
-                  </td>
-                  <td className="py-2.5 px-4 text-right">
-                    <div className="flex justify-end font-mono text-sm text-slate-900 font-bold pr-2.5">
-                      {formatCOP(offerBudget.totalBudgetedCost)}
-                    </div>
-                  </td>
-                  <td></td>
-                </tr>
+                {/* 1. Costos Totales Presupuestados (Solo visible cuando hay más de 1 rubro para evitar redundancia Regla 10) */}
+                {offerBudget.items.length > 1 && (
+                  <tr className="bg-slate-50 font-bold text-slate-800 border-b border-slate-200">
+                    <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700">
+                      Costos Totales Presupuestados
+                    </td>
+                    <td className="py-2.5 px-4 text-right">
+                      <div className="flex justify-end font-mono text-sm text-slate-900 font-bold pr-2.5">
+                        {formatCOP(offerBudget.totalBudgetedCost)}
+                      </div>
+                    </td>
+                    <td></td>
+                  </tr>
+                )}
 
                 {/* 2. Utilidad Total Presupuestada (Permite ingresar o ajustar la utilidad estimada de la oferta) */}
                 <tr className="bg-emerald-50/40 font-bold text-slate-800 border-b border-slate-200">
@@ -1807,7 +1828,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                                       splitWithProjectCode: c.splitWithProjectCode || '',
                                       receiptPhotos: c.receiptPhotos || [],
                                     });
-                                    setHasIva(Boolean(c.ivaAmount && c.ivaAmount > 0));
+                                    setHasIva(c.hasIva !== undefined ? c.hasIva : Boolean(c.ivaAmount && c.ivaAmount > 0));
                                     setIsAddItemModalOpen(true);
                                   }}
                                   className="p-1 text-slate-400 hover:text-[#00668F] hover:bg-sky-50 rounded transition-colors cursor-pointer"
@@ -1995,7 +2016,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                                       splitWithProjectCode: c.splitWithProjectCode || '',
                                       receiptPhotos: c.receiptPhotos || [],
                                     });
-                                    setHasIva(Boolean(c.ivaAmount && c.ivaAmount > 0));
+                                    setHasIva(c.hasIva !== undefined ? c.hasIva : Boolean(c.ivaAmount && c.ivaAmount > 0));
                                     setIsAddItemModalOpen(true);
                                   }}
                                   className="p-1 text-slate-400 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors cursor-pointer"
@@ -2341,21 +2362,40 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       setBillingForm((prev) => ({
                         ...prev,
                         subtotal: sub,
-                        ivaAmount: Math.round(sub * projectTaxRate.rate),
+                        ivaAmount: billingHasIva ? Math.round(sub * projectTaxRate.rate) : 0,
                       }));
                     }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-emerald-600 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">IVA ({projectTaxRate.label} Si Aplica)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">IVA ({projectTaxRate.label})</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !billingHasIva;
+                        setBillingHasIva(next);
+                        setBillingForm((prev) => ({
+                          ...prev,
+                          ivaAmount: next ? Math.round((prev.subtotal || 0) * projectTaxRate.rate) : 0,
+                        }));
+                      }}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
+                        billingHasIva ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      {billingHasIva ? 'Con IVA' : 'Sin IVA'}
+                    </button>
+                  </div>
                   <input
                     type="number"
                     min="0"
+                    disabled={!billingHasIva}
                     placeholder="0"
-                    value={billingForm.ivaAmount || ''}
+                    value={billingHasIva ? (billingForm.ivaAmount || '') : ''}
                     onChange={(e) => setBillingForm({ ...billingForm, ivaAmount: e.target.value === '' ? 0 : Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-emerald-600 transition-all"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:border-emerald-600 transition-all disabled:opacity-50"
                   />
                 </div>
               </div>

@@ -16,6 +16,7 @@ import {
 import { DianElectronicInvoice } from '../../../types';
 import { DianElectronicBillingGateway } from '../services/dianElectronicBillingGateway';
 import { LightTable } from '../../../components/ui/LightTable';
+import { ConfirmDeleteModal } from '../../../components/common/ConfirmDeleteModal';
 
 export const DianRadianManager: React.FC = () => {
   const [invoices, setInvoices] = useState<DianElectronicInvoice[]>(() =>
@@ -24,6 +25,7 @@ export const DianRadianManager: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<DianElectronicInvoice | null>(null);
   const [eventNotes, setEventNotes] = useState('');
   const [actionEventCode, setActionEventCode] = useState<'030' | '032' | '034' | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DianElectronicInvoice | null>(null);
 
   const handleRegisterEvent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,12 +225,7 @@ export const DianRadianManager: React.FC = () => {
                     )}
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`¿Deseas eliminar la factura ${inv.number}?`)) {
-                          const updated = DianElectronicBillingGateway.deleteRadianInvoice(inv.id);
-                          setInvoices(updated);
-                        }
-                      }}
+                      onClick={() => setDeleteTarget(inv)}
                       title="Eliminar factura"
                       className="px-2 py-0.5 mt-1 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 text-[10px] font-bold flex items-center gap-1 transition-colors self-start cursor-pointer"
                     >
@@ -318,6 +315,26 @@ export const DianRadianManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        title="Eliminar Factura RADIAN"
+        message={
+          deleteTarget
+            ? `¿Estás seguro de eliminar la factura electrónica ${deleteTarget.number} de "${deleteTarget.customerName}"?`
+            : ''
+        }
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            const updated = DianElectronicBillingGateway.deleteRadianInvoice(deleteTarget.id);
+            setInvoices(updated);
+            setDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 };

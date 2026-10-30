@@ -225,21 +225,25 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
 
   const handleBuyerForwardToWilson = () => {
     if (!activeReq) return;
+    const coordinatorName = project.supervisorName || currentUser.name || 'Coordinación de Proyectos';
     updateRequisition(activeReq.id, {
       status: 'pending_wilson_approval',
+      targetApproverName: coordinatorName,
       buyerReviewedBy: currentUser.name,
       buyerReviewedAt: new Date().toISOString(),
     });
-    notify('success', 'Enviado a Wilson Alzate', 'Lista enviada al Coordinador de Proyectos para Visto Bueno.');
+    notify('success', `Enviado a ${coordinatorName}`, 'Lista enviada a Coordinación de Proyectos para Visto Bueno.');
   };
 
-  // Aprobación de Wilson Alzate (Coordinador)
+  // Aprobación de Coordinación de Proyectos
   const handleWilsonApprove = () => {
     if (!activeReq) return;
     updateRequisition(activeReq.id, {
       status: 'approved_for_quotation',
+      approvedBy: currentUser.name,
+      approvedAt: new Date().toISOString(),
     });
-    notify('success', 'Aprobado por Wilson Alzate', 'Lista aprobada. El comprador puede iniciar cotizaciones.');
+    notify('success', `Aprobado por ${currentUser.name}`, 'Lista aprobada. El comprador puede iniciar cotizaciones.');
   };
 
   return (
@@ -388,28 +392,28 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
                 className="w-full p-2 rounded-xl bg-slate-50 border border-slate-200 font-mono text-[11px]"
               />
               <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Cantidad"
-                  value={newItem.quantity}
-                  onChange={(e) => setNewItem({ ...newItem, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-                  className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center font-bold"
-                />
-                <input
-                  type="text"
-                  placeholder="Unidad (unid, m, kg)"
-                  value={newItem.unit}
-                  onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
-                  className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center"
-                />
-                <input
-                  type="number"
-                  placeholder="USD Est."
-                  value={newItem.unitCostUSD}
-                  onChange={(e) => setNewItem({ ...newItem, unitCostUSD: parseFloat(e.target.value) || 0 })}
-                  className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center font-bold"
-                />
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="0"
+                    value={newItem.quantity || ''}
+                    onChange={(e) => setNewItem({ ...newItem, quantity: Math.max(0, parseInt(e.target.value) || 0) })}
+                    className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center font-bold"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Unidad (unid, m, kg)"
+                    value={newItem.unit}
+                    onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                    className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center"
+                  />
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={newItem.unitCostUSD || ''}
+                    onChange={(e) => setNewItem({ ...newItem, unitCostUSD: parseFloat(e.target.value) || 0 })}
+                    className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center font-bold"
+                  />
               </div>
               <button
                 type="button"
@@ -507,7 +511,7 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
                   Embudo de Aprobación & Compras ({activeArea === 'diseno' ? 'Diseño Mecánico' : 'Eléctrico'})
                 </h4>
                 <p className="text-slate-500 text-[11px]">
-                  Flujo: Radicado -&gt; Revisión Comprador -&gt; Aprobación Wilson -&gt; Cotización
+                  Flujo: Radicado -&gt; Revisión Comprador -&gt; Aprobación Coordinación -&gt; Cotización
                 </p>
               </div>
 
@@ -568,7 +572,7 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
                         : 'text-slate-600'
                     }`}
                   >
-                    3. Aprobación Wilson
+                    3. Aprobación Coord.
                   </div>
                   <div
                     className={`p-2 rounded-lg ${
@@ -672,7 +676,7 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
 
                 {/* Acciones del Embudo */}
                 <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                  {/* Botón Comprador para pasar a Wilson */}
+                  {/* Botón Comprador para pasar a Coordinación */}
                   {['submitted', 'draft', 'buyer_review'].includes(activeReq.status) && (
                     <button
                       type="button"
@@ -680,11 +684,11 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
                       className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer shadow-2xs flex items-center gap-1.5"
                     >
                       <ArrowRight size={13} />
-                      <span>Enviar a Wilson Alzate (Coordinador)</span>
+                      <span>Enviar a Coordinación de Proyectos</span>
                     </button>
                   )}
 
-                  {/* Botón de Visto Bueno de Wilson */}
+                  {/* Botón de Visto Bueno de Coordinación */}
                   {activeReq.status === 'pending_wilson_approval' && (
                     <button
                       type="button"
@@ -692,7 +696,7 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
                       className="px-4 py-2 rounded-xl bg-[#008A4B] hover:bg-[#00703C] text-white font-bold text-xs cursor-pointer shadow-2xs flex items-center gap-1.5"
                     >
                       <CheckCircle2 size={13} />
-                      <span>Aprobar Lista (Visto Bueno de Wilson)</span>
+                      <span>Aprobar Lista (Visto Bueno Coordinación)</span>
                     </button>
                   )}
 
@@ -701,7 +705,7 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
                     <div className="flex items-center gap-2">
                       <span className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1.5">
                         <Check size={14} />
-                        <span>Aprobado por Wilson • Listo para Cotizaciones</span>
+                        <span>Aprobado por {activeReq.approvedBy || 'Coordinación'} • Listo para Cotizaciones</span>
                       </span>
                     </div>
                   )}

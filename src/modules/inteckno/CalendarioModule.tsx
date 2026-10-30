@@ -57,6 +57,7 @@ import { MargaritaIcon } from '../../components/common/MargaritaIcon';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import {
   getSystemDate,
   findScheduleConflicts,
@@ -257,6 +258,7 @@ export const CalendarioModule: React.FC = () => {
 
   // Modales
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [syncSuccessModalEvent, setSyncSuccessModalEvent] = useState<CalendarEvent | null>(null);
@@ -277,7 +279,7 @@ export const CalendarioModule: React.FC = () => {
   const [newEventForm, setNewEventForm] = useState({
     title: '',
     type: 'visita_campo' as CalendarEvent['type'],
-    projectCode: 'PRJ-2026-MED-K',
+    projectCode: projects[0]?.code || 'DOCS-CORP',
     location: '',
     meetingMethod: 'presencial' as 'presencial' | 'virtual',
     teamsMeetingUrl: '',
@@ -601,7 +603,7 @@ export const CalendarioModule: React.FC = () => {
     setNewEventForm({
       title: '',
       type: 'visita_campo',
-      projectCode: 'PRJ-2026-MED-K',
+      projectCode: projects[0]?.code || 'DOCS-CORP',
       location: '',
       meetingMethod: 'presencial',
       teamsMeetingUrl: '',
@@ -738,18 +740,6 @@ export const CalendarioModule: React.FC = () => {
 
     createCalendarEvent(newEvt);
     setIsNewModalOpen(false);
-
-    // Si tiene token de API configurado, sincronizar de fondo de inmediato con Microsoft Graph
-    const fullEvt: CalendarEvent = { ...newEvt, id: `EVT-${Date.now()}` };
-    if (m365Config.accessToken && m365Config.autoSyncEnabled) {
-      setIsSyncingApi(true);
-      const res = await syncEventToMicrosoftGraph(fullEvt, users);
-      setIsSyncingApi(false);
-      setM365SyncStatus(res.message);
-    }
-
-    // Abrir modal asistente para que el usuario guarde en Outlook Web en 1 clic
-    setSyncSuccessModalEvent(fullEvt);
   };
 
   const handleDeleteEvent = async (evt: CalendarEvent) => {
@@ -998,20 +988,6 @@ export const CalendarioModule: React.FC = () => {
               
             />
           </div>
-
-          {/* Sincronización M365 (Teams & Outlook) - Discreta y elegante */}
-          <button
-            onClick={handleSyncWithOutlook}
-            disabled={isSyncingApi}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-            title="Sincronizar eventos con Microsoft Teams y Outlook"
-          >
-            <RefreshCw size={13} className={isSyncingApi ? 'animate-spin text-[#0078D4]' : ''} />
-            <span className="hidden sm:inline">{isSyncingApi ? 'Sincronizando...' : 'Sincronizar'}</span>
-            {m365Config.accessToken && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Microsoft 365 Conectado" />
-            )}
-          </button>
 
           {/* Botón Configuración del Módulo */}
           <button
@@ -1391,67 +1367,6 @@ export const CalendarioModule: React.FC = () => {
                 </div>
               )}
 
-              {/* Sincronización con Microsoft 365 / Outlook / Teams */}
-              <div className="p-3 bg-white rounded-xl space-y-2 mt-2 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#0078D4] flex items-center gap-1.5">
-                    <Globe size={13} />
-                    Sincronización con Microsoft 365
-                  </span>
-                  <span
-                    className={`text-[9.5px] px-2 py-0.5 rounded-full font-bold ${
-                      selectedEvent.syncStatus === 'synced_m365'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}
-                  >
-                    {selectedEvent.syncStatus === 'synced_m365'
-                      ? 'Sincronizado M365 & Teams'
-                      : 'Pendiente en Outlook / Teams'}
-                  </span>
-                </div>
-                {selectedEvent.syncStatus !== 'synced_m365' ? (
-                  <div className="space-y-1.5 pt-0.5">
-                    <p className="text-[10.5px] text-slate-600 leading-tight">
-                      Para reflejar esta reunión en tu Outlook y en el Teams de los asistentes:
-                    </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenOutlookCompose(selectedEvent)}
-                        className="py-1.5 px-3 rounded-lg bg-[#0078D4] hover:bg-[#006cbd] text-white font-bold text-[11px] flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
-                      >
-                        <Globe size={13} />
-                        <span>Abrir y Guardar en Outlook (1 Clic)</span>
-                        <ExternalLink size={11} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const res = await handleSyncSingleEventToGraph(selectedEvent);
-                          if (res) {
-                            setSelectedEvent({
-                              ...selectedEvent,
-                              syncStatus: 'synced_m365',
-                              m365EventId: res.m365EventId,
-                              teamsMeetingUrl: res.teamsMeetingUrl || selectedEvent.teamsMeetingUrl,
-                            });
-                          }
-                        }}
-                        className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
-                      >
-                        <Sparkles size={13} />
-                        <span>Sincronizar vía API Directa</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[10.5px] text-emerald-700 font-medium">
-                    ✓ Este evento está registrado y actualizado en los servidores de Microsoft 365 (Outlook y Teams).
-                  </p>
-                )}
-              </div>
-
               {/* Participantes */}
               {selectedEvent.attendees && selectedEvent.attendees.length > 0 && (
                 <div className="pt-2 text-gray-700">
@@ -1542,7 +1457,7 @@ export const CalendarioModule: React.FC = () => {
               <div className="flex items-center gap-2">
                 {!selectedEvent.isContractualMilestone && (
                   <button
-                    onClick={() => handleDeleteEvent(selectedEvent)}
+                    onClick={() => setEventToDelete(selectedEvent)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 size={13} />
@@ -1888,41 +1803,25 @@ export const CalendarioModule: React.FC = () => {
                     <label className="text-[11px] font-bold text-gray-600 block mb-1">
                       Hora de Inicio
                     </label>
-                    <div className="flex items-center gap-1.5">
-                      <select
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <CreatableSelect
                         value={startHour}
-                        onChange={(e) => handleStartHourChange(e.target.value)}
-                        className="flex-1 p-2 rounded-lg bg-white font-bold text-center text-xs shadow-2xs"
-                      >
-                        {HOURS_LIST.map((h) => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="font-bold text-gray-400">:</span>
-                      <select
+                        options={HOURS_LIST.map((h) => ({ id: h, name: h }))}
+                        onChange={(val) => handleStartHourChange(val || '08')}
+                        placeholder="HH"
+                      />
+                      <CreatableSelect
                         value={startMinute}
-                        onChange={(e) => setStartMinute(e.target.value)}
-                        className="flex-1 p-2 rounded-lg bg-white font-bold text-center text-xs shadow-2xs"
-                      >
-                        {MINUTES_LIST.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                      <select
+                        options={MINUTES_LIST.map((m) => ({ id: m, name: m }))}
+                        onChange={(val) => setStartMinute(val || '00')}
+                        placeholder="MM"
+                      />
+                      <CreatableSelect
                         value={startPeriod}
-                        onChange={(e) => handleStartPeriodChange(e.target.value as 'AM' | 'PM')}
-                        className="p-2 rounded-lg bg-white font-bold text-xs shadow-2xs"
-                      >
-                        {PERIOD_LIST.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
+                        options={PERIOD_LIST.map((p) => ({ id: p, name: p }))}
+                        onChange={(val) => handleStartPeriodChange((val as 'AM' | 'PM') || 'AM')}
+                        placeholder="AM/PM"
+                      />
                     </div>
                   </div>
 
@@ -1931,41 +1830,25 @@ export const CalendarioModule: React.FC = () => {
                     <label className="text-[11px] font-bold text-gray-600 block mb-1">
                       Hora de Finalización
                     </label>
-                    <div className="flex items-center gap-1.5">
-                      <select
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <CreatableSelect
                         value={endHour}
-                        onChange={(e) => setEndHour(e.target.value)}
-                        className="flex-1 p-2 rounded-lg bg-white font-bold text-center text-xs shadow-2xs"
-                      >
-                        {HOURS_LIST.map((h) => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="font-bold text-gray-400">:</span>
-                      <select
+                        options={HOURS_LIST.map((h) => ({ id: h, name: h }))}
+                        onChange={(val) => setEndHour(val || '09')}
+                        placeholder="HH"
+                      />
+                      <CreatableSelect
                         value={endMinute}
-                        onChange={(e) => setEndMinute(e.target.value)}
-                        className="flex-1 p-2 rounded-lg bg-white font-bold text-center text-xs shadow-2xs"
-                      >
-                        {MINUTES_LIST.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                      <select
+                        options={MINUTES_LIST.map((m) => ({ id: m, name: m }))}
+                        onChange={(val) => setEndMinute(val || '00')}
+                        placeholder="MM"
+                      />
+                      <CreatableSelect
                         value={endPeriod}
-                        onChange={(e) => setEndPeriod(e.target.value as 'AM' | 'PM')}
-                        className="p-2 rounded-lg bg-white font-bold text-xs shadow-2xs"
-                      >
-                        {PERIOD_LIST.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
+                        options={PERIOD_LIST.map((p) => ({ id: p, name: p }))}
+                        onChange={(val) => setEndPeriod((val as 'AM' | 'PM') || 'AM')}
+                        placeholder="AM/PM"
+                      />
                     </div>
                   </div>
                 </div>
@@ -2347,6 +2230,22 @@ export const CalendarioModule: React.FC = () => {
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="calendario"
         moduleTitle="Calendario de Operaciones"
+      />
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(eventToDelete)}
+        title="Eliminar Evento de Operaciones"
+        itemName={eventToDelete?.title || ''}
+        description="Esta acción eliminará permanentemente el evento agendado en el calendario."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (eventToDelete) {
+            handleDeleteEvent(eventToDelete);
+            setEventToDelete(null);
+          }
+        }}
+        onClose={() => setEventToDelete(null)}
       />
     </div>
   );

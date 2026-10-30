@@ -515,7 +515,8 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
         title="¿Eliminar Orden de Cambio / Otrosí?"
         itemName={orderToDelete ? `${orderToDelete.orderNumber} - ${orderToDelete.title}` : ''}
         description="Esta acción eliminará el registro del otrosí contractual. ¿Deseas confirmar la eliminación?"
-        requireConfirmWord={false}
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Otrosí"
         onConfirm={() => {
           if (orderToDelete) {

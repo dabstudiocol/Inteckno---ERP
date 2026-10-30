@@ -340,6 +340,7 @@ export interface CostMatrixItem {
   costType?: 'directo' | 'indirecto'; // Costos Directos vs Indirectos (Pólizas, Peajes)
   date?: string; // Fecha del gasto o corte
   invoiceNumber?: string; // N° Recibo / Factura / Soporte
+  hasIva?: boolean; // Si el rubro causa IVA o está exento
   ivaAmount?: number; // IVA (19%) Si aplica
   retentionAmount?: number; // Retención en la fuente si aplica
   observations?: string; // Observaciones de obra / notas

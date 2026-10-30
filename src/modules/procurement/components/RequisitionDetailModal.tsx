@@ -39,33 +39,36 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
   const urgencyOptions = useModuleCatalog('requisitions', 'urgencies');
   const requisitionTypeOptions = useModuleCatalog('requisitions', 'requisitionTypes');
 
-  // Lista de aprobadores reconocidos (Clemencia, Wilson, Gustavo y líderes)
+  // Lista de aprobadores reconocidos dinámicamente desde usuarios del ERP
   const approverOptions = useMemo(() => {
-    const keyApprovers = [
-      { id: 'USR-04', name: 'Clemencia García Moncada', shortName: 'Clemencia', role: 'Gerente Administrativa & Financiera' },
-      { id: 'USR-18', name: 'Wilson Albeiro Alzate Correa', shortName: 'Wilson', role: 'Director de Operaciones & Proyectos' },
-      { id: 'USR-07', name: 'Gustavo Alberto Mejía Tobón', shortName: 'Gustavo', role: 'Gerente General & Comercial' },
-    ];
+    const keyApprovers: { id: string; name: string; shortName: string; role: string }[] = [];
     (users || []).forEach((u) => {
-      if (!keyApprovers.some((a) => a.id === u.id || a.name.toLowerCase() === u.name.toLowerCase())) {
-        if (
-          u.role.includes('gerente') ||
-          u.role.includes('director') ||
-          u.role.includes('admin') ||
-          u.role.includes('lider') ||
-          u.role.includes('coord')
-        ) {
-          keyApprovers.push({
-            id: u.id,
-            name: u.name,
-            shortName: u.name.split(' ')[0],
-            role: u.roleLabel || u.department || 'Líder de Área',
-          });
-        }
+      if (
+        u.role.includes('gerente') ||
+        u.role.includes('director') ||
+        u.role.includes('admin') ||
+        u.role.includes('lider') ||
+        u.role.includes('coord') ||
+        u.role.includes('super')
+      ) {
+        keyApprovers.push({
+          id: u.id,
+          name: u.name,
+          shortName: u.name.split(' ')[0],
+          role: u.roleLabel || u.position || u.department || 'Líder de Área',
+        });
       }
     });
+    if (keyApprovers.length === 0 && currentUser) {
+      keyApprovers.push({
+        id: currentUser.id,
+        name: currentUser.name,
+        shortName: currentUser.name.split(' ')[0],
+        role: currentUser.roleLabel || currentUser.position || 'Coordinación de Operaciones',
+      });
+    }
     return keyApprovers;
-  }, [users]);
+  }, [users, currentUser]);
 
   const [items, setItems] = useState<InternalRequisitionItem[]>([]);
   const [priority, setPriority] = useState<string>('Normal');
@@ -234,7 +237,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
                   }`}
                 >
                   {requisition.status === 'pending_wilson_approval'
-                    ? 'Esperando Visto Bueno de Wilson Alzate'
+                    ? `Esperando Visto Bueno de ${requisition.targetApproverName || 'Coordinación de Operaciones'}`
                     : requisition.status === 'approved'
                     ? 'Aprobada'
                     : requisition.status === 'submitted'
@@ -363,10 +366,10 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
                 <Clock size={18} className="text-amber-600 shrink-0" />
                 <div>
                   <div className="font-bold text-xs">
-                    Pendiente de Aprobación por {requisition.targetApproverName || 'Wilson Albeiro Alzate'}
+                    Pendiente de Aprobación por {requisition.targetApproverName || 'Coordinación de Operaciones'}
                   </div>
                   <div className="text-[11px] text-amber-800">
-                    Se notificó a {requisition.targetApproverName || 'Wilson Alzate'} para validar justificación, especificaciones técnicas y presupuesto.
+                    Se notificó a {requisition.targetApproverName || 'Coordinación de Operaciones'} para validar justificación, especificaciones técnicas y presupuesto.
                   </div>
                 </div>
               </div>

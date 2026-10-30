@@ -257,14 +257,18 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
             </div>
 
             {/* Selector de frente */}
-            <select
-              value={filterFront}
-              onChange={(e: any) => setFilterFront(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-semibold"
-            >
-              <option value="all">Todas las Asignaciones</option>
-              <option value="this_project">Solo este Proyecto ({project.code})</option>
-            </select>
+            <div className="w-60">
+              <CreatableSelect
+                value={filterFront}
+                options={[
+                  { id: 'all', name: 'Todas las Asignaciones' },
+                  { id: 'this_project', name: `Solo este Proyecto (${project.code})` },
+                ]}
+                onChange={(val) => setFilterFront((val as any) || 'all')}
+                placeholder="Filtrar frente..."
+                allowCreate={false}
+              />
+            </div>
 
             <button
               onClick={() => setIsModalOpen(true)}
@@ -459,42 +463,43 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Semana Inicial</label>
-                  <select
+                  <CreatableSelect
                     value={weekStart}
-                    onChange={(e) => setWeekStart(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                  >
-                    {Array.from({ length: 52 }, (_, i) => `S${String(i + 1).padStart(2, '0')}`).map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                    options={Array.from({ length: 52 }, (_, i) => {
+                      const s = `S${String(i + 1).padStart(2, '0')}`;
+                      return { id: s, name: s };
+                    })}
+                    onChange={(val) => setWeekStart(val || 'S01')}
+                    placeholder="Semana inicial..."
+                  />
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Semana Final</label>
-                  <select
+                  <CreatableSelect
                     value={weekEnd}
-                    onChange={(e) => setWeekEnd(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                  >
-                    {Array.from({ length: 52 }, (_, i) => `S${String(i + 1).padStart(2, '0')}`).map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                    options={Array.from({ length: 52 }, (_, i) => {
+                      const s = `S${String(i + 1).padStart(2, '0')}`;
+                      return { id: s, name: s };
+                    })}
+                    onChange={(val) => setWeekEnd(val || 'S12')}
+                    placeholder="Semana final..."
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Porcentaje de Dedicación (%)</label>
-                <select
-                  value={allocPct}
-                  onChange={(e) => setAllocPct(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-[#00668F]"
-                >
-                  <option value={100}>100% - Tiempo Completo Exclusivo</option>
-                  <option value={50}>50% - Dedicación Compartida (Prorrateo)</option>
-                  <option value={25}>25% - Asesoría / Supervisión Parcial</option>
-                </select>
+                <CreatableSelect
+                  value={String(allocPct)}
+                  options={[
+                    { id: '100', name: '100% - Tiempo Completo Exclusivo' },
+                    { id: '50', name: '50% - Dedicación Compartida (Prorrateo)' },
+                    { id: '25', name: '25% - Asesoría / Supervisión Parcial' },
+                  ]}
+                  onChange={(val) => setAllocPct(Number(val) || 100)}
+                  placeholder="Dedicación..."
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

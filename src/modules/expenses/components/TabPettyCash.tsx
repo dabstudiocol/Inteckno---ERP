@@ -23,6 +23,7 @@ import {
 import { ExpenseEntry, Project } from '../../../types';
 import { LightTable } from '../../../components/ui/LightTable';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { useErp } from '../../../core/storage/erpStore';
 
 interface TabPettyCashProps {
   expenses: ExpenseEntry[];
@@ -41,6 +42,15 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
   onApproveExpense,
   onDeleteExpense,
 }) => {
+  const { users, employees } = useErp();
+  const staffOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((u) => map.set(u.name, `${u.name} (${u.roleLabel || 'Personal ITK'})`));
+    (employees || []).forEach((e) => {
+      if (!map.has(e.fullName)) map.set(e.fullName, `${e.fullName} (${e.position})`);
+    });
+    return Array.from(map.entries()).map(([name, label]) => ({ value: name, label }));
+  }, [users, employees]);
   // Filtrar solo los movimientos de caja menor
   const pettyCashEntries = useMemo(() => {
     return expenses
@@ -279,27 +289,35 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
           {/* Filtros rápidos y botones de acción */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Filtro Comprobante DIAN */}
-            <select
-              value={docFilter}
-              onChange={(e: any) => setDocFilter(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-[#00668F]"
-            >
-              <option value="all">Todos los Comprobantes</option>
-              <option value="DS">Solo Documento Soporte (DS)</option>
-              <option value="FE">Solo Factura Electrónica (FE)</option>
-              <option value="ticket">Tickets / Otros</option>
-            </select>
+            <div className="w-56">
+              <CreatableSelect
+                value={docFilter}
+                options={[
+                  { id: 'all', name: 'Todos los Comprobantes' },
+                  { id: 'DS', name: 'Solo Documento Soporte (DS)' },
+                  { id: 'FE', name: 'Solo Factura Electrónica (FE)' },
+                  { id: 'ticket', name: 'Tickets / Otros' },
+                ]}
+                onChange={(val) => setDocFilter((val as any) || 'all')}
+                placeholder="Comprobante DIAN..."
+                allowCreate={false}
+              />
+            </div>
 
             {/* Filtro Imputación */}
-            <select
-              value={imputationFilter}
-              onChange={(e: any) => setImputationFilter(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-[#00668F]"
-            >
-              <option value="all">Todas las Imputaciones</option>
-              <option value="proyecto">Solo Proyectos STC</option>
-              <option value="oficina">Solo Gastos Oficina / SST</option>
-            </select>
+            <div className="w-56">
+              <CreatableSelect
+                value={imputationFilter}
+                options={[
+                  { id: 'all', name: 'Todas las Imputaciones' },
+                  { id: 'proyecto', name: 'Solo Proyectos STC' },
+                  { id: 'oficina', name: 'Solo Gastos Oficina / SST' },
+                ]}
+                onChange={(val) => setImputationFilter((val as any) || 'all')}
+                placeholder="Imputación..."
+                allowCreate={false}
+              />
+            </div>
 
             {/* Botón Reembolso / Depósito */}
             <button
@@ -568,12 +586,11 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
                 {/* Recibido por */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Recibido por</label>
-                  <input
-                    type="text"
+                  <CreatableSelect
+                    options={staffOptions}
                     value={receivedBy}
-                    onChange={(e) => setReceivedBy(e.target.value)}
-                    placeholder="ej. SANTIAGO ARBELAEZ"
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#00668F] font-medium"
+                    onChange={(val) => setReceivedBy(val)}
+                    placeholder="Seleccionar colaborador..."
                   />
                 </div>
               </div>
@@ -585,16 +602,17 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Tipo Comprobante</label>
-                      <select
+                      <CreatableSelect
                         value={dianDocType}
-                        onChange={(e: any) => setDianDocType(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-semibold"
-                      >
-                        <option value="DS">Documento Soporte (DS)</option>
-                        <option value="FE">Factura Electrónica (FE)</option>
-                        <option value="ticket">Ticket / Comprobante</option>
-                        <option value="ninguno">Sin comprobante formal</option>
-                      </select>
+                        options={[
+                          { id: 'DS', name: 'Documento Soporte (DS)' },
+                          { id: 'FE', name: 'Factura Electrónica (FE)' },
+                          { id: 'ticket', name: 'Ticket / Comprobante' },
+                          { id: 'ninguno', name: 'Sin comprobante formal' },
+                        ]}
+                        onChange={(val) => setDianDocType((val as any) || 'DS')}
+                        placeholder="Tipo comprobante..."
+                      />
                     </div>
 
                     <div>
@@ -639,17 +657,15 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
 
                 {imputationType === 'proyecto' && (
                   <div className="mt-2">
-                    <select
+                    <CreatableSelect
                       value={selectedProjectId}
-                      onChange={(e) => setSelectedProjectId(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#00668F] font-bold text-slate-800"
-                    >
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.code} - {p.name}
-                        </option>
-                      ))}
-                    </select>
+                      options={projects.map((p) => ({
+                        id: p.id,
+                        name: `${p.code} - ${p.name}`,
+                      }))}
+                      onChange={(val) => setSelectedProjectId(val || '')}
+                      placeholder="Seleccionar proyecto..."
+                    />
                   </div>
                 )}
               </div>

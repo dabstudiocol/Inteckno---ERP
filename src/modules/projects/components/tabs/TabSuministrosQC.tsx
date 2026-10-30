@@ -22,6 +22,7 @@ import { CriticalSparePart, InspectionEquipment } from '../../../../types/Projec
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
+import { useErp } from '../../../../core/storage/erpStore';
 
 interface TabSuministrosQCProps {
   project: Project;
@@ -29,6 +30,25 @@ interface TabSuministrosQCProps {
 }
 
 export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onUpdateProject }) => {
+  const { users, employees, partners, products, currentUser } = useErp();
+  const staffOptions = React.useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((u) => map.set(u.name, `${u.name} (${u.roleLabel || 'Personal ITK'})`));
+    (employees || []).forEach((e) => {
+      if (!map.has(e.fullName)) map.set(e.fullName, `${e.fullName} (${e.position})`);
+    });
+    return Array.from(map.entries()).map(([name, label]) => ({ value: name, label }));
+  }, [users, employees]);
+
+  const supplierOptions = React.useMemo(() => {
+    return partners
+      .filter((p) => p.type === 'supplier' || p.type === 'both')
+      .map((p) => ({ value: p.name, label: `${p.name} (${p.taxId || 'Proveedor'})` }));
+  }, [partners]);
+
+  const productOptions = React.useMemo(() => {
+    return products.map((p) => ({ value: p.name, label: `${p.sku} — ${p.name}`, code: p.sku }));
+  }, [products]);
   // Lista de Repuestos Críticos
   const [criticalSpares, setCriticalSpares] = useState<CriticalSparePart[]>(() => {
     return (project as any).criticalSpares || [];
@@ -66,13 +86,13 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
 
   // Formulario Equipo de Inspección
   const [equipForm, setEquipForm] = useState({
-    equipmentName: 'Equipo Magneto-inductivo MRT de Cables',
+    equipmentName: '',
     serialNumber: '',
-    brand: 'Intron Plus / DMT',
-    model: 'MH-60',
+    brand: '',
+    model: '',
     calibrationDate: new Date().toISOString().split('T')[0],
     calibrationExpiryDate: '',
-    laboratoryName: 'Laboratorio de Metrología y Calibración Acreditado',
+    laboratoryName: '',
     certificatePdf: null as File | null,
   });
 
@@ -664,13 +684,18 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Nombre descriptivo del Repuesto *
                 </label>
-                <input
-                  type="text"
-                  required
+                <CreatableSelect
+                  options={productOptions}
                   value={spareForm.name}
-                  onChange={(e) => setSpareForm({ ...spareForm, name: e.target.value })}
-                  placeholder="Ej. Rodamiento Oscilante de Rodillos SKF para Volante Motriz"
-                  className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  onChange={(val) => {
+                    const matchedProd = products.find((p) => p.name === val || `${p.sku} — ${p.name}` === val || p.sku === val);
+                    if (matchedProd) {
+                      setSpareForm({ ...spareForm, name: matchedProd.name, partCode: spareForm.partCode || matchedProd.sku });
+                    } else {
+                      setSpareForm({ ...spareForm, name: val });
+                    }
+                  }}
+                  placeholder="Seleccionar del catálogo o escribir repuesto..."
                 />
               </div>
 
@@ -683,7 +708,8 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
                     type="number"
                     min="1"
                     required
-                    value={spareForm.quantityReceived}
+                    value={spareForm.quantityReceived || ''}
+                    placeholder="0"
                     onChange={(e) => setSpareForm({ ...spareForm, quantityReceived: Number(e.target.value) })}
                     className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   />
@@ -692,13 +718,11 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Proveedor / Fabricante *
                   </label>
-                  <input
-                    type="text"
-                    required
+                  <CreatableSelect
+                    options={supplierOptions}
                     value={spareForm.supplier}
-                    onChange={(e) => setSpareForm({ ...spareForm, supplier: e.target.value })}
-                    placeholder="Ej. SKF Colombia / Doppelmayr / Leitner"
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    onChange={(val) => setSpareForm({ ...spareForm, supplier: val })}
+                    placeholder="Seleccionar proveedor homologado o escribir..."
                   />
                 </div>
               </div>
@@ -720,11 +744,11 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Inspector QC que Recibe
                   </label>
-                  <input
-                    type="text"
+                  <CreatableSelect
+                    options={staffOptions}
                     value={spareForm.verifiedBy}
-                    onChange={(e) => setSpareForm({ ...spareForm, verifiedBy: e.target.value })}
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    onChange={(val) => setSpareForm({ ...spareForm, verifiedBy: val })}
+                    placeholder="Seleccionar inspector QC..."
                   />
                 </div>
               </div>
@@ -797,7 +821,8 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
         title="¿Eliminar Equipo de Inspección?"
         itemName={equipToDelete ? `${equipToDelete.equipmentName} (${equipToDelete.serialNumber})` : ''}
         description="Esta acción eliminará el registro de calibración del equipo del proyecto. ¿Confirmas la eliminación?"
-        requireConfirmWord={false}
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Equipo"
         onConfirm={() => {
           if (equipToDelete) {
@@ -818,7 +843,8 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
         title="¿Eliminar Repuesto Crítico?"
         itemName={spareToDelete ? `${spareToDelete.partCode} - ${spareToDelete.name}` : ''}
         description="Esta acción eliminará el componente recibido y su trazabilidad de calidad en este proyecto. ¿Confirmas la eliminación?"
-        requireConfirmWord={false}
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Repuesto"
         onConfirm={() => {
           if (spareToDelete) {

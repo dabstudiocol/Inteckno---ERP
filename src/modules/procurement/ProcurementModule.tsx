@@ -149,18 +149,33 @@ export const ProcurementModule: React.FC = () => {
     };
   }, []);
 
-  const [poItems, setPoItems] = useState<PoItemRow[]>([
-    {
-      id: 'row-1',
-      productId: products[0]?.id || 'PRD-01',
-      sku: products[0]?.sku || 'ITK-ROP-52',
-      name: products[0]?.name || 'Cable Portador Tractor 52mm Galvanizado FATZER',
-      unit: products[0]?.unit || 'm',
-      qty: 10,
-      unitPriceCOP: products[0]?.costPriceCOP || 360000,
-      unitPriceUSD: Number(((products[0]?.costPriceCOP || 360000) / currentTrm).toFixed(2)),
-    },
-  ]);
+  const [poItems, setPoItems] = useState<PoItemRow[]>(() =>
+    products.length > 0
+      ? [
+          {
+            id: 'row-1',
+            productId: products[0].id,
+            sku: products[0].sku,
+            name: products[0].name,
+            unit: products[0].unit || 'unid',
+            qty: 1,
+            unitPriceCOP: products[0].costPriceCOP || 0,
+            unitPriceUSD: Number(((products[0].costPriceCOP || 0) / currentTrm).toFixed(2)),
+          },
+        ]
+      : [
+          {
+            id: 'row-1',
+            productId: '',
+            sku: '',
+            name: '',
+            unit: 'unid',
+            qty: 1,
+            unitPriceCOP: 0,
+            unitPriceUSD: 0,
+          },
+        ]
+  );
 
   // Arreglos seguros
   const safePartners = Array.isArray(partners) ? partners : [];
@@ -830,7 +845,7 @@ export const ProcurementModule: React.FC = () => {
                 align: 'center',
                 render: (req) => {
                   if (req.status === 'pending_wilson_approval' || req.status === 'pending_approval') {
-                    const approverLabel = req.targetApproverName ? req.targetApproverName.split(' ')[0] : 'Wilson';
+                    const approverLabel = req.targetApproverName ? req.targetApproverName.split(' ')[0] : 'Coordinación';
                     return (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                         Pendiente V°B° {approverLabel}

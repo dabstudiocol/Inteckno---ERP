@@ -4,7 +4,9 @@ import { addCatalogItem, CatalogItem } from '../../core/services/moduleConfigSer
 
 export interface CreatableSelectOption {
   id?: string;
-  name: string;
+  name?: string;
+  value?: string;
+  label?: string;
   code?: string;
   isActive?: boolean;
 }
@@ -18,6 +20,7 @@ interface CreatableSelectProps {
   moduleId?: string;
   catalogKey?: string;
   allowCustomText?: boolean;
+  allowCreate?: boolean;
   className?: string;
   inputClassName?: string;
   disabled?: boolean;
@@ -36,6 +39,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   moduleId,
   catalogKey,
   allowCustomText = true,
+  allowCreate,
   className = '',
   inputClassName = '',
   disabled = false,
@@ -44,6 +48,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   isClearable = true,
   onOpenConfig,
 }) => {
+  const effectiveAllowCustomText = allowCreate !== undefined ? allowCreate : allowCustomText;
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [justAddedNotice, setJustAddedNotice] = useState<string | null>(null);
@@ -51,14 +56,15 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Normalizar opciones
-  const normalizedOptions: CreatableSelectOption[] = useMemo(() => {
+  const normalizedOptions = useMemo(() => {
     return options.map((opt) => {
       if (typeof opt === 'string') {
         return { id: opt, name: opt, isActive: true };
       }
+      const resolvedName = opt.name || opt.label || opt.value || opt.id || '';
       return {
-        id: opt.id || opt.name,
-        name: opt.name,
+        id: opt.id || opt.value || resolvedName,
+        name: resolvedName,
         code: opt.code,
         isActive: opt.isActive !== false,
       };
@@ -107,7 +113,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     );
   }, [normalizedOptions, searchTerm]);
 
-  const handleSelectOption = (opt: CreatableSelectOption) => {
+  const handleSelectOption = (opt: { id: string; name: string; code?: string; isActive: boolean }) => {
     onChange(opt.name);
     setSearchTerm(opt.name);
     setIsOpen(false);
@@ -171,7 +177,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
           onChange={(e) => {
             setSearchTerm(e.target.value);
             if (!isOpen) setIsOpen(true);
-            if (allowCustomText) {
+            if (effectiveAllowCustomText) {
               onChange(e.target.value);
             }
           }}
@@ -244,7 +250,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
       {isOpen && !disabled && (
         <div className="absolute left-0 top-full mt-1.5 z-50 bg-white rounded-xl p-1.5 space-y-1 max-h-64 overflow-y-auto scrollbar-thin shadow-xl border border-slate-200 min-w-[260px] w-full sm:w-max max-w-md animate-in fade-in-50 zoom-in-95">
           {/* Indicador de escritura rápida */}
-          {searchTerm.trim() && !exactMatch && allowCustomText && (
+          {searchTerm.trim() && !exactMatch && effectiveAllowCustomText && (
             <div className="p-2 bg-sky-50 rounded-xl space-y-1.5 border border-sky-100">
               <button
                 type="button"

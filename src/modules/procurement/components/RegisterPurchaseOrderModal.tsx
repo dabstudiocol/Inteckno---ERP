@@ -19,6 +19,7 @@ import { PurchaseOrder, Partner, Product, Project, PurchaseOrderItem, InternalRe
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { useErp } from '../../../core/storage/erpStore';
 
 interface PoItemRow {
   id: string;
@@ -56,6 +57,13 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   currentTrm,
   onCreatePo,
 }) => {
+  const { currentUser, users, employees } = useErp();
+  const staffNames = React.useMemo(() => {
+    const names = new Set<string>();
+    (users || []).forEach((u) => { if (u.name) names.add(u.name); });
+    (employees || []).forEach((e) => { if (e.fullName) names.add(e.fullName); });
+    return Array.from(names);
+  }, [users, employees]);
   const [currency, setCurrency] = useState<'COP' | 'USD'>('COP');
   const [supplierType, setSupplierType] = useState<'registered' | 'custom'>('registered');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(partners[0]?.id || '');
@@ -75,7 +83,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   const [notes, setNotes] = useState('');
   // Campos Oficiales de la Matriz Corporativa de Compras (BD COMPRAS)
   const [solpedNumber, setSolpedNumber] = useState('');
-  const [requesterName, setRequesterName] = useState('Wilson Alzate');
+  const [requesterName, setRequesterName] = useState(currentUser?.name || '');
   const [paymentTermType, setPaymentTermType] = useState<string>('30 días fecha factura (30 F/F)');
   const [paymentDueDate, setPaymentDueDate] = useState(() => {
     const d = new Date();
@@ -123,19 +131,35 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   };
 
   // Filas de insumos
-  const [items, setItems] = useState<PoItemRow[]>([
-    {
-      id: 'row-1',
-      productId: products[0]?.id || 'PRD-01',
-      sku: products[0]?.sku || 'ITK-ROP-52',
-      name: products[0]?.name || 'Cable Portador Tractor 52mm Galvanizado FATZER',
-      unit: products[0]?.unit || 'm',
-      qty: 10,
-      unitPriceCOP: products[0]?.costPriceCOP || 360000,
-      unitPriceUSD: Number(((products[0]?.costPriceCOP || 360000) / currentTrm).toFixed(2)),
-      historicalPriceCOP: products[0]?.costPriceCOP || 350000,
-    },
-  ]);
+  const [items, setItems] = useState<PoItemRow[]>(() =>
+    products.length > 0
+      ? [
+          {
+            id: 'row-1',
+            productId: products[0].id,
+            sku: products[0].sku,
+            name: products[0].name,
+            unit: products[0].unit || 'unid',
+            qty: 1,
+            unitPriceCOP: products[0].costPriceCOP || 0,
+            unitPriceUSD: Number(((products[0].costPriceCOP || 0) / currentTrm).toFixed(2)),
+            historicalPriceCOP: products[0].costPriceCOP || 0,
+          },
+        ]
+      : [
+          {
+            id: 'row-1',
+            productId: '',
+            sku: '',
+            name: '',
+            unit: 'unid',
+            qty: 1,
+            unitPriceCOP: 0,
+            unitPriceUSD: 0,
+            historicalPriceCOP: 0,
+          },
+        ]
+  );
 
   if (!isOpen) return null;
 
@@ -153,11 +177,11 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   );
 
   // Presupuesto del Proyecto y Semáforo en Vivo (Regla 10.B)
-  const projectTotalBudget = selectedProject?.budgetPV || (selectedProject as any)?.budget || 200000000;
+  const projectTotalBudget = selectedProject?.budgetPV || (selectedProject as any)?.budget || 0;
   const projectCurrentExpenses = selectedProject?.actualCostAC || (selectedProject as any)?.expenses || 0;
   const availableBudget = projectTotalBudget - projectCurrentExpenses;
-  const newProjectExpenseRatio = ((projectCurrentExpenses + totalAmountCOP) / projectTotalBudget) * 100;
-  const isBudgetOverdrawn = newProjectExpenseRatio > 100;
+  const newProjectExpenseRatio = projectTotalBudget > 0 ? ((projectCurrentExpenses + totalAmountCOP) / projectTotalBudget) * 100 : 0;
+  const isBudgetOverdrawn = projectTotalBudget > 0 && newProjectExpenseRatio > 100;
 
   // Matriz de Firmas Jerárquica
   const getSignatureRequirement = (amountCOP: number) => {
@@ -171,7 +195,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
     if (amountCOP <= 20000000 && currency === 'COP') {
       return {
         level: 'Gerencia de Operaciones',
-        person: 'Wilson Alzate',
+        person: selectedProject?.supervisorName || currentUser?.name || 'Coordinación de Operaciones',
         badgeColor: 'bg-sky-100 text-[#003650]',
       };
     }
@@ -651,12 +675,13 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
             <div>
               <label className="block text-slate-700 font-semibold mb-1">Solicitante Técnico</label>
-              <input
-                type="text"
-                placeholder="ej. Wilson Alzate"
+              <CreatableSelect
+                options={staffNames.map((name) => ({ id: name, name }))}
                 value={requesterName}
-                onChange={(e) => setRequesterName(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs"
+                onChange={(val) => setRequesterName(val)}
+                allowCustomText={true}
+                placeholder="Seleccionar o escribir solicitante..."
+                inputClassName="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs"
               />
             </div>
 

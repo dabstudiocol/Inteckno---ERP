@@ -149,13 +149,15 @@ export const QuotePdfModal: React.FC<QuotePdfModalProps> = ({
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-slate-50 font-bold text-slate-800">
-                <tr>
-                  <td colSpan={3} className="p-2 text-right">Totales Consolidados:</td>
-                  <td className="p-2 text-center text-[#00668F] font-bold">{breakdown.totalGrossWeightKg.toLocaleString()} kg</td>
-                  <td className="p-2 text-center text-[#00668F] font-bold">{breakdown.totalCBM} CBM (m³)</td>
-                </tr>
-              </tfoot>
+              {state.packages.length > 1 && (
+                <tfoot className="bg-slate-50 font-bold text-slate-800">
+                  <tr>
+                    <td colSpan={3} className="p-2 text-right">Totales Consolidados:</td>
+                    <td className="p-2 text-center text-[#00668F] font-bold">{breakdown.totalGrossWeightKg.toLocaleString()} kg</td>
+                    <td className="p-2 text-center text-[#00668F] font-bold">{breakdown.totalCBM} CBM (m³)</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
             <div className="mt-2 text-[10.5px] text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
               <span><strong>Embalaje Industrial:</strong> {state.targetPackaging.replace(/_/g, ' ').toUpperCase()}</span>

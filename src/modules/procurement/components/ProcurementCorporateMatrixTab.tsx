@@ -147,7 +147,7 @@ export const ProcurementCorporateMatrixTab: React.FC<Props> = ({
         po.orderNumber,
         `"${(po.supplierName || '').replace(/"/g, '""')}"`,
         po.supplierTaxId || 'S/N',
-        `"${(po.requesterName || 'Wilson Alzate').replace(/"/g, '""')}"`,
+        `"${(po.requesterName || 'Sin asignar').replace(/"/g, '""')}"`,
         po.projectCode || 'General / Oficina',
         po.costCategory || 'Repuestos / Fabricación',
         `"${itemConcepts.replace(/"/g, '""')}"`,
@@ -398,7 +398,7 @@ export const ProcurementCorporateMatrixTab: React.FC<Props> = ({
                     {po.projectCode || 'General'}
                   </span>
                   <div className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[150px]">
-                    {po.requesterName || 'Wilson Alzate'}
+                    {po.requesterName || 'Sin asignar'}
                   </div>
                 </div>
               ),

@@ -74,26 +74,15 @@ import {
 } from '../../core/services/trmService';
 import { syncInventoryToCloud } from '../../core/services/firestoreSyncService';
 
-// Base de datos de cédulas de identidad oficiales de Inteckno S.A.S.
-const PERSON_CEDULAS: Record<string, string> = {
-  'Jorge Luis Orozco Genez': '1.037.620.119',
-  'Wilson Alzate': '71.245.890',
-  'David Hurtado Yepes': '1.020.450.789',
-  'Dairo Morales': '1.035.421.330',
-  'Carlos Mario Restrepo': '98.541.220',
-  'Andrés Felipe Gómez': '1.017.189.442',
-  'Santiago Henao': '1.036.782.910',
-  'Mauricio Londoño': '70.892.311',
-};
-
+// Resolución dinámica de documento de identidad desde usuarios y colaboradores registrados
 const getPersonCedula = (user: any): string => {
-  if (!user) return '1.037.620.119';
+  if (!user) return 'S/N';
   if (user.nationalId) return user.nationalId;
+  if (user.documentId) return user.documentId;
   if (user.cedula) return user.cedula;
   if (user.taxId) return user.taxId;
   if (user.documentNumber) return user.documentNumber;
-  if (user.name && PERSON_CEDULAS[user.name]) return PERSON_CEDULAS[user.name];
-  return '1.037.620.119';
+  return 'S/N';
 };
 
 interface InventoryModuleProps {
@@ -317,16 +306,16 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     name: '',
     category: 'Repuestos y Componentes',
     unit: 'unid',
-    costPriceUSD: 250,
-    costPriceCOP: 1062500,
-    realStock: 10,
+    costPriceUSD: 0,
+    costPriceCOP: 0,
+    realStock: 0,
     reservedStock: 0,
-    availableStock: 10,
-    minStock: 2,
-    isCriticalSpare: true,
+    availableStock: 0,
+    minStock: 0,
+    isCriticalSpare: false,
     isHomologatedITK: true,
-    locationName: 'Almacén Central Medellín (Sede Poblado)',
-    shelf: 'Estante A-01 (Componentes Críticos)',
+    locationName: 'Bodega Principal - Guarne',
+    shelf: '',
     observations: '',
     physicalState: 'solido',
     safetyDataSheetUrl: '',
@@ -339,7 +328,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
   // ESTADO PARA REMISIÓN DE SALIDA (DESPACHO MULTI-ÍTEM)
   // --------------------------------------------------------------------------
   const [dispatchProjectId, setDispatchProjectId] = useState(projects[0]?.id || '');
-  const [dispatchTechId, setDispatchTechId] = useState(users[8]?.id || '');
+  const [dispatchTechId, setDispatchTechId] = useState(users[0]?.id || '');
   const [departureDate, setDepartureDate] = useState(new Date().toISOString().split('T')[0]);
   const [expectedReturnDate, setExpectedReturnDate] = useState(
     new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
@@ -357,19 +346,23 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       unitCostUSD: number;
       unitCostCOP: number;
     }[]
-  >([
-    {
-      id: 'd-item-1',
-      productId: products[0]?.id || 'PRD-01',
-      sku: products[0]?.sku || 'ITK-ROP-52',
-      name: products[0]?.name || 'Cable Portador Tractor 52mm',
-      unit: products[0]?.unit || 'm',
-      category: products[0]?.category || 'Repuestos y Componentes',
-      qtyDispatched: 20,
-      unitCostUSD: products[0]?.costPriceUSD || 85,
-      unitCostCOP: products[0]?.costPriceCOP || 360000,
-    },
-  ]);
+  >(() =>
+    products.length > 0
+      ? [
+          {
+            id: 'd-item-1',
+            productId: products[0].id,
+            sku: products[0].sku,
+            name: products[0].name,
+            unit: products[0].unit || 'unid',
+            category: products[0].category || 'Repuestos y Componentes',
+            qtyDispatched: 1,
+            unitCostUSD: products[0].costPriceUSD || 0,
+            unitCostCOP: products[0].costPriceCOP || 0,
+          },
+        ]
+      : []
+  );
 
   // --------------------------------------------------------------------------
   // ESTADO PARA REMISIÓN DE REINGRESO (RETORNO Y LIQUIDACIÓN)
@@ -948,17 +941,17 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                   name: '',
                   category: 'Repuestos y Componentes',
                   unit: 'unid',
-                  costPriceUSD: 50,
-                  costPriceCOP: 210000,
-                  realStock: 10,
+                  costPriceUSD: 0,
+                  costPriceCOP: 0,
+                  realStock: 0,
                   reservedStock: 0,
-                  availableStock: 10,
-                  minStock: 2,
+                  availableStock: 0,
+                  minStock: 0,
                   isCriticalSpare: false,
                   isHomologatedITK: true,
-                  locationName: 'Almacén Central Medellín (Sede Poblado)',
-                  shelf: 'Estante A-01 (Componentes Críticos)',
-                  observations: 'Nuevo repuesto para mantenimiento de sistemas por cable.',
+                  locationName: 'Bodega Principal - Guarne',
+                  shelf: '',
+                  observations: '',
                   physicalState: 'solido',
                   safetyDataSheetUrl: '',
                   technicalDataSheetUrl: '',
@@ -1012,17 +1005,17 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       name: '',
                       category: 'Repuestos y Componentes',
                       unit: 'unid',
-                      costPriceUSD: 50,
-                      costPriceCOP: 210000,
-                      realStock: 10,
+                      costPriceUSD: 0,
+                      costPriceCOP: 0,
+                      realStock: 0,
                       reservedStock: 0,
-                      availableStock: 10,
-                      minStock: 2,
+                      availableStock: 0,
+                      minStock: 0,
                       isCriticalSpare: false,
                       isHomologatedITK: true,
                       locationName: 'Bodega Principal - Guarne',
-                      shelf: 'Estante A-1',
-                      observations: 'Nuevo repuesto para mantenimiento de sistemas por cable.',
+                      shelf: '',
+                      observations: '',
                       physicalState: 'solido',
                       safetyDataSheetUrl: '',
                       technicalDataSheetUrl: '',
@@ -3067,24 +3060,26 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
               </button>
             </div>
 
-            {/* Botones de Prueba Rápida con Códigos Reales */}
-            <div className="space-y-1.5">
-              <span className="text-xs font-bold text-gray-500">Probar con códigos de barras de ejemplo:</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {['ITK-ROP-52', 'ITK-ROD-SKF-23134', 'ITK-MOR-CL4', 'ITK-ARN-PETZL-VOLT', 'DMT-MAG-01'].map((code) => (
-                  <button
-                    key={code}
-                    onClick={() => {
-                      setBarcodeInput(code);
-                      handleBarcodeScan(code);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-mono text-xs cursor-pointer"
-                  >
-                    {code}
-                  </button>
-                ))}
+            {/* Botones de Prueba Rápida con Códigos Reales del Inventario */}
+            {products.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-xs font-bold text-gray-500">Artículos recientes del inventario para escaneo rápido:</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {products.slice(0, 5).map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setBarcodeInput(p.sku);
+                        handleBarcodeScan(p.sku);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-mono text-xs cursor-pointer"
+                    >
+                      {p.sku}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Mensaje de Escaneo */}
             {scanMessage && (
@@ -3250,12 +3245,13 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                     <input
                       type="number"
                       min="0"
-                      value={prodForm.realStock}
+                      value={prodForm.realStock || ''}
+                      placeholder="0"
                       onChange={(e) =>
                         setProdForm({
                           ...prodForm,
-                          realStock: Number(e.target.value),
-                          availableStock: Number(e.target.value),
+                          realStock: Number(e.target.value) || 0,
+                          availableStock: Number(e.target.value) || 0,
                         })
                       }
                       className="w-full p-2.5 rounded-xl bg-slate-100 text-gray-800 font-bold text-center focus:bg-white focus:outline-hidden"
@@ -3266,8 +3262,9 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                     <input
                       type="number"
                       min="0"
-                      value={prodForm.minStock}
-                      onChange={(e) => setProdForm({ ...prodForm, minStock: Number(e.target.value) })}
+                      value={prodForm.minStock || ''}
+                      placeholder="0"
+                      onChange={(e) => setProdForm({ ...prodForm, minStock: Number(e.target.value) || 0 })}
                       className="w-full p-2.5 rounded-xl bg-slate-100 text-gray-800 text-center focus:bg-white focus:outline-hidden"
                     />
                   </div>
@@ -3288,7 +3285,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                       <input
                         type="number"
                         min="0"
-                        value={prodForm.costPriceCOP}
+                        value={prodForm.costPriceCOP || ''}
+                        placeholder="0"
                         onChange={(e) => {
                           const valCOP = parseInt(e.target.value) || 0;
                           setProdForm({
@@ -3308,7 +3306,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         type="number"
                         min="0"
                         step="0.01"
-                        value={prodForm.costPriceUSD}
+                        value={prodForm.costPriceUSD || ''}
+                        placeholder="0"
                         onChange={(e) => {
                           const valUSD = parseFloat(e.target.value) || 0;
                           setProdForm({

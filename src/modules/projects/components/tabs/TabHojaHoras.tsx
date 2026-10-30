@@ -729,7 +729,8 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
         title="¿Eliminar Reporte de Horas?"
         itemName={entryToDelete ? `${entryToDelete.userName} - ${entryToDelete.hours} hrs (${entryToDelete.date})` : ''}
         description="Esta acción eliminará el registro de horas técnicas y su auditoría de campo de este proyecto. ¿Confirmas la eliminación?"
-        requireConfirmWord={false}
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Reporte"
         onConfirm={() => {
           if (entryToDelete) {

@@ -5,20 +5,23 @@ export interface ConfirmDeleteModalProps {
   isOpen: boolean;
   title: string;
   description?: string;
+  message?: string;
   itemName?: string;
   requireConfirmWord?: boolean; // If true, requires typing 'BORRAR'
   confirmWord?: string; // Default 'BORRAR'
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
   isLoading?: boolean;
 }
 
 export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   isOpen,
   title,
-  description = 'Esta acción no se puede deshacer. Se eliminará el registro de forma permanente de la base de datos.',
+  description,
+  message,
   itemName,
   requireConfirmWord = true,
   confirmWord = 'BORRAR',
@@ -26,8 +29,11 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   cancelText = 'Cancelar',
   onConfirm,
   onCancel,
+  onClose,
   isLoading = false,
 }) => {
+  const handleCancel = onCancel || onClose || (() => {});
+  const resolvedDescription = message || description || 'Esta acción no se puede deshacer. Se eliminará el registro de forma permanente de la base de datos.';
   const [typedWord, setTypedWord] = useState('');
 
   useEffect(() => {
@@ -43,7 +49,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   return (
     <div 
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
-      onClick={onCancel}
+      onClick={handleCancel}
     >
       <div 
         className="bg-white dark:bg-slate-900 rounded-2xl border border-rose-200 dark:border-rose-900/50 w-full max-w-md shadow-2xl overflow-hidden animate-scaleIn"
@@ -65,7 +71,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             )}
           </div>
           <button
-            onClick={onCancel}
+            onClick={handleCancel}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -75,7 +81,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         {/* Contenido / Confirmación */}
         <div className="p-5 space-y-4">
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-            {description}
+            {resolvedDescription}
           </p>
 
           {requireConfirmWord && (
@@ -99,7 +105,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             disabled={isLoading}
             className="w-full sm:w-auto px-4 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer"
           >

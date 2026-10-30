@@ -381,7 +381,7 @@ export const ConversacionesModule: React.FC = () => {
   const [actionTitle, setActionTitle] = useState('');
   const [actionDescription, setActionDescription] = useState('');
   const [actionPriority, setActionPriority] = useState<'Alta' | 'Media' | 'Baja'>('Media');
-  const [actionProjectCode, setActionProjectCode] = useState('PRJ-01');
+  const [actionProjectCode, setActionProjectCode] = useState(projects[0]?.code || '');
   const [isSavingAction, setIsSavingAction] = useState(false);
   const [isAnalyzingAction, setIsAnalyzingAction] = useState(false);
   const [actionLucianaBadge, setActionLucianaBadge] = useState<string | null>(null);

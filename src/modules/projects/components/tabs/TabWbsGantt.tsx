@@ -1869,7 +1869,8 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
         title="¿Eliminar Actividad del Plan?"
         itemName={taskToDelete ? `${taskToDelete.code} - ${taskToDelete.name}` : ''}
         description="Esta acción eliminará el paquete de trabajo del cronograma técnico del proyecto. ¿Deseas confirmar la eliminación?"
-        requireConfirmWord={false}
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Actividad"
         onConfirm={() => {
           if (taskToDelete) {

@@ -19,19 +19,97 @@ import { DianSupportDocument, DianRutData } from '../../../types';
 import {
   DianSupportDocumentService,
 } from '../services/dianSupportDocumentService';
-import { SAMPLE_RUTS } from '../services/dianRutParserService';
 import { LightTable } from '../../../components/ui/LightTable';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { ConfirmDeleteModal } from '../../../components/common/ConfirmDeleteModal';
+import { useErp } from '../../../core/storage/erpStore';
 
 export const DianSupportDocumentManager: React.FC = () => {
+  const { partners, users, employees } = useErp();
   const [documents, setDocuments] = useState<DianSupportDocument[]>(() =>
     DianSupportDocumentService.getStoredDocuments()
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedXmlDoc, setSelectedXmlDoc] = useState<DianSupportDocument | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DianSupportDocument | null>(null);
 
-  const sampleList = Object.values(SAMPLE_RUTS);
-  const [selectedRut, setSelectedRut] = useState<DianRutData | null>(() => sampleList[0] || null);
+  const vendorRuts = React.useMemo<DianRutData[]>(() => {
+    const list: DianRutData[] = [];
+    const seen = new Set<string>();
+    (partners || []).forEach((p) => {
+      const nit = (p.nit || '').replace(/\D/g, '') || p.id;
+      if (nit && !seen.has(nit)) {
+        seen.add(nit);
+        list.push({
+          nit,
+          dv: '0',
+          tipoContribuyente: '2',
+          razonSocial: p.name,
+          departamento: 'Antioquia',
+          municipio: p.country || 'Medellín',
+          direccion: p.address || 'Dirección registrada',
+          emailFacturacion: p.email || 'facturacion@proveedor.co',
+          telefono: p.phone || '',
+          actividadEconomicaPrincipal: '4329',
+          responsabilidades: [{ code: 'R-99-PN', name: 'No responsable de IVA', description: 'No obligado a facturar' }],
+          isObligadoFacturar: false,
+          isSimpleRegime: false,
+          isAutoretenedor: false,
+          isGranContribuyente: false,
+        });
+      }
+    });
+    (employees || []).forEach((emp) => {
+      const nit = (emp.documentId || '').replace(/\D/g, '');
+      const empName = emp.fullName || emp.name;
+      if (nit && !seen.has(nit)) {
+        seen.add(nit);
+        list.push({
+          nit,
+          dv: '0',
+          tipoContribuyente: '2',
+          razonSocial: empName,
+          departamento: 'Antioquia',
+          municipio: emp.city || 'Medellín',
+          direccion: 'Dirección registrada',
+          emailFacturacion: emp.email || '',
+          telefono: emp.phone || '',
+          actividadEconomicaPrincipal: '4329',
+          responsabilidades: [{ code: 'R-99-PN', name: 'No responsable de IVA', description: 'Persona Natural No Obligada' }],
+          isObligadoFacturar: false,
+          isSimpleRegime: false,
+          isAutoretenedor: false,
+          isGranContribuyente: false,
+        });
+      }
+    });
+    (users || []).forEach((u) => {
+      const nit = (u.nationalId || '').replace(/\D/g, '');
+      if (nit && !seen.has(nit)) {
+        seen.add(nit);
+        list.push({
+          nit,
+          dv: '0',
+          tipoContribuyente: '2',
+          razonSocial: u.name,
+          departamento: 'Antioquia',
+          municipio: u.city || 'Medellín',
+          direccion: 'Dirección registrada',
+          emailFacturacion: u.email || '',
+          telefono: u.phone || '',
+          actividadEconomicaPrincipal: '4329',
+          responsabilidades: [{ code: 'R-99-PN', name: 'No responsable de IVA', description: 'Persona Natural No Obligada' }],
+          isObligadoFacturar: false,
+          isSimpleRegime: false,
+          isAutoretenedor: false,
+          isGranContribuyente: false,
+        });
+      }
+    });
+    return list;
+  }, [partners, employees, users]);
+
+  const [selectedRut, setSelectedRut] = useState<DianRutData | null>(null);
   const [description, setDescription] = useState('');
   const [conceptType, setConceptType] = useState<'servicio_tecnico' | 'mano_de_obra_obra' | 'repuestos_menores' | 'honorarios'>('servicio_tecnico');
   const [subtotal, setSubtotal] = useState<number>(0);
@@ -50,7 +128,8 @@ export const DianSupportDocumentManager: React.FC = () => {
     setDocuments(DianSupportDocumentService.getStoredDocuments());
     setIsModalOpen(false);
     setDescription('');
-    setSubtotal(1500000);
+    setSubtotal(0);
+    setSelectedRut(null);
   };
 
   return (
@@ -195,12 +274,7 @@ export const DianSupportDocumentManager: React.FC = () => {
                     </a>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`¿Deseas eliminar el documento soporte ${d.prefix}-${d.consecutive}?`)) {
-                          const updated = DianSupportDocumentService.deleteDocument(d.id);
-                          setDocuments(updated);
-                        }
-                      }}
+                      onClick={() => setDeleteTarget(d)}
                       title="Eliminar documento soporte"
                       className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 text-xs transition-colors cursor-pointer"
                     >
@@ -242,17 +316,40 @@ export const DianSupportDocumentManager: React.FC = () => {
                   Proveedor Beneficiario (Sujeto No Obligado a Facturar)
                 </label>
                 <CreatableSelect
-                  options={sampleList.map((r) => ({
+                  options={vendorRuts.map((r) => ({
                     id: r.nit,
-                    name: `${r.razonSocial || `${r.primerNombre || ''} ${r.primerApellido || ''}`} (NIT: ${r.nit}-${r.dv})`,
+                    name: `${r.razonSocial || `${r.primerNombre || ''} ${r.primerApellido || ''}`} (NIT/CC: ${r.nit})`,
                     code: r.nit
                   }))}
                   value={selectedRut?.nit || ''}
                   onChange={(val) => {
-                    const found = sampleList.find((r) => r.nit === val);
-                    if (found) setSelectedRut(found);
+                    const found = vendorRuts.find((r) => r.nit === val || r.razonSocial === val);
+                    if (found) {
+                      setSelectedRut(found);
+                    } else if (val) {
+                      setSelectedRut({
+                        nit: val.replace(/\D/g, '') || '000000000',
+                        dv: '0',
+                        tipoContribuyente: '2',
+                        razonSocial: val,
+                        departamento: 'Antioquia',
+                        municipio: 'Medellín',
+                        direccion: 'Dirección registrada',
+                        emailFacturacion: '',
+                        telefono: '',
+                        actividadEconomicaPrincipal: '4329',
+                        responsabilidades: [{ code: 'R-99-PN', name: 'No responsable de IVA', description: 'No obligado a facturar' }],
+                        isObligadoFacturar: false,
+                        isSimpleRegime: false,
+                        isAutoretenedor: false,
+                        isGranContribuyente: false,
+                      });
+                    } else {
+                      setSelectedRut(null);
+                    }
                   }}
-                  placeholder="Buscar o seleccionar proveedor no obligado..."
+                  allowCustomText={true}
+                  placeholder="Buscar o seleccionar proveedor / colaborador..."
                 />
                 {selectedRut && (
                   <div className="mt-1 flex items-center gap-1.5 text-[11px] text-amber-700">
@@ -288,11 +385,12 @@ export const DianSupportDocumentManager: React.FC = () => {
                   <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                   <input
                     type="number"
-                    min="10000"
+                    min="0"
                     step="1000"
                     required
-                    value={subtotal}
-                    onChange={(e) => setSubtotal(Number(e.target.value))}
+                    value={subtotal || ''}
+                    placeholder="0"
+                    onChange={(e) => setSubtotal(Number(e.target.value) || 0)}
                     className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-gray-200 font-bold text-sm focus:outline-hidden focus:border-[#00668F]"
                   />
                 </div>
@@ -379,6 +477,26 @@ export const DianSupportDocumentManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        title="Eliminar Documento Soporte Electrónico"
+        message={
+          deleteTarget
+            ? `¿Estás seguro de eliminar el documento soporte ${deleteTarget.prefix}-${deleteTarget.consecutive} de "${deleteTarget.vendorName}"?`
+            : ''
+        }
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            const updated = DianSupportDocumentService.deleteDocument(deleteTarget.id);
+            setDocuments(updated);
+            setDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 };

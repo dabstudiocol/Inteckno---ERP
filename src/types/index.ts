@@ -220,6 +220,7 @@ export interface User {
   password?: string;
   role: UserRole;
   roleLabel: string;
+  position?: string;
   department: string;
   avatar: string;
   avatarColor: string;
@@ -546,6 +547,7 @@ export interface Partner {
   id: string;
   type: 'supplier' | 'customer' | 'both';
   taxId: string; // NIT / RUT
+  nit?: string;
   name: string;
   email: string;
   phone: string;
@@ -1546,11 +1548,17 @@ export interface InternationalLead {
 export interface EmployeeRecord {
   id: string;
   name: string;
+  fullName?: string;
   documentId: string;
   role: string;
+  position?: string;
   department: string;
   hireDate: string;
   baseSalaryCOP: number;
+  monthlyBaseSalary?: number;
+  city?: string;
+  email?: string;
+  phone?: string;
   heightCertExpiry: string;
   heightCertStatus: 'vigente' | 'por_vencer' | 'vencido';
   medicalExamExpiry: string;
@@ -1634,7 +1642,8 @@ export interface DianEconomicActivity {
 export interface DianRutData {
   nit: string;
   dv: string;
-  tipoPersona: 'juridica' | 'natural';
+  tipoPersona?: 'juridica' | 'natural';
+  tipoContribuyente?: string;
   razonSocial: string;
   primerNombre?: string;
   otrosNombres?: string;
@@ -1643,19 +1652,25 @@ export interface DianRutData {
   nombreComercial?: string;
   direccion: string;
   departamento: string;
-  departamentoCodeDANE: string;
+  departamentoCodeDANE?: string;
   municipio: string;
-  municipioCodeDANE: string;
-  correoFacturacionElectronica: string;
+  municipioCodeDANE?: string;
+  correoFacturacionElectronica?: string;
+  emailFacturacion?: string;
   telefono: string;
-  actividadPrincipal: DianEconomicActivity;
-  actividadesSecundarias: DianEconomicActivity[];
+  actividadPrincipal?: DianEconomicActivity;
+  actividadEconomicaPrincipal?: string;
+  actividadesSecundarias?: DianEconomicActivity[];
   responsabilidades: DianTaxResponsibility[];
-  regimenTributario: 'ordinario' | 'simple' | 'no_responsable_iva';
+  regimenTributario?: 'ordinario' | 'simple' | 'no_responsable_iva';
   tarifaReteICA?: number; // Ej. 0.007 (7 por mil)
-  requiereDocumentoSoporte: boolean;
-  verificadoDian: boolean;
+  requiereDocumentoSoporte?: boolean;
+  verificadoDian?: boolean;
   fechaVerificacion?: string;
+  isObligadoFacturar?: boolean;
+  isSimpleRegime?: boolean;
+  isAutoretenedor?: boolean;
+  isGranContribuyente?: boolean;
 }
 
 export interface DianElectronicInvoice {

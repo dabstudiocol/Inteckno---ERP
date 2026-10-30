@@ -25,6 +25,8 @@ import { Project } from '../../../../types';
 import { HSEQAroPermit, TelefericoPermitType } from '../../../../types/ProjectSchema';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
+import { CreatableSelect } from '../../../../components/common/CreatableSelect';
+import { useErp } from '../../../../core/storage/erpStore';
 import { 
   savePermitOffline, 
   getOfflinePermitsByProject, 
@@ -36,6 +38,16 @@ interface TabHseqOfflineProps {
 }
 
 export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
+  const { users, employees, currentUser } = useErp();
+  const staffOptions = React.useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((u) => map.set(u.name, `${u.name} (${u.roleLabel || 'Personal ITK'})`));
+    (employees || []).forEach((e) => {
+      if (!map.has(e.fullName)) map.set(e.fullName, `${e.fullName} (${e.position})`);
+    });
+    return Array.from(map.entries()).map(([name, label]) => ({ value: name, label }));
+  }, [users, employees]);
+
   const [permits, setPermits] = useState<HSEQAroPermit[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -46,11 +58,11 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
 
   // Form State
   const [permitType, setPermitType] = useState<TelefericoPermitType>('trabajo_en_alturas_pilonas');
-  const [workLocation, setWorkLocation] = useState<string>('Pilona 7 (Tramo Medio)');
-  const [towerNumber, setTowerNumber] = useState<string>('Torre 07');
-  const [heightMeters, setHeightMeters] = useState<string>('24');
-  const [taskDescription, setTaskDescription] = useState<string>('Inspección y cambio de rodillos de balancín lado subida');
-  const [supervisorName, setSupervisorName] = useState<string>(project.supervisorName || '');
+  const [workLocation, setWorkLocation] = useState<string>('');
+  const [towerNumber, setTowerNumber] = useState<string>('');
+  const [heightMeters, setHeightMeters] = useState<string>('');
+  const [taskDescription, setTaskDescription] = useState<string>('');
+  const [supervisorName, setSupervisorName] = useState<string>(project.supervisorName || currentUser.name || '');
   const [personnelName, setPersonnelName] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('08:00');
   const [endTime, setEndTime] = useState<string>('17:00');
@@ -207,15 +219,6 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleManualSync}
-            disabled={isSyncing || !isOnline}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
-            title="Sincronizar permisos locales con Firebase"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            <span>Sincronizar</span>
-          </button>
           <button
             onClick={() => setShowModal(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#00668F] hover:bg-[#005273] rounded-lg transition-colors shadow-sm"
@@ -463,9 +466,9 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
                   </label>
                   <input
                     type="number"
-                    value={heightMeters}
+                    value={heightMeters || ''}
                     onChange={(e) => setHeightMeters(e.target.value)}
-                    placeholder="24"
+                    placeholder="0"
                     className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   />
                 </div>
@@ -476,25 +479,22 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Supervisor HSEQ en Obra *
                   </label>
-                  <input
-                    type="text"
-                    required
+                  <CreatableSelect
+                    options={staffOptions}
                     value={supervisorName}
-                    onChange={(e) => setSupervisorName(e.target.value)}
-                    placeholder="Ing. Juan Ospina"
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    onChange={(val) => setSupervisorName(val)}
+                    placeholder="Seleccionar supervisor..."
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Personal Autorizado en Alturas (Nombres)
                   </label>
-                  <input
-                    type="text"
+                  <CreatableSelect
+                    options={staffOptions}
                     value={personnelName}
-                    onChange={(e) => setPersonnelName(e.target.value)}
-                    placeholder="Técnico A, Técnico B"
-                    className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    onChange={(val) => setPersonnelName(val)}
+                    placeholder="Seleccionar técnico..."
                   />
                 </div>
               </div>
@@ -577,7 +577,8 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
         title="¿Eliminar Permiso HSEQ / ARO?"
         itemName={permitToDelete ? `Permiso #${permitToDelete.permitNumber} - ${permitToDelete.workLocation}` : ''}
         description="Esta acción eliminará el permiso de trabajo en alturas y su registro de seguridad. ¿Deseas confirmar la eliminación?"
-        requireConfirmWord={false}
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         confirmText="Eliminar Permiso"
         onConfirm={() => {
           if (permitToDelete) {
@@ -606,7 +607,7 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
           { label: 'Altura Estimada', value: `${selectedPermitDetail.heightMeters || 0} metros`, isMono: true },
           { label: 'Supervisor HSEQ Emisor', value: selectedPermitDetail.supervisorName },
           { label: 'Fecha y Horario', value: `${selectedPermitDetail.date} (${selectedPermitDetail.startTime} - ${selectedPermitDetail.endTime})` },
-          { label: 'Personal Ejecutor', value: selectedPermitDetail.personnelNames?.join(', ') || 'No especificado' },
+          { label: 'Personal Ejecutor', value: selectedPermitDetail.authorizedPersonnel?.map((p) => p.name).join(', ') || (selectedPermitDetail as any).personnelNames?.join(', ') || 'No especificado' },
           { label: 'Descripción de Actividad', value: selectedPermitDetail.taskDescription, colSpan: 2 },
         ] : []}
       />

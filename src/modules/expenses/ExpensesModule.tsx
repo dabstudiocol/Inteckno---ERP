@@ -48,7 +48,7 @@ import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { TabPettyCash } from './components/TabPettyCash';
 
 export const ExpensesModule: React.FC = () => {
-  const { expenses, projects, users, employees, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
+  const { expenses, projects, users, employees, partners, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
 
   // Pestaña Activa: Comprobantes Generales vs Caja Menor
   const [activeTab, setActiveTab] = useState<'comprobantes' | 'caja_menor'>('comprobantes');
@@ -112,6 +112,7 @@ export const ExpensesModule: React.FC = () => {
   // Desglose de totales
   const [subtotal, setSubtotal] = useState<number>(0);
   const [discount, setDiscount] = useState<number>(0);
+  const [hasIva, setHasIva] = useState<boolean>(true);
   const [taxAmount, setTaxAmount] = useState<number>(0);
   const [amount, setAmount] = useState<number>(0);
   const [currency, setCurrency] = useState<'COP' | 'USD' | 'EUR'>('COP');
@@ -145,6 +146,7 @@ export const ExpensesModule: React.FC = () => {
     setLineItems([]);
     setSubtotal(0);
     setDiscount(0);
+    setHasIva(true);
     setTaxAmount(0);
     setAmount(0);
     setCurrency('COP');
@@ -288,17 +290,29 @@ export const ExpensesModule: React.FC = () => {
 
   const handleSubtotalChange = (val: number) => {
     setSubtotal(val);
-    setAmount(val - discount + taxAmount);
+    setAmount(Math.max(0, val - discount + (hasIva ? taxAmount : 0)));
   };
 
   const handleDiscountChange = (val: number) => {
     setDiscount(val);
-    setAmount(subtotal - val + taxAmount);
+    setAmount(Math.max(0, subtotal - val + (hasIva ? taxAmount : 0)));
   };
 
   const handleTaxChange = (val: number) => {
     setTaxAmount(val);
-    setAmount(subtotal - discount + val);
+    setAmount(Math.max(0, subtotal - discount + (hasIva ? val : 0)));
+  };
+
+  const handleToggleIva = (withIva: boolean) => {
+    setHasIva(withIva);
+    if (!withIva) {
+      setTaxAmount(0);
+      setAmount(Math.max(0, subtotal - discount));
+    } else {
+      const calcIva = Math.round(Math.max(0, subtotal - discount) * 0.19);
+      setTaxAmount(calcIva);
+      setAmount(Math.max(0, subtotal - discount + calcIva));
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -918,13 +932,23 @@ export const ExpensesModule: React.FC = () => {
                     <label className="block font-bold text-gray-700 mb-1">
                       Empresa, Negocio o Establecimiento *
                     </label>
-                    <input
-                      type="text"
-                      required
+                    <CreatableSelect
                       value={supplierName}
-                      onChange={(e) => setSupplierName(e.target.value)}
-                      placeholder="Ej. Restaurante El Cable S.A.S. o Ferretería Central"
-                      className="w-full p-2.5 rounded-xl bg-slate-50 font-medium text-gray-900 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden"
+                      onChange={(val) => {
+                        setSupplierName(val);
+                        const matched = (partners || []).find((p) => p.name.toLowerCase() === val.toLowerCase());
+                        if (matched && (matched.nit || matched.taxId)) {
+                          setSupplierTaxId(matched.nit || matched.taxId || '');
+                        }
+                      }}
+                      options={(partners || []).map((p) => ({
+                        id: p.name,
+                        name: `${p.name}${p.nit || p.taxId ? ` (${p.nit || p.taxId})` : ''}`,
+                        code: p.nit || p.taxId,
+                      }))}
+                      allowCustomText={true}
+                      placeholder="Seleccionar proveedor o escribir nombre del establecimiento..."
+                      inputClassName="w-full p-2.5 rounded-xl bg-slate-50 font-medium text-gray-900 shadow-2xs"
                     />
                   </div>
 
@@ -1045,7 +1069,8 @@ export const ExpensesModule: React.FC = () => {
                                 <input
                                   type="number"
                                   min="1"
-                                  value={item.quantity}
+                                  value={item.quantity || ''}
+                                  placeholder="0"
                                   onChange={(e) => handleUpdateLineItem(item.id, 'quantity', e.target.value)}
                                   className="w-full h-10 px-2 rounded-xl bg-slate-100 text-xs font-bold text-center text-gray-900"
                                 />
@@ -1056,7 +1081,8 @@ export const ExpensesModule: React.FC = () => {
                                 <input
                                   type="number"
                                   min="0"
-                                  value={item.unitPrice}
+                                  value={item.unitPrice || ''}
+                                  placeholder="0"
                                   onChange={(e) => handleUpdateLineItem(item.id, 'unitPrice', e.target.value)}
                                   className="w-full h-10 px-2 rounded-xl bg-slate-100 text-xs font-bold text-right text-gray-900"
                                 />
@@ -1094,14 +1120,16 @@ export const ExpensesModule: React.FC = () => {
                             <input
                               type="number"
                               min="1"
-                              value={item.quantity}
+                              value={item.quantity || ''}
+                              placeholder="0"
                               onChange={(e) => handleUpdateLineItem(item.id, 'quantity', e.target.value)}
                               className="col-span-2 h-9 px-2 rounded-lg bg-slate-50 text-xs font-bold text-center text-gray-900"
                             />
                             <input
                               type="number"
                               min="0"
-                              value={item.unitPrice}
+                              value={item.unitPrice || ''}
+                              placeholder="0"
                               onChange={(e) => handleUpdateLineItem(item.id, 'unitPrice', e.target.value)}
                               className="col-span-2 h-9 px-2 rounded-lg bg-slate-50 text-xs font-bold text-right text-gray-900"
                             />
@@ -1134,7 +1162,8 @@ export const ExpensesModule: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={subtotal}
+                      value={subtotal || ''}
+                      placeholder="0"
                       onChange={(e) => handleSubtotalChange(parseFloat(e.target.value) || 0)}
                       className="w-full p-2.5 rounded-xl bg-white font-bold text-gray-900 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden text-right"
                     />
@@ -1147,58 +1176,66 @@ export const ExpensesModule: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      value={discount}
+                      value={discount || ''}
+                      placeholder="0"
                       onChange={(e) => handleDiscountChange(parseFloat(e.target.value) || 0)}
                       className="w-full p-2.5 rounded-xl bg-white font-bold text-rose-700 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden text-right"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-600 mb-1 text-[11px]">
-                      IVA / Impuestos (+)
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-gray-600 text-[11px]">
+                        IVA / Impuestos (+)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleIva(!hasIva)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
+                          hasIva ? 'bg-sky-100 text-[#00668F]' : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {hasIva ? 'Con IVA' : 'Sin IVA'}
+                      </button>
+                    </div>
                     <input
                       type="number"
                       min="0"
-                      value={taxAmount}
+                      disabled={!hasIva}
+                      value={hasIva ? (taxAmount || '') : ''}
+                      placeholder="0"
                       onChange={(e) => handleTaxChange(parseFloat(e.target.value) || 0)}
-                      className="w-full p-2.5 rounded-xl bg-white font-bold text-sky-800 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden text-right"
+                      className="w-full p-2.5 rounded-xl bg-white font-bold text-sky-800 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden text-right disabled:opacity-50"
                     />
                   </div>
 
-                    <div>
-                      <label className="block font-bold text-gray-900 mb-1 text-[11px]">
-                        Total Factura *
-                      </label>
-                      <div className="flex gap-1.5">
-                        <div className="w-24 shrink-0">
-                          <CreatableSelect
-                            value={currency}
-                            onChange={(val) => {
-                              if (val) setCurrency(val as any);
-                            }}
-                            options={[
-                              { id: 'COP', name: 'COP', code: 'COP' },
-                              { id: 'USD', name: 'USD', code: 'USD' },
-                              { id: 'EUR', name: 'EUR', code: 'EUR' },
-                              { id: 'MXN', name: 'MXN', code: 'MXN' },
-                            ]}
-                            placeholder="Divisa..."
-                            allowCustomText={false}
-                            
-                            inputClassName="p-2.5 rounded-xl bg-white font-bold text-gray-900 shadow-2xs"
-                          />
-                        </div>
-                        <input
-                          type="number"
-                          min="1"
-                          required
-                          value={amount}
-                          onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                          className="w-full p-2.5 rounded-xl bg-white font-black text-gray-900 shadow-2xs focus:ring-2 focus:ring-[#00668F] focus:outline-hidden text-right"
+                  <div>
+                    <label className="block font-bold text-gray-900 mb-1 text-[11px]">
+                      Gran Total Factura (Solo Lectura)
+                    </label>
+                    <div className="flex gap-1.5 items-center">
+                      <div className="w-24 shrink-0">
+                        <CreatableSelect
+                          value={currency}
+                          onChange={(val) => {
+                            if (val) setCurrency(val as any);
+                          }}
+                          options={[
+                            { id: 'COP', name: 'COP', code: 'COP' },
+                            { id: 'USD', name: 'USD', code: 'USD' },
+                            { id: 'EUR', name: 'EUR', code: 'EUR' },
+                            { id: 'MXN', name: 'MXN', code: 'MXN' },
+                          ]}
+                          placeholder="Divisa..."
+                          allowCustomText={false}
+                          inputClassName="p-2.5 rounded-xl bg-white font-bold text-gray-900 shadow-2xs"
                         />
                       </div>
+                      <div className="w-full p-2.5 rounded-xl bg-slate-100 border border-slate-200 font-black text-gray-900 text-right select-none">
+                        ${(amount || 0).toLocaleString('es-CO')}
+                      </div>
                     </div>
+                  </div>
                 </div>
 
                 {/* CATEGORÍA Y DESCRIPCIÓN */}

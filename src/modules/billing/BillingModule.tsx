@@ -471,7 +471,7 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
                   Responsable de Facturación
                 </label>
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium">
-                  Clemencia García Moncada (Gerente Administrativa)
+                  {currentUser?.name || 'Administración Inteckno'} ({currentUser?.position || 'Responsable de Facturación'})
                 </div>
               </div>
 
