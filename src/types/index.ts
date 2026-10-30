@@ -395,6 +395,8 @@ export interface Project {
   costMatrix?: CostMatrixItem[];
   billingItems?: ProjectBillingItem[];
   staffAssignments?: StaffAssignment[];
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export type DependencyType = 'FC' | 'CC' | 'FF' | 'CF';

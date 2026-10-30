@@ -71,7 +71,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
 
   // Formulario nuevo personal
   const [empName, setEmpName] = useState('');
-  const [empRole, setEmpRole] = useState('Ingeniero de Campo STC');
+  const [empRole, setEmpRole] = useState('');
   const [empLocation, setEmpLocation] = useState(project.location || '');
   const [weekStart, setWeekStart] = useState('S01');
   const [weekEnd, setWeekEnd] = useState('S12');
@@ -144,7 +144,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
     persistAssignments(updated);
     setIsModalOpen(false);
     setEmpName('');
-    setEmpRole('Ingeniero de Campo STC');
+    setEmpRole('');
     setEmpLocation(project.location || '');
   };
 

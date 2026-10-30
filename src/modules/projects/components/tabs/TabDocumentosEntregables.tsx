@@ -47,13 +47,13 @@ export const TabDocumentosEntregables: React.FC<TabDocumentosEntregablesProps> =
   const [selectedDocDetail, setSelectedDocDetail] = useState<DeliverableDocument | null>(null);
 
   const [form, setForm] = useState({
-    code: `DOC-${project.code}-${documents.length + 1}`,
+    code: '',
     title: '',
     category: 'informe_tecnico' as DeliverableDocument['category'],
-    version: 'Rev. 0',
+    version: '',
     status: 'en_elaboracion' as DeliverableDocument['status'],
     author: project.supervisorName || '',
-    deliveryDate: new Date().toISOString().split('T')[0],
+    deliveryDate: '',
     fileUrl: '',
     comments: '',
   });
@@ -89,13 +89,13 @@ export const TabDocumentosEntregables: React.FC<TabDocumentosEntregablesProps> =
 
     setIsModalOpen(false);
     setForm({
-      code: `DOC-${project.code}-${updated.length + 1}`,
+      code: '',
       title: '',
       category: 'informe_tecnico',
-      version: 'Rev. 0',
+      version: '',
       status: 'en_elaboracion',
       author: project.supervisorName || '',
-      deliveryDate: new Date().toISOString().split('T')[0],
+      deliveryDate: '',
       fileUrl: '',
       comments: '',
     });

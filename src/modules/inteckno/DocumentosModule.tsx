@@ -442,12 +442,12 @@ export const DocumentosModule: React.FC = () => {
     code: '',
     scope: 'empresa' as 'empresa' | 'personal' | 'compartido',
     department: 'Operaciones' as CompanyDepartment,
-    projectCode: 'PRJ-2026-MED-K',
-    folderName: 'Línea K - Metrocable Medellín',
+    projectCode: '',
+    folderName: '',
     category: 'planos' as DocumentItem['category'],
-    version: 'Rev. 0',
+    version: '',
     fileType: 'PDF / CAD',
-    fileSize: '4.8 MB',
+    fileSize: '',
     description: '',
     sharepointUrl: '',
     sharedWith: [] as string[],
@@ -457,7 +457,7 @@ export const DocumentosModule: React.FC = () => {
   const [selectedBatchFiles, setSelectedBatchFiles] = useState<File[]>([]);
   const [batchScope, setBatchScope] = useState<'empresa' | 'personal' | 'compartido'>('empresa');
   const [batchDepartment, setBatchDepartment] = useState<CompanyDepartment>('Operaciones');
-  const [batchFolderName, setBatchFolderName] = useState<string>('Línea K - Metrocable Medellín');
+  const [batchFolderName, setBatchFolderName] = useState<string>('');
 
   // Estado para enlaces múltiples pegados
   const [batchLinksText, setBatchLinksText] = useState('');

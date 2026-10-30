@@ -189,17 +189,17 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
     code: '',
     name: '',
     description: '',
-    plannedHours: 40,
+    plannedHours: 0,
     actualHours: 0,
     progressPct: 0,
     startDate: '',
     endDate: '',
-    durationDays: 5,
+    durationDays: 1,
     isMilestone: false,
     priority: 'alta' as 'alta' | 'media' | 'baja',
-    deliverable: customEntregables[0] || DEFAULT_ENTREGABLES_INTECKNO[0],
+    deliverable: '',
     assignedToName: '',
-    assignedResources: customRecursos[0] || DEFAULT_RECURSOS_INTECKNO[0],
+    assignedResources: '',
     costEstimate: 0,
     progressMethod: 'percent' as 'percent' | 'hours',
     dependencyType: 'FC' as DependencyType,
@@ -416,7 +416,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
       initialStart = lastTaskEnd;
     }
 
-    const dur = 5;
+    const dur = 1;
     const initialEnd = addDaysSafe(initialStart, dur);
 
     setEditingTask(null);
@@ -425,7 +425,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
       code: nextCode,
       name: '',
       description: '',
-      plannedHours: 40,
+      plannedHours: 0,
       actualHours: 0,
       progressPct: 0,
       startDate: initialStart,
@@ -433,9 +433,9 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
       durationDays: dur,
       isMilestone: false,
       priority: 'alta',
-      deliverable: customEntregables[0] || DEFAULT_ENTREGABLES_INTECKNO[0],
-      assignedToName: project.supervisorName || erpUsers[0]?.name || 'Equipo de Ingeniería STC',
-      assignedResources: customRecursos[0] || DEFAULT_RECURSOS_INTECKNO[0],
+      deliverable: '',
+      assignedToName: project.supervisorName || '',
+      assignedResources: '',
       costEstimate: 0,
       progressMethod: 'percent',
       dependencyType: 'FC',

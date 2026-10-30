@@ -79,10 +79,10 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
 
   // Formulario de Hoja de Horas
   const [form, setForm] = useState({
-    taskId: tasks[0]?.id || '',
-    userId: erpUsers[0]?.id || '',
+    taskId: '',
+    userId: '',
     date: new Date().toISOString().split('T')[0],
-    hours: 8,
+    hours: 0,
     isEndTask: false,
     endMethod: 'MRT' as 'MRT' | 'UT' | 'PT' | 'MT' | 'VT',
     workDescription: '',

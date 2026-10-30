@@ -71,81 +71,44 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
   initialOpportunity,
 }) => {
   const { partners, contacts } = useErp();
-  // Estado Principal de la Calculadora Internacional
+  // Estado Principal de la Calculadora Internacional (limpio por defecto; se prellena solo si viene desde una licitación del Radar)
   const [state, setState] = useState<InternationalCalculationState>({
     unitSystem: 'metric',
-    packages: [
-      {
-        id: 'pkg-1',
-        description: 'Grupo Motriz STC 450 kW con Reductor Epicicloidal',
-        length: 320,
-        width: 190,
-        height: 210,
-        weight: 6800,
-        quantity: 1,
-        fragile: true,
-        moistureSensitive: true,
-        stackable: false,
-      },
-      {
-        id: 'pkg-2',
-        description: 'Conjunto de Balancines con 8 Poleas y Sensores Inductivos',
-        length: 240,
-        width: 120,
-        height: 110,
-        weight: 1450,
-        quantity: 2,
-        fragile: false,
-        moistureSensitive: true,
-        stackable: true,
-      },
-      {
-        id: 'pkg-3',
-        description: 'Tablero de Control de Potencia con Variador de Frecuencia 690V',
-        length: 180,
-        width: 90,
-        height: 200,
-        weight: 750,
-        quantity: 1,
-        fragile: true,
-        moistureSensitive: true,
-        stackable: false,
-      },
-    ],
+    packages: [],
     originCountry: 'Colombia',
-    destinationCountry: 'México',
-    destinationCity: 'Ciudad de México (Cablebús)',
+    destinationCountry: '',
+    destinationCity: '',
     targetPackaging: 'vacio_vci_anticorrosion',
-    packagingCostUSD: 1650,
+    packagingCostUSD: 0,
     targetFreightMode: 'maritimo_fcl',
     targetContainer: '20ft',
 
     // Costos Base
-    manufacturingCostUSD: 145000,
-    baseMarginPct: 24.0,
+    manufacturingCostUSD: 0,
+    baseMarginPct: 0,
     selectedIncoterm: 'DDP',
 
     // Logística Origen (FCA/FOB)
-    inlandFreightOriginUSD: 1200, // Taller a Puerto Buenaventura/Cartagena
-    exportCustomsAndThcUSD: 650,
+    inlandFreightOriginUSD: 0,
+    exportCustomsAndThcUSD: 0,
 
     // Internacional (CFR/CIF)
-    internationalFreightUSD: 3800,
-    insuranceRatePct: 0.65,
-    insuranceMinUSD: 180,
+    internationalFreightUSD: 0,
+    insuranceRatePct: 0,
+    insuranceMinUSD: 0,
 
     // Destino (DAP)
-    destinationThcAndPortUSD: 850,
-    inlandFreightDestinationUSD: 1400,
+    destinationThcAndPortUSD: 0,
+    inlandFreightDestinationUSD: 0,
 
     // Aduana e Impuestos (DDP)
-    hsCode: '8428.60.00.00',
-    hsDescription: 'Teleféricos (incluidos los telesquís); mecanismos de tracción para funiculares',
-    baseDutyPct: 10.0,
-    isFtaApplied: true,
-    ftaAgreementName: 'Tratado de Libre Comercio TLC G3 / Alianza del Pacífico',
-    destinationCustomsBrokerUSD: 950,
-    localTaxesDestPct: 0.0, // Exención arancelaria / crédito fiscal
+    hsCode: '',
+    hsDescription: '',
+    baseDutyPct: 0,
+    isFtaApplied: false,
+    ftaAgreementName: '',
+    destinationCustomsBrokerUSD: 0,
+    localTaxesDestPct: 0,
 
     // Financiero & Riesgo
     quoteCurrency: 'USD',
@@ -159,21 +122,21 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
       BOB: 12.24,
       CHF: 0.83,
     },
-    forexRiskMarginPct: 1.5,
-    hasLetterOfCredit: true,
-    letterOfCreditCostPct: 1.8,
-    hasBankGuarantee: true,
-    bankGuaranteeCostUSD: 1200,
-    creditTermDays: 60,
-    financingAnnualRatePct: 8.5,
+    forexRiskMarginPct: 0,
+    hasLetterOfCredit: false,
+    letterOfCreditCostPct: 0,
+    hasBankGuarantee: false,
+    bankGuaranteeCostUSD: 0,
+    creditTermDays: 0,
+    financingAnnualRatePct: 0,
 
     // Compliance
-    complianceStandards: getDefaultComplianceStandards('México', 'Teleférico Completo'),
+    complianceStandards: [],
   });
 
   // Metadatos de la cotización
-  const [quoteTitle, setQuoteTitle] = useState('Suministro y Montaje de Grupo Motriz y Balancines STC');
-  const [clientName, setClientName] = useState('Servicio de Transportes Eléctricos - Cablebús CDMX');
+  const [quoteTitle, setQuoteTitle] = useState('');
+  const [clientName, setClientName] = useState('');
 
   // Estados de IA
   const [aiLoadingLogistics, setAiLoadingLogistics] = useState(false);

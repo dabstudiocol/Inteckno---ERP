@@ -455,7 +455,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
   const [activeQuotationIndex, setActiveQuotationIndex] = useState(0);
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemQty, setNewItemQty] = useState(1);
-  const [newItemPrice, setNewItemPrice] = useState(15000);
+  const [newItemPrice, setNewItemPrice] = useState(0);
   const [newItemCurrency, setNewItemCurrency] = useState<'USD' | 'COP'>('USD');
   const [newItemCategory, setNewItemCategory] = useState<string>('Servicio STC');
   const [isFetchingTRM, setIsFetchingTRM] = useState(false);
@@ -464,7 +464,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
   // Estados para Análisis de Pliegos con LUC-IA-NA
   const [isAnalyzingPliego, setIsAnalyzingPliego] = useState(false);
   const [pliegoInputText, setPliegoInputText] = useState('');
-  const [pliegoFileName, setPliegoFileName] = useState('Pliego_Licitacion_SECOP_STC.pdf');
+  const [pliegoFileName, setPliegoFileName] = useState('');
 
   // Estados para Generador de Propuesta Comercial
   const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
@@ -501,67 +501,37 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
 
     if (!quotations || quotations.length === 0) {
       const opType = isCo ? 'nacional' : 'exportacion';
-      const isQuoteCop = quoteCurrency === 'COP';
-      const fin = getOppFinancialBreakdown(opp, trm);
-      
-      const item1Price = isQuoteCop ? Math.round(fin.copVal * 0.8) : (opp.estimatedValueUSD || 45000);
-      const item2Price = isQuoteCop ? Math.round(fin.copVal * 0.2) : 5000;
-      const subtotal = item1Price + item2Price;
       const taxRate = isCo ? 0.19 : 0;
-      const taxAmount = subtotal * taxRate;
-      const total = subtotal + taxAmount;
-      const reteFuenteAmount = isCo ? subtotal * 0.04 : 0;
-      const reteIcaAmount = isCo ? subtotal * 0.00966 : 0;
-      const netReceivable = isCo ? total - (reteFuenteAmount + reteIcaAmount) : total;
 
       quotations = [
         {
           id: `COT-${Date.now()}`,
           code: `COT-${opp.code || 'STC'}-01`,
-          title: `Cotización Base: ${opp.title}`,
+          title: opp.title ? `Cotización: ${opp.title}` : '',
           operationType: opType,
-          items: [
-            {
-              id: `ITEM-1`,
-              category: 'Servicio STC',
-              description: `Servicio integral de mantenimiento e inspección técnica especializada para ${opp.cableType || 'sistema de teleférico'}`,
-              qty: 1,
-              unitPrice: item1Price,
-              currency: quoteCurrency,
-            },
-            {
-              id: `ITEM-2`,
-              category: 'Ensayos NDT/MRT',
-              description: 'Ensayos no destructivos (NDT Nivel II) y reporte técnico avalado con firmas de ingeniería',
-              qty: 1,
-              unitPrice: item2Price,
-              currency: quoteCurrency,
-            },
-          ],
-          subtotal,
+          items: [],
+          subtotal: 0,
           discountPercent: 0,
           discountAmount: 0,
           logisticsCost: 0,
           taxRate,
-          taxAmount,
+          taxAmount: 0,
           applyReteFuente: isCo,
           reteFuenteRate: 0.04,
-          reteFuenteAmount,
+          reteFuenteAmount: 0,
           applyReteIca: isCo,
           reteIcaRate: 0.00966,
-          reteIcaAmount,
-          total,
-          netReceivable,
-          validUntil: opp.expectedCloseDate || '30 días calendario',
-          paymentTerms: '50% anticipo al ordenar, 50% contra entrega de informe técnico avalado',
+          reteIcaAmount: 0,
+          total: 0,
+          netReceivable: 0,
+          validUntil: opp.expectedCloseDate || '',
+          paymentTerms: '',
           createdAt: new Date().toISOString().split('T')[0],
-          incoterm: isCo ? 'Entrega en Instalaciones' : 'DDP En Sitio de Operación',
+          incoterm: '',
           currency: quoteCurrency,
           exchangeRateTRM: trm,
-          warranty: '12 meses sobre mano de obra especializada e integridad de diagnósticos NDT',
-          notes: isCo
-            ? 'Precios en COP para operación en territorio nacional.'
-            : 'Precios en USD para exportación de servicios exentos de IVA (Art. 481 literal c E.T.).',
+          warranty: '',
+          notes: '',
         },
       ];
     } else {
@@ -732,15 +702,15 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     clientContactPerson: '',
     clientEmail: '',
     clientPhone: '',
-    cableType: 'Aéreo Monocable Desembragable 10-MGD',
-    country: 'Colombia',
+    cableType: '',
+    country: '',
     currency: 'COP' as 'COP' | 'USD' | 'EUR',
-    estimatedValue: 48500000,
-    estimatedValueUSD: 11687,
+    estimatedValue: 0,
+    estimatedValueUSD: 0,
     stage: 'qualification' as OpportunityStage,
-    expectedCloseDate: '2026-11-30',
+    expectedCloseDate: '',
     technicalSpecs: '',
-    leadSource: 'Licitación Pública (SECOP II / Mercado Público)',
+    leadSource: '',
     tags: [] as string[],
   });
 
@@ -924,15 +894,15 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
       clientContactPerson: '',
       clientEmail: '',
       clientPhone: '',
-      cableType: 'Aéreo Monocable Desembragable 10-MGD',
-      country: 'Colombia',
+      cableType: '',
+      country: '',
       currency: 'COP',
-      estimatedValue: 48500000,
-      estimatedValueUSD: 11687,
+      estimatedValue: 0,
+      estimatedValueUSD: 0,
       stage: 'qualification',
-      expectedCloseDate: '2026-11-30',
+      expectedCloseDate: '',
       technicalSpecs: '',
-      leadSource: 'Licitación Pública (SECOP II / Mercado Público)',
+      leadSource: '',
       tags: [],
     });
   };
@@ -3156,32 +3126,28 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     <button
                       type="button"
                       onClick={() => {
+                        const isCo = (editingOpp.country || '').toLowerCase().includes('colombia');
+                        const quoteCurrency: 'COP' | 'USD' | 'EUR' = editingOpp.currency || (isCo ? 'COP' : 'USD');
                         const newQuote: OpportunityQuotation = {
                           id: `COT-${Date.now()}`,
                           code: `COT-${editingOpp.code}-${(editingOpp.quotations?.length || 0) + 1}`,
-                          title: `Cotización Técnica Variante: ${editingOpp.title}`,
-                          items: [
-                            {
-                              id: `ITEM-1`,
-                              description: 'Servicio de mantenimiento preventivo y verificación técnica STC',
-                              qty: 1,
-                              unitPrice: 20000,
-                              currency: 'USD',
-                            },
-                          ],
-                          subtotal: 20000,
-                          taxRate: 0.19,
-                          total: 23800,
-                          validUntil: '30 días calendario',
-                          paymentTerms: '50% anticipo, 50% contra entrega de informe técnico avalado',
+                          title: editingOpp.title ? `Cotización Variante: ${editingOpp.title}` : '',
+                          operationType: isCo ? 'nacional' : 'exportacion',
+                          items: [],
+                          subtotal: 0,
+                          taxRate: isCo ? 0.19 : 0,
+                          total: 0,
+                          validUntil: editingOpp.expectedCloseDate || '',
+                          paymentTerms: '',
                           createdAt: new Date().toISOString().split('T')[0],
-                          incoterm: 'DDP En Sitio',
-                          currency: 'USD',
+                          incoterm: '',
+                          currency: quoteCurrency,
+                          exchangeRateTRM: currentTrm > 0 ? currentTrm : 4150,
                         };
                         const updatedQuotes = [...(editingOpp.quotations || []), newQuote];
                         setEditingOpp({ ...editingOpp, quotations: updatedQuotes });
                         setActiveQuotationIndex(updatedQuotes.length - 1);
-                        notify?.('success', 'Nueva Cotización Creada', `Versión ${newQuote.code} lista.`);
+                        notify?.('success', 'Nueva Cotización Creada', `Versión ${newQuote.code} lista para agregar ítems.`);
                       }}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-gray-300 hover:bg-slate-100 text-gray-700 text-xs font-bold cursor-pointer"
                     >

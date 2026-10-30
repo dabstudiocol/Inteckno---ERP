@@ -40,16 +40,14 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   const urgencyOptions = useModuleCatalog('requisitions', 'urgencies');
 
   const [reqType, setReqType] = useState<'project' | 'general'>('project');
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
-  const [department, setDepartment] = useState<string>('Administración & Gerencia');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [department, setDepartment] = useState<string>('');
   const [spendingNature, setSpendingNature] = useState<'PRESUPUESTO' | 'REPROCESO'>('PRESUPUESTO');
   const [requisitionType, setRequisitionType] = useState<string>('');
   const [priority, setPriority] = useState<string>('');
-  const [neededDate, setNeededDate] = useState<string>(
-    new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
+  const [neededDate, setNeededDate] = useState<string>('');
   const [justification, setJustification] = useState<string>('');
-  const [drawingVersion, setDrawingVersion] = useState<string>('Rev-02 (Aprobado)');
+  const [drawingVersion, setDrawingVersion] = useState<string>('');
 
   // Sincronizar selección inicial de catálogos dinámicos
   useEffect(() => {

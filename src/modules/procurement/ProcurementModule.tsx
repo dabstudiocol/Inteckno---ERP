@@ -149,33 +149,18 @@ export const ProcurementModule: React.FC = () => {
     };
   }, []);
 
-  const [poItems, setPoItems] = useState<PoItemRow[]>(() =>
-    products.length > 0
-      ? [
-          {
-            id: 'row-1',
-            productId: products[0].id,
-            sku: products[0].sku,
-            name: products[0].name,
-            unit: products[0].unit || 'unid',
-            qty: 1,
-            unitPriceCOP: products[0].costPriceCOP || 0,
-            unitPriceUSD: Number(((products[0].costPriceCOP || 0) / currentTrm).toFixed(2)),
-          },
-        ]
-      : [
-          {
-            id: 'row-1',
-            productId: '',
-            sku: '',
-            name: '',
-            unit: 'unid',
-            qty: 1,
-            unitPriceCOP: 0,
-            unitPriceUSD: 0,
-          },
-        ]
-  );
+  const [poItems, setPoItems] = useState<PoItemRow[]>([
+    {
+      id: 'row-1',
+      productId: '',
+      sku: '',
+      name: '',
+      unit: 'unid',
+      qty: 1,
+      unitPriceCOP: 0,
+      unitPriceUSD: 0,
+    },
+  ]);
 
   // Arreglos seguros
   const safePartners = Array.isArray(partners) ? partners : [];
@@ -200,12 +185,12 @@ export const ProcurementModule: React.FC = () => {
   const addItemRow = () => {
     const newRow: PoItemRow = {
       id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      sku: `ITK-REF-${poItems.length + 1}`,
+      sku: '',
       name: '',
       unit: 'unid',
       qty: 1,
-      unitPriceCOP: 450000,
-      unitPriceUSD: Number((450000 / currentTrm).toFixed(2)),
+      unitPriceCOP: 0,
+      unitPriceUSD: 0,
     };
     setPoItems([...poItems, newRow]);
   };

@@ -48,27 +48,11 @@ export const QuoteComparisonModal: React.FC<Props> = ({
   currentTrm,
   onAwardQuote,
 }) => {
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
-  const [needDescription, setNeedDescription] = useState('Suministro de Repuestos y Cables para Mantenimiento Mayor STC');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [needDescription, setNeedDescription] = useState('');
 
-  // Cotizaciones para comparar (inicializadas desde proveedores reales o en limpio)
-  const [candidates, setCandidates] = useState<VendorQuoteCandidate[]>(() =>
-    partners.length > 0
-      ? partners.slice(0, 3).map((p, idx) => ({
-          id: `quote-${idx + 1}`,
-          supplierName: p.name,
-          supplierTaxId: p.nit || p.taxId || '',
-          isHomologated: true,
-          totalCOP: 0,
-          totalUSD: 0,
-          deliveryDays: 1,
-          paymentTerms: '30 días factura fecha',
-          technicalCompliance: true,
-          warrantyMonths: 12,
-          notes: '',
-        }))
-      : []
-  );
+  // Cotizaciones para comparar (inician limpias para que el usuario agregue las ofertas a evaluar)
+  const [candidates, setCandidates] = useState<VendorQuoteCandidate[]>([]);
 
   const handleAddCandidate = () => {
     setCandidates((prev) => [

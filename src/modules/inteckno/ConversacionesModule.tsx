@@ -387,15 +387,15 @@ export const ConversacionesModule: React.FC = () => {
   const [actionLucianaBadge, setActionLucianaBadge] = useState<string | null>(null);
 
   // Campos específicos enriquecidos por LUC-IA-NA para cada módulo
-  const [wbsEstimatedHours, setWbsEstimatedHours] = useState<number>(4);
-  const [wbsAssignedRole, setWbsAssignedRole] = useState<string>('Técnico Especialista STC');
+  const [wbsEstimatedHours, setWbsEstimatedHours] = useState<number>(0);
+  const [wbsAssignedRole, setWbsAssignedRole] = useState<string>('');
   const [hseqIncidentType, setHseqIncidentType] = useState<string>('Condición Insegura');
   const [hseqImmediateAction, setHseqImmediateAction] = useState<string>('');
-  const [hseqLocation, setHseqLocation] = useState<string>('Pilona 4');
+  const [hseqLocation, setHseqLocation] = useState<string>('');
   const [reqProductName, setReqProductName] = useState<string>('');
   const [reqProductQty, setReqProductQty] = useState<number>(1);
   const [reqProductUnit, setReqProductUnit] = useState<string>('unidades');
-  const [reqProductSku, setReqProductSku] = useState<string>('REP-OEM-STC');
+  const [reqProductSku, setReqProductSku] = useState<string>('');
 
   // Colapsables de transcripciones de audio
   const [expandedTranscriptions, setExpandedTranscriptions] = useState<Record<string, boolean>>({});

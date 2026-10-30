@@ -1275,19 +1275,19 @@ export const CargosModule: React.FC = () => {
 
   // Modal Registrar Evaluación de Desempeño
   const [isNewEvalModalOpen, setIsNewEvalModalOpen] = useState(false);
-  const [evalEmployeeId, setEvalEmployeeId] = useState(users[0]?.id || '');
+  const [evalEmployeeId, setEvalEmployeeId] = useState('');
   const [evalType, setEvalType] = useState<'periodo_prueba' | 'semestral' | 'anual'>('semestral');
   const [evalFeedback, setEvalFeedback] = useState('');
-  const [evalCommitments, setEvalCommitments] = useState<string[]>(['Cumplimiento de protocolos HSEQ']);
+  const [evalCommitments, setEvalCommitments] = useState<string[]>([]);
   const [newCommitmentInput, setNewCommitmentInput] = useState('');
-  const [evalOverallScore, setEvalOverallScore] = useState(90);
+  const [evalOverallScore, setEvalOverallScore] = useState(0);
   const [isGeneratingPreDiag, setIsGeneratingPreDiag] = useState(false);
   const [evalPreDiagNotes, setEvalPreDiagNotes] = useState('');
 
   // Formulario Nuevo Cargo
-  const [newPosCode, setNewPosCode] = useState(`ITK-CAR-0${jobPositions.length + 1}`);
+  const [newPosCode, setNewPosCode] = useState('');
   const [newPosTitle, setNewPosTitle] = useState('');
-  const [newPosDepartment, setNewPosDepartment] = useState('Ingeniería y Operaciones');
+  const [newPosDepartment, setNewPosDepartment] = useState('');
   const [newPosPurpose, setNewPosPurpose] = useState('');
   const [newPosResponsibilities, setNewPosResponsibilities] = useState('');
   const [newPosAcademic, setNewPosAcademic] = useState('');
@@ -1295,8 +1295,8 @@ export const CargosModule: React.FC = () => {
   const [newPosTechnicalSkills, setNewPosTechnicalSkills] = useState('');
   const [newPosSoftSkills, setNewPosSoftSkills] = useState('');
   const [newPosConditions, setNewPosConditions] = useState('');
-  const [newPosSalaryMin, setNewPosSalaryMin] = useState(3500000);
-  const [newPosSalaryMax, setNewPosSalaryMax] = useState(5000000);
+  const [newPosSalaryMin, setNewPosSalaryMin] = useState(0);
+  const [newPosSalaryMax, setNewPosSalaryMax] = useState(0);
   const [editingPosition, setEditingPosition] = useState<JobPosition | null>(null);
   const [isGeneratingCargoAi, setIsGeneratingCargoAi] = useState(false);
 
@@ -1340,9 +1340,9 @@ export const CargosModule: React.FC = () => {
   // Abrir modal de creación limpio
   const handleOpenCreatePositionModal = () => {
     setEditingPosition(null);
-    setNewPosCode(`ITK-CAR-0${jobPositions.length + 1}`);
+    setNewPosCode('');
     setNewPosTitle('');
-    setNewPosDepartment('Ingeniería y Operaciones');
+    setNewPosDepartment('');
     setNewPosPurpose('');
     setNewPosResponsibilities('');
     setNewPosAcademic('');
@@ -1350,8 +1350,8 @@ export const CargosModule: React.FC = () => {
     setNewPosTechnicalSkills('');
     setNewPosSoftSkills('');
     setNewPosConditions('');
-    setNewPosSalaryMin(3500000);
-    setNewPosSalaryMax(5000000);
+    setNewPosSalaryMin(0);
+    setNewPosSalaryMax(0);
     setIsNewPositionModalOpen(true);
   };
 

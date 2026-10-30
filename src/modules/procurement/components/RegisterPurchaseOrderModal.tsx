@@ -75,22 +75,18 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   const paymentTermsOptions = useModuleCatalog('compras', 'paymentTerms');
   const supplierCategoriesOptions = useModuleCatalog('compras', 'supplierCategories');
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [originReqId, setOriginReqId] = useState<string>('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [estimatedArrivalDate, setEstimatedArrivalDate] = useState('');
-  const [carrierName, setCarrierName] = useState('Envía Colvanes');
+  const [carrierName, setCarrierName] = useState('');
   const [notes, setNotes] = useState('');
   // Campos Oficiales de la Matriz Corporativa de Compras (BD COMPRAS)
   const [solpedNumber, setSolpedNumber] = useState('');
   const [requesterName, setRequesterName] = useState(currentUser?.name || '');
-  const [paymentTermType, setPaymentTermType] = useState<string>('30 días fecha factura (30 F/F)');
-  const [paymentDueDate, setPaymentDueDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  });
-  const [costCategory, setCostCategory] = useState<string>('Repuestos & Cables STC');
+  const [paymentTermType, setPaymentTermType] = useState<string>('');
+  const [paymentDueDate, setPaymentDueDate] = useState('');
+  const [costCategory, setCostCategory] = useState<string>('');
   const [selectedCostItemId, setSelectedCostItemId] = useState<string>('');
   const [spendingNature, setSpendingNature] = useState<'PRESUPUESTO' | 'REPROCESO'>('PRESUPUESTO');
   const [isFastTrackEmergency, setIsFastTrackEmergency] = useState(false);
@@ -112,7 +108,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       if (req.items && req.items.length > 0) {
         const mappedItems: PoItemRow[] = req.items.map((it, idx) => {
           const prod = products.find((p) => p.id === it.productId || p.sku === it.productSku);
-          const cop = prod?.costPriceCOP || (it.unitCostUSD ? Math.round(it.unitCostUSD * currentTrm) : 350000);
+          const cop = prod?.costPriceCOP || (it.unitCostUSD ? Math.round(it.unitCostUSD * currentTrm) : 0);
           return {
             id: `req-row-${idx}-${Date.now()}`,
             productId: it.productId,
@@ -130,36 +126,20 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
     }
   };
 
-  // Filas de insumos
-  const [items, setItems] = useState<PoItemRow[]>(() =>
-    products.length > 0
-      ? [
-          {
-            id: 'row-1',
-            productId: products[0].id,
-            sku: products[0].sku,
-            name: products[0].name,
-            unit: products[0].unit || 'unid',
-            qty: 1,
-            unitPriceCOP: products[0].costPriceCOP || 0,
-            unitPriceUSD: Number(((products[0].costPriceCOP || 0) / currentTrm).toFixed(2)),
-            historicalPriceCOP: products[0].costPriceCOP || 0,
-          },
-        ]
-      : [
-          {
-            id: 'row-1',
-            productId: '',
-            sku: '',
-            name: '',
-            unit: 'unid',
-            qty: 1,
-            unitPriceCOP: 0,
-            unitPriceUSD: 0,
-            historicalPriceCOP: 0,
-          },
-        ]
-  );
+  // Filas de insumos (inicia limpio; el usuario selecciona el producto o carga una SOLPED)
+  const [items, setItems] = useState<PoItemRow[]>([
+    {
+      id: 'row-1',
+      productId: '',
+      sku: '',
+      name: '',
+      unit: 'unid',
+      qty: 1,
+      unitPriceCOP: 0,
+      unitPriceUSD: 0,
+      historicalPriceCOP: 0,
+    },
+  ]);
 
   if (!isOpen) return null;
 
@@ -223,13 +203,14 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       ...items,
       {
         id: `row-${Date.now()}`,
-        sku: 'GEN-REP',
-        name: 'Nuevo Repuesto / Insumo',
+        productId: '',
+        sku: '',
+        name: '',
         unit: 'unid',
         qty: 1,
-        unitPriceCOP: 50000,
-        unitPriceUSD: Number((50000 / currentTrm).toFixed(2)),
-        historicalPriceCOP: 50000,
+        unitPriceCOP: 0,
+        unitPriceUSD: 0,
+        historicalPriceCOP: 0,
       },
     ]);
   };
@@ -269,9 +250,9 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
             sku: prod.sku,
             name: prod.name,
             unit: prod.unit || 'unid',
-            unitPriceCOP: prod.costPriceCOP || 100000,
-            unitPriceUSD: Number(((prod.costPriceCOP || 100000) / currentTrm).toFixed(2)),
-            historicalPriceCOP: prod.costPriceCOP || 100000,
+            unitPriceCOP: prod.costPriceCOP || 0,
+            unitPriceUSD: Number(((prod.costPriceCOP || 0) / currentTrm).toFixed(2)),
+            historicalPriceCOP: prod.costPriceCOP || 0,
           };
         }
         return it;

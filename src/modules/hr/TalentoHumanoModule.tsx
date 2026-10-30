@@ -55,11 +55,11 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
     name: '',
     documentId: '',
     role: '',
-    department: 'Ingeniería y Proyectos',
-    hireDate: '2026-09-01',
-    baseSalaryCOP: 5000000,
-    heightCertExpiry: '2027-08-30',
-    medicalExamExpiry: '2027-08-30',
+    department: '',
+    hireDate: '',
+    baseSalaryCOP: 0,
+    heightCertExpiry: '',
+    medicalExamExpiry: '',
     emergencyContact: '',
     emergencyPhone: '',
   });
@@ -78,11 +78,11 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
       name: '',
       documentId: '',
       role: '',
-      department: 'Ingeniería y Proyectos',
-      hireDate: '2026-09-01',
-      baseSalaryCOP: 5000000,
-      heightCertExpiry: '2027-08-30',
-      medicalExamExpiry: '2027-08-30',
+      department: '',
+      hireDate: '',
+      baseSalaryCOP: 0,
+      heightCertExpiry: '',
+      medicalExamExpiry: '',
       emergencyContact: '',
       emergencyPhone: '',
     });
@@ -219,7 +219,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               'Verificación climática (Viento < 50 km/h y sin tormenta eléctrica)',
             ].map((item, idx) => (
               <label key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-gray-200 cursor-pointer hover:bg-slate-100/70">
-                <input type="checkbox" defaultChecked className="w-4 h-4 text-[#00668F] rounded-md" />
+                <input type="checkbox" className="w-4 h-4 text-[#00668F] rounded-md" />
                 <span className="text-gray-800 font-medium">{item}</span>
               </label>
             ))}

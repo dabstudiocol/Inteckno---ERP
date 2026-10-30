@@ -659,31 +659,43 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const next: ErpState = { ...prev };
         let hasChanges = false;
 
-        // Projects (Reconciliación protectora: Nunca sobreescribir datos financieros o rubros del usuario con vacíos)
+        // Projects (Reconciliación: Si un proyecto local fue actualizado más recientemente, respetar la decisión del usuario)
         if (cloudData.projects) {
           if (Array.isArray(cloudData.projects.projects)) {
             const incomingProjects = cloudData.projects.projects;
             const merged = incomingProjects.map((remoteP: Project) => {
               const localP = prev.projects.find((lp) => lp.id === remoteP.id);
               if (!localP) return remoteP;
+
+              // Comparar marcas de tiempo: Si el local es más reciente que el remoto, priorizar el estado local
+              const localTime = localP.updatedAt ? new Date(localP.updatedAt).getTime() : 0;
+              const remoteTime = (remoteP as any).updatedAt ? new Date((remoteP as any).updatedAt).getTime() : 0;
+
+              if (localTime > remoteTime) {
+                return {
+                  ...remoteP,
+                  ...localP,
+                };
+              }
+
+              // Si el remoto es más reciente o igual, tomamos el remoto pero preservamos colecciones locales si en el remoto son indefinidas
               return {
                 ...remoteP,
-                // Preservar datos si el local tiene información que la nube aún no reporta
-                projectItems: (Array.isArray((localP as any).projectItems) && (localP as any).projectItems.length > 0)
-                  ? (localP as any).projectItems
-                  : (remoteP as any).projectItems,
-                costMatrix: (Array.isArray((localP as any).costMatrix) && (localP as any).costMatrix.length > 0)
-                  ? (localP as any).costMatrix
-                  : (remoteP as any).costMatrix,
-                billingItems: (Array.isArray((localP as any).billingItems) && (localP as any).billingItems.length > 0)
-                  ? (localP as any).billingItems
-                  : (remoteP as any).billingItems,
-                offerBudget: ((localP as any)?.offerBudget?.items?.some((it: any) => it.budgetPlanned > 0))
-                  ? (localP as any).offerBudget
-                  : ((remoteP as any).offerBudget || (localP as any).offerBudget),
-                staffAssignments: (Array.isArray((localP as any).staffAssignments) && (localP as any).staffAssignments.length > 0)
-                  ? (localP as any).staffAssignments
-                  : (remoteP as any).staffAssignments,
+                projectItems: (remoteP as any).projectItems !== undefined
+                  ? (remoteP as any).projectItems
+                  : (localP as any).projectItems,
+                costMatrix: (remoteP as any).costMatrix !== undefined
+                  ? (remoteP as any).costMatrix
+                  : (localP as any).costMatrix,
+                billingItems: (remoteP as any).billingItems !== undefined
+                  ? (remoteP as any).billingItems
+                  : (localP as any).billingItems,
+                offerBudget: (remoteP as any).offerBudget !== undefined
+                  ? (remoteP as any).offerBudget
+                  : (localP as any).offerBudget,
+                staffAssignments: (remoteP as any).staffAssignments !== undefined
+                  ? (remoteP as any).staffAssignments
+                  : (localP as any).staffAssignments,
               };
             });
             // Añadir proyectos locales creados que aún no estén en la nube
@@ -960,19 +972,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           mergedProjects = data.projects.map((remoteP: Project) => {
             const localP = prev.projects.find((lp) => lp.id === remoteP.id);
             if (!localP) return remoteP;
+
+            // Comparar marcas de tiempo: Si el local es más reciente que el remoto, priorizar el estado local
+            const localTime = localP.updatedAt ? new Date(localP.updatedAt).getTime() : 0;
+            const remoteTime = (remoteP as any).updatedAt ? new Date((remoteP as any).updatedAt).getTime() : 0;
+
+            if (localTime > remoteTime) {
+              return {
+                ...remoteP,
+                ...localP,
+              };
+            }
+
             return {
               ...remoteP,
-              projectItems: Array.isArray((remoteP as any).projectItems)
+              projectItems: (remoteP as any).projectItems !== undefined
                 ? (remoteP as any).projectItems
                 : (localP as any).projectItems,
-              costMatrix: Array.isArray((remoteP as any).costMatrix)
+              costMatrix: (remoteP as any).costMatrix !== undefined
                 ? (remoteP as any).costMatrix
                 : (localP as any).costMatrix,
-              billingItems: Array.isArray((remoteP as any).billingItems)
+              billingItems: (remoteP as any).billingItems !== undefined
                 ? (remoteP as any).billingItems
                 : (localP as any).billingItems,
-              offerBudget: (remoteP as any).offerBudget || (localP as any).offerBudget,
-              staffAssignments: Array.isArray((remoteP as any).staffAssignments)
+              offerBudget: (remoteP as any).offerBudget !== undefined
+                ? (remoteP as any).offerBudget
+                : (localP as any).offerBudget,
+              staffAssignments: (remoteP as any).staffAssignments !== undefined
                 ? (remoteP as any).staffAssignments
                 : (localP as any).staffAssignments,
             };
@@ -1823,13 +1849,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cv: 0,
         totalInvoiced: 0,
         totalPaid: 0,
-        projectLeaderId: customData?.projectLeaderId || 'USR-18', // Wilson Alzate
-        projectLeaderName: customData?.projectLeaderName || 'Wilson Albeiro Alzate Correa',
-        supervisorId: customData?.supervisorId || 'USR-05', // Dairo Morales
-        supervisorName: customData?.supervisorName || 'Dairo Morales Villa',
-        assignedTeamIds: customData?.assignedTeamIds || ['USR-18', 'USR-05', 'USR-16'],
-        templateReused: true,
-        templateName: customData?.templateName || 'Familia 3: Mantenimiento Mayor y Desmontaje PLEM',
+        projectLeaderId: customData?.projectLeaderId || '',
+        projectLeaderName: customData?.projectLeaderName || '',
+        supervisorId: customData?.supervisorId || customData?.projectLeaderId || '',
+        supervisorName: customData?.supervisorName || customData?.projectLeaderName || '',
+        assignedTeamIds: customData?.assignedTeamIds || (customData?.projectLeaderId ? [customData.projectLeaderId] : []),
+        templateReused: Boolean(customData?.templateName),
+        templateName: customData?.templateName || '',
         closedDossierSigned: false,
         liquidationSigned: false,
         lessonLearnedDone: false,
@@ -1838,12 +1864,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         technicalContact: customData?.technicalContact,
         projectCategory: customData?.projectCategory,
         contractAmount: customData?.contractAmount,
-        currency: customData?.currency || 'USD',
+        currency: customData?.currency || opp.currency || 'COP',
         billingMethod: customData?.billingMethod || 'fixed_price',
         paymentMilestones: customData?.paymentMilestones,
         applicableRates: customData?.applicableRates,
-        quoteCode: (customData as any)?.quoteCode || opp.quotations?.[0]?.code || `COT-${opp.code}-01`,
-        contractCode: (customData as any)?.contractCode || `TL-OF-${new Date().getFullYear()}-${projectCode.slice(-3)}`,
+        quoteCode: (customData as any)?.quoteCode || opp.quotations?.[0]?.code || '',
+        contractCode: (customData as any)?.contractCode || '',
         costMatrix: (customData as any)?.costMatrix || (
           opp.quotations?.[0]?.items?.map((it, idx) => ({
             id: `COST-${Date.now()}-${idx}`,
@@ -1863,13 +1889,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ),
       };
 
-      // Inyectar Estructura WBS de la Plantilla Maestra Inteckno Seleccionada
+      // Inyectar Estructura WBS únicamente si el usuario seleccionó explícitamente una Plantilla Maestra Inteckno
       const allTemplates = templateManagerService.getWbsTemplates();
-      const targetFamilyName = customData?.templateName || newProject.templateName || '';
-      const matchedTpl = allTemplates.find((t) =>
-        t.title.toLowerCase().includes(targetFamilyName.toLowerCase()) ||
-        targetFamilyName.toLowerCase().includes(t.title.toLowerCase())
-      ) || allTemplates[1] || allTemplates[0];
+      const targetFamilyName = (customData?.templateName || '').trim();
+      const matchedTpl = targetFamilyName
+        ? allTemplates.find((t) =>
+            t.title.toLowerCase().includes(targetFamilyName.toLowerCase()) ||
+            targetFamilyName.toLowerCase().includes(t.title.toLowerCase())
+          )
+        : undefined;
 
       const standardTasks: WBSTask[] = (matchedTpl?.tasks && matchedTpl.tasks.length > 0)
         ? matchedTpl.tasks.map((t, idx) => ({
@@ -1877,81 +1905,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             projectId,
             code: t.code,
             name: t.name,
-            plannedHours: t.plannedHours || 40,
+            plannedHours: t.plannedHours || 0,
             actualHours: 0,
             progressPct: 0,
             isCriticalPath: t.isCriticalPath ?? true,
             predecessors: t.predecessors || [],
             status: 'pending',
-            assignedToName: t.assignedRole || 'Wilson Alzate',
+            assignedToName: t.assignedRole || newProject.supervisorName || '',
           }))
-        : [
-            {
-              id: `TASK-${Date.now()}-1`,
-              projectId,
-              code: '1.0',
-              name: 'Gestión HSEQ, Permisos de Alturas y Plan de Izaje',
-              plannedHours: 40,
-              actualHours: 0,
-              progressPct: 0,
-              isCriticalPath: true,
-              predecessors: [],
-              status: 'pending',
-              assignedToName: 'Kelly Rojas',
-            },
-            {
-              id: `TASK-${Date.now()}-2`,
-              projectId,
-              code: '2.0',
-              name: 'Logística de Equipos Calibrados y Recepción de Repuestos',
-              plannedHours: 32,
-              actualHours: 0,
-              progressPct: 0,
-              isCriticalPath: true,
-              predecessors: ['1.0'],
-              status: 'pending',
-              assignedToName: 'Sebastián Vélez',
-            },
-            {
-              id: `TASK-${Date.now()}-3`,
-              projectId,
-              code: '3.0',
-              name: 'Intervención Electromecánica en Estaciones / Pilonas',
-              plannedHours: 120,
-              actualHours: 0,
-              progressPct: 0,
-              isCriticalPath: true,
-              predecessors: ['2.0'],
-              status: 'pending',
-              assignedToName: 'Dairo Morales',
-            },
-            {
-              id: `TASK-${Date.now()}-4`,
-              projectId,
-              code: '4.0',
-              name: 'Ensayos No Destructivos (NDT Magnetografía) y Pruebas de Carga',
-              plannedHours: 48,
-              actualHours: 0,
-              progressPct: 0,
-              isCriticalPath: true,
-              predecessors: ['3.0'],
-              status: 'pending',
-              assignedToName: 'Sebastián Ruiz',
-            },
-            {
-              id: `TASK-${Date.now()}-5`,
-              projectId,
-              code: '5.0',
-              name: 'Elaboración de Dossier de Calidad, Acta de Entrega y Cierre',
-              plannedHours: 24,
-              actualHours: 0,
-              progressPct: 0,
-              isCriticalPath: false,
-              predecessors: ['4.0'],
-              status: 'pending',
-              assignedToName: 'Wilson Alzate',
-            },
-          ];
+        : [];
 
       setState((prev) => ({
         ...prev,
@@ -4271,7 +4233,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateProject = useCallback((id: string, data: Partial<Project>) => {
     setState((prev) => {
-      const updatedProjects = prev.projects.map((p) => (p.id === id ? { ...p, ...data } : p));
+      const nowStr = new Date().toISOString();
+      const updatedProjects = prev.projects.map((p) => (p.id === id ? { ...p, ...data, updatedAt: nowStr } : p));
       const targetUpdated = updatedProjects.find((p) => p.id === id);
 
       // Persistencia inmediata ultra-rápida en local storage e IndexedDB sin depender del debounce

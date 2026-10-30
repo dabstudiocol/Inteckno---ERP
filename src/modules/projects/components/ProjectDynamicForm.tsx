@@ -49,7 +49,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   const [selectedOppId, setSelectedOppId] = useState<string>('');
   
   // 1. Código de Proyecto y Centro de Costos (1 Proyecto = 1 Centro de Costos)
-  const defaultCode = initialData?.code || `P${new Date().getFullYear().toString().slice(-2)}-01`;
+  const defaultCode = initialData?.code || '';
   const [code, setCode] = useState(defaultCode);
   const [costCenter, setCostCenter] = useState(initialData?.costCenter || defaultCode);
 
@@ -69,7 +69,6 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
       map.set(c.name.trim().toLowerCase(), {
         name: c.name.trim(),
         city: `${c.city}, ${c.country}`,
-        taxId: c.country === 'Colombia' ? '900.000.000-1' : undefined
       });
       map.set(c.shortName.trim().toLowerCase(), {
         name: c.shortName.trim(),
@@ -103,14 +102,14 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
 
   const [clientName, setClientName] = useState(initialData?.clientName || '');
   const [clientNit, setClientNit] = useState((initialData as any)?.clientNit || '');
-  const [location, setLocation] = useState(initialData?.location || 'Colombia');
+  const [location, setLocation] = useState(initialData?.location || '');
 
   const handleClientNameChange = (val: string) => {
     setClientName(val);
     const matched = knownClients.find(c => c.name.toLowerCase() === val.trim().toLowerCase());
     if (matched) {
       if (matched.taxId) setClientNit(matched.taxId);
-      if (matched.city && (!location || location === 'Colombia')) setLocation(matched.city);
+      if (matched.city && !location) setLocation(matched.city);
     }
   };
 
@@ -122,25 +121,24 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(initialData?.advancePaymentPercentage || 0);
   const [retentionGuaranteePercentage, setRetentionGuaranteePercentage] = useState<number>(initialData?.retentionGuaranteePercentage || 0);
   const [paymentTermsDescription, setPaymentTermsDescription] = useState<string>(
-    initialData?.paymentTermsDescription || 'Contra entrega de informe final aprobado a satisfacción'
+    initialData?.paymentTermsDescription || ''
   );
 
   // 4. Líder o Director de Proyecto: menú desplegable del personal de la empresa + escribir libremente
-  const defaultLeader = initialData?.supervisorName || erpUsers[0]?.name || '';
+  const defaultLeader = initialData?.supervisorName || '';
   const [supervisorName, setSupervisorName] = useState(defaultLeader);
 
   // 5. Selector en Cascada basado en el Portafolio Oficial Inteckno
-  const defaultCategory = INTECKNO_PORTFOLIO[4].category; // "MANTENIMIENTO Y MONTAJE ESPECIALIZADO"
   const [selectedCategory, setSelectedCategory] = useState<string>(
-    initialData?.categoryId || (initialData as any)?.serviceCategory || defaultCategory
+    initialData?.categoryId || (initialData as any)?.serviceCategory || ''
   );
   
   const currentCategoryObj = INTECKNO_PORTFOLIO.find(p => p.category === selectedCategory) || INTECKNO_PORTFOLIO[0];
   const [selectedService, setSelectedService] = useState<string>(
-    initialData?.serviceId || initialData?.serviceType || currentCategoryObj.services[0]
+    initialData?.serviceId || initialData?.serviceType || ''
   );
   
-  const [startDate, setStartDate] = useState(initialData?.startDate || new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(initialData?.startDate || '');
   const [endDate, setEndDate] = useState(initialData?.endDate || '');
   const [budgetCOP, setBudgetCOP] = useState<number>(initialData?.budgetPV || 0);
 
@@ -158,7 +156,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
 
   // Inspecciones y Mantenimiento Predictivo
   const [applicableStandard, setApplicableStandard] = useState<string>(
-    (initialData?.dynamicData as any)?.applicableStandard || 'UNE EN 12927'
+    (initialData?.dynamicData as any)?.applicableStandard || ''
   );
   const [measurementEquipmentName, setMeasurementEquipmentName] = useState<string>(
     (initialData?.dynamicData as any)?.measurementEquipmentName || ''
@@ -179,6 +177,8 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
     const catObj = INTECKNO_PORTFOLIO.find(p => p.category === newCat);
     if (catObj && catObj.services.length > 0) {
       setSelectedService(catObj.services[0]);
+    } else {
+      setSelectedService('');
     }
   };
 
@@ -188,9 +188,19 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
     if (!opp) return;
 
     setName(opp.title);
-    setClientName(opp.clientName);
-    if (opp.estimatedValueUSD) {
-      setBudgetCOP(Math.round(opp.estimatedValueUSD * currentTrm));
+    handleClientNameChange(opp.clientName);
+    if (opp.country) setLocation(opp.country);
+    if (opp.currency) setCurrency(opp.currency);
+    if (opp.quotations?.[0]?.code) setQuoteCode(opp.quotations[0].code);
+    if (opp.quotations?.[0]?.paymentTerms) setPaymentTermsDescription(opp.quotations[0].paymentTerms);
+    if (opp.expectedCloseDate) setEndDate(opp.expectedCloseDate);
+    if (opp.estimatedValue && opp.currency === 'COP') {
+      setContractAmount(opp.estimatedValue);
+      setBudgetCOP(opp.estimatedValue);
+    } else if (opp.estimatedValueUSD) {
+      const copVal = Math.round(opp.estimatedValueUSD * currentTrm);
+      setContractAmount(opp.currency === 'USD' ? opp.estimatedValueUSD : copVal);
+      setBudgetCOP(copVal);
     }
   };
 

@@ -49,7 +49,7 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
   const [amendmentChanges, setAmendmentChanges] = useState('');
 
   // Estado local para anticipo
-  const [advancePercent, setAdvancePercent] = useState<number>(po.advancePaymentPercentage || 30);
+  const [advancePercent, setAdvancePercent] = useState<number>(po.advancePaymentPercentage || 0);
   const [advanceProofFile, setAdvanceProofFile] = useState<string>(po.advancePaymentProofUrl || '');
 
   // Estado local para factura fiscal y 3-way match
@@ -58,11 +58,11 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
 
   // Estado local para no conformidad / nota de devolución
   const [nonConformingQty, setNonConformingQty] = useState<number>(po.nonConformingReceivedQty || 0);
-  const [nonConformingReason, setNonConformingReason] = useState<string>(po.nonConformingReason || 'Falta de Certificado Mill Test');
+  const [nonConformingReason, setNonConformingReason] = useState<string>(po.nonConformingReason || '');
   const [showReturnNoteModal, setShowReturnNoteModal] = useState(false);
 
   // Estado local para logística
-  const [carrier, setCarrier] = useState<string>(po.carrierName || 'Envía Colvanes');
+  const [carrier, setCarrier] = useState<string>(po.carrierName || '');
   const [tracking, setTracking] = useState<string>(po.trackingNumber || '');
   const [certNumber, setCertNumber] = useState<string>(po.qualityCertificateNumber || '');
   const [certUrl, setCertUrl] = useState<string>(po.qualityCertificateUrl || '');

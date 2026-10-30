@@ -44,12 +44,8 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
       c.name.toLowerCase() === (opportunity.clientContactPerson || '').toLowerCase()
   );
 
-  // 1. Datos básicos requeridos
-  const [projectCode, setProjectCode] = useState(() => {
-    const seq = opportunity.code.replace(/\D/g, '') || '01';
-    const countryCode = opportunity.country === 'México' ? 'CDMX' : opportunity.country === 'Bolivia' ? 'LPZ' : 'MED';
-    return `PRJ-2026-${countryCode}-${seq.slice(-2).padStart(2, '0')}`;
-  });
+  // 1. Datos básicos requeridos (arrastrados de la Oportunidad; el código del proyecto lo define el usuario)
+  const [projectCode, setProjectCode] = useState('');
   const [projectName, setProjectName] = useState(opportunity.title);
   const [clientName, setClientName] = useState(opportunity.clientName);
   const [clientNit, setClientNit] = useState(
@@ -72,19 +68,9 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
       u.role === 'gerente_general'
   );
 
-  const defaultLeader =
-    projectLeaders.find((u) => u.id === 'USR-18') ||
-    projectLeaders[0] || {
-      id: 'USR-18',
-      name: 'Wilson Albeiro Alzate Correa',
-    };
-
-  const [selectedLeaderId, setSelectedLeaderId] = useState(defaultLeader.id);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(
-    opportunity.expectedCloseDate ||
-      new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  );
+  const [selectedLeaderId, setSelectedLeaderId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState(opportunity.expectedCloseDate || '');
 
   // 3. Moneda y Monto dinámico con TRM
   const initialCurrency: 'USD' | 'COP' =
@@ -93,7 +79,7 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
   const [currency, setCurrency] = useState<'USD' | 'COP'>(initialCurrency);
   
   // Guardamos el valor original de la oportunidad para conversiones precisas
-  const baseValueUSD = opportunity.estimatedValueUSD || 10000;
+  const baseValueUSD = opportunity.estimatedValueUSD || 0;
   
   const [contractAmount, setContractAmount] = useState<number>(() => {
     if (opportunity.estimatedValue && opportunity.estimatedValue > 0) {
@@ -109,23 +95,8 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
     return baseValueUSD;
   });
 
-  // 4. Plantilla de Proyecto WBS Inicial (Familias Inteckno)
-  const [selectedTemplateFamily, setSelectedTemplateFamily] = useState<string>(() => {
-    const text = (opportunity.title + ' ' + (opportunity.cableType || '')).toLowerCase();
-    if (text.includes('mrt') || text.includes('inspecc') || text.includes('end') || text.includes('ensayo')) {
-      return 'Familia 2: Inspección y Ensayos No Destructivos (END / MRT Cable)';
-    }
-    if (text.includes('empalme') || text.includes('montaje') || text.includes('recorte')) {
-      return 'Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)';
-    }
-    if (text.includes('repuesto') || text.includes('suministro') || text.includes('patin') || text.includes('resorte')) {
-      return 'Familia 4: Suministro de Repuestos y Componentes OEM';
-    }
-    if (text.includes('consultor') || text.includes('interventor') || text.includes('asistencia')) {
-      return 'Familia 5: Consultoría, Interventoría y Asistencia Técnica';
-    }
-    return 'Familia 3: Mantenimiento Mayor y Desmontaje PLEM';
-  });
+  // 4. Plantilla de Proyecto WBS Inicial (Familias Inteckno - seleccionada por el usuario)
+  const [selectedTemplateFamily, setSelectedTemplateFamily] = useState<string>('');
 
   // Cambio dinámico de moneda: recalcula el monto según la TRM
   const handleCurrencyChange = (newCurrency: 'USD' | 'COP') => {
@@ -189,7 +160,9 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
         phone: opportunity.clientPhone || '',
       },
       projectLeaderId: selectedLeaderId,
-      projectLeaderName: chosenLeader?.name || 'Wilson Albeiro Alzate Correa',
+      projectLeaderName: chosenLeader?.name || '',
+      supervisorId: selectedLeaderId,
+      supervisorName: chosenLeader?.name || '',
       startDate,
       endDate,
       contractAmount,
