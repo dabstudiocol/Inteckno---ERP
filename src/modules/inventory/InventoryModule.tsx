@@ -2242,7 +2242,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                             }))}
                             placeholder="Buscar repuesto..."
                             allowCustomText={false}
-                            isClearable={false}
+                            
                             inputClassName="w-full h-11 px-3 text-xs rounded-xl bg-slate-100 font-semibold text-slate-800"
                           />
                         </div>
@@ -2331,7 +2331,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                                 }))}
                                 placeholder="Buscar repuesto..."
                                 allowCustomText={false}
-                                isClearable={false}
+                                
                                 inputClassName="w-full h-10 px-3 text-xs rounded-xl bg-slate-100 font-medium"
                               />
                             </div>
@@ -2515,7 +2515,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 }))}
                 placeholder="Buscar remisión..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-bold text-xs"
               />
             </div>
@@ -2653,7 +2653,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                               ]}
                               placeholder="Estado..."
                               allowCustomText={false}
-                              isClearable={false}
+                              
                               inputClassName="w-full h-10 px-3 text-xs rounded-xl bg-slate-100 font-semibold text-slate-800"
                             />
                           </div>
@@ -2768,7 +2768,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                                   ]}
                                   placeholder="Estado..."
                                   allowCustomText={false}
-                                  isClearable={false}
+                                  
                                   inputClassName="w-full h-9 p-1.5 text-xs rounded-lg bg-slate-100 font-semibold"
                                 />
                               </div>
@@ -3378,7 +3378,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         ]}
                         placeholder="Estado físico..."
                         allowCustomText={false}
-                        isClearable={false}
+                        
                         inputClassName="w-full p-2.5 rounded-xl bg-white border border-gray-200 text-gray-800 text-xs"
                       />
                     </div>

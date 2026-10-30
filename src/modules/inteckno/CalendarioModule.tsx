@@ -206,9 +206,38 @@ export const CalendarioModule: React.FC = () => {
     projects,
     currentUser,
     users,
+    employees,
     milestones,
     triggerCalendarReminderToast,
   } = useErp();
+
+  // Lista unificada de colaboradores para convocatorias y eventos
+  const allStaff = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; roleLabel: string; email: string; avatar: string; avatarColor: string }>();
+    users.forEach((u) => {
+      map.set(u.id, {
+        id: u.id,
+        name: u.name,
+        roleLabel: u.roleLabel || u.department || 'Personal ITK',
+        email: u.email,
+        avatar: u.avatar || u.name.slice(0, 2).toUpperCase(),
+        avatarColor: u.avatarColor || 'bg-[#00668F]',
+      });
+    });
+    employees.forEach((emp) => {
+      if (!map.has(emp.id)) {
+        map.set(emp.id, {
+          id: emp.id,
+          name: emp.name,
+          roleLabel: emp.role || emp.department || 'Técnico de Campo',
+          email: `${emp.name.toLowerCase().replace(/\s+/g, '.')}@inteckno.co`,
+          avatar: emp.name.slice(0, 2).toUpperCase(),
+          avatarColor: 'bg-emerald-700',
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [users, employees]);
 
   // Vista activa: Mensual o Agenda Semanal Operativa
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
@@ -674,7 +703,7 @@ export const CalendarioModule: React.FC = () => {
     }
 
     const prj = projects.find((p) => p.code === newEventForm.projectCode);
-    const attendeeUsers = users.filter((u) => selectedAttendeeIds.includes(u.id));
+    const attendeeUsers = allStaff.filter((u) => selectedAttendeeIds.includes(u.id));
     const attendeeNames = attendeeUsers.map((u) => u.name);
 
     const overnightSuffix = newEventForm.isOvernight ? ' (+1 día nocturno)' : '';
@@ -966,7 +995,7 @@ export const CalendarioModule: React.FC = () => {
               ]}
               onChange={(val) => setFilterType(val || 'all')}
               placeholder="Tipo de evento..."
-              isClearable={false}
+              
             />
           </div>
 
@@ -1683,7 +1712,7 @@ export const CalendarioModule: React.FC = () => {
 
                 {/* Lista seleccionable rápida */}
                 <div className="max-h-36 overflow-y-auto rounded-xl bg-slate-100 p-1.5 space-y-1">
-                  {users.map((u) => {
+                  {allStaff.map((u) => {
                     const isSelected = selectedAttendeeIds.includes(u.id);
                     return (
                       <div
@@ -1694,8 +1723,8 @@ export const CalendarioModule: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
-                          <div className="w-6 h-6 rounded-full bg-[#00668F] text-white flex items-center justify-center text-[10px] font-black shrink-0">
-                            {u.name.substring(0, 2).toUpperCase()}
+                          <div className={`w-6 h-6 rounded-full ${u.avatarColor || 'bg-[#00668F]'} text-white flex items-center justify-center text-[10px] font-black shrink-0`}>
+                            {u.avatar || u.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
                             <span className="font-bold text-gray-800 block truncate text-[11.5px]">
@@ -1977,7 +2006,7 @@ export const CalendarioModule: React.FC = () => {
                       setNewEventForm({ ...newEventForm, projectCode: val || '' })
                     }
                     placeholder="Proyecto STC..."
-                    isClearable={false}
+                    
                   />
                 </div>
               </div>
@@ -2007,7 +2036,7 @@ export const CalendarioModule: React.FC = () => {
                     setNewEventForm({ ...newEventForm, reminderMinutes: Number(val) || 0 })
                   }
                   placeholder="Tiempo de recordatorio..."
-                  isClearable={false}
+                  
                 />
               </div>
 

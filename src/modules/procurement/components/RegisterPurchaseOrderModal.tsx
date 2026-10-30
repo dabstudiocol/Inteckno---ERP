@@ -591,7 +591,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
                   'USD (Dólares Americanos)',
                 ]}
                 placeholder="Moneda..."
-                isClearable={false}
+                
                 allowCustomText={false}
                 inputClassName="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
               />

@@ -231,7 +231,7 @@ export const ProcurementCorporateMatrixTab: React.FC<Props> = ({
             }}
             options={['Todas las Semanas', ...weeksList]}
             placeholder="Semana..."
-            isClearable={false}
+            
             allowCustomText={false}
             inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
           />
@@ -261,7 +261,7 @@ export const ProcurementCorporateMatrixTab: React.FC<Props> = ({
               ...projects.map((p) => `${p.code} — ${p.clientName}`),
             ]}
             placeholder="Proyecto..."
-            isClearable={false}
+            
             allowCustomText={false}
             inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
           />
@@ -291,7 +291,7 @@ export const ProcurementCorporateMatrixTab: React.FC<Props> = ({
               'Pagado 100%',
             ]}
             placeholder="Estado de Pago..."
-            isClearable={false}
+            
             allowCustomText={false}
             inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
           />
@@ -321,7 +321,7 @@ export const ProcurementCorporateMatrixTab: React.FC<Props> = ({
               'Entregado en Bodega',
             ]}
             placeholder="Estado Entrega..."
-            isClearable={false}
+            
             allowCustomText={false}
             inputClassName="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:outline-hidden"
           />

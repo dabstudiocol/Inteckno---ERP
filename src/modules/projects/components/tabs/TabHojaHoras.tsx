@@ -641,7 +641,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                           'VT (Visual)',
                         ]}
                         placeholder="Método END..."
-                        isClearable={false}
+                        
                         allowCustomText={false}
                         inputClassName="text-[11px] font-bold px-2 py-1 border rounded bg-white dark:bg-slate-800 border-blue-300"
                       />

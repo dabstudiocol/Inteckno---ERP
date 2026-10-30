@@ -447,7 +447,7 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
                   ]}
                   onChange={(val) => setNewTodoPriority((val as any) || 'media')}
                   placeholder="Prioridad"
-                  isClearable={false}
+                  
                 />
               </div>
               <button
@@ -601,7 +601,7 @@ export const IntecknoTransversalModule: React.FC<IntecknoTransversalModuleProps>
                     ]}
                     onChange={(val) => setDocForm({ ...docForm, category: (val as any) || 'planos' })}
                     placeholder="Categoría..."
-                    isClearable={false}
+                    
                   />
                 </div>
               </div>

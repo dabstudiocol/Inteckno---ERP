@@ -4470,7 +4470,7 @@ export const ConversacionesModule: React.FC = () => {
                     }))}
                     onChange={(val) => setActionProjectCode(val || '')}
                     placeholder="Proyecto..."
-                    isClearable={false}
+                    
                   />
                 </div>
 
@@ -4486,7 +4486,7 @@ export const ConversacionesModule: React.FC = () => {
                     ]}
                     onChange={(val) => setActionPriority((val as any) || 'Media')}
                     placeholder="Prioridad..."
-                    isClearable={false}
+                    
                   />
                 </div>
               </div>
@@ -4518,7 +4518,7 @@ export const ConversacionesModule: React.FC = () => {
                       ]}
                       onChange={(val) => setWbsAssignedRole(val || 'Técnico Especialista STC')}
                       placeholder="Rol responsable..."
-                      isClearable={false}
+                      
                     />
                   </div>
                 </div>
@@ -4541,7 +4541,7 @@ export const ConversacionesModule: React.FC = () => {
                         ]}
                         onChange={(val) => setHseqIncidentType(val || 'Condición Insegura en Alturas')}
                         placeholder="Tipo de incidente..."
-                        isClearable={false}
+                        
                       />
                     </div>
                     <div className="space-y-1">
@@ -4603,7 +4603,7 @@ export const ConversacionesModule: React.FC = () => {
                         ]}
                         onChange={(val) => setReqProductUnit(val || 'unidades')}
                         placeholder="Unidad..."
-                        isClearable={false}
+                        
                       />
                     </div>
                     <div className="space-y-1">

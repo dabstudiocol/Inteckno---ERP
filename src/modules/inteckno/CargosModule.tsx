@@ -1831,7 +1831,7 @@ export const CargosModule: React.FC = () => {
                   ]}
                   onChange={(val) => setSelectedDeptFilter(val || 'all')}
                   placeholder="Departamento..."
-                  isClearable={false}
+                  
                 />
               </div>
             </div>
@@ -2445,7 +2445,7 @@ export const CargosModule: React.FC = () => {
                   }))}
                   onChange={(val) => setCandidateTargetPositionId(val || '')}
                   placeholder="Seleccionar cargo..."
-                  isClearable={false}
+                  
                 />
               </div>
 
@@ -2551,7 +2551,7 @@ export const CargosModule: React.FC = () => {
                     }))}
                     onChange={(val) => setEvalEmployeeId(val || '')}
                     placeholder="Seleccionar colaborador..."
-                    isClearable={false}
+                    
                   />
                 </div>
 
@@ -2566,7 +2566,7 @@ export const CargosModule: React.FC = () => {
                     ]}
                     onChange={(val) => setEvalType((val as any) || 'semestral')}
                     placeholder="Tipo de evaluación..."
-                    isClearable={false}
+                    
                   />
                 </div>
               </div>

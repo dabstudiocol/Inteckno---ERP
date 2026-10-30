@@ -2157,7 +2157,7 @@ export const UserProfileModule: React.FC = () => {
                       ]}
                       onChange={(val) => setNewEduLevel(val || 'Profesional Universitario')}
                       placeholder="Nivel educativo..."
-                      isClearable={false}
+                      
                     />
                   </div>
                   <div>
@@ -2397,7 +2397,7 @@ export const UserProfileModule: React.FC = () => {
                       ]}
                       onChange={(val) => setNewSkillLevel((val as any) || 'Intermedio')}
                       placeholder="Dominio..."
-                      isClearable={false}
+                      
                     />
                   </div>
                 </div>
@@ -2552,7 +2552,7 @@ export const UserProfileModule: React.FC = () => {
                   ]}
                   onChange={(val) => setNewLangLevel(val || 'Intermedio (B1-B2)')}
                   placeholder="Nivel idioma..."
-                  isClearable={false}
+                  
                 />
                 <button
                   type="button"

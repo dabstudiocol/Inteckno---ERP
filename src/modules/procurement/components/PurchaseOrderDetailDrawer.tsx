@@ -608,7 +608,7 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
                         '100% Pago Anticipado',
                       ]}
                       placeholder="Anticipo..."
-                      isClearable={false}
+                      
                       allowCustomText={true}
                       inputClassName="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
                     />

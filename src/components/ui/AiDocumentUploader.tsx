@@ -442,7 +442,7 @@ export const AiDocumentUploader: React.FC<AiDocumentUploaderProps> = ({
                         ]}
                         placeholder="Categoría..."
                         allowCustomText={true}
-                        isClearable={false}
+                        
                         inputClassName="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs"
                       />
                     </div>
@@ -480,7 +480,7 @@ export const AiDocumentUploader: React.FC<AiDocumentUploaderProps> = ({
                         ]}
                         placeholder="Área..."
                         allowCustomText={true}
-                        isClearable={false}
+                        
                         inputClassName="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs"
                       />
                     </div>

@@ -88,10 +88,33 @@ export const ActividadesModule: React.FC = () => {
     toggleTodo,
     deleteTodo,
     users,
+    employees,
     currentUser,
     projects,
     createCalendarEvent,
   } = useErp();
+
+  // Lista unificada de colaboradores (Usuarios de sistema + Personal registrado en Talento Humano)
+  const collaboratorsList = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; role: string }>();
+    users.forEach((u) => {
+      map.set(u.id, {
+        id: u.id,
+        name: u.name,
+        role: u.roleLabel || u.department || 'Colaborador ITK',
+      });
+    });
+    employees.forEach((emp) => {
+      if (!map.has(emp.id)) {
+        map.set(emp.id, {
+          id: emp.id,
+          name: emp.name,
+          role: emp.role || emp.department || 'Técnico de Campo',
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [users, employees]);
 
   // Catálogos dinámicos editables
   const catalogCategories = useModuleCatalog('actividades', 'categories');
@@ -209,7 +232,7 @@ export const ActividadesModule: React.FC = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const assignedUser = users.find((u) => u.id === assignedToUserId) || currentUser;
+    const assignedUser = collaboratorsList.find((u) => u.id === assignedToUserId) || currentUser;
 
     const checklistItems: TodoChecklistItem[] = initialChecklist.map((text, idx) => ({
       id: `chk-${Date.now()}-${idx}`,
@@ -677,7 +700,7 @@ export const ActividadesModule: React.FC = () => {
                 ]}
                 onChange={(val) => setPriority((val as any) || 'media')}
                 placeholder="Prioridad"
-                isClearable={false}
+                
               />
             </div>
 
@@ -702,13 +725,12 @@ export const ActividadesModule: React.FC = () => {
                   </label>
                   <CreatableSelect
                     value={assignedToUserId}
-                    options={users.map((u) => ({
+                    options={collaboratorsList.map((u) => ({
                       id: u.id,
-                      name: `${u.name} (${u.roleLabel})`,
+                      name: `${u.name} (${u.role})`,
                     }))}
                     onChange={(val) => setAssignedToUserId(val || '')}
                     placeholder="Responsable..."
-                    isClearable={false}
                   />
                 </div>
 
@@ -905,7 +927,7 @@ export const ActividadesModule: React.FC = () => {
                 ]}
                 onChange={(val) => setSelectedProjectFilter(val || 'all')}
                 placeholder="Filtrar proyecto..."
-                isClearable={false}
+                
               />
             </div>
 
@@ -1634,7 +1656,7 @@ export const ActividadesModule: React.FC = () => {
                     });
                   }}
                   placeholder="Estado..."
-                  isClearable={false}
+                  
                 />
               </div>
 

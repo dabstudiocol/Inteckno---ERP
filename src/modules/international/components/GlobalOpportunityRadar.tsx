@@ -384,7 +384,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 options={availableCountries}
                 placeholder="País..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-2xl text-xs text-slate-700 font-medium border border-slate-200"
               />
             </div>
@@ -397,7 +397,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 options={availableCategories}
                 placeholder="Categoría..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-2xl text-xs text-slate-700 font-medium border border-slate-200"
               />
             </div>
@@ -465,7 +465,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 ]}
                 placeholder="Presupuesto..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
               />
             </div>
@@ -496,7 +496,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 ]}
                 placeholder="Plazo de presentación..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
               />
             </div>
@@ -524,7 +524,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 ]}
                 placeholder="Afinidad..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
               />
             </div>
@@ -558,7 +558,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 ]}
                 placeholder="Ordenar por..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-xl text-xs text-slate-700 font-medium"
               />
             </div>

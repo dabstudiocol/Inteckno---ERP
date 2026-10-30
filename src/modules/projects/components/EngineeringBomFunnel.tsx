@@ -528,7 +528,7 @@ export const EngineeringBomFunnel: React.FC<EngineeringBomFunnelProps> = ({ proj
                     }))}
                     placeholder="Seleccionar requisición..."
                     allowCustomText={false}
-                    isClearable={false}
+                    
                     inputClassName="p-1.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-xs"
                   />
                 </div>

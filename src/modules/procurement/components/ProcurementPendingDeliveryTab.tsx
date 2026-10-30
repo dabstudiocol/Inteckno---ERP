@@ -362,7 +362,7 @@ export const ProcurementPendingDeliveryTab: React.FC<Props> = ({
                     'BOD-MOV-06 (Contenedor Móvil de Obra)',
                   ]}
                   placeholder="Seleccionar almacén..."
-                  isClearable={false}
+                  
                   allowCustomText={true}
                   inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
                 />

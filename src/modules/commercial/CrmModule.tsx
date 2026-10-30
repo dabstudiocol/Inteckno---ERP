@@ -3650,7 +3650,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                           ]}
                                           placeholder="Categoría..."
                                           allowCustomText={true}
-                                          isClearable={false}
+                                          
                                           inputClassName="text-[11px] font-bold p-1 rounded-lg border border-gray-200 bg-white text-gray-700"
                                         />
                                       </td>
@@ -3762,7 +3762,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                 ]}
                                 placeholder="Categoría..."
                                 allowCustomText={true}
-                                isClearable={false}
+                                
                                 inputClassName="text-xs p-2 rounded-xl border border-gray-300 bg-white font-semibold text-gray-700"
                               />
                             </div>
@@ -4160,7 +4160,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                                         ]}
                                         placeholder="IVA..."
                                         allowCustomText={false}
-                                        isClearable={false}
+                                        
                                         inputClassName="text-[11px] p-0.5 rounded border border-gray-300 bg-white font-medium"
                                       />
                                     </div>
@@ -4617,7 +4617,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                               ]}
                               placeholder="Rol en el comité..."
                               allowCustomText={true}
-                              isClearable={false}
+                              
                               inputClassName="w-full text-xs p-2 rounded-xl border border-gray-300 bg-white"
                             />
                           </div>
@@ -5006,7 +5006,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     ]}
                     placeholder="Modalidad..."
                     allowCustomText={false}
-                    isClearable={false}
+                    
                     inputClassName="w-full text-xs p-2.5 rounded-xl border border-gray-300 bg-white"
                   />
                 </div>

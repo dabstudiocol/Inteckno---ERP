@@ -94,7 +94,7 @@ export const InventoryForensicsTab: React.FC<InventoryForensicsTabProps> = ({ lo
                   'Escáner Móvil',
                 ]}
                 placeholder="Origen..."
-                isClearable={false}
+                
                 allowCustomText={false}
                 inputClassName="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold focus:outline-hidden"
               />

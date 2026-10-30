@@ -829,7 +829,7 @@ export const ArticulosModule: React.FC = () => {
                   ]}
                   onChange={(val) => setSelectedStatusFilter((val as any) || 'all')}
                   placeholder="Estado..."
-                  isClearable={false}
+                  
                 />
               </div>
 
@@ -1650,7 +1650,7 @@ export const ArticulosModule: React.FC = () => {
                     ]}
                     onChange={(val) => setNewArticleForm({ ...newArticleForm, status: (val as any) || 'borrador' })}
                     placeholder="Estado técnico..."
-                    isClearable={false}
+                    
                   />
                 </div>
 

@@ -354,7 +354,7 @@ export const ProjectsLayout: React.FC = () => {
                 }))}
                 placeholder="Seleccionar proyecto activo..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-amber-500 font-medium"
               />
             </div>
@@ -706,7 +706,7 @@ export const ProjectsLayout: React.FC = () => {
                     ]}
                     placeholder="Especialidad..."
                     allowCustomText={false}
-                    isClearable={false}
+                    
                     inputClassName="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold"
                   />
                 </div>
@@ -783,7 +783,7 @@ export const ProjectsLayout: React.FC = () => {
                         options={['SCH 10', 'SCH 40', 'SCH 80', 'SCH 160']}
                         placeholder="Schedule..."
                         allowCustomText={false}
-                        isClearable={false}
+                        
                         inputClassName="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-white text-[11px]"
                       />
                     </div>
@@ -845,7 +845,7 @@ export const ProjectsLayout: React.FC = () => {
                         ]}
                         placeholder="Norma..."
                         allowCustomText={false}
-                        isClearable={false}
+                        
                         inputClassName="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-white text-[11px]"
                       />
                     </div>

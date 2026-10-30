@@ -1185,7 +1185,7 @@ export const ExpensesModule: React.FC = () => {
                             ]}
                             placeholder="Divisa..."
                             allowCustomText={false}
-                            isClearable={false}
+                            
                             inputClassName="p-2.5 rounded-xl bg-white font-bold text-gray-900 shadow-2xs"
                           />
                         </div>

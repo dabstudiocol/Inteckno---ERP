@@ -1341,7 +1341,7 @@ export const DocumentosModule: React.FC = () => {
                   ]}
                   onChange={(val) => setSelectedProjectFilter(val || 'todos')}
                   placeholder="Proyecto..."
-                  isClearable={false}
+                  
                 />
               </div>
             </div>
@@ -1360,7 +1360,7 @@ export const DocumentosModule: React.FC = () => {
                   ]}
                   onChange={(val) => setSelectedStorageSource((val as any) || 'todos')}
                   placeholder="Origen..."
-                  isClearable={false}
+                  
                 />
               </div>
             </div>
@@ -2232,7 +2232,7 @@ export const DocumentosModule: React.FC = () => {
                             setSyncToastMessage(`Documento movido a la carpeta "${newFold}".`);
                           }}
                           placeholder="Mover a carpeta..."
-                          isClearable={false}
+                          
                         />
                       </div>
                     </div>
@@ -2488,7 +2488,7 @@ export const DocumentosModule: React.FC = () => {
                     }))}
                     onChange={(val) => setUploadForm({ ...uploadForm, folderName: val || 'Repositorio Corporativo & Normativa STC' })}
                     placeholder="Carpeta..."
-                    isClearable={false}
+                    
                   />
                 </div>
 
@@ -2508,7 +2508,7 @@ export const DocumentosModule: React.FC = () => {
                     ]}
                     onChange={(val) => setUploadForm({ ...uploadForm, category: (val as any) || 'planos' })}
                     placeholder="Categoría..."
-                    isClearable={false}
+                    
                   />
                 </div>
 
@@ -2527,7 +2527,7 @@ export const DocumentosModule: React.FC = () => {
                     ]}
                     onChange={(val) => setUploadForm({ ...uploadForm, projectCode: val || 'DOCS-CORP' })}
                     placeholder="Proyecto..."
-                    isClearable={false}
+                    
                   />
                 </div>
               </div>

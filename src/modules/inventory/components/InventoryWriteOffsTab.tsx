@@ -173,7 +173,7 @@ export const InventoryWriteOffsTab: React.FC<InventoryWriteOffsTabProps> = ({ on
                 'Rechazados',
               ]}
               placeholder="Estado..."
-              isClearable={false}
+              
               allowCustomText={false}
               inputClassName="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-medium focus:outline-hidden"
             />

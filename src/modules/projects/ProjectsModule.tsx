@@ -390,7 +390,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                     ]}
                     placeholder="Estado..."
                     allowCustomText={false}
-                    isClearable={false}
+                    
                     inputClassName={`text-[11px] font-semibold py-1 px-2.5 rounded-full border ${getStatusBadge(selectedProject.status).color}`}
                   />
                 </div>
@@ -773,7 +773,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             ]}
             placeholder="Filtrar por estado..."
             allowCustomText={false}
-            isClearable={false}
+            
             inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
           />
         </div>
@@ -786,7 +786,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             options={['Todos los Responsables', ...uniquePMs]}
             placeholder="Filtrar por responsable..."
             allowCustomText={false}
-            isClearable={false}
+            
             inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
           />
         </div>
@@ -799,7 +799,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             options={[`Todos los Clientes (${uniqueClients.length})`, ...uniqueClients]}
             placeholder="Filtrar por cliente..."
             allowCustomText={false}
-            isClearable={false}
+            
             inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
           />
         </div>
@@ -812,7 +812,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             options={[`Todos los Países (${uniqueCountries.length})`, ...uniqueCountries]}
             placeholder="Filtrar por país..."
             allowCustomText={false}
-            isClearable={false}
+            
             inputClassName="text-xs px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
           />
         </div>
@@ -934,7 +934,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                           ]}
                           placeholder="Estado..."
                           allowCustomText={false}
-                          isClearable={false}
+                          
                           inputClassName={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.color}`}
                         />
                       </td>

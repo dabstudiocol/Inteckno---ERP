@@ -1124,7 +1124,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                                 'Detenida',
                               ]}
                               placeholder="Estado..."
-                              isClearable={false}
+                              
                               allowCustomText={false}
                               inputClassName={`text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer border-0 focus:outline-none ${st.bg}`}
                             />
@@ -1467,7 +1467,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                       }}
                       options={customPrioridades.map((p) => p.label)}
                       placeholder="Prioridad..."
-                      isClearable={false}
+                      
                       allowCustomText={false}
                       inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                     />
@@ -1644,7 +1644,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                           .map((t) => `${t.code} - ${t.name}`),
                       ]}
                       placeholder="Predecesora..."
-                      isClearable={false}
+                      
                       allowCustomText={false}
                       inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                     />
@@ -1679,7 +1679,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                         'Comienzo a Fin',
                       ]}
                       placeholder="Tipo relación..."
-                      isClearable={false}
+                      
                       allowCustomText={false}
                       inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                     />
@@ -1760,7 +1760,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                         'Basado en Horas Incurridas (Hoja de Horas)',
                       ]}
                       placeholder="Método avance..."
-                      isClearable={false}
+                      
                       allowCustomText={false}
                       inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                     />
