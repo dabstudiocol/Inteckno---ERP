@@ -1058,7 +1058,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             <div className="text-[10px] text-slate-300 mt-0.5 flex items-center justify-between">
               {offerBudget.subtotal > 0 ? (
                 <>
-                  <span>Oferta Subt: {formatCOP(offerBudget.subtotal)}</span>
+                  <span>Presupuesto Construido: {formatCOP(offerBudget.subtotal)}</span>
                   <span className={`text-[9px] font-mono font-bold ${
                     contractAmountCOP >= offerBudget.subtotal ? 'text-emerald-300' : 'text-amber-300'
                   }`}>
