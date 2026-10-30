@@ -54,7 +54,7 @@ interface GlobalOpportunityRadarProps {
 export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
   onSelectForQuotation,
 }) => {
-  const { createOpportunity } = useErp();
+  const { createOpportunity, users, currentUser } = useErp();
 
   // Catálogos reactivos desde la Configuración del Módulo
   const configuredCountries = useModuleCatalog('radar-oportunidades', 'monitoredCountries');
@@ -157,6 +157,14 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
 
   // Convertir Oportunidad al CRM del ERP
   const handleConvertToCrm = (opp: GlobalOpportunity) => {
+    // Buscar el responsable comercial real (Mateo Ortiz o el usuario activo en sesión)
+    const defaultOwner = users.find(
+      (u) =>
+        u.role === 'coord_comercial' ||
+        u.name.toLowerCase().includes('mateo') ||
+        u.id === 'USR-02'
+    ) || currentUser;
+
     createOpportunity({
       title: opp.title,
       clientId: `CLI-${opp.id}`,
@@ -170,8 +178,8 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
       stage: 'prospecting',
       expectedCloseDate: opp.deadline || new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       technicalSpecs: `[RADAR IA - ${opp.sourcePlatform}] Pliego: ${opp.procurementCode || 'N/A'}. Requerimientos: ${opp.productsRequired.join(', ')}. Fuente oficial: ${opp.directSourceUrl || opp.sourceUrl}`,
-      assignedOwnerId: 'USR-02',
-      assignedOwnerName: 'Mateo Ortiz',
+      assignedOwnerId: defaultOwner.id,
+      assignedOwnerName: defaultOwner.name,
       tags: ['Radar IA', opp.country, opp.category, opp.sourcePlatform],
     });
 

@@ -58,6 +58,7 @@ import { calculateQuoteBreakdown } from '../services/costCalculatorEngine';
 import { QuotePdfModal } from './QuotePdfModal';
 import { AiDataSourceInspector } from './AiDataSourceInspector';
 import { fetchLiveExchangeRates, LiveForexResult } from '../services/exchangeRateService';
+import { useErp } from '../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { UniversalModuleConfigModal } from '../../../components/common/UniversalModuleConfigModal';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
@@ -69,6 +70,7 @@ interface InternationalCalculatorProps {
 export const InternationalCalculator: React.FC<InternationalCalculatorProps> = ({
   initialOpportunity,
 }) => {
+  const { partners, contacts } = useErp();
   // Estado Principal de la Calculadora Internacional
   const [state, setState] = useState<InternationalCalculationState>({
     unitSystem: 'metric',
@@ -487,7 +489,7 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
                 ]}
                 placeholder="Moneda..."
                 allowCustomText={false}
-                isClearable={false}
+                
                 inputClassName="bg-white font-bold text-[#00668F] py-1 px-2.5 rounded-lg border-0 shadow-2xs"
               />
             </div>
@@ -632,12 +634,18 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
 
           <div className="lg:col-span-2">
             <label className="block text-[11px] font-bold text-gray-700 mb-1">Cliente / Entidad Operadora</label>
-            <input
-              type="text"
+            <CreatableSelect
               value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="Ej: Cablebús CDMX, Mi Teleférico La Paz, etc."
-              className="w-full h-11 px-3.5 py-0 bg-slate-100 rounded-xl font-semibold text-xs text-slate-800 leading-normal flex items-center focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00668F]/25"
+              onChange={(val) => setClientName(val)}
+              options={[
+                ...partners
+                  .filter((p) => p.type === 'customer' || p.type === 'both')
+                  .map((p) => ({ id: p.id, name: p.name, code: p.country })),
+                ...contacts.map((c) => ({ id: c.id, name: `${c.company} (${c.name})`, code: c.country })),
+              ]}
+              placeholder="Seleccionar cliente del CRM o escribir..."
+              allowCustomText={true}
+              inputClassName="h-11 px-3.5 bg-slate-100 rounded-xl font-semibold text-xs text-slate-800"
             />
           </div>
 
@@ -649,7 +657,7 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
               options={originCountryOptions}
               placeholder="País de origen..."
               allowCustomText={true}
-              isClearable={false}
+              
               inputClassName="h-11 px-3.5 bg-slate-100 rounded-xl font-semibold text-xs text-slate-800"
             />
           </div>
@@ -662,7 +670,7 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
               options={destinationCountryOptions}
               placeholder="País de destino..."
               allowCustomText={true}
-              isClearable={false}
+              
               inputClassName="h-11 px-3.5 bg-slate-100 rounded-xl font-bold text-xs text-[#00668F]"
             />
           </div>
@@ -938,7 +946,7 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
                       ]}
                       placeholder="Contenedor..."
                       allowCustomText={false}
-                      isClearable={false}
+                      
                       inputClassName="p-1 rounded-lg border border-gray-300 bg-white font-bold text-xs"
                     />
                   </div>
@@ -1558,7 +1566,7 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
                       ]}
                       placeholder="Plazo..."
                       allowCustomText={false}
-                      isClearable={false}
+                      
                       inputClassName="p-1 rounded-lg border border-gray-300 bg-white font-bold text-xs"
                     />
                   </div>
