@@ -947,11 +947,13 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const projectTaxRate = getProjectTaxRate(projectCountry);
 
     const totalIncurred = totalActual;
-  // Presupuesto de Costos Planificado:
-  // Si ya se crearon ITEMS con costos planeados (totalPlanned > 0), ese es el presupuesto establecido real.
-  // Si aún no se han creado ITEMS pero se definió un presupuesto inicial global (project.budgetPV), se toma como techo estimado.
+  // Presupuesto de Costos Planificado (Consolidado de Oferta):
+  // El presupuesto plan corresponde a los costos presupuestados en el Consolidado de Oferta del proyecto (offerBudget.totalBudgetedCost).
+  // Si aún no se ha desglosado la oferta pero se definió un presupuesto inicial al crear el proyecto (project.budgetPV), se usa este techo.
   const initialCostBudget = project.budgetPV || 0;
-  const activeCostBudgetPlan = totalPlanned > 0 ? totalPlanned : initialCostBudget;
+  const activeCostBudgetPlan = offerBudget.totalBudgetedCost > 0 
+    ? offerBudget.totalBudgetedCost 
+    : initialCostBudget;
 
   // Margen bruto proyectado = (Contrato - EAC) / Contrato.
   // EAC (Estimate at Completion) = max(Costo Real Incurrido, Presupuesto de Costos Planificado).
@@ -1068,10 +1070,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             </div>
             <div className="text-[10px] text-slate-300 mt-0.5 flex items-center justify-between">
               <span>Presupuesto Plan: {formatCOP(activeCostBudgetPlan)}</span>
-              {totalPlanned > 0 ? (
-                <span className="text-[9px] text-cyan-300 font-semibold">(Por ITEMS)</span>
+              {offerBudget.totalBudgetedCost > 0 ? (
+                <span className="text-[9px] text-cyan-300 font-semibold">(Consolidado Oferta)</span>
               ) : initialCostBudget > 0 ? (
-                <span className="text-[9px] text-amber-300 font-semibold">(Techo Inicial)</span>
+                <span className="text-[9px] text-amber-300 font-semibold">(Presupuesto Inicial)</span>
               ) : null}
             </div>
           </div>
@@ -2594,7 +2596,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             itemName: matched.name,
                             category: suggestedCategory,
                             unit: meta.defaultUnit,
-                            costType: meta.defaultCostType,
                           });
                         } else {
                           setItemForm({
@@ -2608,35 +2609,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       isClearable={true}
                       allowCustomText={true}
                     />
-                  </div>
-
-                  {/* Tipo de Costo: Directo vs Indirecto (Real Inteckno) */}
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Tipo de Costo</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setItemForm({ ...itemForm, costType: 'directo' })}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          itemForm.costType === 'directo'
-                            ? 'bg-sky-50 border-[#00668F] text-[#00668F]'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Costos Directos (MO, Insumos)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setItemForm({ ...itemForm, costType: 'indirecto' })}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          itemForm.costType === 'indirecto'
-                            ? 'bg-purple-50 border-purple-500 text-purple-700'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Costos Indirectos (Pólizas, Grúas)
-                      </button>
-                    </div>
                   </div>
 
                   {/* Categoría Financiera */}
