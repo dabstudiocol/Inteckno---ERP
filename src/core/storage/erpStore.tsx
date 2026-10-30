@@ -2068,39 +2068,62 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     (id: string) => {
       setState((prev) => {
         const targetTs = prev.timesheets.find((t) => t.id === id);
-        const updatedProjects = targetTs
-          ? prev.projects.map((prj) => {
-              if (prj.id === targetTs.projectId || prj.code === targetTs.projectCode) {
-                const laborCOP = (targetTs.hours || 0) * 65000;
-                const laborUSD = Math.round(laborCOP / 4000);
-                const newAC = (prj.actualCostAC || 0) + laborUSD;
-                const newCV = (prj.earnedValueEV || 0) - newAC;
-                const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-                const existingMatrix = (prj as any).costMatrix || [];
-                const newCostItem = {
-                  id: `cost-ts-${Date.now()}`,
-                  category: 'mano_obra_itk' as const,
-                  concept: `Mano de Obra ITK - ${targetTs.userName || 'Técnico'} (${targetTs.hours}h - ${targetTs.taskName || 'Labores'})`,
-                  unit: 'Horas',
-                  plannedQuantity: targetTs.hours || 0,
-                  plannedUnitCost: 65000,
-                  plannedTotal: laborCOP,
-                  actualQuantity: targetTs.hours || 0,
-                  actualUnitCost: 65000,
-                  actualTotal: laborCOP,
-                  variance: 0,
-                };
-                return {
-                  ...prj,
-                  actualCostAC: newAC,
-                  cv: newCV,
-                  cpi: newCPI,
-                  costMatrix: [...existingMatrix, newCostItem],
-                };
-              }
-              return prj;
-            })
-          : prev.projects;
+        if (!targetTs) return prev;
+
+        // Buscar tarifa real del colaborador en la base de datos de Talento Humano / Usuarios
+        const employeeRecord = prev.employees.find(
+          (e) => e.id === targetTs.userId || e.name.toLowerCase() === targetTs.userName?.toLowerCase()
+        );
+        const userRecord = prev.users.find(
+          (u) => u.id === targetTs.userId || u.name.toLowerCase() === targetTs.userName?.toLowerCase()
+        );
+
+        // Cálculo dinámico de tarifa hora según salario base real (240h laborales mensuales)
+        let hourlyRateCOP = 65000; // Tarifa base técnica estándar de respaldo
+        if (employeeRecord?.baseSalaryCOP && employeeRecord.baseSalaryCOP > 0) {
+          hourlyRateCOP = Math.round(employeeRecord.baseSalaryCOP / 240);
+        } else if (userRecord?.jobPosition?.salaryRange && typeof userRecord.jobPosition.salaryRange === 'object') {
+          const midSalary = (userRecord.jobPosition.salaryRange.min + userRecord.jobPosition.salaryRange.max) / 2;
+          if (midSalary > 0) {
+            hourlyRateCOP = Math.round(midSalary / 240);
+          }
+        }
+
+        const updatedProjects = prev.projects.map((prj) => {
+          if (prj.id === targetTs.projectId || prj.code === targetTs.projectCode) {
+            const laborCOP = (targetTs.hours || 0) * hourlyRateCOP;
+            const laborUSD = Math.round(laborCOP / 4000);
+            const newAC = (prj.actualCostAC || 0) + laborUSD;
+            const newCV = (prj.earnedValueEV || 0) - newAC;
+            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+            const existingMatrix = (prj as any).costMatrix || [];
+            const newCostItem = {
+              id: `cost-ts-${Date.now()}`,
+              category: 'mano_obra_itk' as const,
+              concept: `Mano de Obra ITK - ${targetTs.userName || 'Técnico'} (${targetTs.hours}h @ $${hourlyRateCOP.toLocaleString('es-CO')}/h - ${targetTs.taskName || 'Labores'})`,
+              unit: 'Horas',
+              plannedQuantity: targetTs.hours || 0,
+              plannedUnitCost: hourlyRateCOP,
+              plannedTotal: laborCOP,
+              actualQuantity: targetTs.hours || 0,
+              actualUnitCost: hourlyRateCOP,
+              actualTotal: laborCOP,
+              variance: 0,
+              spendingNature: 'PRESUPUESTO' as const,
+              costType: 'directo' as const,
+              date: targetTs.date || new Date().toISOString().split('T')[0],
+              observations: `Radicado desde módulo de Registro de Horas. Aprobado por supervisión.`,
+            };
+            return {
+              ...prj,
+              actualCostAC: newAC,
+              cv: newCV,
+              cpi: newCPI,
+              costMatrix: [...existingMatrix, newCostItem],
+            };
+          }
+          return prj;
+        });
 
         return {
           ...prev,
@@ -2163,29 +2186,58 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const newAC = (prj.actualCostAC || 0) + costUSD;
             const newCV = (prj.earnedValueEV || 0) - newAC;
             const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-            const existingMatrix = (prj as any).costMatrix || [];
-            const poCategory = (poData.costCategory as any) || 'repuestos_fabricacion';
+            const existingMatrix: any[] = (prj as any).costMatrix || [];
+            let updatedCostMatrix: any[];
 
-            const newMatrixItem = {
-              id: `cost-po-${Date.now()}`,
-              category: poCategory,
-              concept: `OC ${orderNumber} - ${poData.supplierName || 'Proveedor'}`,
-              unit: 'unid',
-              plannedQuantity: 1,
-              plannedUnitCost: costCOP,
-              plannedTotal: costCOP,
-              actualQuantity: 1,
-              actualUnitCost: costCOP,
-              actualTotal: costCOP,
-              variance: 0,
-            };
+            // Si la OC fue asociada a un rubro/ITEM existente de la matriz
+            if (poData.costMatrixItemId && existingMatrix.some((m) => m.id === poData.costMatrixItemId)) {
+              updatedCostMatrix = existingMatrix.map((item) => {
+                if (item.id === poData.costMatrixItemId) {
+                  const newActualQty = (item.actualQuantity || 0) + 1;
+                  const newActualTotal = (item.actualTotal || 0) + costCOP;
+                  return {
+                    ...item,
+                    actualQuantity: newActualQty,
+                    actualTotal: newActualTotal,
+                    actualUnitCost: newActualQty > 0 ? Math.round(newActualTotal / newActualQty) : item.actualUnitCost,
+                    variance: (item.plannedTotal || 0) - newActualTotal,
+                    observations: item.observations
+                      ? `${item.observations} | Imputado por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`
+                      : `Imputado por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`,
+                  };
+                }
+                return item;
+              });
+            } else {
+              // Si no existe, crear el registro de costo imputado con su itemCode si fue provisto
+              const poCategory = (poData.costCategory as any) || 'repuestos_fabricacion';
+              const newMatrixItem = {
+                id: `cost-po-${Date.now()}`,
+                itemCode: poData.itemCode || undefined,
+                category: poCategory,
+                concept: `OC ${orderNumber} - ${poData.supplierName || 'Proveedor'}`,
+                unit: 'unid',
+                plannedQuantity: 1,
+                plannedUnitCost: costCOP,
+                plannedTotal: costCOP,
+                actualQuantity: 1,
+                actualUnitCost: costCOP,
+                actualTotal: costCOP,
+                variance: 0,
+                spendingNature: poData.spendingNature || 'PRESUPUESTO',
+                costType: 'directo' as const,
+                date: poData.date || new Date().toISOString().split('T')[0],
+                observations: `Orden de compra vinculada a ${poData.supplierName || 'Proveedor'}.`,
+              };
+              updatedCostMatrix = [...existingMatrix, newMatrixItem];
+            }
 
             return {
               ...prj,
               actualCostAC: newAC,
               cv: newCV,
               cpi: newCPI,
-              costMatrix: [...existingMatrix, newMatrixItem],
+              costMatrix: updatedCostMatrix,
             };
           }
           return prj;

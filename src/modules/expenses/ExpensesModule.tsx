@@ -48,7 +48,7 @@ import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { TabPettyCash } from './components/TabPettyCash';
 
 export const ExpensesModule: React.FC = () => {
-  const { expenses, projects, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
+  const { expenses, projects, users, employees, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
 
   // Pestaña Activa: Comprobantes Generales vs Caja Menor
   const [activeTab, setActiveTab] = useState<'comprobantes' | 'caja_menor'>('comprobantes');
@@ -61,6 +61,31 @@ export const ExpensesModule: React.FC = () => {
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewingExpense, setViewingExpense] = useState<ExpenseEntry | null>(null);
+
+  // Responsable / Técnico del Gasto (Interconexión RRHH)
+  const [selectedUserId, setSelectedUserId] = useState<string>(currentUser.id);
+
+  // Lista unificada de colaboradores (Usuarios de sistema + Personal registrado en Talento Humano)
+  const collaboratorsList = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; role: string }>();
+    users.forEach((u) => {
+      map.set(u.id, {
+        id: u.id,
+        name: u.name,
+        role: u.roleLabel || u.department || 'Colaborador ITK',
+      });
+    });
+    employees.forEach((emp) => {
+      if (!map.has(emp.id)) {
+        map.set(emp.id, {
+          id: emp.id,
+          name: emp.name,
+          role: emp.role || emp.department || 'Técnico de Campo',
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [users, employees]);
 
   // Estado del Formulario
   const [imputationType, setImputationType] = useState<'proyecto' | 'oficina'>('proyecto');
@@ -315,9 +340,14 @@ export const ExpensesModule: React.FC = () => {
     const isProject = imputationType === 'proyecto';
     const costCenter = isProject ? selectedProject?.costCenter || 'CC-PROY' : selectedOffice?.code || 'ADM-MED-01';
 
+    const respCollab = collaboratorsList.find((c) => c.id === selectedUserId) || {
+      id: currentUser.id,
+      name: currentUser.name,
+    };
+
     submitExpense({
-      userId: currentUser.id,
-      userName: currentUser.name,
+      userId: respCollab.id,
+      userName: respCollab.name,
       imputationType,
       projectId: isProject ? selectedProject?.id : undefined,
       projectCode: isProject ? selectedProject?.code : undefined,
@@ -804,46 +834,80 @@ export const ExpensesModule: React.FC = () => {
                   </div>
 
                   {imputationType === 'proyecto' ? (
-                    <div>
-                      <CreatableSelect
-                        label="Asignar al Proyecto STC"
-                        required
-                        value={selectedProject ? `${selectedProject.code} — ${selectedProject.name}` : ''}
-                        onChange={(val) => {
-                          const match = projects.find((p) => `${p.code} — ${p.name}`.toLowerCase() === val.toLowerCase() || p.id === val);
-                          if (match) setSelectedProjectId(match.id);
-                        }}
-                        options={projects.map((p) => ({
-                          id: p.id,
-                          name: `${p.code} — ${p.name}`,
-                          code: p.costCenter,
-                        }))}
-                        placeholder="Buscar o seleccionar proyecto..."
-                        inputClassName="bg-white"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <CreatableSelect
+                          label="Asignar al Proyecto STC"
+                          required
+                          value={selectedProject ? `${selectedProject.code} — ${selectedProject.name}` : ''}
+                          onChange={(val) => {
+                            const match = projects.find((p) => `${p.code} — ${p.name}`.toLowerCase() === val.toLowerCase() || p.id === val);
+                            if (match) setSelectedProjectId(match.id);
+                          }}
+                          options={projects.map((p) => ({
+                            id: p.id,
+                            name: `${p.code} — ${p.name}`,
+                            code: p.costCenter,
+                          }))}
+                          placeholder="Buscar o seleccionar proyecto..."
+                          inputClassName="bg-white"
+                        />
+                      </div>
+                      <div>
+                        <CreatableSelect
+                          label="Colaborador Responsable del Gasto"
+                          required
+                          value={selectedUserId}
+                          onChange={(val) => setSelectedUserId(val)}
+                          options={collaboratorsList.map((collab) => ({
+                            id: collab.id,
+                            name: `${collab.name} (${collab.role})`,
+                            code: collab.role,
+                          }))}
+                          placeholder="Seleccionar colaborador de campo..."
+                          inputClassName="bg-white"
+                        />
+                      </div>
                     </div>
                   ) : (
-                    <div>
-                      <CreatableSelect
-                        label="Asignar a Sede / Oficina Administrativa"
-                        required
-                        value={selectedOffice ? `${selectedOffice.name} — Código: ${selectedOffice.code}` : ''}
-                        onChange={(val) => {
-                          const match = moduleConfig.offices.find(
-                            (o) => `${o.name} — Código: ${o.code}`.toLowerCase() === val.toLowerCase() || o.id === val || o.name.toLowerCase() === val.toLowerCase()
-                          );
-                          if (match) setSelectedOfficeId(match.id);
-                        }}
-                        options={moduleConfig.offices
-                          .filter((o) => o.isActive)
-                          .map((o) => ({
-                            id: o.id,
-                            name: `${o.name} — Código: ${o.code}`,
-                            code: o.code,
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <CreatableSelect
+                          label="Asignar a Sede / Oficina Administrativa"
+                          required
+                          value={selectedOffice ? `${selectedOffice.name} — Código: ${selectedOffice.code}` : ''}
+                          onChange={(val) => {
+                            const match = moduleConfig.offices.find(
+                              (o) => `${o.name} — Código: ${o.code}`.toLowerCase() === val.toLowerCase() || o.id === val || o.name.toLowerCase() === val.toLowerCase()
+                            );
+                            if (match) setSelectedOfficeId(match.id);
+                          }}
+                          options={moduleConfig.offices
+                            .filter((o) => o.isActive)
+                            .map((o) => ({
+                              id: o.id,
+                              name: `${o.name} — Código: ${o.code}`,
+                              code: o.code,
+                            }))}
+                          placeholder="Buscar o seleccionar sede..."
+                          inputClassName="bg-white"
+                        />
+                      </div>
+                      <div>
+                        <CreatableSelect
+                          label="Colaborador Responsable del Gasto"
+                          required
+                          value={selectedUserId}
+                          onChange={(val) => setSelectedUserId(val)}
+                          options={collaboratorsList.map((collab) => ({
+                            id: collab.id,
+                            name: `${collab.name} (${collab.role})`,
+                            code: collab.role,
                           }))}
-                        placeholder="Buscar o seleccionar sede..."
-                        inputClassName="bg-white"
-                      />
+                          placeholder="Seleccionar colaborador administrativo..."
+                          inputClassName="bg-white"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

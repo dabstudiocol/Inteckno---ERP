@@ -83,6 +83,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
     return d.toISOString().split('T')[0];
   });
   const [costCategory, setCostCategory] = useState<string>('Repuestos & Cables STC');
+  const [selectedCostItemId, setSelectedCostItemId] = useState<string>('');
   const [spendingNature, setSpendingNature] = useState<'PRESUPUESTO' | 'REPROCESO'>('PRESUPUESTO');
   const [isFastTrackEmergency, setIsFastTrackEmergency] = useState(false);
 
@@ -360,6 +361,12 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       paymentTermType: (paymentTermType.toLowerCase().includes('contado') ? 'contado' : paymentTermType.toLowerCase().includes('anticipo') ? 'anticipo' : 'credito') as 'contado' | 'anticipo' | 'credito',
       paymentDueDate: paymentDueDate || undefined,
       costCategory,
+      costMatrixItemId: selectedCostItemId || undefined,
+      itemCode: (() => {
+        if (!selectedCostItemId) return undefined;
+        const found = selectedProject?.costMatrix?.find((cm) => cm.id === selectedCostItemId);
+        return found?.itemCode || undefined;
+      })(),
       deliveryStatus: 'pendiente',
       weekOfYear: (() => {
         const d = new Date(date);
@@ -654,25 +661,56 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
             </div>
 
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Rubro de Costo</label>
+              <label className="block text-slate-700 font-semibold mb-1">
+                ITEM Contractual / Rubro del Proyecto
+                {selectedProject?.costMatrix && selectedProject.costMatrix.length > 0 && (
+                  <span className="ml-1 text-[10px] text-emerald-600 font-normal">
+                    ({selectedProject.costMatrix.length} rubros presupuestados)
+                  </span>
+                )}
+              </label>
               <CreatableSelect
-                options={supplierCategoriesOptions.length > 0 ? (
-                  supplierCategoriesOptions.map((cat) => ({ id: cat.name, name: cat.name }))
-                ) : [
-                  { id: 'Repuestos & Fabricación STC', name: 'Repuestos & Fabricación STC' },
-                  { id: 'Consumibles & EPP', name: 'Consumibles & EPP' },
-                  { id: 'Viáticos & Movilidad', name: 'Viáticos & Movilidad' },
-                  { id: 'Inspección Cables (MRT)', name: 'Inspección Cables (MRT)' },
-                  { id: 'Ensayos NDT / END', name: 'Ensayos NDT / END' },
-                  { id: 'Mano de Obra ITK', name: 'Mano de Obra ITK' },
-                  { id: 'Mano de Obra Externa', name: 'Mano de Obra Externa' },
-                  { id: 'Subcontratos & Grúas', name: 'Subcontratos & Grúas' },
-                  { id: 'Imprevistos de Obra', name: 'Imprevistos de Obra' },
-                ]}
-                value={costCategory}
-                onChange={(val) => setCostCategory(val)}
+                options={
+                  selectedProject?.costMatrix && selectedProject.costMatrix.length > 0
+                    ? selectedProject.costMatrix.map((cm) => ({
+                        id: cm.id,
+                        name: `${cm.itemCode ? `[${cm.itemCode}] ` : ''}${cm.concept} (${cm.category})`,
+                        code: cm.itemCode || cm.category,
+                      }))
+                    : supplierCategoriesOptions.length > 0
+                    ? supplierCategoriesOptions.map((cat) => ({ id: cat.name, name: cat.name }))
+                    : [
+                        { id: 'Repuestos & Fabricación STC', name: 'Repuestos & Fabricación STC' },
+                        { id: 'Consumibles & EPP', name: 'Consumibles & EPP' },
+                        { id: 'Viáticos & Movilidad', name: 'Viáticos & Movilidad' },
+                        { id: 'Inspección Cables (MRT)', name: 'Inspección Cables (MRT)' },
+                        { id: 'Ensayos NDT / END', name: 'Ensayos NDT / END' },
+                        { id: 'Mano de Obra ITK', name: 'Mano de Obra ITK' },
+                        { id: 'Mano de Obra Externa', name: 'Mano de Obra Externa' },
+                        { id: 'Subcontratos & Grúas', name: 'Subcontratos & Grúas' },
+                        { id: 'Imprevistos de Obra', name: 'Imprevistos de Obra' },
+                      ]
+                }
+                value={
+                  selectedCostItemId
+                    ? (() => {
+                        const found = selectedProject?.costMatrix?.find((cm) => cm.id === selectedCostItemId);
+                        return found ? `${found.itemCode ? `[${found.itemCode}] ` : ''}${found.concept}` : selectedCostItemId;
+                      })()
+                    : costCategory
+                }
+                onChange={(val) => {
+                  const foundItem = selectedProject?.costMatrix?.find((cm) => cm.id === val || cm.concept === val);
+                  if (foundItem) {
+                    setSelectedCostItemId(foundItem.id);
+                    setCostCategory(foundItem.concept || foundItem.category);
+                  } else {
+                    setSelectedCostItemId('');
+                    setCostCategory(val);
+                  }
+                }}
                 allowCustomText={true}
-                placeholder="Seleccionar rubro..."
+                placeholder="Seleccionar ITEM o rubro presupuestal..."
               />
             </div>
 
@@ -693,7 +731,6 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
                   'REPROCESO (Garantía)',
                 ]}
                 placeholder="Naturaleza..."
-                isClearable={false}
                 allowCustomText={false}
                 inputClassName={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${
                   spendingNature === 'REPROCESO'

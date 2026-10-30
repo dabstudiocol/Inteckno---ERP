@@ -22,15 +22,52 @@ import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 export const TimesheetModule: React.FC = () => {
-  const { timesheets, projects, currentUser, submitTimesheet, approveTimesheet, rejectTimesheet, deleteTimesheet } = useErp();
+  const { timesheets, projects, users, employees, currentUser, submitTimesheet, approveTimesheet, rejectTimesheet, deleteTimesheet } = useErp();
 
-  // Estado del formulario rápido móvil en 3 toques
+  // Estado del formulario rápido móvil
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id || '');
+  const [selectedUserId, setSelectedUserId] = useState(currentUser.id);
   const [hours, setHours] = useState(8);
   const [description, setDescription] = useState('');
   const [taskName, setTaskName] = useState('');
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [timesheetToDelete, setTimesheetToDelete] = useState<TimesheetEntry | null>(null);
+
+  // Mantener actualizado el usuario seleccionado si cambia currentUser
+  useEffect(() => {
+    if (!selectedUserId) {
+      setSelectedUserId(currentUser.id);
+    }
+  }, [currentUser.id, selectedUserId]);
+
+  // Lista unificada de colaboradores (Usuarios de sistema + Personal registrado en Talento Humano)
+  const collaboratorsList = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; role: string; email?: string }>();
+    
+    // Primero agregar usuarios de sistema
+    users.forEach((u) => {
+      map.set(u.id, {
+        id: u.id,
+        name: u.name,
+        role: u.roleLabel || u.department || 'Colaborador ITK',
+        email: u.email
+      });
+    });
+
+    // Luego complementar con empleados de RRHH si no están ya en la lista
+    employees.forEach((emp) => {
+      if (!map.has(emp.id)) {
+        map.set(emp.id, {
+          id: emp.id,
+          name: emp.name,
+          role: emp.role || emp.department || 'Técnico de Campo',
+          email: emp.documentId ? `C.C. ${emp.documentId}` : undefined
+        });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [users, employees]);
 
   // Catálogo dinámico de labores técnicas
   const catalogLaborTypes = useModuleCatalog('registro-horas', 'laborTypes');
@@ -50,14 +87,21 @@ export const TimesheetModule: React.FC = () => {
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || internalProjectsMap[selectedProjectId] || projects[0];
 
+  // Identificar el colaborador seleccionado
+  const selectedCollaborator = collaboratorsList.find((c) => c.id === selectedUserId) || {
+    id: currentUser.id,
+    name: currentUser.name,
+    role: currentUser.roleLabel || 'Colaborador ITK',
+  };
+
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject) return;
 
     submitTimesheet({
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.roleLabel,
+      userId: selectedCollaborator.id,
+      userName: selectedCollaborator.name,
+      userRole: selectedCollaborator.role,
       projectId: selectedProject.id,
       projectCode: selectedProject.code,
       projectName: selectedProject.name,
@@ -110,10 +154,27 @@ export const TimesheetModule: React.FC = () => {
 
         <form onSubmit={handleQuickSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {/* Toque 0: Colaborador / Técnico Responsable (Interconexión RRHH) */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                1. Colaborador / Técnico ITK
+              </label>
+              <CreatableSelect
+                options={collaboratorsList.map((collab) => ({
+                  id: collab.id,
+                  name: `${collab.name} (${collab.role})`,
+                  code: collab.role,
+                }))}
+                value={selectedUserId}
+                onChange={(val) => setSelectedUserId(val)}
+                placeholder="Seleccionar técnico..."
+              />
+            </div>
+
             {/* Toque 1: Proyecto preseleccionado con opción de cambio rápido */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
-                1. Proyecto STC Asignado
+                2. Proyecto STC Asignado
               </label>
               <CreatableSelect
                 options={[
@@ -135,7 +196,7 @@ export const TimesheetModule: React.FC = () => {
             {/* Toque 2: Tipo de Labor / Actividad Técnica */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
-                2. Labor Técnica
+                3. Labor Técnica
               </label>
               <CreatableSelect
                 value={taskName}
@@ -151,7 +212,7 @@ export const TimesheetModule: React.FC = () => {
             {/* Toque 3: Selector de horas rápido con botones píldora */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
-                3. Horas Trabajadas
+                4. Horas Trabajadas
               </label>
               <div className="flex items-center gap-1.5">
                 {[4, 8, 9, 10].map((h) => (
@@ -170,27 +231,29 @@ export const TimesheetModule: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Toque 4: Botón de envío principal */}
-            <div className="flex items-end">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
+            <div className="md:col-span-3">
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Detalle opcional (ej. Desmonte de cabinas 03 a 06, torque de pernos de balancín...)"
+                className="w-full p-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:border-[#00668F]"
+              />
+            </div>
+
+            {/* Botón de envío principal */}
+            <div>
               <button
                 type="submit"
                 className="w-full py-2.5 px-4 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>4. Radicar Horas</span>
+                <span>5. Radicar Horas</span>
                 <CheckCircle2 size={15} />
               </button>
             </div>
-          </div>
-
-          <div>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detalle opcional (ej. Desmonte de cabinas 03 a 06, torque de pernos de balancín...)"
-              className="w-full p-2.5 rounded-xl border border-gray-200 text-xs focus:outline-hidden focus:border-[#00668F]"
-            />
           </div>
         </form>
       </div>
