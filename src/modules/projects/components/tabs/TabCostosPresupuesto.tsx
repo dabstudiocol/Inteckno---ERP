@@ -1186,6 +1186,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   ? grossMarginPct.toFixed(1) + '%'
                   : 'N/D'}
               </span>
+              <span className="text-[9px] text-slate-400 block mt-0.5">
+                {offerBudget.subtotal > 0 && offerBudget.totalBudgetedProfit > 0 ? '(Utilidad / Oferta Subtotal)' : '(Contrato - Costos) / Contrato'}
+              </span>
             </div>
           </div>
         </div>
@@ -1360,19 +1363,19 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     {/* Centro Tecnológico de la Dona */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
                       {hoveredDonutSegment ? (
-                        <>
-                          <span className="text-[10px] uppercase tracking-wider font-bold truncate max-w-[150px]" style={{ color: hoveredDonutSegment.color }}>
+                        <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-950/95 border border-sky-400/40 shadow-2xl backdrop-blur-md max-w-[170px]">
+                          <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredDonutSegment.color }}>
                             {hoveredDonutSegment.name}
                           </span>
-                          <span className="text-xl font-black font-mono text-white tracking-tight mt-0.5">
+                          <span className="text-lg font-black font-mono text-white tracking-tight mt-0.5">
                             {formatCOP(hoveredDonutSegment.value)}
                           </span>
                           <span className="text-[10px] font-mono text-cyan-300 font-bold mt-0.5">
                             {hoveredDonutSegment.pct ? `${hoveredDonutSegment.pct.toFixed(1)}% del contrato` : ''}
                           </span>
-                        </>
+                        </div>
                       ) : (
-                        <>
+                        <div className="flex flex-col items-center justify-center">
                           <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
                             Margen Real
                           </span>
@@ -1382,7 +1385,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           <span className="text-[9px] font-mono text-cyan-300">
                             {formatCOP(contractAmountCOP)}
                           </span>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
