@@ -392,6 +392,7 @@ export interface Project {
   serviceId?: string;
   dynamicData?: Record<string, any>;
   costMatrix?: CostMatrixItem[];
+  billingItems?: ProjectBillingItem[];
   staffAssignments?: StaffAssignment[];
 }
 

@@ -3173,9 +3173,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const issueMilestoneInvoice = useCallback(
     (milestoneId: string, invoiceNumber: string) => {
       const milestone = state.milestones.find((m) => m.id === milestoneId);
-      setState((prev) => ({
-        ...prev,
-        milestones: prev.milestones.map((m) =>
+      setState((prev) => {
+        const updatedMilestones = prev.milestones.map((m) =>
           m.id === milestoneId
             ? {
                 ...m,
@@ -3184,8 +3183,56 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 invoiceIssuedAt: new Date().toISOString(),
               }
             : m
-        ),
-      }));
+        );
+
+        // Si el hito pertenece a un proyecto, sincronizar su registro en billingItems
+        const updatedProjects = milestone?.projectId
+          ? prev.projects.map((p) => {
+              if (p.id === milestone.projectId || p.code === milestone.projectCode) {
+                const existingBilling = p.billingItems || [];
+                const cop = milestone.amountCOP || 0;
+                const iva = Math.round(cop * 0.19);
+                const grandTotal = cop + iva;
+
+                const updatedBilling: any[] = existingBilling.some((b) => b.id === milestoneId)
+                  ? existingBilling.map((b) =>
+                      b.id === milestoneId
+                        ? {
+                            ...b,
+                            invoiceNumber,
+                            invoiceDate: new Date().toISOString().split('T')[0],
+                            subtotal: b.subtotal || cop,
+                            ivaAmount: b.ivaAmount !== undefined ? b.ivaAmount : iva,
+                            grandTotal: b.grandTotal || grandTotal,
+                            observations: `Hito de facturación ${milestone.title || ''}`,
+                          }
+                        : b
+                    )
+                  : [
+                      ...existingBilling,
+                      {
+                        id: milestoneId,
+                        itemCode: `FAC-${milestone.milestoneIndex || 1}`,
+                        invoiceNumber,
+                        invoiceDate: new Date().toISOString().split('T')[0],
+                        subtotal: cop,
+                        ivaAmount: iva,
+                        grandTotal: grandTotal,
+                        observations: `Hito: ${milestone.title} (${milestone.percentage}%)`,
+                      },
+                    ];
+                return { ...p, billingItems: updatedBilling };
+              }
+              return p;
+            })
+          : prev.projects;
+
+        return {
+          ...prev,
+          milestones: updatedMilestones,
+          projects: updatedProjects,
+        };
+      });
 
       // Huella Digital: Emisión de Factura Electrónica
       recordAuditEvent({

@@ -106,6 +106,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     equipment,
     projects,
     users,
+    employees,
     remissions,
     purchaseOrders,
     inventoryAuditLogs,
@@ -159,6 +160,28 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       window.removeEventListener('inteckno:open-po-receipt', handleOpenReceipt);
     };
   }, []);
+
+  // Lista unificada de colaboradores (Usuarios de sistema + Personal registrado en Talento Humano)
+  const collaboratorsList = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; role: string }>();
+    users.forEach((u) => {
+      map.set(u.id, {
+        id: u.id,
+        name: u.name,
+        role: u.roleLabel || u.department || 'Colaborador ITK',
+      });
+    });
+    employees.forEach((emp) => {
+      if (!map.has(emp.id)) {
+        map.set(emp.id, {
+          id: emp.id,
+          name: emp.name,
+          role: emp.role || emp.department || 'Técnico de Campo',
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [users, employees]);
 
   // Filtros del Inventario Unificado
   const [searchQuery, setSearchQuery] = useState('');
@@ -668,7 +691,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
   const handleCreateDispatch = (e: React.FormEvent) => {
     e.preventDefault();
     const project = projects.find((p) => p.id === dispatchProjectId);
-    const tech = users.find((u) => u.id === dispatchTechId);
+    const tech = collaboratorsList.find((c) => c.id === dispatchTechId);
 
     if (!dispatchTechId || !tech) {
       notify('urgent', 'Responsable Obligatorio', 'Debes seleccionar el técnico que solicita y retira los artículos.');
@@ -733,7 +756,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     e.preventDefault();
     if (!activeReturnRemission) return;
 
-    const receiverUser = users.find((u) => u.id === returnReceiverUserId);
+    const receiverUser = collaboratorsList.find((u) => u.id === returnReceiverUserId);
     if (!returnReceiverUserId || !receiverUser) {
       notify('urgent', 'Responsable de Recepción Obligatorio', 'Debes indicar el almacenista o encargado responsable de recibir los artículos.');
       return;
@@ -762,7 +785,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     processReturnRemission(
       activeReturnRemission.id,
       returnedItemsPayload,
-      returnNotes || `Reingreso verificado por ${receiverUser.name} (${receiverUser.roleLabel}).`,
+      returnNotes || `Reingreso verificado por ${receiverUser.name} (${receiverUser.role}).`,
       new Date().toISOString().split('T')[0],
       {
         signatureUrl: returnSignatureData.signatureUrl,
@@ -2123,15 +2146,15 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
               <div>
                 <CreatableSelect
                   label="Responsable de lo que sale"
-                  value={users.find((u) => u.id === dispatchTechId)?.name || dispatchTechId}
+                  value={collaboratorsList.find((u) => u.id === dispatchTechId)?.name || dispatchTechId}
                   onChange={(val) => {
-                    const match = users.find((u) => u.name.toLowerCase() === val.toLowerCase() || u.id === val);
+                    const match = collaboratorsList.find((u) => u.name.toLowerCase() === val.toLowerCase() || u.id === val);
                     setDispatchTechId(match?.id || val);
                   }}
-                  options={users.map((u) => ({
+                  options={collaboratorsList.map((u) => ({
                     id: u.id,
-                    name: u.name,
-                    code: u.roleLabel,
+                    name: `${u.name} (${u.role})`,
+                    code: u.role,
                   }))}
                   placeholder="Seleccionar responsable..."
                   allowCustomText={true}
@@ -2503,24 +2526,23 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
               </label>
               <CreatableSelect
                 value={
-                  users.find((u) => u.id === returnReceiverUserId)
-                    ? `${users.find((u) => u.id === returnReceiverUserId)!.name} — ${users.find((u) => u.id === returnReceiverUserId)!.roleLabel}`
+                  collaboratorsList.find((u) => u.id === returnReceiverUserId)
+                    ? `${collaboratorsList.find((u) => u.id === returnReceiverUserId)!.name} — ${collaboratorsList.find((u) => u.id === returnReceiverUserId)!.role}`
                     : ''
                 }
                 onChange={(val) => {
-                  const match = users.find(
-                    (u) => `${u.name} — ${u.roleLabel}` === val || u.id === val || u.name === val
+                  const match = collaboratorsList.find(
+                    (u) => `${u.name} — ${u.role}` === val || u.id === val || u.name === val
                   );
                   if (match) setReturnReceiverUserId(match.id);
                 }}
-                options={users.map((u) => ({
+                options={collaboratorsList.map((u) => ({
                   id: u.id,
-                  name: `${u.name} — ${u.roleLabel}`,
-                  code: u.department,
+                  name: `${u.name} — ${u.role}`,
+                  code: u.role,
                 }))}
                 placeholder="Seleccionar encargado..."
                 allowCustomText={false}
-                isClearable={false}
                 inputClassName="w-full p-2.5 rounded-xl border border-gray-200 bg-white font-bold text-xs"
               />
             </div>

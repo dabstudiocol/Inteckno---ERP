@@ -497,7 +497,6 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                             'litro',
                           ]}
                           placeholder="Unidad..."
-                          isClearable={false}
                           allowCustomText={true}
                           inputClassName="w-full h-9 px-1 text-center font-bold rounded-lg border border-slate-300 bg-white text-[11px] focus:outline-hidden"
                         />
