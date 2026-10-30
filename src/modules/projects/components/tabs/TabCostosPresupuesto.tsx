@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { Project } from '../../../../types';
 import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
+import { useErp } from '../../../../core/storage/erpStore';
 import { formatCOP, formatUSD } from '../../../../core/services/trmService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
@@ -307,6 +308,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   currentTrm,
   onUpdateProject,
 }) => {
+  const { timesheets } = useErp();
+
   // Matriz de Costos cargada desde el proyecto o inicializada
   const [costItems, setCostItems] = useState<CostMatrixItem[]>(() => {
     return (project as any).costMatrix || [];
@@ -872,8 +875,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setIsAddItemModalOpen(false);
   };
 
-  // Cálculo de Horas Reportadas en Campo (Timesheet)
-  const timesheetList = (project as any)?.timesheetEntries || [];
+  // Cálculo de Horas Reportadas en Campo (Timesheet) conectado con el módulo central y el proyecto
+  const projectTimesheets = timesheets.filter((t) => t.projectId === project.id || t.projectCode === project.code);
+  const timesheetList = projectTimesheets.length > 0 ? projectTimesheets : ((project as any)?.timesheetEntries || []);
   const totalTimesheetHours = timesheetList.reduce((acc: number, entry: any) => acc + (Number(entry.hours) || 0), 0);
   const estimatedTimesheetCostCOP = totalTimesheetHours * 65000; // Tarifa base promedio HH Inteckno
 

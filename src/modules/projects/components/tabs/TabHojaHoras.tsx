@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Project, WBSTask, User } from '../../../../types';
 import { ProjectTimesheetEntry } from '../../../../types/ProjectSchema';
+import { useErp } from '../../../../core/storage/erpStore';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
@@ -35,6 +36,32 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
   onUpdateProject,
   onUpdateTask,
 }) => {
+  const { employees } = useErp();
+
+  // Lista combinada de colaboradores para asignación en el proyecto
+  const unifiedStaff = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; roleLabel: string; email?: string }>();
+    erpUsers.forEach((u) => {
+      map.set(u.id, {
+        id: u.id,
+        name: u.name,
+        roleLabel: u.roleLabel || u.department || 'Personal ITK',
+        email: u.email,
+      });
+    });
+    employees.forEach((emp) => {
+      if (!map.has(emp.id)) {
+        map.set(emp.id, {
+          id: emp.id,
+          name: emp.name,
+          roleLabel: emp.role || emp.department || 'Técnico de Campo',
+          email: emp.documentId ? `C.C. ${emp.documentId}` : undefined,
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [erpUsers, employees]);
+
   const [entries, setEntries] = useState<ProjectTimesheetEntry[]>(() => {
     return (project as any).timesheetEntries || [];
   });
@@ -532,7 +559,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                     Técnico / Inspector *
                   </label>
                   <CreatableSelect
-                    options={erpUsers.map((u) => ({
+                    options={unifiedStaff.map((u) => ({
                       id: u.id,
                       name: `${u.name} (${u.roleLabel})`,
                       code: u.id

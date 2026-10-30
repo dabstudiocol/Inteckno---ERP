@@ -20,6 +20,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Project, User, StaffAssignment } from '../../../../types';
+import { useErp } from '../../../../core/storage/erpStore';
+import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 
 interface TabCuadrillaProps {
@@ -28,10 +30,36 @@ interface TabCuadrillaProps {
 }
 
 export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdateProject }) => {
+  const { users, employees } = useErp();
+
   // Estado real vinculado al proyecto (Cero Mock Data)
   const assignments: StaffAssignment[] = useMemo(() => {
     return (project as any).staffAssignments || [];
   }, [project]);
+
+  // Lista unificada de colaboradores de RRHH y Usuarios del Sistema
+  const availableStaff = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; role: string; department?: string }>();
+    users.forEach((u) => {
+      map.set(u.id, {
+        id: u.id,
+        name: u.name,
+        role: u.roleLabel || u.department || 'Personal ITK',
+        department: u.department,
+      });
+    });
+    employees.forEach((emp) => {
+      if (!map.has(emp.id)) {
+        map.set(emp.id, {
+          id: emp.id,
+          name: emp.name,
+          role: emp.role || emp.department || 'Técnico de Campo',
+          department: emp.department,
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [users, employees]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterFront, setFilterFront] = useState<'all' | 'this_project'>('all');
@@ -381,14 +409,28 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
 
             <form onSubmit={handleCreateAssignment} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nombre del Colaborador *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ej. Nombre y apellido"
+                <label className="block font-bold text-slate-700 mb-1">Colaborador / Personal de Nómina *</label>
+                <CreatableSelect
                   value={empName}
-                  onChange={(e) => setEmpName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                  onChange={(val) => {
+                    const found = availableStaff.find(
+                      (s) => s.name.toLowerCase() === val.toLowerCase() || `${s.name} (${s.role})` === val || s.id === val
+                    );
+                    if (found) {
+                      setEmpName(found.name);
+                      setEmpRole(found.role);
+                    } else {
+                      setEmpName(val);
+                    }
+                  }}
+                  options={availableStaff.map((s) => ({
+                    id: s.id,
+                    name: `${s.name} (${s.role})`,
+                    code: s.department || s.role,
+                  }))}
+                  placeholder="Seleccionar colaborador de nómina o escribir..."
+                  allowCustomText={true}
+                  inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                 />
               </div>
 
