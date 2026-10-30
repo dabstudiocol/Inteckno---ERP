@@ -43,6 +43,7 @@ import {
   RotateCw,
   BarChart3,
   PieChart as PieChartIcon,
+  Filter,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -502,6 +503,18 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     pct: number;
     color: string;
   } | null>(null);
+
+  // Segmento activo en el hover de la dona de Tipo de Costo (Directos vs Indirectos)
+  const [hoveredCostTypeDonutSegment, setHoveredCostTypeDonutSegment] = useState<{
+    name: string;
+    value: number;
+    pct: number;
+    color: string;
+    count?: number;
+  } | null>(null);
+
+  // Filtro interactivo de ITEM para el Dashboard de Gráficos ('todos' o código del ITEM seleccionado)
+  const [dashboardItemFilter, setDashboardItemFilter] = useState<string>('todos');
 
   // Navegación: Vista general de carpetas o Carpeta de ITEM abierta
   const [selectedFolderCode, setSelectedFolderCode] = useState<string | null>(null);
@@ -1547,7 +1560,36 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
 
           {(() => {
-            // 1. Desglose detallado por Categorías Financieras reales
+            // Filtrar los costos si el usuario seleccionó un ITEM específico en el Dashboard
+            const visibleCostItems = dashboardItemFilter === 'todos'
+              ? costItems
+              : costItems.filter((c) => (c.itemCode || '').toUpperCase() === dashboardItemFilter.toUpperCase());
+
+            // 1. Dona de Tipo de Costo: Directos vs Indirectos (con su propio hover y centro tecnológico)
+            const totalDirectCost = visibleCostItems.filter((c) => c.costType !== 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
+            const totalIndirectCost = visibleCostItems.filter((c) => c.costType === 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
+            const sumCostsTotal = totalDirectCost + totalIndirectCost;
+            const pctDirect = sumCostsTotal > 0 ? (totalDirectCost / sumCostsTotal) * 100 : 0;
+            const pctIndirect = sumCostsTotal > 0 ? (totalIndirectCost / sumCostsTotal) * 100 : 0;
+
+            const costTypeDonutData = [
+              {
+                name: 'Costos Directos (MO, Obra, Insumos)',
+                value: totalDirectCost,
+                pct: pctDirect,
+                color: '#0284c7',
+                count: visibleCostItems.filter((c) => c.costType !== 'indirecto').length,
+              },
+              {
+                name: 'Costos Indirectos (Pólizas, Grúas, Peajes)',
+                value: totalIndirectCost,
+                pct: pctIndirect,
+                color: '#9333ea',
+                count: visibleCostItems.filter((c) => c.costType === 'indirecto').length,
+              },
+            ].filter((d) => d.value > 0);
+
+            // 2. Dona de Categorías Financieras Inteckno
             const catColors: Record<string, string> = {
               mano_obra_itk: '#0284c7', // Sky Blue
               mano_obra_externa: '#38bdf8', // Light Sky
@@ -1563,7 +1605,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             };
 
             const catMap = new Map<string, { name: string; value: number; count: number; color: string }>();
-            costItems.forEach((c) => {
+            visibleCostItems.forEach((c) => {
               const catKey = c.category || 'mano_obra_itk';
               const meta = getCategoryMeta(catKey);
               const existing = catMap.get(catKey) || {
@@ -1577,12 +1619,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               catMap.set(catKey, existing);
             });
 
-            const sumCostsTotal = costItems.reduce((acc, c) => acc + (c.actualTotal || 0), 0);
-            const totalDirectCost = costItems.filter((c) => c.costType !== 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
-            const totalIndirectCost = costItems.filter((c) => c.costType === 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
-            const totalIvaCosts = costItems.reduce((acc, c) => acc + (c.hasIva ? (c.ivaAmount || 0) : 0), 0);
-            const totalRetentionCosts = costItems.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
-
             const costCategoryDonutData = Array.from(catMap.values())
               .filter((d) => d.value > 0)
               .map((d) => ({
@@ -1590,7 +1626,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 pct: sumCostsTotal > 0 ? (d.value / sumCostsTotal) * 100 : 0,
               }));
 
-            // 2. Datos para Gráfico de Presupuesto que se va construyendo por Categorías de la Oferta
+            const totalIvaCosts = visibleCostItems.reduce((acc, c) => acc + (c.hasIva ? (c.ivaAmount || 0) : 0), 0);
+            const totalRetentionCosts = visibleCostItems.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
+
+            // 3. Dona de Presupuesto Construido (Oferta por Rubros)
             const offerCategoriesMap = new Map<string, number>();
             offerBudget.items.forEach((it) => {
               const catKey = it.rubroName || 'Otros Rubros';
@@ -1607,195 +1646,310 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               };
             }).filter((d) => d.value > 0);
 
-            // 3. Comparativa por Categoría Financiera (Mano de Obra, Diagnóstico END, Repuestos, Viáticos)
+            // 4. Comparativa por Categoría Financiera (Mano de Obra, Diagnóstico END, Repuestos, Viáticos)
             const categoriesBarData = [
-              { name: 'Mano de Obra', Plan: manoObra.planned, Real: manoObra.actual, categoryKey: 'mano_obra_itk' },
-              { name: 'END & MRT', Plan: ensayosEndMrt.planned, Real: ensayosEndMrt.actual, categoryKey: 'end_mrt' },
-              { name: 'Repuestos & Fab.', Plan: repuestos.planned, Real: repuestos.actual, categoryKey: 'repuestos_fabricacion' },
-              { name: 'Viáticos & Subc.', Plan: viaticosSub.planned, Real: viaticosSub.actual, categoryKey: 'viaticos_transporte' },
+              { name: 'Mano de Obra', Plan: manoObra.planned, Real: visibleCostItems.filter((c) => c.category === 'mano_obra_itk' || c.category === 'mano_obra_externa').reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'mano_obra_itk' },
+              { name: 'END & MRT', Plan: ensayosEndMrt.planned, Real: visibleCostItems.filter((c) => ['inspeccion_mrt', 'ensayos_end', 'analisis_vibraciones', 'termografia'].includes(c.category)).reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'end_mrt' },
+              { name: 'Repuestos & Fab.', Plan: repuestos.planned, Real: visibleCostItems.filter((c) => c.category === 'repuestos_fabricacion' || c.category === 'repuestos_materiales').reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'repuestos_fabricacion' },
+              { name: 'Viáticos & Subc.', Plan: viaticosSub.planned, Real: visibleCostItems.filter((c) => c.category === 'viaticos_transporte' || c.category === 'subcontratos_gruas').reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'viaticos_transporte' },
             ];
 
             return (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* DONA 1: DESGLOSE DE COSTOS INCURRIDOS POR CATEGORÍA FINANCIERA & IMPUESTOS */}
-                <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="space-y-4">
+                {/* BARRA DE FILTROS INTERACTIVOS DEL DASHBOARD (FILTRAR POR ITEM CONTRACTUAL O VER TODOS) */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-[#00668F]/10 text-[#00668F]">
+                      <Filter size={16} />
+                    </span>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <PieChartIcon size={16} className="text-[#00668F]" />
-                        Costos por Categoría Financiera
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Distribución interactiva de gastos reales, IVA y Retención
+                      <h4 className="text-xs font-bold text-slate-800">Filtro Interactivo por ITEM</h4>
+                      <p className="text-[10px] text-slate-400">
+                        {dashboardItemFilter === 'todos' ? 'Mostrando todos los ITEMS y costos consolidados del proyecto' : `Filtrando datos exclusivos de la carpeta ${dashboardItemFilter}`}
                       </p>
                     </div>
-                    <span className="text-xs font-mono font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded-xl">
-                      {formatCOP(sumCostsTotal)}
-                    </span>
                   </div>
 
-                  <div className="h-[250px] w-full relative flex items-center justify-center my-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={costCategoryDonutData.length > 0 ? costCategoryDonutData : [{ name: 'Sin costos', value: 1, color: '#e2e8f0', pct: 0 }]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={68}
-                          outerRadius={95}
-                          paddingAngle={5}
-                          dataKey="value"
-                          stroke="none"
-                          cornerRadius={6}
-                          onMouseEnter={(entry: any) => {
-                            if (entry && entry.name) {
-                              setHoveredCostDonutSegment(entry);
-                            }
-                          }}
-                          onMouseLeave={() => setHoveredCostDonutSegment(null)}
-                        >
-                          {(costCategoryDonutData.length > 0 ? costCategoryDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-
-                    {/* Centro Tecnológico de la Dona de Costos */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
-                      {hoveredCostDonutSegment ? (
-                        <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-900/95 border border-sky-400/30 shadow-2xl backdrop-blur-md max-w-[170px]">
-                          <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredCostDonutSegment.color }}>
-                            {hoveredCostDonutSegment.name}
-                          </span>
-                          <span className="text-base font-black font-mono text-white tracking-tight mt-0.5">
-                            {formatCOP(hoveredCostDonutSegment.value)}
-                          </span>
-                          <span className="text-[10px] font-mono text-cyan-300 font-bold mt-0.5">
-                            {hoveredCostDonutSegment.pct ? `${hoveredCostDonutSegment.pct.toFixed(1)}% del costo` : ''}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center">
-                          <span className="text-[10px] uppercase font-bold text-slate-400">Total Incurrido</span>
-                          <span className="text-lg font-black font-mono text-slate-900">{formatCOP(sumCostsTotal)}</span>
-                          <span className="text-[10px] text-sky-700 font-semibold">{costItems.length} rubros cargados</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Resumen de Especificaciones Financieras: Directos, Indirectos, IVA y Retención */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 text-xs">
-                    <div className="p-2.5 bg-sky-50/60 rounded-xl border border-sky-100">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase block">Costos Directos</span>
-                      <span className="text-xs font-black font-mono text-[#00668F] block mt-0.5">{formatCOP(totalDirectCost)}</span>
-                      <span className="text-[9px] text-slate-400">MO, Obra, Insumos</span>
-                    </div>
-
-                    <div className="p-2.5 bg-purple-50/60 rounded-xl border border-purple-100">
-                      <span className="text-[10px] text-purple-700 font-bold uppercase block">Indirectos</span>
-                      <span className="text-xs font-black font-mono text-purple-900 block mt-0.5">{formatCOP(totalIndirectCost)}</span>
-                      <span className="text-[9px] text-purple-400">Pólizas, Grúas</span>
-                    </div>
-
-                    <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100">
-                      <span className="text-[10px] text-amber-700 font-bold uppercase block">IVA Pagado</span>
-                      <span className="text-xs font-black font-mono text-amber-900 block mt-0.5">{formatCOP(totalIvaCosts)}</span>
-                      <span className="text-[9px] text-amber-500">Impuesto soportado</span>
-                    </div>
-
-                    <div className="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100">
-                      <span className="text-[10px] text-rose-700 font-bold uppercase block">Retenciones</span>
-                      <span className="text-xs font-black font-mono text-rose-900 block mt-0.5">{formatCOP(totalRetentionCosts)}</span>
-                      <span className="text-[9px] text-rose-400">ReteFuente / ICA</span>
-                    </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setDashboardItemFilter('todos')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        dashboardItemFilter === 'todos'
+                          ? 'bg-[#00668F] text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Todos los ITEMS ({costItems.length})
+                    </button>
+                    {allAvailableItems.map((item) => (
+                      <button
+                        key={item.code}
+                        type="button"
+                        onClick={() => setDashboardItemFilter(item.code)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer font-mono ${
+                          dashboardItemFilter.toUpperCase() === item.code.toUpperCase()
+                            ? 'bg-[#00668F] text-white shadow-xs ring-2 ring-[#00668F]/20'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {item.code}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* DONA 2: PRESUPUESTO QUE SE VA CONSTRUYENDO (CONSOLIDADO DE OFERTA) */}
-                <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <FileSpreadsheet size={16} className="text-emerald-700" />
-                        Presupuesto Construido (Oferta por Rubros)
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Composición presupuestal de costos y utilidad
-                      </p>
-                    </div>
-                    <span className="text-xs font-mono font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl">
-                      {formatCOP(offerBudget.subtotal)}
-                    </span>
-                  </div>
-
-                  <div className="h-[250px] w-full relative flex items-center justify-center my-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ name: 'Sin presupuesto', value: 1, color: '#e2e8f0', pct: 0 }]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={68}
-                          outerRadius={95}
-                          paddingAngle={6}
-                          dataKey="value"
-                          stroke="none"
-                          cornerRadius={6}
-                          onMouseEnter={(entry: any) => {
-                            if (entry && entry.name) {
-                              setHoveredOfferDonutSegment(entry);
-                            }
-                          }}
-                          onMouseLeave={() => setHoveredOfferDonutSegment(null)}
-                        >
-                          {(offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-
-                    {/* Centro Tecnológico de la Dona de Oferta */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
-                      {hoveredOfferDonutSegment ? (
-                        <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-900/95 border border-emerald-400/30 shadow-2xl backdrop-blur-md max-w-[170px]">
-                          <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredOfferDonutSegment.color }}>
-                            {hoveredOfferDonutSegment.name}
-                          </span>
-                          <span className="text-base font-black font-mono text-white tracking-tight mt-0.5">
-                            {formatCOP(hoveredOfferDonutSegment.value)}
-                          </span>
-                          <span className="text-[10px] font-mono text-emerald-300 font-bold mt-0.5">
-                            {hoveredOfferDonutSegment.pct ? `${hoveredOfferDonutSegment.pct.toFixed(1)}% de la oferta` : ''}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center">
-                          <span className="text-[10px] uppercase font-bold text-slate-400">Total Oferta</span>
-                          <span className="text-lg font-black font-mono text-emerald-700">{formatCOP(offerBudget.grandTotalOffer)}</span>
-                          <span className="text-[10px] text-slate-500 font-semibold">{offerBudget.items.length} rubros oferta</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">Costo Planeado + Utilidad</span>
-                      <span className="font-bold text-slate-800 font-mono text-[11px]">
-                        Costos: {formatCOP(offerBudget.totalBudgetedCost)} | Utilidad: {formatCOP(offerBudget.totalBudgetedProfit)}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* DONA 1: COSTOS DIRECTOS VS INDIRECTOS */}
+                  <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                          <PieChartIcon size={16} className="text-[#00668F]" />
+                          Costos Directos vs Indirectos
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          Operación vs Gastos Administrativos / Grúas
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded-xl">
+                        {formatCOP(sumCostsTotal)}
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-emerald-800 bg-white px-2 py-1 rounded-xl shadow-2xs border border-emerald-200">
-                      {offerBudget.totalBudgetedCost > 0 ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(0) : 0}% ganancia
-                    </span>
+
+                    <div className="h-[240px] w-full relative flex items-center justify-center my-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={costTypeDonutData.length > 0 ? costTypeDonutData : [{ name: 'Sin costos', value: 1, color: '#e2e8f0', pct: 0 }]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={68}
+                            outerRadius={95}
+                            paddingAngle={6}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                            animationDuration={400}
+                            animationEasing="ease-out"
+                            onMouseEnter={(entry: any) => {
+                              if (entry && entry.name) {
+                                setHoveredCostTypeDonutSegment(entry);
+                              }
+                            }}
+                            onMouseLeave={() => setHoveredCostTypeDonutSegment(null)}
+                          >
+                            {(costTypeDonutData.length > 0 ? costTypeDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+
+                      {/* Centro Tecnológico de Directos vs Indirectos */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                        {hoveredCostTypeDonutSegment ? (
+                          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-900/95 border border-sky-400/30 shadow-2xl backdrop-blur-md max-w-[170px]">
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredCostTypeDonutSegment.color }}>
+                              {hoveredCostTypeDonutSegment.name}
+                            </span>
+                            <span className="text-base font-black font-mono text-white tracking-tight mt-0.5">
+                              {formatCOP(hoveredCostTypeDonutSegment.value)}
+                            </span>
+                            <span className="text-[10px] font-mono text-cyan-300 font-bold mt-0.5">
+                              {hoveredCostTypeDonutSegment.pct ? `${hoveredCostTypeDonutSegment.pct.toFixed(1)}%` : ''}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400">Total</span>
+                            <span className="text-base font-black font-mono text-slate-900">{formatCOP(sumCostsTotal)}</span>
+                            <span className="text-[10px] text-sky-700 font-semibold">{visibleCostItems.length} rubros</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+                      <div className="p-2.5 bg-sky-50/60 rounded-xl border border-sky-100">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase block">Directos ({pctDirect.toFixed(1)}%)</span>
+                        <span className="text-xs font-black font-mono text-[#00668F] block mt-0.5">{formatCOP(totalDirectCost)}</span>
+                      </div>
+                      <div className="p-2.5 bg-purple-50/60 rounded-xl border border-purple-100">
+                        <span className="text-[10px] text-purple-700 font-bold uppercase block">Indirectos ({pctIndirect.toFixed(1)}%)</span>
+                        <span className="text-xs font-black font-mono text-purple-900 block mt-0.5">{formatCOP(totalIndirectCost)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DONA 2: COSTOS POR CATEGORÍA FINANCIERA & IMPUESTOS */}
+                  <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                          <Layers size={16} className="text-emerald-700" />
+                          Categorías Financieras & Tasas
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          Mano de Obra, Repuestos, Viáticos e IVA
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl">
+                        {costCategoryDonutData.length} líneas
+                      </span>
+                    </div>
+
+                    <div className="h-[240px] w-full relative flex items-center justify-center my-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={costCategoryDonutData.length > 0 ? costCategoryDonutData : [{ name: 'Sin costos', value: 1, color: '#e2e8f0', pct: 0 }]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={68}
+                            outerRadius={95}
+                            paddingAngle={5}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                            animationDuration={400}
+                            animationEasing="ease-out"
+                            onMouseEnter={(entry: any) => {
+                              if (entry && entry.name) {
+                                setHoveredCostDonutSegment(entry);
+                              }
+                            }}
+                            onMouseLeave={() => setHoveredCostDonutSegment(null)}
+                          >
+                            {(costCategoryDonutData.length > 0 ? costCategoryDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+
+                      {/* Centro Tecnológico de Categorías */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                        {hoveredCostDonutSegment ? (
+                          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-900/95 border border-sky-400/30 shadow-2xl backdrop-blur-md max-w-[170px]">
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredCostDonutSegment.color }}>
+                              {hoveredCostDonutSegment.name}
+                            </span>
+                            <span className="text-base font-black font-mono text-white tracking-tight mt-0.5">
+                              {formatCOP(hoveredCostDonutSegment.value)}
+                            </span>
+                            <span className="text-[10px] font-mono text-cyan-300 font-bold mt-0.5">
+                              {hoveredCostDonutSegment.pct ? `${hoveredCostDonutSegment.pct.toFixed(1)}% del costo` : ''}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400">Gasto Real</span>
+                            <span className="text-base font-black font-mono text-slate-900">{formatCOP(sumCostsTotal)}</span>
+                            <span className="text-[10px] text-emerald-700 font-semibold">{visibleCostItems.length} rubros</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+                      <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100">
+                        <span className="text-[10px] text-amber-700 font-bold uppercase block">IVA Soportado</span>
+                        <span className="text-xs font-black font-mono text-amber-900 block mt-0.5">{formatCOP(totalIvaCosts)}</span>
+                      </div>
+                      <div className="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100">
+                        <span className="text-[10px] text-rose-700 font-bold uppercase block">Retenciones</span>
+                        <span className="text-xs font-black font-mono text-rose-900 block mt-0.5">{formatCOP(totalRetentionCosts)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DONA 3: PRESUPUESTO CONSTRUIDO (OFERTA POR RUBROS) */}
+                  <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                          <FileSpreadsheet size={16} className="text-sky-700" />
+                          Presupuesto Construido (Oferta)
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          Composición presupuestal de costos y utilidad
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono font-black text-sky-800 bg-sky-50 px-2.5 py-1 rounded-xl">
+                        {formatCOP(offerBudget.subtotal)}
+                      </span>
+                    </div>
+
+                    <div className="h-[240px] w-full relative flex items-center justify-center my-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ name: 'Sin presupuesto', value: 1, color: '#e2e8f0', pct: 0 }]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={68}
+                            outerRadius={95}
+                            paddingAngle={6}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                            animationDuration={400}
+                            animationEasing="ease-out"
+                            onMouseEnter={(entry: any) => {
+                              if (entry && entry.name) {
+                                setHoveredOfferDonutSegment(entry);
+                              }
+                            }}
+                            onMouseLeave={() => setHoveredOfferDonutSegment(null)}
+                          >
+                            {(offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+
+                      {/* Centro Tecnológico de la Dona de Oferta */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                        {hoveredOfferDonutSegment ? (
+                          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-900/95 border border-emerald-400/30 shadow-2xl backdrop-blur-md max-w-[170px]">
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredOfferDonutSegment.color }}>
+                              {hoveredOfferDonutSegment.name}
+                            </span>
+                            <span className="text-base font-black font-mono text-white tracking-tight mt-0.5">
+                              {formatCOP(hoveredOfferDonutSegment.value)}
+                            </span>
+                            <span className="text-[10px] font-mono text-emerald-300 font-bold mt-0.5">
+                              {hoveredOfferDonutSegment.pct ? `${hoveredOfferDonutSegment.pct.toFixed(1)}%` : ''}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400">Total Oferta</span>
+                            <span className="text-base font-black font-mono text-emerald-700">{formatCOP(offerBudget.grandTotalOffer)}</span>
+                            <span className="text-[10px] text-slate-500 font-semibold">{offerBudget.items.length} rubros oferta</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[9px] text-slate-500 block">Costos vs Utilidad Oferta</span>
+                        <span className="font-bold text-slate-800 font-mono text-[10px]">
+                          Costos: {formatCOP(offerBudget.totalBudgetedCost)} | Ganancia: {formatCOP(offerBudget.totalBudgetedProfit)}
+                        </span>
+                      </div>
+                      <span className="font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg shadow-2xs border border-emerald-200 text-[10px]">
+                        {offerBudget.totalBudgetedCost > 0 ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(0) : 0}% ganancia
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* GRÁFICO 3: BARRAS COMPARATIVAS SEGÚN CATEGORÍAS FINANCIERAS (MANO DE OBRA, REPUESTOS, VIÁTICOS) */}
-                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+                {/* GRÁFICO 4: BARRAS COMPARATIVAS SEGÚN CATEGORÍAS FINANCIERAS (MANO DE OBRA, REPUESTOS, VIÁTICOS) */}
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
                     <div>
                       <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
@@ -1803,7 +1957,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         Comparativo por Categorías Financieras Inteckno
                       </h4>
                       <p className="text-[11px] text-slate-500">
-                        Presupuesto Plan vs Costo Real Incurrido por línea de gasto
+                        Presupuesto Plan vs Costo Real Incurrido por línea de gasto {dashboardItemFilter !== 'todos' ? `(ITEM ${dashboardItemFilter})` : '(Global)'}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 text-xs font-bold">
@@ -1833,8 +1987,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             fontWeight: 600,
                           }}
                         />
-                        <Bar dataKey="Plan" name="Plan" fill="#cbd5e1" radius={[6, 6, 0, 0]} maxBarSize={38} />
-                        <Bar dataKey="Real" name="Real" fill="#00668F" radius={[6, 6, 0, 0]} maxBarSize={38} />
+                        <Bar dataKey="Plan" name="Plan" fill="#cbd5e1" radius={[6, 6, 0, 0]} maxBarSize={38} animationDuration={400} animationEasing="ease-out" />
+                        <Bar dataKey="Real" name="Real" fill="#00668F" radius={[6, 6, 0, 0]} maxBarSize={38} animationDuration={400} animationEasing="ease-out" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
