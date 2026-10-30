@@ -41,7 +41,22 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCw,
+  BarChart3,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  CartesianGrid,
+} from 'recharts';
 import { Project } from '../../../../types';
 import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
 import { useErp } from '../../../../core/storage/erpStore';
@@ -474,6 +489,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const [billingToDelete, setBillingToDelete] = useState<ProjectBillingItem | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<ProjectItemFolder | null>(null);
   const [selectedCostDetail, setSelectedCostDetail] = useState<CostMatrixItem | null>(null);
+
+  // Control interactivo de vista de Gráficos Financieros
+  const [showFinancialCharts, setShowFinancialCharts] = useState<boolean>(true);
 
   // Formulario para crear Carpeta de ITEM
   const [folderForm, setFolderForm] = useState<{
@@ -1189,6 +1207,228 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           <div className="text-[10px] text-slate-400">Plan: {formatCOP(viaticosSub.planned)} ({viaticosSub.count} rubros)</div>
         </div>
       </div>
+
+      {/* DASHBOARD GRÁFICO INTERACTIVO ESTILO STIMULSOFT & BI MODERNO */}
+      {(() => {
+        // Datos para gráfico de barras comparativo (Presupuesto Plan vs Costo Incurrido)
+        const comparisonBarData = [
+          {
+            name: 'Mano de Obra',
+            Plan: manoObra.planned,
+            Real: manoObra.actual,
+            categoryKey: 'mano_obra_itk',
+          },
+          {
+            name: 'END & MRT',
+            Plan: ensayosEndMrt.planned,
+            Real: ensayosEndMrt.actual,
+            categoryKey: 'end_mrt',
+          },
+          {
+            name: 'Repuestos',
+            Plan: repuestos.planned,
+            Real: repuestos.actual,
+            categoryKey: 'repuestos_fabricacion',
+          },
+          {
+            name: 'Viáticos & Subc.',
+            Plan: viaticosSub.planned,
+            Real: viaticosSub.actual,
+            categoryKey: 'viaticos_transporte',
+          },
+        ];
+
+        // Datos para gráfico de torta/distribución del gasto real
+        const pieData = [
+          { name: 'Mano de Obra', value: manoObra.actual, color: '#0284c7' },
+          { name: 'END, MRT & Diagnóstico', value: ensayosEndMrt.actual, color: '#9333ea' },
+          { name: 'Repuestos & Fabricación', value: repuestos.actual, color: '#059669' },
+          { name: 'Viáticos & Subcontratos', value: viaticosSub.actual, color: '#d97706' },
+        ].filter((d) => d.value > 0);
+
+        const totalCostGraph = manoObra.actual + ensayosEndMrt.actual + repuestos.actual + viaticosSub.actual;
+
+        return (
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-sky-50 text-[#00668F]">
+                  <BarChart3 size={18} />
+                </span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                    Panel Analítico Financiero • Control Interactivo en Vivo
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Comparativa de ejecución presupuestal y distribución porcentual del proyecto
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowFinancialCharts(!showFinancialCharts)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  {showFinancialCharts ? 'Ocultar Gráficos' : 'Mostrar Gráficos'}
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${showFinancialCharts ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {showFinancialCharts && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
+                {/* GRÁFICO 1: BARRAS COMPARATIVAS (PRESUPUESTO VS REAL) */}
+                <div className="lg:col-span-7 bg-slate-50/60 p-4 rounded-2xl border border-slate-200/70 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <BarChart3 size={14} className="text-[#00668F]" />
+                        Presupuesto Plan vs. Costo Real Incurrido
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        Haz clic en una barra para filtrar las tablas por categoría
+                      </span>
+                    </div>
+                    {activeCategoryFilter !== 'todos' && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveCategoryFilter('todos')}
+                        className="text-[10px] font-bold text-[#00668F] hover:underline bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200"
+                      >
+                        Limpiar Filtro ({activeCategoryFilter})
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="h-[240px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={comparisonBarData}
+                        margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+                        onClick={(data: any) => {
+                          if (data && data.activePayload && data.activePayload.length > 0) {
+                            const cat = data.activePayload[0].payload.categoryKey;
+                            setActiveCategoryFilter(activeCategoryFilter === cat ? 'todos' : cat);
+                          }
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
+                          tickLine={false}
+                          axisLine={{ stroke: '#cbd5e1' }}
+                        />
+                        <YAxis
+                          tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(val) => `$${(val / 1000000).toFixed(1)}M`}
+                        />
+                        <Tooltip
+                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name === 'Plan' ? 'Presupuesto Plan' : 'Costo Real']}
+                          labelStyle={{ fontWeight: 700, color: '#0f172a' }}
+                          contentStyle={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                            fontSize: '11px',
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          align="right"
+                          iconType="circle"
+                          wrapperStyle={{ paddingBottom: '10px', fontSize: '11px', fontWeight: 600 }}
+                        />
+                        <Bar
+                          dataKey="Plan"
+                          name="Presupuesto Plan"
+                          fill="#94a3b8"
+                          radius={[6, 6, 0, 0]}
+                          maxBarSize={36}
+                          cursor="pointer"
+                        />
+                        <Bar
+                          dataKey="Real"
+                          name="Costo Real Incurrido"
+                          fill="#00668F"
+                          radius={[6, 6, 0, 0]}
+                          maxBarSize={36}
+                          cursor="pointer"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* GRÁFICO 2: DONA / COMPOSICIÓN DEL GASTO REAL */}
+                <div className="lg:col-span-5 bg-slate-50/60 p-4 rounded-2xl border border-slate-200/70 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <PieChartIcon size={14} className="text-emerald-700" />
+                      Distribución del Gasto Real
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-slate-700">
+                      Total: {formatCOP(totalCostGraph)}
+                    </span>
+                  </div>
+
+                  {pieData.length === 0 ? (
+                    <div className="h-[240px] flex flex-col items-center justify-center text-center p-4 text-slate-400">
+                      <PieChartIcon size={32} className="opacity-40 mb-2" />
+                      <span className="text-xs font-semibold">Sin gastos incurridos aún</span>
+                      <span className="text-[10px] mt-0.5">Agrega costos para ver la distribución</span>
+                    </div>
+                  ) : (
+                    <div className="h-[240px] w-full flex items-center justify-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={80}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: any, name: any) => [
+                              `${formatCOP(Number(value) || 0)} (${totalCostGraph > 0 ? ((Number(value) / totalCostGraph) * 100).toFixed(1) : 0}%)`,
+                              name,
+                            ]}
+                            contentStyle={{
+                              backgroundColor: '#ffffff',
+                              borderRadius: '12px',
+                              border: '1px solid #e2e8f0',
+                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                              fontSize: '11px',
+                            }}
+                          />
+                          <Legend
+                            verticalAlign="bottom"
+                            align="center"
+                            iconType="circle"
+                            wrapperStyle={{ paddingTop: '10px', fontSize: '10px', fontWeight: 600 }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* SELECTOR DE VISTA PRINCIPAL: PRESUPUESTO INICIAL (OFERTA) VS EJECUCIÓN (ITEMS Y COSTOS) */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-xl">
