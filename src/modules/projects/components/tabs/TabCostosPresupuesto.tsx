@@ -1537,9 +1537,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 const totalInd = itemIndirects.reduce((sum, c) => sum + (c.actualTotal || 0), 0);
                 const totalCost = totalDir + totalInd;
                 const totalFact = itemBills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
-
-                const totalCostPlannedInItem = itemDirects.reduce((s, c) => s + c.plannedTotal, 0) + itemIndirects.reduce((s, c) => s + c.plannedTotal, 0);
-                
+                const marginItem = totalFact > 0 ? ((totalFact - totalCost) / totalFact) * 100 : (totalCost > 0 ? -100 : 0);
 
                 return (
                   <div
@@ -1582,26 +1580,49 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                         {itemDef.name}
                       </h4>
 
-                      {/* Resumen de costos */}
-                      <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px]">
-                        <div>
-                          <span className="text-[10px] text-slate-400 block">Costos Totales</span>
-                          <span className="font-bold text-slate-900 font-mono">{formatCOP(totalCost)}</span>
+                      {/* Consolidados de Costos y Facturación */}
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2 text-[11px]">
+                        <div className="grid grid-cols-2 gap-2 bg-slate-50/70 p-2 rounded-xl border border-slate-100">
+                          <div>
+                            <span className="text-[10px] text-slate-500 block font-medium">Costos Directos</span>
+                            <span className="font-bold text-slate-900 font-mono">{formatCOP(totalDir)}</span>
+                            <span className="text-[9px] text-slate-400 block">{itemDirects.length} rubros</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-purple-700 block font-medium">Costos Indirectos</span>
+                            <span className="font-bold text-purple-900 font-mono">{formatCOP(totalInd)}</span>
+                            <span className="text-[9px] text-purple-400 block">{itemIndirects.length} rubros</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 block">Facturación</span>
-                          <span className="font-bold text-emerald-700 font-mono">{formatCOP(totalFact)}</span>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-dashed border-slate-200">
+                          <div>
+                            <span className="text-[10px] text-slate-500 block font-medium">Costos Totales</span>
+                            <span className="font-black text-slate-900 font-mono text-xs">{formatCOP(totalCost)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-emerald-700 block font-medium">Facturación Total</span>
+                            <span className="font-black text-emerald-800 font-mono text-xs">{formatCOP(totalFact)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-3 pt-2 border-t border-slate-100/80 flex items-center justify-between text-[10px]">
-                      <span className="text-slate-400">
-                        {itemDirects.length + itemIndirects.length} rubros • {itemBills.length} facturas
+                      <span className="text-slate-500 font-medium">
+                        {itemDirects.length + itemIndirects.length} gastos • {itemBills.length} facturas
                       </span>
-                      <span className="font-bold text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded">
-                        Carpeta Operativa
-                      </span>
+                      {totalFact > 0 ? (
+                        <span className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] ${
+                          marginItem >= 20 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          Margen: {marginItem.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="font-mono font-bold px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 border border-slate-200">
+                          Por Facturar
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -1704,6 +1725,54 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Tarjetas KPI de Consolidados del ITEM Seleccionado */}
+          {(() => {
+            const folderDirects = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType !== 'indirecto');
+            const folderIndirects = costItems.filter((c) => (c.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase() && c.costType === 'indirecto');
+            const folderBills = billingItems.filter((b) => (b.itemCode || '').toUpperCase() === selectedFolderCode.toUpperCase());
+
+            const sumDirects = folderDirects.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
+            const sumIndirects = folderIndirects.reduce((acc, c) => acc + (c.actualTotal || c.plannedTotal || 0), 0);
+            const sumTotalCost = sumDirects + sumIndirects;
+            const sumBilling = folderBills.reduce((acc, b) => acc + (b.grandTotal || 0), 0);
+            const folderMargin = sumBilling > 0 ? ((sumBilling - sumTotalCost) / sumBilling) * 100 : (sumTotalCost > 0 ? -100 : 0);
+
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+                <div className="p-3 bg-sky-50/60 rounded-xl border border-sky-100">
+                  <span className="text-[10px] font-bold text-[#00668F] uppercase tracking-wider block">Consolidado Costos Directos</span>
+                  <span className="text-sm sm:text-base font-black text-slate-900 font-mono block mt-1">{formatCOP(sumDirects)}</span>
+                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">{folderDirects.length} rubros cargados</span>
+                </div>
+
+                <div className="p-3 bg-purple-50/60 rounded-xl border border-purple-100">
+                  <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">Consolidado Costos Indirectos</span>
+                  <span className="text-sm sm:text-base font-black text-purple-900 font-mono block mt-1">{formatCOP(sumIndirects)}</span>
+                  <span className="text-[10px] text-purple-500 font-medium block mt-0.5">{folderIndirects.length} rubros cargados</span>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">Gran Total Costos Incurridos</span>
+                  <span className="text-sm sm:text-base font-black text-[#00668F] font-mono block mt-1">{formatCOP(sumTotalCost)}</span>
+                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">{folderDirects.length + folderIndirects.length} registros totales</span>
+                </div>
+
+                <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Consolidado Facturación</span>
+                    {sumBilling > 0 && (
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">
+                        {folderMargin.toFixed(0)}% util.
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm sm:text-base font-black text-emerald-700 font-mono block mt-1">{formatCOP(sumBilling)}</span>
+                  <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">{folderBills.length} facturas vinculadas</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* TABLA 1: COSTOS DIRECTOS (Tal cual la foto de Excel) */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
