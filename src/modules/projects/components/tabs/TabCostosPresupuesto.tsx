@@ -1589,7 +1589,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               },
             ].filter((d) => d.value > 0);
 
-            // 2. Dona de Categorías Financieras Inteckno
+            // 2. Dona de Categorías Financieras Inteckno (incluyendo IVA y Retención si existen)
             const catColors: Record<string, string> = {
               mano_obra_itk: '#0284c7', // Sky Blue
               mano_obra_externa: '#38bdf8', // Light Sky
@@ -1602,6 +1602,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               analisis_vibraciones: '#14b8a6', // Teal
               termografia: '#ec4899', // Pink
               imprevistos_contingencia: '#eab308', // Yellow
+              iva_soportado: '#e11d48', // Rose / Red-Orange for IVA
+              retenciones_fiscales: '#84cc16', // Lime for Retenciones
             };
 
             const catMap = new Map<string, { name: string; value: number; count: number; color: string }>();
@@ -1619,15 +1621,37 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               catMap.set(catKey, existing);
             });
 
+            const totalIvaCosts = visibleCostItems.reduce((acc, c) => acc + (c.hasIva ? (c.ivaAmount || 0) : 0), 0);
+            const totalRetentionCosts = visibleCostItems.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
+
+            // Incluir explícitamente el IVA Soportado en la gráfica de dona
+            if (totalIvaCosts > 0) {
+              catMap.set('iva_soportado', {
+                name: 'IVA Soportado (19%)',
+                value: totalIvaCosts,
+                count: visibleCostItems.filter((c) => c.hasIva).length,
+                color: catColors.iva_soportado,
+              });
+            }
+
+            // Si hay retenciones registradas, se incluyen también en la distribución
+            if (totalRetentionCosts > 0) {
+              catMap.set('retenciones_fiscales', {
+                name: 'Retenciones Fiscales',
+                value: totalRetentionCosts,
+                count: visibleCostItems.filter((c) => (c.retentionAmount || 0) > 0).length,
+                color: catColors.retenciones_fiscales,
+              });
+            }
+
+            const totalFinancialSum = sumCostsTotal + totalIvaCosts + totalRetentionCosts;
+
             const costCategoryDonutData = Array.from(catMap.values())
               .filter((d) => d.value > 0)
               .map((d) => ({
                 ...d,
-                pct: sumCostsTotal > 0 ? (d.value / sumCostsTotal) * 100 : 0,
+                pct: totalFinancialSum > 0 ? (d.value / totalFinancialSum) * 100 : 0,
               }));
-
-            const totalIvaCosts = visibleCostItems.reduce((acc, c) => acc + (c.hasIva ? (c.ivaAmount || 0) : 0), 0);
-            const totalRetentionCosts = visibleCostItems.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
 
             // 3. Dona de Presupuesto Construido (Oferta por Rubros)
             const offerCategoriesMap = new Map<string, number>();
@@ -1646,13 +1670,53 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               };
             }).filter((d) => d.value > 0);
 
-            // 4. Comparativa por Categoría Financiera (Mano de Obra, Diagnóstico END, Repuestos, Viáticos)
-            const categoriesBarData = [
-              { name: 'Mano de Obra', Plan: manoObra.planned, Real: visibleCostItems.filter((c) => c.category === 'mano_obra_itk' || c.category === 'mano_obra_externa').reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'mano_obra_itk' },
-              { name: 'END & MRT', Plan: ensayosEndMrt.planned, Real: visibleCostItems.filter((c) => ['inspeccion_mrt', 'ensayos_end', 'analisis_vibraciones', 'termografia'].includes(c.category)).reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'end_mrt' },
-              { name: 'Repuestos & Fab.', Plan: repuestos.planned, Real: visibleCostItems.filter((c) => c.category === 'repuestos_fabricacion' || c.category === 'repuestos_materiales').reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'repuestos_fabricacion' },
-              { name: 'Viáticos & Subc.', Plan: viaticosSub.planned, Real: visibleCostItems.filter((c) => c.category === 'viaticos_transporte' || c.category === 'subcontratos_gruas').reduce((s, c) => s + (c.actualTotal || 0), 0), categoryKey: 'viaticos_transporte' },
-            ];
+            // =========================================================================
+            // CÁLCULO DE INDICADORES EVM (EARNED VALUE MANAGEMENT / CONTROL DE PROYECTO)
+            // Según fórmulas de Gestión de Valor Ganado:
+            // EV = Avance Físico × PV (o project.earnedValueEV)
+            // PV = Valor Planificado (BAC / budgetPV / Presupuesto Plan)
+            // AC = Costo Real Incurrido (actualCostAC / sumCostsTotal)
+            // CV = EV - AC (Variación de Costo)
+            // CPI = EV / AC (Índice de Desempeño de Costo)
+            // SV = EV - PV (Variación de Cronograma)
+            // SPI = EV / PV (Índice de Desempeño de Cronograma)
+            // CSI = CPI × SPI (Cost-Schedule Index)
+            // EAC = BAC / CPI (Estimación al Finalizar)
+            // ETC = EAC - AC (Estimación para Concluir)
+            // VAC = BAC - EAC (Variación al Finalizar)
+            // BAC = Suma de costos planeados (activeCostBudgetPlan / project.budgetPV)
+            // =========================================================================
+            const bacVal = (activeCostBudgetPlan > 0 ? activeCostBudgetPlan : project.budgetPV) || 0;
+            const acVal = visibleCostItems.length > 0 ? sumCostsTotal : (project.actualCostAC || 0);
+
+            // Avance físico real del proyecto (calculado de WBS o ProjectSchema progressPercent / spi / dynamicData)
+            const physicalProgressPct = (project as any).progressPercent || (project.budgetPV > 0 && project.earnedValueEV > 0 ? Math.round((project.earnedValueEV / project.budgetPV) * 100) : 0);
+            const progressRatio = physicalProgressPct / 100;
+
+            // EV (Earned Value / Valor Ganado) = Avance * PV
+            const evVal = project.earnedValueEV > 0 
+              ? project.earnedValueEV 
+              : bacVal > 0 
+              ? bacVal * progressRatio 
+              : 0;
+
+            // PV (Planned Value / Valor Planificado) según fecha esperada o base
+            const pvVal = bacVal;
+
+            // Variaciones e Índices
+            const cvVal = evVal - acVal;
+            const cpiVal = acVal > 0 ? Number((evVal / acVal).toFixed(2)) : 0;
+            const svVal = evVal - pvVal;
+            const spiVal = pvVal > 0 ? Number((evVal / pvVal).toFixed(2)) : 0;
+            const csiVal = Number((cpiVal * spiVal).toFixed(3));
+
+            // Proyecciones
+            const eacVal = cpiVal > 0 ? Math.round(bacVal / cpiVal) : (acVal > 0 ? acVal : bacVal);
+            const etcVal = Math.max(0, eacVal - acVal);
+            const vacVal = bacVal - eacVal;
+
+            // Bandera de existencia de información real: solo mostrar si hay datos de BAC, AC o avance
+            const hasEvmData = bacVal > 0 || acVal > 0 || evVal > 0;
 
             return (
               <div className="space-y-4">
@@ -1839,14 +1903,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                               {formatCOP(hoveredCostDonutSegment.value)}
                             </span>
                             <span className="text-[10px] font-mono text-cyan-300 font-bold mt-0.5">
-                              {hoveredCostDonutSegment.pct ? `${hoveredCostDonutSegment.pct.toFixed(1)}% del costo` : ''}
+                              {hoveredCostDonutSegment.pct ? `${hoveredCostDonutSegment.pct.toFixed(1)}% del total` : ''}
                             </span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center justify-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400">Gasto Real</span>
-                            <span className="text-base font-black font-mono text-slate-900">{formatCOP(sumCostsTotal)}</span>
-                            <span className="text-[10px] text-emerald-700 font-semibold">{visibleCostItems.length} rubros</span>
+                            <span className="text-[10px] uppercase font-bold text-slate-400">Total Financiero</span>
+                            <span className="text-base font-black font-mono text-slate-900">{formatCOP(totalFinancialSum)}</span>
+                            <span className="text-[10px] text-emerald-700 font-semibold">{visibleCostItems.length} rubros + impuestos</span>
                           </div>
                         )}
                       </div>
@@ -1948,51 +2012,230 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   </div>
                 </div>
 
-                {/* GRÁFICO 4: BARRAS COMPARATIVAS SEGÚN CATEGORÍAS FINANCIERAS (MANO DE OBRA, REPUESTOS, VIÁTICOS) */}
-                <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <BarChart3 size={16} className="text-[#00668F]" />
-                        Comparativo por Categorías Financieras Inteckno
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Presupuesto Plan vs Costo Real Incurrido por línea de gasto {dashboardItemFilter !== 'todos' ? `(ITEM ${dashboardItemFilter})` : '(Global)'}
-                      </p>
+                {/* SECCIÓN DE INDICADORES DE CONTROL DE PROYECTO (EARNED VALUE MANAGEMENT - EVM) */}
+                {hasEvmData ? (
+                  <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <span className="p-2 rounded-xl bg-[#00668F]/10 text-[#00668F]">
+                          <Activity size={18} />
+                        </span>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Indicadores de Control de Proyecto • Gestión de Valor Ganado (EVM)
+                          </h4>
+                          <p className="text-[11px] text-slate-500">
+                            Métricas financieras reales calculadas a partir del avance físico y los costos del proyecto
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                          Avance Físico: <strong className="text-slate-800 font-mono">{physicalProgressPct}%</strong>
+                        </span>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
+                          cpiVal >= 1 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                        }`}>
+                          {cpiVal >= 1 ? '✓ Control Eficiente' : '⚠️ Alerta Sobrecosto'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-bold">
-                      <span className="flex items-center gap-1.5 text-slate-500">
-                        <span className="w-3 h-3 rounded bg-slate-300"></span> Presupuesto Plan
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[#00668F]">
-                        <span className="w-3 h-3 rounded bg-[#00668F]"></span> Costo Real
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={categoriesBarData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} />
-                        <YAxis tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} tickLine={false} axisLine={false} tickFormatter={(val) => `$${(val / 1000000).toFixed(1)}M`} />
-                        <Tooltip
-                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name === 'Plan' ? 'Presupuesto Plan' : 'Costo Real Incurrido']}
-                          contentStyle={{
-                            backgroundColor: '#0f172a',
-                            borderRadius: '12px',
-                            border: '1px solid #334155',
-                            color: '#ffffff',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                          }}
-                        />
-                        <Bar dataKey="Plan" name="Plan" fill="#cbd5e1" radius={[6, 6, 0, 0]} maxBarSize={38} animationDuration={400} animationEasing="ease-out" />
-                        <Bar dataKey="Real" name="Real" fill="#00668F" radius={[6, 6, 0, 0]} maxBarSize={38} animationDuration={400} animationEasing="ease-out" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {/* EV: Valor Ganado */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Valor Ganado (EV)</span>
+                            <span className="text-[9px] font-mono text-sky-700 font-bold bg-sky-50 px-1.5 py-0.5 rounded">EV</span>
+                          </div>
+                          <div className="text-base font-black font-mono text-slate-900 mt-1">
+                            {formatCOP(evVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: Avance × PV ({physicalProgressPct}% × BAC)
+                        </div>
+                      </div>
+
+                      {/* PV: Valor Planificado */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Valor Planificado (PV)</span>
+                            <span className="text-[9px] font-mono text-slate-600 font-bold bg-slate-200/60 px-1.5 py-0.5 rounded">PV</span>
+                          </div>
+                          <div className="text-base font-black font-mono text-slate-900 mt-1">
+                            {formatCOP(pvVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: Presupuesto Base Planificado
+                        </div>
+                      </div>
+
+                      {/* AC: Costo Real */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Costo Real (AC)</span>
+                            <span className="text-[9px] font-mono text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded">AC</span>
+                          </div>
+                          <div className="text-base font-black font-mono text-rose-600 mt-1">
+                            {formatCOP(acVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: Suma de Costos Reales Incurridos
+                        </div>
+                      </div>
+
+                      {/* CV: Variación de Costo */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Variación de Costo (CV)</span>
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${cvVal >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>CV</span>
+                          </div>
+                          <div className={`text-base font-black font-mono mt-1 ${cvVal >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {formatCOP(cvVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: EV - AC
+                        </div>
+                      </div>
+
+                      {/* CPI: Índice de Desempeño de Costo */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Índice Desempeño Costo (CPI)</span>
+                            <span className="text-[9px] font-mono text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded">CPI</span>
+                          </div>
+                          <div className={`text-base font-black font-mono mt-1 ${cpiVal >= 1 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {cpiVal > 0 ? cpiVal.toFixed(2) : '0.00'}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: EV / AC ({cpiVal >= 1 ? 'eficiente' : 'sobrecosto'})
+                        </div>
+                      </div>
+
+                      {/* SV: Variación de Cronograma */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Variación Cronograma (SV)</span>
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${svVal >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>SV</span>
+                          </div>
+                          <div className={`text-base font-black font-mono mt-1 ${svVal >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {formatCOP(svVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: EV - PV
+                        </div>
+                      </div>
+
+                      {/* SPI: Índice de Desempeño Cronograma */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Índice Cronograma (SPI)</span>
+                            <span className="text-[9px] font-mono text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded">SPI</span>
+                          </div>
+                          <div className={`text-base font-black font-mono mt-1 ${spiVal >= 1 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {spiVal > 0 ? spiVal.toFixed(2) : '0.00'}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: EV / PV ({spiVal >= 1 ? 'a tiempo' : 'retraso'})
+                        </div>
+                      </div>
+
+                      {/* CSI: Índice Combinado Costo-Cronograma */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Índice Combinado (CSI)</span>
+                            <span className="text-[9px] font-mono text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">CSI</span>
+                          </div>
+                          <div className="text-base font-black font-mono text-slate-900 mt-1">
+                            {csiVal > 0 ? csiVal.toFixed(3) : '0.000'}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: CPI × SPI
+                        </div>
+                      </div>
+
+                      {/* EAC: Estimación al Finalizar */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estimación Final (EAC)</span>
+                            <span className="text-[9px] font-mono text-cyan-700 font-bold bg-cyan-50 px-1.5 py-0.5 rounded">EAC</span>
+                          </div>
+                          <div className="text-base font-black font-mono text-cyan-800 mt-1">
+                            {formatCOP(eacVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: BAC / CPI
+                        </div>
+                      </div>
+
+                      {/* ETC: Estimación para Concluir */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Por Concluir (ETC)</span>
+                            <span className="text-[9px] font-mono text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded">ETC</span>
+                          </div>
+                          <div className="text-base font-black font-mono text-teal-800 mt-1">
+                            {formatCOP(etcVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: EAC - AC
+                        </div>
+                      </div>
+
+                      {/* VAC: Variación al Finalizar */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Variación Final (VAC)</span>
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${vacVal >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>VAC</span>
+                          </div>
+                          <div className={`text-base font-black font-mono mt-1 ${vacVal >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {formatCOP(vacVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: BAC - EAC
+                        </div>
+                      </div>
+
+                      {/* BAC: Presupuesto Total Planificado */}
+                      <div className="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70 hover:bg-slate-50 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Presupuesto Base (BAC)</span>
+                            <span className="text-[9px] font-mono text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">BAC</span>
+                          </div>
+                          <div className="text-base font-black font-mono text-emerald-700 mt-1">
+                            {formatCOP(bacVal)}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-200/50 font-mono">
+                          Fórmula: Σ Costos Planeados
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </div>
             );
           })()}
