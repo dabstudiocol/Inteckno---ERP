@@ -477,6 +477,8 @@ export interface TimesheetEntry {
   projectCode: string;
   projectName: string;
   taskName: string;
+  taskId?: string; // Tarea WBS vinculada (si aplica)
+  origin?: 'proyecto' | 'global'; // Evita doble conteo de horas WBS
   date: string;
   hours: number;
   isBillable: boolean;

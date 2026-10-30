@@ -264,24 +264,8 @@ export function getCategoryMeta(cat: string) {
   };
 }
 
-export function getProjectTaxRate(country?: string): { rate: number; label: string; countryName: string } {
-  const norm = (country || '').trim().toLowerCase();
-  if (norm.includes('colombia')) return { rate: 0.19, label: '19%', countryName: 'Colombia' };
-  if (norm.includes('méxico') || norm.includes('mexico')) return { rate: 0.16, label: '16%', countryName: 'México' };
-  if (norm.includes('chile')) return { rate: 0.19, label: '19%', countryName: 'Chile' };
-  if (norm.includes('perú') || norm.includes('peru')) return { rate: 0.18, label: '18%', countryName: 'Perú' };
-  if (norm.includes('bolivia')) return { rate: 0.13, label: '13%', countryName: 'Bolivia' };
-  if (norm.includes('ecuador')) return { rate: 0.15, label: '15%', countryName: 'Ecuador' };
-  if (norm.includes('españa') || norm.includes('espana')) return { rate: 0.21, label: '21%', countryName: 'España' };
-  if (norm.includes('panamá') || norm.includes('panama')) return { rate: 0.07, label: '7%', countryName: 'Panamá' };
-  if (norm.includes('dominicana')) return { rate: 0.18, label: '18%', countryName: 'Rep. Dominicana' };
-  if (norm.includes('costa rica')) return { rate: 0.13, label: '13%', countryName: 'Costa Rica' };
-  if (norm.includes('guatemala')) return { rate: 0.12, label: '12%', countryName: 'Guatemala' };
-  if (norm.includes('argentina')) return { rate: 0.21, label: '21%', countryName: 'Argentina' };
-  
-  // Default estándar en caso de no estar especificado (Inteckno Colombia)
-  return { rate: 0.19, label: '19%', countryName: country || 'Colombia' };
-}
+import { getProjectTaxRate } from '../../../../core/services/taxService';
+export { getProjectTaxRate };
 
 export function getItemDisplayName(code?: string, name?: string) {
   if (!code && !name) return 'Sin ITEM asignado';
@@ -744,10 +728,12 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     };
 
     const updatedBilling = [newBilling, ...billingItems];
+    const totalInvoiced = updatedBilling.reduce((acc, b) => acc + (Number(b.subtotal) || 0), 0);
     setBillingItems(updatedBilling);
     onUpdateProject?.({
       ...project,
       billingItems: updatedBilling as any,
+      totalInvoiced,
     } as any);
 
     setBillingForm({
@@ -953,8 +939,12 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const projectTaxRate = getProjectTaxRate(projectCountry);
 
   const totalIncurred = totalActual;
-  const grossProfitCOP = contractAmountCOP - totalIncurred;
-  const grossMarginPct = contractAmountCOP > 0 ? (grossProfitCOP / contractAmountCOP) * 100 : 0;
+  // Margen bruto proyectado = (Contrato - EAC) / Contrato. Sin ETC formal, EAC = max(costo real, costo planeado).
+  // Sin costos registrados el margen no es calculable (evita mostrar 100% enganoso).
+  const estimateAtCompletion = Math.max(totalIncurred, totalPlanned);
+  const hasCostData = estimateAtCompletion > 0;
+  const grossProfitCOP = hasCostData ? contractAmountCOP - estimateAtCompletion : 0;
+  const grossMarginPct = hasCostData && contractAmountCOP > 0 ? (grossProfitCOP / contractAmountCOP) * 100 : 0;
 
   const totalInvoiced = project.totalInvoiced || 0;
   const pendingToInvoice = Math.max(0, contractAmountCOP - totalInvoiced);
@@ -1034,9 +1024,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             <div className="text-right">
               <span className="text-[10px] text-sky-300 block uppercase">Margen de Rentabilidad</span>
               <span className={`text-base font-black ${
-                grossMarginPct >= 30 ? 'text-emerald-400' : grossMarginPct >= 15 ? 'text-amber-400' : 'text-rose-400'
+                !hasCostData ? 'text-slate-400' : grossMarginPct >= 30 ? 'text-emerald-400' : grossMarginPct >= 15 ? 'text-amber-400' : 'text-rose-400'
               }`}>
-                {grossMarginPct.toFixed(1)}%
+                {hasCostData ? grossMarginPct.toFixed(1) + '%' : 'N/D'}
               </span>
             </div>
           </div>
@@ -1071,10 +1061,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           <div className="p-3 bg-white/5 rounded-xl border border-white/10">
             <span className="text-[10px] text-sky-300 uppercase font-semibold block">Utilidad Bruta Proyectada</span>
             <div className={`text-sm font-bold mt-0.5 ${grossProfitCOP >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
-              {formatCOP(grossProfitCOP)}
+              {hasCostData ? formatCOP(grossProfitCOP) : '--'}
             </div>
             <div className="text-[10px] text-slate-300 mt-0.5">
-              Estado: {grossMarginPct >= 30 ? 'Excelente' : grossMarginPct >= 15 ? 'Aceptable' : 'Alerta de Margen'}
+              Estado: {!hasCostData ? 'Sin costos registrados' : grossMarginPct >= 30 ? 'Excelente' : grossMarginPct >= 15 ? 'Aceptable' : 'Alerta de Margen'}
             </div>
           </div>
 

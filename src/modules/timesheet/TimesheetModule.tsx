@@ -22,12 +22,12 @@ import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 export const TimesheetModule: React.FC = () => {
-  const { timesheets, projects, users, employees, currentUser, submitTimesheet, approveTimesheet, rejectTimesheet, deleteTimesheet } = useErp();
+  const { timesheets, projects, tasks, users, employees, currentUser, submitTimesheet, approveTimesheet, rejectTimesheet, deleteTimesheet } = useErp();
 
   // Estado del formulario rápido móvil
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id || '');
   const [selectedUserId, setSelectedUserId] = useState(currentUser.id);
-  const [hours, setHours] = useState(8);
+  const [hours, setHours] = useState(0);
   const [description, setDescription] = useState('');
   const [taskName, setTaskName] = useState('');
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -69,15 +69,25 @@ export const TimesheetModule: React.FC = () => {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users, employees]);
 
-  // Catálogo dinámico de labores técnicas
+  // Catálogo dinámico de labores técnicas + Tareas WBS reales del proyecto seleccionado
   const catalogLaborTypes = useModuleCatalog('registro-horas', 'laborTypes');
-
-  // Inicializar labor por defecto
-  useEffect(() => {
-    if (catalogLaborTypes.length > 0 && !taskName) {
-      setTaskName(catalogLaborTypes[0].name);
-    }
-  }, [catalogLaborTypes, taskName]);
+  const projectWbsTasks = React.useMemo(
+    () => tasks.filter((t) => t.projectId === selectedProjectId),
+    [tasks, selectedProjectId]
+  );
+  const combinedLaborOptions = React.useMemo(() => {
+    const wbsOpts = projectWbsTasks.map((t) => ({
+      id: t.name,
+      name: `[WBS ${t.code}] ${t.name}`,
+      code: t.code,
+    }));
+    const catOpts = catalogLaborTypes.map((lt) => ({
+      id: lt.name,
+      name: lt.name,
+      code: lt.code,
+    }));
+    return [...wbsOpts, ...catOpts];
+  }, [projectWbsTasks, catalogLaborTypes]);
 
   const internalProjectsMap: Record<string, { id: string; code: string; name: string }> = {
     'PRJ-INTERNAL-TALLER': { id: 'PRJ-INTERNAL-TALLER', code: 'ITK-TALLER', name: 'Taller Central Guayabal (Banco de Ensayos & Maquinado)' },
@@ -193,16 +203,17 @@ export const TimesheetModule: React.FC = () => {
               />
             </div>
 
-            {/* Toque 2: Tipo de Labor / Actividad Técnica */}
+            {/* Toque 2: Tipo de Labor / Actividad Técnica o Tarea WBS */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
-                3. Labor Técnica
+                3. Labor Técnica / Tarea WBS
               </label>
               <CreatableSelect
+                key={selectedProjectId}
                 value={taskName}
                 onChange={(val) => setTaskName(val)}
-                options={catalogLaborTypes.map((lt) => ({ id: lt.id, name: lt.name, code: lt.code }))}
-                placeholder="Seleccionar o escribir labor..."
+                options={combinedLaborOptions}
+                placeholder="Seleccionar tarea WBS o labor..."
                 moduleId="registro-horas"
                 catalogKey="laborTypes"
                 allowCustomText={true}

@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   UserCheck,
   Settings,
+  ShoppingCart,
 } from 'lucide-react';
 import { InternalRequisition, InternalRequisitionItem } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
@@ -33,7 +34,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
   onClose,
   requisition,
 }) => {
-  const { updateRequisition, notify, currentUser, users } = useErp();
+  const { updateRequisition, setActiveModule, notify, currentUser, users } = useErp();
 
   // Catálogos dinámicos configurables por el usuario
   const urgencyOptions = useModuleCatalog('requisitions', 'urgencies');
@@ -524,6 +525,25 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
             >
               <Save size={14} />
               <span>Guardar Cambios</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                handleSaveChanges();
+                onClose();
+                setActiveModule('procurement');
+                setTimeout(() => {
+                  window.dispatchEvent(
+                    new CustomEvent('inteckno:create-po-from-requisition', { detail: requisition })
+                  );
+                }, 80);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+              title="Convertir esta SOLPED en Orden de Compra con ítems prellenados"
+            >
+              <ShoppingCart size={14} />
+              <span>Generar OC desde SOLPED</span>
             </button>
 
             {/* SELECTOR DE APROBADOR Y NOTIFICACIÓN FORMAL */}

@@ -37,8 +37,8 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
   const [orderToDelete, setOrderToDelete] = useState<ProjectChangeOrder | null>(null);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<ProjectChangeOrder | null>(null);
 
-  // Form State
-  const [orderNumber, setOrderNumber] = useState<string>(`ADD-${String(orders.length + 1).padStart(3, '0')}`);
+  // Form State (inicia limpio para que el usuario ingrese el código del otrosí o lo deje autogenerar al guardar)
+  const [orderNumber, setOrderNumber] = useState<string>('');
   const [title, setTitle] = useState<string>('');
   const [justification, setJustification] = useState<string>('');
   const [amountAddedCOP, setAmountAddedCOP] = useState<string>('');
@@ -57,11 +57,12 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
     const usd = Number(amountAddedUSD) || (cop > 0 ? Math.round(cop / currentTrm) : 0);
     const days = Number(daysAdded) || 0;
     const isApproved = Boolean(clientApprovalActNo.trim());
+    const finalOrderNumber = orderNumber.trim() || `ADD-${String(orders.length + 1).padStart(3, '0')}`;
 
     const newOrder: ProjectChangeOrder = {
       id: `CO-${Date.now()}`,
       projectId: project.id,
-      orderNumber: orderNumber.trim(),
+      orderNumber: finalOrderNumber,
       title: title.trim(),
       justification: justification.trim(),
       amountAddedCOP: cop,
@@ -77,9 +78,10 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
     const updatedOrders = [...orders, newOrder];
     setOrders(updatedOrders);
 
-    // If approved, update project budget and end date
+    // If approved, update project budget, contractAmount, offerBudget and end date
     if (isApproved && onUpdateProject) {
       const currentPV = project.budgetPV || 0;
+      const currentContract = project.contractAmount || currentPV;
       let newEndDate = project.endDate;
       if (days > 0 && project.endDate) {
         const d = new Date(project.endDate);
@@ -89,6 +91,7 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
 
       onUpdateProject({
         budgetPV: currentPV + cop,
+        contractAmount: currentContract + cop,
         endDate: newEndDate,
         changeOrders: updatedOrders as any
       } as any);
@@ -111,7 +114,7 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
     setAmountAddedUSD('');
     setDaysAdded('0');
     setClientApprovalActNo('');
-    setOrderNumber(`ADD-${String(updatedOrders.length + 1).padStart(3, '0')}`);
+    setOrderNumber('');
   };
 
   const handleApproveOrder = (orderId: string) => {
@@ -135,6 +138,7 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
 
     if (targetOrder && onUpdateProject) {
       const currentPV = project.budgetPV || 0;
+      const currentContract = project.contractAmount || currentPV;
       let newEndDate = project.endDate;
       if (targetOrder.daysAdded > 0 && project.endDate) {
         const d = new Date(project.endDate);
@@ -144,6 +148,7 @@ export const TabOrdenesCambio: React.FC<TabOrdenesCambioProps> = ({
 
       onUpdateProject({
         budgetPV: currentPV + targetOrder.amountAddedCOP,
+        contractAmount: currentContract + targetOrder.amountAddedCOP,
         endDate: newEndDate,
         changeOrders: updatedOrders as any
       } as any);

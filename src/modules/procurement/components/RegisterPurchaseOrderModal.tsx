@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   ShoppingCart,
@@ -43,6 +43,7 @@ interface Props {
   requisitions: InternalRequisition[];
   existingPurchaseOrders: PurchaseOrder[];
   currentTrm: number;
+  initialRequisitionId?: string;
   onCreatePo: (poData: Omit<PurchaseOrder, 'id' | 'orderNumber' | 'status' | 'gmApproved'>) => void;
 }
 
@@ -55,6 +56,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   requisitions,
   existingPurchaseOrders,
   currentTrm,
+  initialRequisitionId,
   onCreatePo,
 }) => {
   const { currentUser, users, employees } = useErp();
@@ -140,6 +142,12 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       historicalPriceCOP: 0,
     },
   ]);
+
+  useEffect(() => {
+    if (isOpen && initialRequisitionId) {
+      handleOriginReqChange(initialRequisitionId);
+    }
+  }, [isOpen, initialRequisitionId]);
 
   if (!isOpen) return null;
 

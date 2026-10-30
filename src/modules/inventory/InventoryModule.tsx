@@ -346,23 +346,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       unitCostUSD: number;
       unitCostCOP: number;
     }[]
-  >(() =>
-    products.length > 0
-      ? [
-          {
-            id: 'd-item-1',
-            productId: products[0].id,
-            sku: products[0].sku,
-            name: products[0].name,
-            unit: products[0].unit || 'unid',
-            category: products[0].category || 'Repuestos y Componentes',
-            qtyDispatched: 1,
-            unitCostUSD: products[0].costPriceUSD || 0,
-            unitCostCOP: products[0].costPriceCOP || 0,
-          },
-        ]
-      : []
-  );
+  >([]);
 
   // --------------------------------------------------------------------------
   // ESTADO PARA REMISIÓN DE REINGRESO (RETORNO Y LIQUIDACIÓN)

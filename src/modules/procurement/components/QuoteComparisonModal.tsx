@@ -37,7 +37,7 @@ interface Props {
   projects: Project[];
   partners: Partner[];
   currentTrm: number;
-  onAwardQuote: (awardedQuote: VendorQuoteCandidate, projectId: string) => void;
+  onAwardQuote: (awardedQuote: VendorQuoteCandidate, projectId: string, needDescription?: string) => void;
 }
 
 export const QuoteComparisonModal: React.FC<Props> = ({
@@ -89,7 +89,7 @@ export const QuoteComparisonModal: React.FC<Props> = ({
         return;
       }
     }
-    onAwardQuote(candidate, selectedProjectId);
+    onAwardQuote(candidate, selectedProjectId, needDescription);
     onClose();
   };
 

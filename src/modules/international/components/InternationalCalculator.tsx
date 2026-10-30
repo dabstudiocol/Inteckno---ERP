@@ -59,6 +59,7 @@ import { QuotePdfModal } from './QuotePdfModal';
 import { AiDataSourceInspector } from './AiDataSourceInspector';
 import { fetchLiveExchangeRates, LiveForexResult } from '../services/exchangeRateService';
 import { useErp } from '../../../core/storage/erpStore';
+import type { OpportunityQuotation } from '../../../types';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { UniversalModuleConfigModal } from '../../../components/common/UniversalModuleConfigModal';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
@@ -70,7 +71,7 @@ interface InternationalCalculatorProps {
 export const InternationalCalculator: React.FC<InternationalCalculatorProps> = ({
   initialOpportunity,
 }) => {
-  const { partners, contacts } = useErp();
+  const { partners, contacts, opportunities, createOpportunity, updateOpportunity, setActiveModule, notify, currentUser } = useErp();
   // Estado Principal de la Calculadora Internacional (limpio por defecto; se prellena solo si viene desde una licitación del Radar)
   const [state, setState] = useState<InternationalCalculationState>({
     unitSystem: 'metric',
@@ -394,15 +395,15 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
     }));
   };
 
-  // Agregar nuevo bulto de carga
+  // Agregar nuevo bulto de carga (inicia limpio para que el usuario ingrese descripción, medidas y peso reales)
   const handleAddPackage = () => {
     const newPkg: CargoPackage = {
       id: `pkg-${Date.now()}`,
-      description: 'Caja de Repuestos y Accesorios de Montaje',
-      length: 120,
-      width: 80,
-      height: 90,
-      weight: 350,
+      description: '',
+      length: 0,
+      width: 0,
+      height: 0,
+      weight: 0,
       quantity: 1,
       fragile: false,
       moistureSensitive: false,
@@ -412,6 +413,99 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
       ...prev,
       packages: [...prev.packages, newPkg],
     }));
+  };
+
+  // Enviar Cotización Internacional al Pipeline Comercial (CRM)
+  const handleSendToCrm = () => {
+    const titleToUse = quoteTitle.trim() || `Suministro Internacional (${state.selectedIncoterm}) - ${state.destinationCountry || 'Exportación'}`;
+    const clientToUse = clientName.trim() || 'Cliente Internacional';
+    const copRate = state.exchangeRates.COP || 4200;
+    const totalUSD = Math.round(breakdown.selectedIncotermPriceUSD || 0);
+    const totalCOP = Math.round(totalUSD * copRate);
+
+    const exwCOP = Math.round((breakdown.exwPriceUSD || 0) * copRate);
+    const logisticsCOP = Math.max(0, totalCOP - exwCOP);
+
+    const quotationItems = [
+      {
+        id: `q-item-mfg-${Date.now()}`,
+        category: 'Repuesto/Suministro',
+        description: `${titleToUse} (Base EXW / Fabricación)`,
+        qty: 1,
+        unitPrice: exwCOP,
+        currency: 'COP' as const,
+      },
+      ...(logisticsCOP > 0
+        ? [
+            {
+              id: `q-item-log-${Date.now()}`,
+              category: 'Logística/Viáticos',
+              description: `Logística internacional, embalaje, flete, seguro y aduana hasta ${state.selectedIncoterm} (${state.destinationCity || state.destinationCountry})`,
+              qty: 1,
+              unitPrice: logisticsCOP,
+              currency: 'COP' as const,
+            },
+          ]
+        : []),
+    ];
+
+    // Exportación de bienes: IVA 0% (exento); se conserva el neto cotizado
+    const newQuotation: OpportunityQuotation = {
+      id: `COT-INT-${Date.now()}`,
+      code: `COT-INT-2026-${String(opportunities.length + 1).padStart(3, '0')}`,
+      title: titleToUse,
+      operationType: 'exportacion',
+      items: quotationItems,
+      subtotal: totalCOP,
+      logisticsCost: logisticsCOP,
+      taxRate: 0,
+      taxAmount: 0,
+      total: totalCOP,
+      validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      paymentTerms: state.creditTermDays > 0 ? `Crédito ${state.creditTermDays} días` : 'Según contrato',
+      createdAt: new Date().toISOString().split('T')[0],
+      incoterm: state.selectedIncoterm,
+      customsSubheading: state.hsCode,
+      destinationCity: state.destinationCity,
+      exchangeRateTRM: copRate,
+      currency: 'COP',
+      notes: `Generada desde Calculadora Internacional. Incoterm ${state.selectedIncoterm} 2020. Destino: ${state.destinationCity}, ${state.destinationCountry}. Total USD ${totalUSD.toLocaleString('en-US')}.`,
+    };
+
+    const existingOpp = opportunities.find(
+      (o) => o.title.toLowerCase() === titleToUse.toLowerCase() && o.stage !== 'awarded' && o.stage !== 'lost'
+    );
+
+    if (existingOpp) {
+      updateOpportunity(existingOpp.id, {
+        stage: 'economic_proposal',
+        estimatedValueUSD: totalUSD || existingOpp.estimatedValueUSD,
+        quotations: [newQuotation, ...(existingOpp.quotations || [])],
+      });
+      notify(
+        'success',
+        'Cotización Sincronizada con CRM',
+        `Se adjuntó la oferta ${newQuotation.code} (USD ${totalUSD.toLocaleString('en-US')}) a la oportunidad "${existingOpp.title}".`
+      );
+    } else {
+      createOpportunity({
+        title: titleToUse,
+        clientId: '',
+        clientName: clientToUse,
+        cableType: '',
+        country: state.destinationCountry,
+        estimatedValueUSD: totalUSD,
+        currency: 'USD',
+        stage: 'economic_proposal',
+        expectedCloseDate: newQuotation.validUntil,
+        technicalSpecs: '',
+        assignedOwnerId: currentUser?.id || '',
+        assignedOwnerName: currentUser?.name || '',
+        quotations: [newQuotation],
+      });
+      notify('success', 'Oportunidad Creada en CRM', `La cotización ${newQuotation.code} quedó registrada en el pipeline comercial.`);
+    }
+    setActiveModule('comercial');
   };
 
   const handleRemovePackage = (id: string) => {
@@ -488,6 +582,17 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
           >
             <Sparkles size={14} className={hasGeminiApiKey ? 'text-emerald-600' : 'text-amber-600'} />
             <span>{hasGeminiApiKey ? 'IA Gemini Activa' : 'IA Modo Local'}</span>
+          </button>
+
+          {/* Botón Enviar al Pipeline Comercial (CRM) */}
+          <button
+            type="button"
+            onClick={handleSendToCrm}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-transform active:scale-95 cursor-pointer"
+            title="Crear o actualizar Oportunidad Comercial en el CRM con esta cotización internacional"
+          >
+            <ArrowRight size={15} />
+            <span>Enviar al CRM</span>
           </button>
 
           {/* Botón de Exportar a PDF */}

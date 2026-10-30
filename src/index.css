@@ -2,8 +2,8 @@
 
 @layer base {
   :root {
-    --font-sans: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-sans: 'SF Pro Display', 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Pro Display', 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
 
     /* Colores Marca Inteckno */
     --itk-primary: #00668F;
@@ -40,9 +40,9 @@
     --pastel-amber-text: #8E5000;
   }
 
-  /* Regla 9: Disciplina tipográfica única para todo el ERP: MONTSERRAT */
+  /* Regla 9: Disciplina tipográfica única para todo el ERP: SF PRO DISPLAY */
   :root, html, body, button, input, select, textarea, div, span, p, h1, h2, h3, h4, h5, h6, label, code, pre, kbd, a, table, tr, th, td, [class] {
-    font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif !important;
   }
 
   body {

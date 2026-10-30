@@ -182,7 +182,7 @@ function exportArticleToWord(article: WikiArticle) {
       <meta charset='utf-8'>
       <title>${article.title}</title>
       <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1e293b; padding: 20px; }
+        body { font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1e293b; padding: 20px; }
         h1 { color: #00668F; font-size: 20pt; margin-bottom: 6px; }
         .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt; }
         .meta-table td { padding: 6px 10px; border: 1px solid #cbd5e1; }

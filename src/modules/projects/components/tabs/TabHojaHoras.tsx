@@ -36,7 +36,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
   onUpdateProject,
   onUpdateTask,
 }) => {
-  const { employees } = useErp();
+  const { employees, submitTimesheet } = useErp();
 
   // Lista combinada de colaboradores para asignación en el proyecto
   const unifiedStaff = React.useMemo(() => {
@@ -311,6 +311,22 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
       onUpdateProject({ timesheetEntries: updated } as any);
     }
 
+    // Sincronizar también con el módulo global de Registro de Horas y Nómina (TimesheetModule / TalentoHumanoModule)
+    submitTimesheet({
+      userId: newEntry.userId,
+      userName: newEntry.userName,
+      userRole: newEntry.userRole,
+      projectId: project.id,
+      projectCode: project.code,
+      projectName: project.name,
+      taskId: newEntry.taskId,
+      taskName: newEntry.taskName,
+      date: newEntry.date,
+      hours: newEntry.hours,
+      isBillable: true,
+      description: newEntry.workDescription,
+    });
+
     // Sincronización en Tiempo Real: Actualizar Horas Reales y Avance (%) de la Tarea en el WBS
     if (task && onUpdateTask) {
       // Sumar el total de todas las entradas registradas (historial previo + nuevo) para esta tarea
@@ -343,10 +359,10 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
 
     setIsModalOpen(false);
     setForm({
-      taskId: tasks[0]?.id || '',
-      userId: erpUsers[0]?.id || '',
+      taskId: '',
+      userId: '',
       date: new Date().toISOString().split('T')[0],
-      hours: 8,
+      hours: 0,
       isEndTask: false,
       endMethod: 'MRT',
       workDescription: '',
@@ -354,20 +370,15 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
   };
 
   const openRegisterModal = () => {
-    const defaultTaskId = tasks[0]?.id || '';
-    const defaultUserId = erpUsers[0]?.id || '';
     setForm({
-      taskId: defaultTaskId,
-      userId: defaultUserId,
+      taskId: '',
+      userId: '',
       date: new Date().toISOString().split('T')[0],
-      hours: 8,
+      hours: 0,
       isEndTask: false,
       endMethod: 'MRT',
       workDescription: '',
     });
-    if (defaultTaskId) {
-      handleTaskChange(defaultTaskId);
-    }
     setIsModalOpen(true);
   };
 

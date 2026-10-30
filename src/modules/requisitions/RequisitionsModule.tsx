@@ -16,50 +16,10 @@ import { CreateRequisitionModal } from '../procurement/components/CreateRequisit
 import { RequisitionDetailModal } from '../procurement/components/RequisitionDetailModal';
 
 export const RequisitionsModule: React.FC = () => {
-  const { requisitions, products, projects, currentUser, createRequisition, setActiveModule } = useErp();
+  const { requisitions, setActiveModule } = useErp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-
-  // Formulario pedir materiales
-  const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id || '');
-  const [selectedProductId, setSelectedProductId] = useState(products[4]?.id || products[0]?.id); // Bandaje de goma (stock 0) para probar auto-PO
-  const [qty, setQty] = useState(4);
-  const [priority, setPriority] = useState<'normal' | 'urgente'>('urgente');
-  const [notes, setNotes] = useState('');
-
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
-
-  const handleCreateRequisition = (e: React.FormEvent) => {
-    e.preventDefault();
-    const product = products.find((p) => p.id === selectedProductId);
-    if (!selectedProject || !product) return;
-
-    createRequisition({
-      requesterId: currentUser.id,
-      requesterName: currentUser.name,
-      department: currentUser.department,
-      projectId: selectedProject.id,
-      projectCode: selectedProject.code,
-      projectName: selectedProject.name,
-      neededDate: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString().split('T')[0],
-      priority,
-      items: [
-        {
-          productId: product.id,
-          productSku: product.sku,
-          productName: product.name,
-          qtyRequested: Number(qty),
-          inStock: product.availableStock >= Number(qty),
-          availableStock: product.availableStock,
-        },
-      ],
-      notes: notes || 'Solicitud de materiales desde el frente de trabajo.',
-    });
-
-    setIsModalOpen(false);
-    setNotes('');
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -212,15 +172,35 @@ export const RequisitionsModule: React.FC = () => {
                 if (req.generatedPoNumber) {
                   return (
                     <button
-                      onClick={() => setActiveModule('procurement')}
-                      className="text-xs text-[#00668F] font-bold hover:underline flex items-center gap-1 ml-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveModule('procurement');
+                      }}
+                      className="text-xs text-[#00668F] font-bold hover:underline flex items-center gap-1 ml-auto cursor-pointer"
                     >
                       <span>Ver Compra {req.generatedPoNumber}</span>
                       <ArrowRight size={13} />
                     </button>
                   );
                 }
-                return <span className="text-[11px] text-emerald-700 font-medium">Entregado</span>;
+                return (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveModule('procurement');
+                      setTimeout(() => {
+                        window.dispatchEvent(
+                          new CustomEvent('inteckno:create-po-from-requisition', { detail: req })
+                        );
+                      }, 80);
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00668F] hover:bg-[#005073] text-white text-[11px] font-bold transition-all cursor-pointer ml-auto"
+                    title="Convertir esta SOLPED en Orden de Compra"
+                  >
+                    <ShoppingCart size={12} />
+                    <span>Convertir en OC</span>
+                  </button>
+                );
               },
             },
           ]}

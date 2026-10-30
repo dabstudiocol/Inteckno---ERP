@@ -147,8 +147,8 @@ function printQuotationPdf(opp: Opportunity, quote: OpportunityQuotation) {
         <meta charset="utf-8" />
         <title>Cotización Oficial Inteckno - ${quote.code}</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
-          * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+          @import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+          * { box-sizing: border-box; font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif; }
           body { color: #1e293b; margin: 0; padding: 36px; background: #fff; line-height: 1.4; }
           .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #00668F; padding-bottom: 16px; margin-bottom: 20px; }
           .company-title { font-size: 24px; font-weight: 800; color: #00668F; letter-spacing: -0.5px; }
@@ -3329,7 +3329,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                     };
 
                     return (
-                      <div className="space-y-4 font-['Montserrat']">
+                      <div className="space-y-4">
                         {/* Selector de Tipo de Operación Comercial (Multi-Escenario) */}
                         <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-2xs space-y-3">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -4425,7 +4425,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
               {/* PESTAÑA 5: COMITÉ DE DECISIÓN DEL CLIENTE (BUYING CENTER) */}
               {/* ================================================================= */}
               {oppModalTab === 'stakeholders' && (
-                <div className="space-y-4 font-['Montserrat']">
+                <div className="space-y-4">
                   {/* Tarjeta Educativa y Aclaratoria Fundamental */}
                   <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl space-y-2.5">
                     <div className="flex items-center gap-2 text-[#00668F] font-bold text-xs uppercase tracking-wide">
@@ -4745,7 +4745,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
               {/* PESTAÑA 6: PROPUESTA COMERCIAL EJECUTIVA (B2B NEGOCIADOR) */}
               {/* ================================================================= */}
               {oppModalTab === 'propuesta' && (
-                <div className="space-y-4 font-['Montserrat']">
+                <div className="space-y-4">
                   <div className="p-4 rounded-2xl bg-white border border-gray-200 space-y-3 shadow-2xs">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div>

@@ -54,7 +54,7 @@ export const AllocationQrModal: React.FC<AllocationQrModalProps> = ({
               margin: 0;
             }
             body {
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
               margin: 0;
               padding: 2mm;
               box-sizing: border-box;

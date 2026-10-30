@@ -243,6 +243,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
     }
 
     const finalCode = code.trim();
+    const linkedOpp = opportunities.find((o) => o.id === selectedOppId);
 
     const projectPayload: Partial<Project> & { 
       categoryId: string; 
@@ -253,6 +254,11 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
       name: name.trim(),
       clientName: clientName.trim(),
       clientNit: clientNit.trim(),
+      commercialContact: linkedOpp?.clientContactPerson ? {
+        name: linkedOpp.clientContactPerson,
+        email: linkedOpp.clientEmail || '',
+        phone: linkedOpp.clientPhone || '',
+      } : undefined,
       categoryId: selectedCategory,
       serviceId: selectedService,
       serviceCategory: selectedCategory,

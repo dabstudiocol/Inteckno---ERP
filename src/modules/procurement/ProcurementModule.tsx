@@ -90,7 +90,21 @@ export const ProcurementModule: React.FC = () => {
 
   // Modales y Paneles
   const [isRegisterPoModalOpen, setIsRegisterPoModalOpen] = useState(false);
+  const [preselectedReqIdForPo, setPreselectedReqIdForPo] = useState<string>('');
   const [selectedPoForDetail, setSelectedPoForDetail] = useState<PurchaseOrder | null>(null);
+
+  useEffect(() => {
+    const handleCreatePoFromReq = (e: Event) => {
+      const customEvent = e as CustomEvent<InternalRequisition>;
+      if (customEvent.detail?.id) {
+        setActiveTab('orders');
+        setPreselectedReqIdForPo(customEvent.detail.id);
+        setIsRegisterPoModalOpen(true);
+      }
+    };
+    window.addEventListener('inteckno:create-po-from-requisition', handleCreatePoFromReq);
+    return () => window.removeEventListener('inteckno:create-po-from-requisition', handleCreatePoFromReq);
+  }, []);
   const [isQuoteComparisonOpen, setIsQuoteComparisonOpen] = useState(false);
   const [isCreateReqModalOpen, setIsCreateReqModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
@@ -385,10 +399,13 @@ export const ProcurementModule: React.FC = () => {
     });
   };
 
-  const handleAwardQuote = (awardedQuote: VendorQuoteCandidate, projectId: string) => {
+  const handleAwardQuote = (awardedQuote: VendorQuoteCandidate, projectId: string, needDescription?: string) => {
     const proj = projects.find((p) => p.id === projectId);
+    const matchedPartner = partners.find(
+      (p) => p.name.toLowerCase() === awardedQuote.supplierName.toLowerCase() || (awardedQuote.supplierTaxId && (p.nit === awardedQuote.supplierTaxId || p.taxId === awardedQuote.supplierTaxId))
+    );
     createPurchaseOrder({
-      supplierId: `PROV-ADJ-${Date.now()}`,
+      supplierId: matchedPartner?.id || `PROV-ADJ-${Date.now()}`,
       supplierName: awardedQuote.supplierName,
       supplierHomologated: awardedQuote.isHomologated,
       projectId: proj?.id,
@@ -402,14 +419,15 @@ export const ProcurementModule: React.FC = () => {
       physicalReceiptDone: false,
       technicalQualityInspectionDone: false,
       estimatedArrivalDate: new Date(Date.now() + awardedQuote.deliveryDays * 24 * 3600 * 1000).toISOString().split('T')[0],
-      notes: `Adjudicado desde Cuadro Comparativo de Ofertas. Plazo: ${awardedQuote.paymentTerms}. Notas: ${awardedQuote.notes}`,
+      paymentTermType: awardedQuote.paymentTerms as any,
+      notes: `Adjudicado desde Cuadro Comparativo de Ofertas${needDescription ? ` (${needDescription})` : ''}. Plazo: ${awardedQuote.paymentTerms}. Notas: ${awardedQuote.notes}`,
       paymentStatus: 'pending',
       threeWayMatchStatus: 'pending',
       items: [
         {
           productId: 'PRD-AWARDED',
           sku: 'MAT-STC-AWARD',
-          name: `Suministro Adjudicado a ${awardedQuote.supplierName}`,
+          name: needDescription?.trim() || `Suministro Adjudicado a ${awardedQuote.supplierName}`,
           qty: 1,
           orderedQty: 1,
           receivedQty: 0,
@@ -1089,13 +1107,17 @@ export const ProcurementModule: React.FC = () => {
       {/* MODAL BLINDADO POKA-YOKE: REGISTRAR ORDEN DE COMPRA */}
       <RegisterPurchaseOrderModal
         isOpen={isRegisterPoModalOpen}
-        onClose={() => setIsRegisterPoModalOpen(false)}
+        onClose={() => {
+          setIsRegisterPoModalOpen(false);
+          setPreselectedReqIdForPo('');
+        }}
         partners={partners}
         projects={projects}
         products={products}
         requisitions={requisitions}
         existingPurchaseOrders={safePOs}
         currentTrm={currentTrm}
+        initialRequisitionId={preselectedReqIdForPo}
         onCreatePo={createPurchaseOrder}
       />
 

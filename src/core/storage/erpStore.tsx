@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { getStoredTRM } from '../services/trmService';
+import { getProjectTaxRate } from '../services/taxService';
 import {
   User,
   Project,
@@ -1870,24 +1872,29 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         applicableRates: customData?.applicableRates,
         quoteCode: (customData as any)?.quoteCode || opp.quotations?.[0]?.code || '',
         contractCode: (customData as any)?.contractCode || '',
-        costMatrix: (customData as any)?.costMatrix || (
-          opp.quotations?.[0]?.items?.map((it, idx) => ({
-            id: `COST-${Date.now()}-${idx}`,
-            category: it.category === 'Ensayos NDT/MRT' ? 'inspeccion_mrt' :
-                      it.category === 'Repuestos OEM' ? 'repuestos_fabricacion' :
-                      it.category === 'Viáticos & Logística' ? 'viaticos_transporte' : 'mano_obra_itk',
-            concept: it.description,
-            unit: 'Unidad',
-            plannedQuantity: it.qty,
-            plannedUnitCost: it.unitPrice,
-            plannedTotal: it.qty * it.unitPrice,
-            actualQuantity: 0,
-            actualUnitCost: it.unitPrice,
-            actualTotal: 0,
-            variance: it.qty * it.unitPrice,
-          })) || []
-        ),
+        costMatrix: (customData as any)?.costMatrix || [], // Los precios cotizados son precio de VENTA (offerBudget); no se copian como costo planeado
       };
+
+      // Crear Hito Inicial de Facturación para conectar directamente con el módulo de Facturación (O2C)
+      const initialContractCOP = newProject.budgetPV || 0;
+      const initialMilestones: BillingMilestone[] = initialContractCOP > 0 ? [
+        {
+          id: `M-${Date.now()}-1`,
+          projectId,
+          projectCode,
+          projectName: newProject.name,
+          clientName: newProject.clientName,
+          milestoneIndex: 1,
+          title: `Hito 1: Facturación contractual - ${newProject.name}`,
+          percentage: 100,
+          amountCOP: initialContractCOP,
+          amountUSD: Math.round(initialContractCOP / (getStoredTRM() || 3236.84)),
+          dueDate: newProject.endDate,
+          acceptanceActSigned: false,
+          invoiceIssued: false,
+          isPaid: false,
+        },
+      ] : [];
 
       // Inyectar Estructura WBS únicamente si el usuario seleccionó explícitamente una Plantilla Maestra Inteckno
       const allTemplates = templateManagerService.getWbsTemplates();
@@ -1921,6 +1928,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         opportunities: prev.opportunities.filter((o) => o.id !== oppId),
         projects: [newProject, ...prev.projects],
         tasks: [...standardTasks, ...prev.tasks],
+        milestones: [...initialMilestones, ...prev.milestones],
         activeModuleId: 'proyectos',
       }));
 
@@ -2135,20 +2143,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
 
         // Cálculo dinámico de tarifa hora según salario base real (240h laborales mensuales)
-        let hourlyRateCOP = 65000; // Tarifa base técnica estándar de respaldo
+        // Costo hora empleador: salario base x factor prestacional (Ley 2101/2021: 42 h/sem = 210 h/mes)
+        const LABOR_BURDEN_FACTOR = 1.52;
+        const MONTHLY_LEGAL_HOURS = 210;
+        const projectTrmForCost = getStoredTRM() || 3236.84;
+        let hourlyRateCOP = 0; // Sin salario registrado en RRHH no se inventa tarifa; técnica estándar de respaldo
         if (employeeRecord?.baseSalaryCOP && employeeRecord.baseSalaryCOP > 0) {
-          hourlyRateCOP = Math.round(employeeRecord.baseSalaryCOP / 240);
+          hourlyRateCOP = Math.round((employeeRecord.baseSalaryCOP * LABOR_BURDEN_FACTOR) / MONTHLY_LEGAL_HOURS);
         } else if (userRecord?.jobPosition?.salaryRange && typeof userRecord.jobPosition.salaryRange === 'object') {
           const midSalary = (userRecord.jobPosition.salaryRange.min + userRecord.jobPosition.salaryRange.max) / 2;
           if (midSalary > 0) {
-            hourlyRateCOP = Math.round(midSalary / 240);
+            hourlyRateCOP = Math.round((midSalary * LABOR_BURDEN_FACTOR) / MONTHLY_LEGAL_HOURS);
           }
         }
 
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === targetTs.projectId || prj.code === targetTs.projectCode) {
             const laborCOP = (targetTs.hours || 0) * hourlyRateCOP;
-            const laborUSD = Math.round(laborCOP / 4000);
+            const laborUSD = Math.round(laborCOP / projectTrmForCost);
             const newAC = (prj.actualCostAC || 0) + laborUSD;
             const newCV = (prj.earnedValueEV || 0) - newAC;
             const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
@@ -2170,21 +2182,71 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               date: targetTs.date || new Date().toISOString().split('T')[0],
               observations: `Radicado desde módulo de Registro de Horas. Aprobado por supervisión.`,
             };
+                // Las horas registradas desde la pestaña del proyecto ya viven en project.timesheetEntries y ya actualizaron el WBS
+                const existingTimesheets: any[] = (prj as any).timesheetEntries || [];
+                const fromProjectTab = targetTs.origin === 'proyecto';
+                const updatedTsEntries = fromProjectTab
+                  ? existingTimesheets
+                  : [
+                      {
+                        id: targetTs.id,
+                        projectId: prj.id,
+                        taskId: targetTs.taskId || '',
+                        taskName: targetTs.taskName || '',
+                        taskCode: '',
+                        userId: targetTs.userId,
+                        userName: targetTs.userName,
+                        userRole: targetTs.userRole,
+                        date: targetTs.date,
+                        hours: targetTs.hours || 0,
+                        isEndTask: false,
+                        isCertValid: true,
+                        workDescription: targetTs.description || '',
+                        status: 'aprobado',
+                        createdAt: new Date().toISOString(),
+                      },
+                      ...existingTimesheets,
+                    ];
+
             return {
               ...prj,
               actualCostAC: newAC,
               cv: newCV,
               cpi: newCPI,
               costMatrix: [...existingMatrix, newCostItem],
+              timesheetEntries: updatedTsEntries,
             };
           }
           return prj;
+        });
+
+        // Actualizar horas reales y progreso en la Tarea WBS vinculada (si existe)
+        const updatedTasks = prev.tasks.map((t) => {
+          const isSameProject = t.projectId === targetTs.projectId;
+          const matchesTask =
+            t.id === targetTs.taskId ||
+            t.code === targetTs.taskId ||
+            (targetTs.taskName && (t.name.toLowerCase() === targetTs.taskName.toLowerCase() || targetTs.taskName.includes(t.code)));
+          if (isSameProject && matchesTask && targetTs.origin !== 'proyecto') {
+            const newActualHours = (t.actualHours || 0) + (targetTs.hours || 0);
+            const newProgress = t.plannedHours > 0
+              ? Math.min(100, Math.round((newActualHours / t.plannedHours) * 100))
+              : t.progressPct;
+            return {
+              ...t,
+              actualHours: newActualHours,
+              progressPct: Math.max(t.progressPct || 0, newProgress),
+              status: newProgress >= 100 ? ('completed' as const) : ('in_progress' as const),
+            };
+          }
+          return t;
         });
 
         return {
           ...prev,
           timesheets: prev.timesheets.map((t) => (t.id === id ? { ...t, status: 'approved' } : t)),
           projects: updatedProjects,
+          tasks: updatedTasks,
         };
       });
       notify('success', 'Horas Aprobadas y Costo Imputado', 'Registro de horas validado y liquidado en la matriz del proyecto.');
@@ -2238,7 +2300,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === poData.projectId || prj.code === poData.projectCode) {
             const costCOP = poData.totalAmountCOP || 0;
-            const costUSD = poData.totalAmountUSD || Math.round(costCOP / 4000);
+            const costUSD = poData.totalAmountUSD || Math.round(costCOP / (getStoredTRM() || 3236.84));
             const newAC = (prj.actualCostAC || 0) + costUSD;
             const newCV = (prj.earnedValueEV || 0) - newAC;
             const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
@@ -3014,17 +3076,44 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return eq;
         });
 
-        // Si se consumieron artículos, imputar el costo al proyecto
+        // Si se consumieron artículos, imputar el costo al proyecto y registrar en su Matriz de Costos
+        const consumedItemsList = updatedItems.filter((it) => it.qtyConsumed > 0);
+        const consumedNames = consumedItemsList.map((it) => `${it.name} (x${it.qtyConsumed})`).join(', ');
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === remission.projectId || prj.code === remission.projectCode) {
             const newAC = prj.actualCostAC + consumedCostUSD;
             const newCPI = newAC > 0 ? Number((prj.earnedValueEV / newAC).toFixed(2)) : prj.cpi;
             const newCV = prj.earnedValueEV - newAC;
+            const existingMatrix = prj.costMatrix || [];
+            const newCostMatrix = consumedCostCOP > 0
+              ? [
+                  ...existingMatrix,
+                  {
+                    id: `cost-rem-${Date.now()}`,
+                    category: 'repuestos_fabricacion' as const,
+                    concept: `Consumo de Bodega (${returnNumber}): ${consumedNames}`,
+                    unit: 'Global',
+                    plannedQuantity: 0,
+                    plannedUnitCost: 0,
+                    plannedTotal: 0,
+                    actualQuantity: 1,
+                    actualUnitCost: consumedCostCOP,
+                    actualTotal: consumedCostCOP,
+                    variance: -consumedCostCOP,
+                    spendingNature: 'PRESUPUESTO' as const,
+                    costType: 'directo' as const,
+                    date: returnDate || new Date().toISOString().split('T')[0],
+                    invoiceNumber: returnNumber,
+                    observations: returnNotes || `Imputación automática por consumo en remisión ${remission.remissionNumber}`,
+                  },
+                ]
+              : existingMatrix;
             return {
               ...prj,
               actualCostAC: newAC,
               cpi: newCPI,
               cv: newCV,
+              costMatrix: newCostMatrix,
             };
           }
           return prj;
@@ -3170,10 +3259,77 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const approveExpense = useCallback(
     (id: string) => {
       const exp = state.expenses.find((e) => e.id === id);
-      setState((prev) => ({
-        ...prev,
-        expenses: prev.expenses.map((e) => (e.id === id ? { ...e, status: 'approved' } : e)),
-      }));
+      setState((prev) => {
+        const targetExp = prev.expenses.find((e) => e.id === id);
+        let updatedProjects = prev.projects;
+
+        // Si el gasto está imputado a un Proyecto y no es una recarga/depósito de caja, inyectar en la Matriz de Costos del Proyecto
+        if (targetExp && (targetExp.projectId || targetExp.projectCode) && targetExp.movementType !== 'deposito') {
+          const expTrm = getStoredTRM() || 3236.84;
+          const amountCOP = targetExp.currency === 'USD'
+            ? Math.round((targetExp.amount || 0) * expTrm)
+            : targetExp.currency === 'EUR'
+            ? Math.round((targetExp.amount || 0) * expTrm * 1.08) // misma convención EUR/USD que TabCostosPresupuesto
+            : (targetExp.amount || 0);
+          const amountUSD = targetExp.currency === 'USD'
+            ? (targetExp.amount || 0)
+            : Math.round(amountCOP / expTrm);
+
+          const mappedCategory = (
+            ['viaticos_alimentacion', 'tiquetes_transporte', 'alojamiento', 'transporte_urbano'].includes(targetExp.category) ? 'viaticos_transporte' :
+            ['materiales_urgentes', 'materiales_obra'].includes(targetExp.category) ? 'repuestos_fabricacion' :
+            targetExp.category === 'herramientas' ? 'consumibles_taller' :
+            targetExp.category === 'servicios_tecnicos' ? 'subcontratos_gruas' : 'imprevistos_contingencia'
+          ) as any;
+
+          updatedProjects = prev.projects.map((prj) => {
+            if (prj.id === targetExp.projectId || prj.code === targetExp.projectCode) {
+              const existingMatrix = prj.costMatrix || [];
+              const alreadyInjected = existingMatrix.some((c) => c.id === `cost-exp-${targetExp.id}`);
+              if (alreadyInjected) return prj;
+
+              const newAC = (prj.actualCostAC || 0) + amountUSD;
+              const newCV = (prj.earnedValueEV || 0) - newAC;
+              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+
+              const newCostItem = {
+                id: `cost-exp-${targetExp.id}`,
+                category: mappedCategory,
+                concept: `${targetExp.isPettyCash ? '[Caja Menor] ' : '[Gasto Legalizado] '}${targetExp.description}${targetExp.supplierName ? ` - ${targetExp.supplierName}` : ''}`,
+                unit: 'Global',
+                plannedQuantity: 0,
+                plannedUnitCost: 0,
+                plannedTotal: 0,
+                actualQuantity: 1,
+                actualUnitCost: amountCOP,
+                actualTotal: amountCOP,
+                variance: -amountCOP,
+                spendingNature: 'PRESUPUESTO' as const,
+                costType: 'directo' as const,
+                date: targetExp.date || new Date().toISOString().split('T')[0],
+                invoiceNumber: targetExp.invoiceNumber || '',
+                receiptPhotos: targetExp.receiptPhotoUrl ? [targetExp.receiptPhotoUrl] : [],
+                observations: `Radicado por ${targetExp.userName}. Categoría original: ${targetExp.category}.`,
+              };
+
+              return {
+                ...prj,
+                actualCostAC: newAC,
+                cv: newCV,
+                cpi: newCPI,
+                costMatrix: [...existingMatrix, newCostItem],
+              };
+            }
+            return prj;
+          });
+        }
+
+        return {
+          ...prev,
+          expenses: prev.expenses.map((e) => (e.id === id ? { ...e, status: 'approved' } : e)),
+          projects: updatedProjects,
+        };
+      });
 
       // Huella Digital: Aprobación Contable de Gasto
       recordAuditEvent({
@@ -3187,7 +3343,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         newValue: 'approved',
       }).catch(() => {});
 
-      notify('success', 'Gasto Aprobado', 'Se legalizó el desembolso y se imputó a contabilidad.');
+      notify('success', 'Gasto Aprobado e Imputado', 'Se legalizó el desembolso y se actualizó la matriz de costos del proyecto.');
     },
     [state.expenses, state.currentUser, notify]
   );
@@ -3247,7 +3403,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (p.id === milestone.projectId || p.code === milestone.projectCode) {
                 const existingBilling = p.billingItems || [];
                 const cop = milestone.amountCOP || 0;
-                const iva = Math.round(cop * 0.19);
+                const iva = Math.round(cop * getProjectTaxRate(p.location || (p as any).clientCountry || (p as any).country).rate);
                 const grandTotal = cop + iva;
 
                 const updatedBilling: any[] = existingBilling.some((b) => b.id === milestoneId)
@@ -3274,10 +3430,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         subtotal: cop,
                         ivaAmount: iva,
                         grandTotal: grandTotal,
-                        observations: `Hito: ${milestone.title} (${milestone.percentage}%)`,
+                        observations: `Hito: ${milestone.title} (${milestone.percentage || 100}%)`,
                       },
                     ];
-                return { ...p, billingItems: updatedBilling };
+                const totalInvoiced = updatedBilling.reduce((acc, b) => acc + (Number(b.subtotal) || 0), 0);
+                return { ...p, billingItems: updatedBilling, totalInvoiced };
               }
               return p;
             })
