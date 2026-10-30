@@ -658,9 +658,42 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const next: ErpState = { ...prev };
         let hasChanges = false;
 
-        // Projects
+        // Projects (Reconciliación protectora: Nunca sobreescribir datos financieros o rubros del usuario con vacíos)
         if (cloudData.projects) {
-          if (Array.isArray(cloudData.projects.projects)) { next.projects = cloudData.projects.projects; hasChanges = true; }
+          if (Array.isArray(cloudData.projects.projects)) {
+            const incomingProjects = cloudData.projects.projects;
+            const merged = incomingProjects.map((remoteP: Project) => {
+              const localP = prev.projects.find((lp) => lp.id === remoteP.id);
+              if (!localP) return remoteP;
+              return {
+                ...remoteP,
+                // Preservar datos si el local tiene información que la nube aún no reporta
+                projectItems: (Array.isArray((localP as any).projectItems) && (localP as any).projectItems.length > 0)
+                  ? (localP as any).projectItems
+                  : (remoteP as any).projectItems,
+                costMatrix: (Array.isArray((localP as any).costMatrix) && (localP as any).costMatrix.length > 0)
+                  ? (localP as any).costMatrix
+                  : (remoteP as any).costMatrix,
+                billingItems: (Array.isArray((localP as any).billingItems) && (localP as any).billingItems.length > 0)
+                  ? (localP as any).billingItems
+                  : (remoteP as any).billingItems,
+                offerBudget: ((localP as any)?.offerBudget?.items?.some((it: any) => it.budgetPlanned > 0))
+                  ? (localP as any).offerBudget
+                  : ((remoteP as any).offerBudget || (localP as any).offerBudget),
+                staffAssignments: (Array.isArray((localP as any).staffAssignments) && (localP as any).staffAssignments.length > 0)
+                  ? (localP as any).staffAssignments
+                  : (remoteP as any).staffAssignments,
+              };
+            });
+            // Añadir proyectos locales creados que aún no estén en la nube
+            prev.projects.forEach((lp) => {
+              if (!merged.some((mp: Project) => mp.id === lp.id)) {
+                merged.push(lp);
+              }
+            });
+            next.projects = merged;
+            hasChanges = true;
+          }
           if (Array.isArray(cloudData.projects.tasks)) { next.tasks = cloudData.projects.tasks; hasChanges = true; }
           if (Array.isArray(cloudData.projects.milestones)) { next.milestones = cloudData.projects.milestones; hasChanges = true; }
         }
@@ -909,12 +942,40 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubProjects = subscribeToCloudModule('projects', (data) => {
       if (!isMounted || !data) return;
       isRemoteUpdateRef.current = true;
-      setState((prev) => ({
-        ...prev,
-        projects: Array.isArray(data.projects) && data.projects.length > 0 ? data.projects : prev.projects,
-        tasks: Array.isArray(data.tasks) && data.tasks.length > 0 ? data.tasks : prev.tasks,
-        milestones: Array.isArray(data.milestones) && data.milestones.length > 0 ? data.milestones : prev.milestones,
-      }));
+      setState((prev) => {
+        let mergedProjects = prev.projects;
+        if (Array.isArray(data.projects) && data.projects.length > 0) {
+          mergedProjects = data.projects.map((remoteP: Project) => {
+            const localP = prev.projects.find((lp) => lp.id === remoteP.id);
+            if (!localP) return remoteP;
+            return {
+              ...remoteP,
+              projectItems: (Array.isArray((localP as any).projectItems) && (localP as any).projectItems.length > 0)
+                ? (localP as any).projectItems
+                : (remoteP as any).projectItems,
+              costMatrix: (Array.isArray((localP as any).costMatrix) && (localP as any).costMatrix.length > 0)
+                ? (localP as any).costMatrix
+                : (remoteP as any).costMatrix,
+              billingItems: (Array.isArray((localP as any).billingItems) && (localP as any).billingItems.length > 0)
+                ? (localP as any).billingItems
+                : (remoteP as any).billingItems,
+              offerBudget: ((localP as any)?.offerBudget?.items?.some((it: any) => it.budgetPlanned > 0))
+                ? (localP as any).offerBudget
+                : ((remoteP as any).offerBudget || (localP as any).offerBudget),
+              staffAssignments: (Array.isArray((localP as any).staffAssignments) && (localP as any).staffAssignments.length > 0)
+                ? (localP as any).staffAssignments
+                : (remoteP as any).staffAssignments,
+            };
+          });
+        }
+
+        return {
+          ...prev,
+          projects: mergedProjects,
+          tasks: Array.isArray(data.tasks) && data.tasks.length > 0 ? data.tasks : prev.tasks,
+          milestones: Array.isArray(data.milestones) && data.milestones.length > 0 ? data.milestones : prev.milestones,
+        };
+      });
     });
 
     // 5. Suscribirse a Abastecimiento, Compras y Requisiciones en tiempo real (excluyendo inventario pesado)
@@ -4176,11 +4237,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const updateProject = useCallback((id: string, data: Partial<Project>) => {
-    setState((prev) => ({
-      ...prev,
-      projects: prev.projects.map((p) => (p.id === id ? { ...p, ...data } : p)),
-    }));
-    notify('success', 'Proyecto Actualizado', 'Los cambios en la ficha técnica fueron guardados.');
+    setState((prev) => {
+      const updatedProjects = prev.projects.map((p) => (p.id === id ? { ...p, ...data } : p));
+      const targetUpdated = updatedProjects.find((p) => p.id === id);
+
+      // Persistencia inmediata ultra-rápida en local storage e IndexedDB sin depender del debounce
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const currentState = { ...prev, projects: updatedProjects };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(currentState));
+        }
+      } catch (err) {}
+
+      // Sincronización proactiva hacia Cloud Firestore inmediata para cambios en finanzas/presupuesto/items
+      if (isCloudLoadedRef.current) {
+        syncModuleToCloud('projects', {
+          projects: updatedProjects,
+          tasks: prev.tasks,
+          milestones: prev.milestones,
+        }, prev.currentUser?.id || 'USR-01').catch(console.warn);
+      }
+
+      return {
+        ...prev,
+        projects: updatedProjects,
+      };
+    });
+    notify('success', 'Proyecto Actualizado', 'Los cambios en la ficha técnica y matriz presupuestal fueron guardados.');
   }, [notify]);
 
   const updateTask = useCallback((id: string, data: Partial<WBSTask>) => {

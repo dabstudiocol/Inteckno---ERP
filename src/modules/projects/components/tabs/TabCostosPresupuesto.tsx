@@ -395,18 +395,18 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   // Selector de Vista Principal: 'items_costos' (Costos reales y facturación por ITEM) vs 'consolidado_oferta' (Presupuesto estimado inicial)
   const [activeMainView, setActiveMainView] = useState<'items_costos' | 'consolidado_oferta'>('items_costos');
 
-  // Mantener sincronizado el estado si el proyecto cambia
+  // Mantener sincronizado el estado si el proyecto cambia, preservando datos ingresados si el prop viene indefinido o vacío
   React.useEffect(() => {
-    if ((project as any)?.costMatrix) {
+    if ((project as any)?.costMatrix && (project as any).costMatrix.length > 0) {
       setCostItems((project as any).costMatrix);
     }
-    if ((project as any)?.projectItems) {
+    if ((project as any)?.projectItems && (project as any).projectItems.length > 0) {
       setProjectItems((project as any).projectItems);
     }
-    if ((project as any)?.billingItems) {
+    if ((project as any)?.billingItems && (project as any).billingItems.length > 0) {
       setBillingItems((project as any).billingItems);
     }
-    if ((project as any)?.offerBudget) {
+    if ((project as any)?.offerBudget?.items?.length > 0) {
       setOfferBudget((project as any).offerBudget);
     }
   }, [project]);
