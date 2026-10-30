@@ -392,8 +392,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   const [offerBudgetSavedMessage, setOfferBudgetSavedMessage] = useState(false);
 
-  // Selector de Vista Principal: 'items_costos' (Costos reales y facturación por ITEM) vs 'consolidado_oferta' (Presupuesto estimado inicial)
-  const [activeMainView, setActiveMainView] = useState<'items_costos' | 'consolidado_oferta'>('items_costos');
+  // Selector de Vista Principal: 'dashboard_graficos' (Visualización Interactiva) vs 'items_costos' (Matriz de ITEMS y Costos) vs 'consolidado_oferta' (Presupuesto)
+  const [activeMainView, setActiveMainView] = useState<'dashboard_graficos' | 'items_costos' | 'consolidado_oferta'>('dashboard_graficos');
 
   // Mantener sincronizado el estado si el proyecto cambia, respetando el estado actual incluso si viene vacío
   React.useEffect(() => {
@@ -1232,7 +1232,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           data={controlDonutData.length > 0 ? controlDonutData : [{ name: 'Sin registros', value: 1, color: '#334155' }]}
                           cx="50%"
                           cy="50%"
-                          innerRadius={70}
+                          innerRadius={72}
                           outerRadius={98}
                           paddingAngle={5}
                           dataKey="value"
@@ -1244,6 +1244,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           ))}
                         </Pie>
                         <Tooltip
+                          position={{ y: 245 }}
+                          wrapperStyle={{ zIndex: 50 }}
                           formatter={(value: any, name: any) => [
                             `${formatCOP(Number(value) || 0)}`,
                             name,
@@ -1457,8 +1459,20 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         </div>
       </div>
 
-      {/* SELECTOR DE VISTA PRINCIPAL: PRESUPUESTO INICIAL (OFERTA) VS EJECUCIÓN (ITEMS Y COSTOS) */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-xl">
+      {/* SELECTOR DE 3 SUBPESTAÑAS PRINCIPALES: DASHBOARD CON GRÁFICOS | MATRIZ DE ITEMS Y COSTOS | PRESUPUESTO */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-2xl">
+        <button
+          type="button"
+          onClick={() => setActiveMainView('dashboard_graficos')}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainView === 'dashboard_graficos'
+              ? 'bg-[#00668F] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <BarChart3 size={15} />
+          <span>Dashboard & Gráficos</span>
+        </button>
         <button
           type="button"
           onClick={() => setActiveMainView('items_costos')}
@@ -1481,11 +1495,254 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           }`}
         >
           <FileSpreadsheet size={15} />
-          <span>Presupuesto (Consolidado de Oferta)</span>
+          <span>Presupuesto (Oferta)</span>
         </button>
       </div>
 
-      {activeMainView === 'consolidado_oferta' ? (
+      {activeMainView === 'dashboard_graficos' ? (
+        /* SUBPESTAÑA 1: DASHBOARD CON GRÁFICOS INTERACTIVOS (DESGLOSE DE COSTOS DIRECTOS/INDIRECTOS Y PRESUPUESTO OFERTA) */
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {(() => {
+            // 1. Datos para Dona de Costos Directos vs Indirectos
+            const totalDirectCost = costItems.filter((c) => c.costType !== 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
+            const totalIndirectCost = costItems.filter((c) => c.costType === 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
+            const sumCostsTotal = totalDirectCost + totalIndirectCost;
+            const pctDirect = sumCostsTotal > 0 ? (totalDirectCost / sumCostsTotal) * 100 : 0;
+            const pctIndirect = sumCostsTotal > 0 ? (totalIndirectCost / sumCostsTotal) * 100 : 0;
+
+            const costTypeDonutData = [
+              { name: 'Costos Directos (MO, Obra, Insumos)', value: totalDirectCost, color: '#0284c7' },
+              { name: 'Costos Indirectos (Pólizas, Peajes, Grúas)', value: totalIndirectCost, color: '#9333ea' },
+            ].filter((d) => d.value > 0);
+
+            // 2. Datos para Gráfico de Presupuesto que se va construyendo por Categorías de la Oferta
+            const offerCategoriesMap = new Map<string, number>();
+            offerBudget.items.forEach((it) => {
+              const catKey = it.rubroName || 'Otros Rubros';
+              offerCategoriesMap.set(catKey, (offerCategoriesMap.get(catKey) || 0) + (it.budgetPlanned || 0));
+            });
+
+            const offerBudgetDonutData = Array.from(offerCategoriesMap.entries()).map(([name, value], idx) => {
+              const colors = ['#0284c7', '#059669', '#d97706', '#9333ea', '#ec4899', '#6366f1', '#14b8a6'];
+              return {
+                name,
+                value,
+                color: colors[idx % colors.length],
+              };
+            }).filter((d) => d.value > 0);
+
+            // 3. Comparativa por Categoría Financiera (Mano de Obra, Diagnóstico END, Repuestos, Viáticos)
+            const categoriesBarData = [
+              { name: 'Mano de Obra', Plan: manoObra.planned, Real: manoObra.actual, categoryKey: 'mano_obra_itk' },
+              { name: 'END & MRT', Plan: ensayosEndMrt.planned, Real: ensayosEndMrt.actual, categoryKey: 'end_mrt' },
+              { name: 'Repuestos & Fab.', Plan: repuestos.planned, Real: repuestos.actual, categoryKey: 'repuestos_fabricacion' },
+              { name: 'Viáticos & Subc.', Plan: viaticosSub.planned, Real: viaticosSub.actual, categoryKey: 'viaticos_transporte' },
+            ];
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* DONA 1: DESGLOSE DE COSTOS INCURRIDOS (DIRECTOS VS INDIRECTOS) */}
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <PieChartIcon size={16} className="text-[#00668F]" />
+                        Desglose de Costos (Directos vs Indirectos)
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Proporción operativa de costos reales incurridos
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded-xl">
+                      {formatCOP(sumCostsTotal)}
+                    </span>
+                  </div>
+
+                  <div className="h-[250px] w-full relative flex items-center justify-center my-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={costTypeDonutData.length > 0 ? costTypeDonutData : [{ name: 'Sin costos', value: 1, color: '#e2e8f0' }]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={68}
+                          outerRadius={95}
+                          paddingAngle={6}
+                          dataKey="value"
+                          stroke="none"
+                          cornerRadius={6}
+                        >
+                          {(costTypeDonutData.length > 0 ? costTypeDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          position={{ y: 240 }}
+                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name]}
+                          contentStyle={{
+                            backgroundColor: '#0f172a',
+                            borderRadius: '12px',
+                            border: '1px solid #334155',
+                            color: '#ffffff',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Total Costos</span>
+                      <span className="text-lg font-black font-mono text-slate-900">{formatCOP(sumCostsTotal)}</span>
+                      <span className="text-[10px] text-sky-700 font-semibold">{costItems.length} registros</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+                    <div className="p-3 bg-sky-50/60 rounded-2xl border border-sky-100">
+                      <div className="flex items-center gap-1.5 text-[#00668F] font-bold text-[11px]">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#00668F]"></span>
+                        <span>Directos ({pctDirect.toFixed(1)}%)</span>
+                      </div>
+                      <span className="text-sm font-black font-mono text-slate-900 block mt-1">{formatCOP(totalDirectCost)}</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">
+                        {costItems.filter((c) => c.costType !== 'indirecto').length} rubros directos
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-purple-50/60 rounded-2xl border border-purple-100">
+                      <div className="flex items-center gap-1.5 text-purple-700 font-bold text-[11px]">
+                        <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                        <span>Indirectos ({pctIndirect.toFixed(1)}%)</span>
+                      </div>
+                      <span className="text-sm font-black font-mono text-purple-950 block mt-1">{formatCOP(totalIndirectCost)}</span>
+                      <span className="text-[10px] text-purple-500 block mt-0.5">
+                        {costItems.filter((c) => c.costType === 'indirecto').length} rubros indirectos
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DONA 2: PRESUPUESTO QUE SE VA CONSTRUYENDO (CONSOLIDADO DE OFERTA) */}
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <FileSpreadsheet size={16} className="text-emerald-700" />
+                        Presupuesto Construido (Oferta por Rubros)
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Composición presupuestal de costos y utilidad
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl">
+                      {formatCOP(offerBudget.subtotal)}
+                    </span>
+                  </div>
+
+                  <div className="h-[250px] w-full relative flex items-center justify-center my-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ name: 'Sin presupuesto', value: 1, color: '#e2e8f0' }]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={68}
+                          outerRadius={95}
+                          paddingAngle={6}
+                          dataKey="value"
+                          stroke="none"
+                          cornerRadius={6}
+                        >
+                          {(offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          position={{ y: 240 }}
+                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name]}
+                          contentStyle={{
+                            backgroundColor: '#0f172a',
+                            borderRadius: '12px',
+                            border: '1px solid #334155',
+                            color: '#ffffff',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Total Oferta</span>
+                      <span className="text-lg font-black font-mono text-emerald-700">{formatCOP(offerBudget.grandTotalOffer)}</span>
+                      <span className="text-[10px] text-slate-500 font-semibold">{offerBudget.items.length} rubros oferta</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-500 block">Costo Planeado + Utilidad</span>
+                      <span className="font-bold text-slate-800 font-mono">
+                        Costos: {formatCOP(offerBudget.totalBudgetedCost)} | Utilidad: {formatCOP(offerBudget.totalBudgetedProfit)}
+                      </span>
+                    </div>
+                    <span className="font-mono font-bold text-emerald-800 bg-white px-2 py-1 rounded-xl shadow-2xs border border-emerald-200">
+                      {offerBudget.totalBudgetedCost > 0 ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(0) : 0}% ganancia
+                    </span>
+                  </div>
+                </div>
+
+                {/* GRÁFICO 3: BARRAS COMPARATIVAS SEGÚN CATEGORÍAS FINANCIERAS (MANO DE OBRA, REPUESTOS, VIÁTICOS) */}
+                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <BarChart3 size={16} className="text-[#00668F]" />
+                        Comparativo por Categorías Financieras Inteckno
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Presupuesto Plan vs Costo Real Incurrido por línea de gasto
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-bold">
+                      <span className="flex items-center gap-1.5 text-slate-500">
+                        <span className="w-3 h-3 rounded bg-slate-300"></span> Presupuesto Plan
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[#00668F]">
+                        <span className="w-3 h-3 rounded bg-[#00668F]"></span> Costo Real
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="h-[250px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={categoriesBarData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} />
+                        <YAxis tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} tickLine={false} axisLine={false} tickFormatter={(val) => `$${(val / 1000000).toFixed(1)}M`} />
+                        <Tooltip
+                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name === 'Plan' ? 'Presupuesto Plan' : 'Costo Real Incurrido']}
+                          contentStyle={{
+                            backgroundColor: '#0f172a',
+                            borderRadius: '12px',
+                            border: '1px solid #334155',
+                            color: '#ffffff',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                          }}
+                        />
+                        <Bar dataKey="Plan" name="Plan" fill="#cbd5e1" radius={[6, 6, 0, 0]} maxBarSize={38} />
+                        <Bar dataKey="Real" name="Real" fill="#00668F" radius={[6, 6, 0, 0]} maxBarSize={38} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      ) : activeMainView === 'consolidado_oferta' ? (
         /* VISTA INDEPENDIENTE: CONSOLIDADO DE OFERTA / PRESUPUESTO ESTIMADO INICIAL (FOTO EXCEL OFICIAL) */
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden animate-in fade-in duration-150">
           <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
