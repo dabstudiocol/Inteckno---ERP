@@ -36,6 +36,11 @@ import {
   Edit,
   Edit2,
   Edit3,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
 } from 'lucide-react';
 import { Project } from '../../../../types';
 import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
@@ -454,6 +459,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   // Visor de fotos de soporte / factura
   const [viewingReceiptPhotos, setViewingReceiptPhotos] = useState<{ title: string; invoiceNumber?: string; photos: string[] } | null>(null);
+  const [activePhotoIndex, setActivePhotoIndex] = useState<number>(0);
+  const [photoZoom, setPhotoZoom] = useState<number>(1);
+  const [isPhotoFullscreen, setIsPhotoFullscreen] = useState<boolean>(false);
 
   // Navegación: Vista general de carpetas o Carpeta de ITEM abierta
   const [selectedFolderCode, setSelectedFolderCode] = useState<string | null>(null);
@@ -1779,11 +1787,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                               {c.receiptPhotos && c.receiptPhotos.length > 0 ? (
                                 <button
                                   type="button"
-                                  onClick={() => setViewingReceiptPhotos({
-                                    title: c.concept,
-                                    invoiceNumber: c.invoiceNumber,
-                                    photos: c.receiptPhotos || [],
-                                  })}
+                                  onClick={() => {
+                                    setViewingReceiptPhotos({
+                                      title: c.concept,
+                                      invoiceNumber: c.invoiceNumber,
+                                      photos: c.receiptPhotos || [],
+                                    });
+                                    setActivePhotoIndex(0);
+                                    setPhotoZoom(1);
+                                    setIsPhotoFullscreen(false);
+                                  }}
                                   className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#00668F] font-bold text-xs transition-colors cursor-pointer group"
                                   title="Ver fotos de la factura/soporte"
                                 >
@@ -1962,11 +1975,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                               {c.receiptPhotos && c.receiptPhotos.length > 0 ? (
                                 <button
                                   type="button"
-                                  onClick={() => setViewingReceiptPhotos({
-                                    title: c.concept,
-                                    invoiceNumber: c.invoiceNumber,
-                                    photos: c.receiptPhotos || [],
-                                  })}
+                                  onClick={() => {
+                                    setViewingReceiptPhotos({
+                                      title: c.concept,
+                                      invoiceNumber: c.invoiceNumber,
+                                      photos: c.receiptPhotos || [],
+                                    });
+                                    setActivePhotoIndex(0);
+                                    setPhotoZoom(1);
+                                    setIsPhotoFullscreen(false);
+                                  }}
                                   className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition-colors cursor-pointer group"
                                   title="Ver fotos de la factura/soporte"
                                 >
@@ -3256,68 +3274,177 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         </div>
       )}
 
-      {/* Modal: Visor de Fotos de Factura / Soporte */}
+      {/* Modal: Visor de Fotos de Factura / Soporte con Modo Pantalla Completa y Zoom */}
       {viewingReceiptPhotos && (
-        <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-slate-50 shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-sky-100 text-[#00668F]">
-                  <ImageIcon size={18} />
+        <div
+          className={`fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150 ${
+            isPhotoFullscreen ? 'p-0' : ''
+          }`}
+        >
+          <div
+            className={`bg-slate-900 border border-slate-700/60 shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ${
+              isPhotoFullscreen
+                ? 'w-screen h-screen rounded-none'
+                : 'rounded-2xl max-w-6xl w-full h-[92vh]'
+            }`}
+          >
+            {/* Header del Visor */}
+            <div className="flex items-center justify-between border-b border-slate-800 px-5 py-3.5 bg-slate-950/80 shrink-0 text-white">
+              <div className="flex items-center gap-3">
+                <span className="p-2 rounded-xl bg-[#00668F]/30 text-sky-400 border border-[#00668F]/40">
+                  <ImageIcon size={20} />
                 </span>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Soportes y Factura: {viewingReceiptPhotos.invoiceNumber || viewingReceiptPhotos.title}
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Soporte: {viewingReceiptPhotos.invoiceNumber || viewingReceiptPhotos.title}</span>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      Foto {activePhotoIndex + 1} de {viewingReceiptPhotos.photos.length}
+                    </span>
                   </h3>
-                  <p className="text-[11px] text-slate-500">
-                    {viewingReceiptPhotos.title} • {viewingReceiptPhotos.photos.length} {viewingReceiptPhotos.photos.length === 1 ? 'foto registrada' : 'fotos registradas'}
+                  <p className="text-[11px] text-slate-400">
+                    {viewingReceiptPhotos.title}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setViewingReceiptPhotos(null)}
-                className="w-8 h-8 rounded-lg hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer text-sm font-bold"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {viewingReceiptPhotos.photos.map((photo, idx) => (
-                  <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
-                    <div className="p-2 border-b border-slate-100 flex items-center justify-between bg-slate-50 text-[11px] font-mono text-slate-500">
-                      <span>Foto #{idx + 1}</span>
-                      <a
-                        href={photo}
-                        download={`soporte_${viewingReceiptPhotos.invoiceNumber || 'factura'}_${idx + 1}.jpg`}
-                        className="text-[#00668F] font-bold hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink size={12} />
-                        <span>Descargar</span>
-                      </a>
-                    </div>
-                    <div className="p-2 flex items-center justify-center bg-slate-900/5 min-h-[220px]">
-                      <img
-                        src={photo}
-                        alt={`Soporte ${idx + 1}`}
-                        className="max-h-[380px] w-auto object-contain rounded-lg shadow-2xs"
-                      />
-                    </div>
-                  </div>
-                ))}
+              {/* Acciones y Controles de Zoom / Pantalla Completa */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Zoom Out */}
+                <button
+                  type="button"
+                  onClick={() => setPhotoZoom((prev) => Math.max(0.5, Number((prev - 0.25).toFixed(2))))}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer text-xs"
+                  title="Alejar (Zoom -)"
+                >
+                  <ZoomOut size={16} />
+                </button>
+
+                <span className="text-xs font-mono font-bold text-slate-300 px-1 min-w-[45px] text-center">
+                  {Math.round(photoZoom * 100)}%
+                </span>
+
+                {/* Zoom In */}
+                <button
+                  type="button"
+                  onClick={() => setPhotoZoom((prev) => Math.min(3, Number((prev + 0.25).toFixed(2))))}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer text-xs"
+                  title="Acercar (Zoom +)"
+                >
+                  <ZoomIn size={16} />
+                </button>
+
+                {/* Reset Zoom */}
+                {photoZoom !== 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setPhotoZoom(1)}
+                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-white transition-colors cursor-pointer text-xs"
+                    title="Restablecer tamaño (100%)"
+                  >
+                    <RotateCw size={15} />
+                  </button>
+                )}
+
+                <div className="h-5 w-px bg-slate-800 mx-1" />
+
+                {/* Descargar imagen original en alta definición */}
+                <a
+                  href={viewingReceiptPhotos.photos[activePhotoIndex]}
+                  download={`soporte_${viewingReceiptPhotos.invoiceNumber || 'factura'}_${activePhotoIndex + 1}.jpg`}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1"
+                  title="Descargar imagen en alta definición"
+                >
+                  <ExternalLink size={16} />
+                  <span className="hidden sm:inline font-bold">Descargar</span>
+                </a>
+
+                {/* Alternar Pantalla Completa */}
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoFullscreen(!isPhotoFullscreen)}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1"
+                  title={isPhotoFullscreen ? 'Salir de pantalla completa' : 'Ver a pantalla completa'}
+                >
+                  {isPhotoFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  <span className="hidden sm:inline font-bold">
+                    {isPhotoFullscreen ? 'Salir' : 'Pantalla Completa'}
+                  </span>
+                </button>
+
+                <div className="h-5 w-px bg-slate-800 mx-1" />
+
+                {/* Cerrar Visor */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingReceiptPhotos(null);
+                    setPhotoZoom(1);
+                    setIsPhotoFullscreen(false);
+                  }}
+                  className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white transition-colors cursor-pointer text-xs"
+                  title="Cerrar visor"
+                >
+                  <X size={18} />
+                </button>
               </div>
             </div>
 
-            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-end shrink-0">
-              <button
-                type="button"
-                onClick={() => setViewingReceiptPhotos(null)}
-                className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
-              >
-                Cerrar Visor
-              </button>
+            {/* Contenedor Principal de la Imagen */}
+            <div className="flex-1 overflow-auto bg-slate-950 flex items-center justify-center p-2 relative select-none">
+              {viewingReceiptPhotos.photos[activePhotoIndex] && (
+                <div
+                  className="relative transition-transform duration-150 ease-out flex items-center justify-center"
+                  style={{
+                    transform: `scale(${photoZoom})`,
+                    transformOrigin: 'center center',
+                  }}
+                >
+                  <img
+                    src={viewingReceiptPhotos.photos[activePhotoIndex]}
+                    alt={`Soporte ${activePhotoIndex + 1}`}
+                    className="max-h-[82vh] w-auto max-w-full object-contain rounded-lg shadow-2xl transition-all"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Barra Inferior: Selector de Miniaturas si hay múltiples fotos */}
+            <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 overflow-x-auto max-w-[70vw] py-1">
+                {viewingReceiptPhotos.photos.length > 1 &&
+                  viewingReceiptPhotos.photos.map((ph, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setActivePhotoIndex(idx);
+                        setPhotoZoom(1);
+                      }}
+                      className={`h-12 w-12 rounded-lg border-2 overflow-hidden shrink-0 transition-all cursor-pointer ${
+                        activePhotoIndex === idx
+                          ? 'border-sky-400 scale-105 shadow-md shadow-sky-500/20 ring-2 ring-sky-400/30'
+                          : 'border-slate-700 opacity-60 hover:opacity-100 hover:border-slate-500'
+                      }`}
+                      title={`Ver foto #${idx + 1}`}
+                    >
+                      <img src={ph} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+              </div>
+
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingReceiptPhotos(null);
+                    setPhotoZoom(1);
+                    setIsPhotoFullscreen(false);
+                  }}
+                  className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
+                >
+                  Cerrar Visor
+                </button>
+              </div>
             </div>
           </div>
         </div>
