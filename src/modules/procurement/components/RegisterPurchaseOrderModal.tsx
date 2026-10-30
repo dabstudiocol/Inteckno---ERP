@@ -90,7 +90,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   const [paymentDueDate, setPaymentDueDate] = useState('');
   const [costCategory, setCostCategory] = useState<string>('');
   const [selectedCostItemId, setSelectedCostItemId] = useState<string>('');
-  const [spendingNature, setSpendingNature] = useState<'PRESUPUESTO' | 'REPROCESO'>('PRESUPUESTO');
+  const [costType, setCostType] = useState<'directo' | 'indirecto'>('directo');
   const [isFastTrackEmergency, setIsFastTrackEmergency] = useState(false);
 
   // Excepción de Gerencia para presupuesto sobregirado
@@ -106,7 +106,6 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       setSolpedNumber(req.reqNumber);
       if (req.requesterName) setRequesterName(req.requesterName);
       if (req.projectId) setSelectedProjectId(req.projectId);
-      if (req.spendingNature) setSpendingNature(req.spendingNature);
       if (req.items && req.items.length > 0) {
         const mappedItems: PoItemRow[] = req.items.map((it, idx) => {
           const prod = products.find((p) => p.id === it.productId || p.sku === it.productSku);
@@ -336,7 +335,6 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       subtotalUSD: it.unitPriceUSD * it.qty,
       subtotalCOP: it.unitPriceCOP * it.qty,
       historicalPriceCOP: it.historicalPriceCOP,
-      spendingNature,
     }));
 
     onCreatePo({
@@ -350,7 +348,6 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       totalAmountUSD: Math.round(totalAmountUSD),
       totalAmountCOP: Math.round(totalAmountCOP),
       originRequisitionId: originReqId || undefined,
-      spendingNature,
       qualityCertificateRequired: hasCriticalSpare,
       qualityCertificateAttached: false,
       physicalReceiptDone: false,
@@ -366,7 +363,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       paymentStatus: 'pending',
       threeWayMatchStatus: 'pending',
       items: formattedItems,
-      // Matriz Corporativa BD COMPRAS
+      // Matriz Corporativa BD COMPRAS e Imputación Contable
       solpedNumber: solpedNumber.trim() || undefined,
       requesterName: requesterName.trim() || undefined,
       supplierTaxId: (supplierType === 'registered' ? selectedSupplier?.taxId : customSupplierTaxId) || undefined,
@@ -375,6 +372,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       paymentDueDate: paymentDueDate || undefined,
       costCategory,
       costMatrixItemId: selectedCostItemId || undefined,
+      costType,
       itemCode: (() => {
         if (!selectedCostItemId) return undefined;
         const found = selectedProject?.costMatrix?.find((cm) => cm.id === selectedCostItemId);
@@ -729,29 +727,31 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
             </div>
 
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Naturaleza Gasto</label>
-              <CreatableSelect
-                value={
-                  spendingNature === 'PRESUPUESTO' ? 'PRESUPUESTO (Obra)' :
-                  spendingNature === 'REPROCESO' ? 'REPROCESO (Garantía)' :
-                  spendingNature
-                }
-                onChange={(val) => {
-                  if (val.includes('REPROCESO')) setSpendingNature('REPROCESO');
-                  else setSpendingNature('PRESUPUESTO');
-                }}
-                options={[
-                  'PRESUPUESTO (Obra)',
-                  'REPROCESO (Garantía)',
-                ]}
-                placeholder="Naturaleza..."
-                allowCustomText={false}
-                inputClassName={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${
-                  spendingNature === 'REPROCESO'
-                    ? 'border-rose-400 bg-rose-50 text-rose-700'
-                    : 'border-slate-300 bg-white text-[#00668F]'
-                }`}
-              />
+              <label className="block text-slate-700 font-semibold mb-1">Tipo de Costo Adjudicado *</label>
+              <div className="grid grid-cols-2 gap-1.5 h-9">
+                <button
+                  type="button"
+                  onClick={() => setCostType('directo')}
+                  className={`rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                    costType === 'directo'
+                      ? 'bg-[#003650] text-white border-[#003650] shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  Directo (Obra)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCostType('indirecto')}
+                  className={`rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                    costType === 'indirecto'
+                      ? 'bg-purple-700 text-white border-purple-700 shadow-xs'
+                      : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50'
+                  }`}
+                >
+                  Indirecto (Logística)
+                </button>
+              </div>
             </div>
 
             <div>

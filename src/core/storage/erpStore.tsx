@@ -2319,6 +2319,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     actualTotal: newActualTotal,
                     actualUnitCost: newActualQty > 0 ? Math.round(newActualTotal / newActualQty) : item.actualUnitCost,
                     variance: (item.plannedTotal || 0) - newActualTotal,
+                    costType: poData.costType || item.costType || 'directo',
                     observations: item.observations
                       ? `${item.observations} | Imputado por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`
                       : `Imputado por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`,
@@ -2329,6 +2330,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             } else {
               // Si no existe, crear el registro de costo imputado con su itemCode si fue provisto
               const poCategory = (poData.costCategory as any) || 'repuestos_fabricacion';
+              const effectiveCostType = poData.costType || (['subcontratos_gruas', 'viaticos_transporte'].includes(poCategory) ? 'indirecto' : 'directo');
               const newMatrixItem = {
                 id: `cost-po-${Date.now()}`,
                 itemCode: poData.itemCode || undefined,
@@ -2342,8 +2344,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 actualUnitCost: costCOP,
                 actualTotal: costCOP,
                 variance: 0,
-                spendingNature: poData.spendingNature || 'PRESUPUESTO',
-                costType: 'directo' as const,
+                costType: effectiveCostType,
                 date: poData.date || new Date().toISOString().split('T')[0],
                 observations: `Orden de compra vinculada a ${poData.supplierName || 'Proveedor'}.`,
               };

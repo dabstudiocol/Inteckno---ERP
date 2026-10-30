@@ -824,6 +824,7 @@ export interface PurchaseOrder {
   costCategory?: string; // Rubro o categoría de costo (de los 11 rubros oficiales)
   itemCode?: string; // Código del ITEM contractual del proyecto (ej. "ITEM 11", "ITEM 08")
   costMatrixItemId?: string; // ID del rubro específico en la matriz de costos del proyecto
+  costType?: 'directo' | 'indirecto'; // Tipo de costo adjudicado por el área de compras
   paymentTerms?: string; // Términos pactados (ej. 30 días F/F)
   paymentTermType?: 'contado' | 'credito' | 'anticipo'; // Condición de pago de la matriz
   paymentDueDate?: string; // Fecha de pago programada
