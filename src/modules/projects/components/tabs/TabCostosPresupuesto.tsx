@@ -478,6 +478,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const [photoZoom, setPhotoZoom] = useState<number>(1);
   const [isPhotoFullscreen, setIsPhotoFullscreen] = useState<boolean>(false);
 
+  // Segmento activo en el hover de la dona tecnológica de control
+  const [hoveredDonutSegment, setHoveredDonutSegment] = useState<{
+    name: string;
+    value: number;
+    pct: number;
+    color: string;
+  } | null>(null);
+
   // Navegación: Vista general de carpetas o Carpeta de ITEM abierta
   const [selectedFolderCode, setSelectedFolderCode] = useState<string | null>(null);
 
@@ -913,9 +921,24 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       if (cat === 'viaticos_transporte' && (i.category === 'viaticos' || i.category === 'viaticos_transporte')) return true;
       return false;
     });
-    const planned = list.reduce((sum, i) => sum + i.plannedTotal, 0);
+
+    // Presupuesto Plan REAL: Extraído exclusivamente de los rubros coincidentes del Consolidado de Oferta
+    // CERO inventar datos: Si no se ha formulado rubro en la oferta para esta categoría, el plan es exactamente $ 0.
+    const offerBudgetForCategory = offerBudget.items
+      .filter((it) => {
+        const lowerName = (it.rubroName || '').toLowerCase();
+        if (cat === 'mano_obra_itk' && (lowerName.includes('mano') || lowerName.includes('personal') || lowerName.includes('cuadrilla') || lowerName.includes('ingenier') || lowerName.includes('tecnic'))) return true;
+        if (cat === 'mano_obra_externa' && (lowerName.includes('extern') || lowerName.includes('especialista'))) return true;
+        if (['inspeccion_mrt', 'ensayos_end', 'analisis_vibraciones', 'termografia', 'end_mrt'].includes(cat) && (lowerName.includes('mrt') || lowerName.includes('ensayo') || lowerName.includes('end') || lowerName.includes('inspecc') || lowerName.includes('diagnost') || lowerName.includes('vibrac') || lowerName.includes('termogra'))) return true;
+        if (cat === 'repuestos_fabricacion' && (lowerName.includes('repuesto') || lowerName.includes('material') || lowerName.includes('pieza') || lowerName.includes('fabricac') || lowerName.includes('insumo'))) return true;
+        if (cat === 'viaticos_transporte' && (lowerName.includes('viatic') || lowerName.includes('transporte') || lowerName.includes('pasaje') || lowerName.includes('movil') || lowerName.includes('hospedaj') || lowerName.includes('hotel'))) return true;
+        if (cat === 'subcontratos_gruas' && (lowerName.includes('subcontrat') || lowerName.includes('grua') || lowerName.includes('alquiler') || lowerName.includes('equipo'))) return true;
+        return false;
+      })
+      .reduce((sum, it) => sum + (Number(it.budgetPlanned) || 0), 0);
+
     const actual = list.reduce((sum, i) => sum + i.actualTotal, 0);
-    return { count: list.length, planned, actual };
+    return { count: list.length, planned: offerBudgetForCategory, actual };
   };
 
   const manoObra = {
@@ -1032,6 +1055,88 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* CABECERA RESUMIDA DEL PROYECTO (SIEMPRE VISIBLE) */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-[#00668F] border border-sky-200 px-2.5 py-0.5 rounded-full">
+              Kardex Financiero & Control Operativo
+            </span>
+            <span className="text-xs text-slate-700 font-mono font-bold bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+              {project.code}
+            </span>
+          </div>
+          <h2 className="text-base font-black text-slate-900 mt-1.5 tracking-tight">
+            {project.name}
+          </h2>
+          <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-x-4 gap-y-1">
+            <span>Cliente: <strong className="text-slate-800 font-semibold">{project.clientName}</strong></span>
+            {project.contractCode && <span>Contrato / OC: <strong className="text-slate-800 font-semibold">{project.contractCode}</strong></span>}
+            {project.quoteCode && <span>Cotización: <strong className="text-slate-800 font-semibold">{project.quoteCode}</strong></span>}
+          </div>
+        </div>
+
+        {/* Resumen rápido de Valor Contractual y Costos Incurridos */}
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Valor Contractual</span>
+            <span className="text-sm font-black font-mono text-slate-900">
+              {currency === 'COP' ? formatCOP(contractAmountCOP) : `${currency} $${rawContractAmount.toLocaleString('en-US')}`}
+            </span>
+          </div>
+          <div className="h-8 w-px bg-slate-200" />
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Costos Incurridos</span>
+            <span className="text-sm font-black font-mono text-rose-600">
+              {formatCOP(totalIncurred)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* SELECTOR DE 3 SUBPESTAÑAS PRINCIPALES: DASHBOARD CON GRÁFICOS | MATRIZ DE ITEMS Y COSTOS | PRESUPUESTO */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-2xl">
+        <button
+          type="button"
+          onClick={() => setActiveMainView('dashboard_graficos')}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainView === 'dashboard_graficos'
+              ? 'bg-[#00668F] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <BarChart3 size={15} />
+          <span>Dashboard & Gráficos</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMainView('items_costos')}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainView === 'items_costos'
+              ? 'bg-[#00668F] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Folder size={15} />
+          <span>Matriz de ITEMS & Costos</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMainView('consolidado_oferta')}
+          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainView === 'consolidado_oferta'
+              ? 'bg-[#00668F] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <FileSpreadsheet size={15} />
+          <span>Presupuesto (Oferta)</span>
+        </button>
+      </div>
+
+      {activeMainView === 'dashboard_graficos' ? (
+        /* SUBPESTAÑA 1: DASHBOARD CON GRÁFICOS INTERACTIVOS (DESGLOSE DE COSTOS DIRECTOS/INDIRECTOS Y PRESUPUESTO OFERTA) */
+        <div className="space-y-4 animate-in fade-in duration-150">
       {/* 0. PANEL EJECUTIVO DE CONTROL DE PROYECTO (ESTILO MODERNO BENTO / HAPPYHOUR DASHBOARD) */}
       <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-[#003b54] p-5 sm:p-6 rounded-3xl border border-sky-900/60 text-white shadow-xl space-y-5">
         {/* Cabecera del Proyecto */}
@@ -1238,42 +1343,47 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           dataKey="value"
                           stroke="none"
                           cornerRadius={6}
+                          onMouseEnter={(entry: any) => {
+                            if (entry && entry.name) {
+                              setHoveredDonutSegment(entry);
+                            }
+                          }}
+                          onMouseLeave={() => setHoveredDonutSegment(null)}
                         >
                           {(controlDonutData.length > 0 ? controlDonutData : [{ color: '#334155' }]).map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip
-                          position={{ y: 245 }}
-                          wrapperStyle={{ zIndex: 50 }}
-                          formatter={(value: any, name: any) => [
-                            `${formatCOP(Number(value) || 0)}`,
-                            name,
-                          ]}
-                          contentStyle={{
-                            backgroundColor: '#0f172a',
-                            borderRadius: '12px',
-                            border: '1px solid #334155',
-                            color: '#ffffff',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
-                          }}
-                        />
                       </PieChart>
                     </ResponsiveContainer>
 
                     {/* Centro Tecnológico de la Dona */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
-                        Margen Real
-                      </span>
-                      <span className="text-2xl font-black font-mono text-white tracking-tight">
-                        {grossMarginPct.toFixed(1)}%
-                      </span>
-                      <span className="text-[9px] font-mono text-cyan-300">
-                        {formatCOP(contractAmountCOP)}
-                      </span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                      {hoveredDonutSegment ? (
+                        <>
+                          <span className="text-[10px] uppercase tracking-wider font-bold truncate max-w-[150px]" style={{ color: hoveredDonutSegment.color }}>
+                            {hoveredDonutSegment.name}
+                          </span>
+                          <span className="text-xl font-black font-mono text-white tracking-tight mt-0.5">
+                            {formatCOP(hoveredDonutSegment.value)}
+                          </span>
+                          <span className="text-[10px] font-mono text-cyan-300 font-bold mt-0.5">
+                            {hoveredDonutSegment.pct ? `${hoveredDonutSegment.pct.toFixed(1)}% del contrato` : ''}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                            Margen Real
+                          </span>
+                          <span className="text-2xl font-black font-mono text-white tracking-tight">
+                            {grossMarginPct.toFixed(1)}%
+                          </span>
+                          <span className="text-[9px] font-mono text-cyan-300">
+                            {formatCOP(contractAmountCOP)}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <span className="text-[10px] text-slate-400 mt-1 font-medium">
@@ -1459,49 +1569,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         </div>
       </div>
 
-      {/* SELECTOR DE 3 SUBPESTAÑAS PRINCIPALES: DASHBOARD CON GRÁFICOS | MATRIZ DE ITEMS Y COSTOS | PRESUPUESTO */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-2xl">
-        <button
-          type="button"
-          onClick={() => setActiveMainView('dashboard_graficos')}
-          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeMainView === 'dashboard_graficos'
-              ? 'bg-[#00668F] text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <BarChart3 size={15} />
-          <span>Dashboard & Gráficos</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMainView('items_costos')}
-          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeMainView === 'items_costos'
-              ? 'bg-[#00668F] text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Folder size={15} />
-          <span>Matriz de ITEMS & Costos</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMainView('consolidado_oferta')}
-          className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeMainView === 'consolidado_oferta'
-              ? 'bg-[#00668F] text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <FileSpreadsheet size={15} />
-          <span>Presupuesto (Oferta)</span>
-        </button>
-      </div>
 
-      {activeMainView === 'dashboard_graficos' ? (
-        /* SUBPESTAÑA 1: DASHBOARD CON GRÁFICOS INTERACTIVOS (DESGLOSE DE COSTOS DIRECTOS/INDIRECTOS Y PRESUPUESTO OFERTA) */
-        <div className="space-y-4 animate-in fade-in duration-150">
           {(() => {
             // 1. Datos para Dona de Costos Directos vs Indirectos
             const totalDirectCost = costItems.filter((c) => c.costType !== 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
