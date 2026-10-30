@@ -1065,9 +1065,21 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             <div>
               <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Margen Proyectado</span>
               <span className={`text-xl font-black font-mono tracking-tight ${
-                !hasCostData ? 'text-slate-400' : grossMarginPct >= 30 ? 'text-emerald-400' : grossMarginPct >= 15 ? 'text-amber-400' : 'text-rose-400'
+                offerBudget.totalBudgetedCost > 0 && offerBudget.totalBudgetedProfit > 0
+                  ? 'text-emerald-400'
+                  : !hasCostData
+                  ? 'text-slate-400'
+                  : grossMarginPct >= 30
+                  ? 'text-emerald-400'
+                  : grossMarginPct >= 15
+                  ? 'text-amber-400'
+                  : 'text-rose-400'
               }`}>
-                {hasCostData ? grossMarginPct.toFixed(1) + '%' : 'N/D'}
+                {offerBudget.subtotal > 0 && offerBudget.totalBudgetedProfit > 0
+                  ? ((offerBudget.totalBudgetedProfit / offerBudget.subtotal) * 100).toFixed(1) + '%'
+                  : hasCostData
+                  ? grossMarginPct.toFixed(1) + '%'
+                  : 'N/D'}
               </span>
             </div>
           </div>
@@ -1119,21 +1131,27 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             </div>
           </div>
 
-          {/* Utilidad Bruta */}
+          {/* Utilidad Presupuestada (Consolidado de Oferta) */}
           <div className="p-4 bg-white/[0.07] hover:bg-white/[0.09] transition-all rounded-2xl border border-white/10 backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
-                <span>Utilidad Proyectada</span>
+                <span>Utilidad Total Presupuestada</span>
                 <TrendingUp size={14} className="text-emerald-400" />
               </div>
-              <div className={`text-lg font-black mt-1.5 font-mono ${grossProfitCOP >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
-                {hasCostData ? formatCOP(grossProfitCOP) : '--'}
+              <div className="text-lg font-black text-emerald-300 mt-1.5 font-mono">
+                {offerBudget.totalBudgetedProfit > 0
+                  ? formatCOP(offerBudget.totalBudgetedProfit)
+                  : hasCostData
+                  ? formatCOP(grossProfitCOP)
+                  : '$ 0'}
               </div>
             </div>
             <div className="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
-              <span>Estado:</span>
-              <span className="font-semibold text-white">
-                {!hasCostData ? 'Sin costos' : grossMarginPct >= 30 ? 'Saludable' : grossMarginPct >= 15 ? 'En rango' : 'Riesgo'}
+              <span>Sobre Costos:</span>
+              <span className="font-semibold text-emerald-300 font-mono">
+                {offerBudget.totalBudgetedCost > 0
+                  ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(1) + '%'
+                  : '0.0%'}
               </span>
             </div>
           </div>
