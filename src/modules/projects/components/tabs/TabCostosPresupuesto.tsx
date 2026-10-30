@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   DollarSign,
   Plus,
@@ -1530,8 +1530,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 const totalCost = totalDir + totalInd;
                 const totalFact = itemBills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
 
-                const budgetPlan = itemDef.budgetPlanned || itemDirects.reduce((s, c) => s + c.plannedTotal, 0) + itemIndirects.reduce((s, c) => s + c.plannedTotal, 0);
-                const balancePct = budgetPlan > 0 ? (totalCost / budgetPlan) * 100 : 0;
+                const totalCostPlannedInItem = itemDirects.reduce((s, c) => s + c.plannedTotal, 0) + itemIndirects.reduce((s, c) => s + c.plannedTotal, 0);
+                
 
                 return (
                   <div
@@ -1591,13 +1591,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       <span className="text-slate-400">
                         {itemDirects.length + itemIndirects.length} rubros • {itemBills.length} facturas
                       </span>
-                      {budgetPlan > 0 && (
-                        <span className={`font-mono font-bold px-1.5 py-0.5 rounded ${
-                          balancePct <= 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                        }`}>
-                          Balance: {balancePct.toFixed(0)}%
-                        </span>
-                      )}
+                      <span className="font-bold text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded">
+                        Carpeta Operativa
+                      </span>
                     </div>
                   </div>
                 );
@@ -1862,24 +1858,19 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     const sumRet = directs.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
                     const sumTotal = sumVal + sumIva - sumRet;
 
-                    const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
-                    const budget = targetFolder?.budgetPlanned || directs.reduce((s, c) => s + c.plannedTotal, 0);
-                    const balancePct = budget > 0 ? (sumTotal / budget) * 100 : 0;
-
                     return (
                       <tfoot>
                         <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
                           <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
-                            Consolidados Totales Costos Directos
+                            Consolidados Totales Costos Directos ({directs.length} rubros)
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono">{formatCOP(sumVal)}</td>
                           <td className="py-2.5 px-3 text-right font-mono">{sumIva > 0 ? formatCOP(sumIva) : '$ -'}</td>
                           <td className="py-2.5 px-3 text-right font-mono">{sumRet > 0 ? formatCOP(sumRet) : '$ -'}</td>
                           <td className="py-2.5 px-3 text-right font-mono text-[#00668F]">{formatCOP(sumTotal)}</td>
-                          <td colSpan={2} className="py-2.5 px-3 text-right bg-yellow-100 text-yellow-900 font-black font-mono">
-                            Balance Presupuesto: {balancePct.toFixed(0)}%
+                          <td colSpan={3} className="py-2.5 px-3 text-right text-slate-500 font-medium italic text-[11px]">
+                            Total incurrido en carpeta {selectedFolderCode}
                           </td>
-                          <td></td>
                         </tr>
                       </tfoot>
                     );
@@ -2178,26 +2169,20 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     const sumRet = bills.reduce((acc, b) => acc + (b.retentionAmount || 0), 0);
                     const sumGrand = bills.reduce((acc, b) => acc + (b.grandTotal || 0), 0);
 
-                    const targetFolder = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
-                    const budget = targetFolder?.budgetPlanned || 0;
-                    const pendingFact = Math.max(0, budget - sumGrand);
-                    const pctFact = budget > 0 ? (sumGrand / budget) * 100 : 100;
-
                     return (
                       <tfoot>
                         <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
                           <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
-                            Consolidados Totales Facturación
+                            Consolidados Totales Facturación ({bills.length} facturas)
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono">{sumAnt > 0 ? formatCOP(sumAnt) : '$ -'}</td>
                           <td className="py-2.5 px-3 text-right font-mono">{formatCOP(sumSub)}</td>
                           <td className="py-2.5 px-3 text-right font-mono">{sumIva > 0 ? formatCOP(sumIva) : '$ -'}</td>
                           <td className="py-2.5 px-3 text-right font-mono">{sumRet > 0 ? formatCOP(sumRet) : '$ -'}</td>
                           <td className="py-2.5 px-3 text-right font-mono text-emerald-800">{formatCOP(sumGrand)}</td>
-                          <td colSpan={2} className="py-2.5 px-3 text-right bg-yellow-100 text-yellow-900 font-black font-mono">
-                            Pendiente Facturación: {formatCOP(pendingFact)} ({pctFact.toFixed(0)}% Facturado)
+                          <td colSpan={3} className="py-2.5 px-3 text-right text-emerald-700 font-medium italic text-[11px]">
+                            Total facturado en carpeta {selectedFolderCode}
                           </td>
-                          <td></td>
                         </tr>
                       </tfoot>
                     );
@@ -2259,16 +2244,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Presupuesto Asignado al ITEM (COP)</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="ej. 15000000"
-                  value={folderForm.budgetPlanned || ''}
-                  onChange={(e) => setFolderForm({ ...folderForm, budgetPlanned: Number(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                />
+              <div className="p-3 bg-sky-50/70 border border-sky-100 rounded-xl text-xs text-sky-800 leading-relaxed">
+                <p className="font-semibold text-[#00668F] mb-0.5">ℹ️ Carpeta de Agrupación Operativa</p>
+                Los ITEMS agrupan los rubros de costos directos, indirectos y facturación asociada del proyecto. El presupuesto general se gestiona a nivel de proyecto (Consolidado de Oferta).
               </div>
 
               <div>
