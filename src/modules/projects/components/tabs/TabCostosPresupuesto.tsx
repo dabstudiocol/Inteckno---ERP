@@ -1032,32 +1032,39 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 0. PANEL EJECUTIVO DE CONTROL DE PROYECTO (ADN FINANCIERO INTECKNO) */}
-      <div className="bg-gradient-to-r from-slate-900 to-sky-950 p-4 rounded-2xl border border-sky-900 text-white shadow-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-sky-800/60">
+      {/* 0. PANEL EJECUTIVO DE CONTROL DE PROYECTO (ESTILO MODERNO BENTO / HAPPYHOUR DASHBOARD) */}
+      <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-[#003b54] p-5 sm:p-6 rounded-3xl border border-sky-900/60 text-white shadow-xl space-y-5">
+        {/* Cabecera del Proyecto */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-cyan-300 border border-sky-400/30 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-cyan-300 border border-sky-400/30 px-2.5 py-0.5 rounded-full">
                 Control de Proyecto • Kardex Financiero
               </span>
-              <span className="text-xs text-sky-200 font-mono">
+              <span className="text-xs text-sky-200 font-mono font-bold bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
                 {project.code}
               </span>
             </div>
-            <h2 className="text-sm font-bold text-white mt-1">
+            <h2 className="text-lg font-black text-white mt-2 tracking-tight">
               {project.name}
             </h2>
-            <div className="text-[11px] text-sky-300 mt-0.5 flex flex-wrap gap-x-3">
-              <span>Cliente: <strong className="text-white">{project.clientName}</strong></span>
-              {project.contractCode && <span>Contrato / OC: <strong className="text-white">{project.contractCode}</strong></span>}
-              {project.quoteCode && <span>Cotización: <strong className="text-white">{project.quoteCode}</strong></span>}
+            <div className="text-xs text-slate-300 mt-1 flex flex-wrap gap-x-4 gap-y-1">
+              <span>Cliente: <strong className="text-white font-semibold">{project.clientName}</strong></span>
+              {project.contractCode && <span>Contrato / OC: <strong className="text-white font-semibold">{project.contractCode}</strong></span>}
+              {project.quoteCode && <span>Cotización: <strong className="text-white font-semibold">{project.quoteCode}</strong></span>}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <span className="text-[10px] text-sky-300 block uppercase">Margen de Rentabilidad</span>
-              <span className={`text-base font-black ${
+          {/* Margen de Rentabilidad estilo Happyhour (Badge tecnológico destacado) */}
+          <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm flex items-center gap-3 self-start md:self-auto">
+            <div className={`p-2.5 rounded-xl ${
+              !hasCostData ? 'bg-slate-800 text-slate-400' : grossMarginPct >= 30 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+            }`}>
+              <TrendingUp size={22} />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Margen Proyectado</span>
+              <span className={`text-xl font-black font-mono tracking-tight ${
                 !hasCostData ? 'text-slate-400' : grossMarginPct >= 30 ? 'text-emerald-400' : grossMarginPct >= 15 ? 'text-amber-400' : 'text-rose-400'
               }`}>
                 {hasCostData ? grossMarginPct.toFixed(1) + '%' : 'N/D'}
@@ -1066,67 +1073,149 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3.5">
-          {/* Valor Contractual y Comparación con Presupuesto Construido */}
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Valor Contractual Vigente</span>
-            <div className="text-sm font-bold text-white mt-0.5">
-              {currency === 'COP' ? formatCOP(contractAmountCOP) : `${currency} $${rawContractAmount.toLocaleString('en-US')}`}
+        {/* Bento Grid Principal: 4 Tarjetas de Métricas Clave */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Valor Contractual */}
+          <div className="p-4 bg-white/[0.07] hover:bg-white/[0.09] transition-all rounded-2xl border border-white/10 backdrop-blur-md flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-sky-300 text-[11px] font-bold uppercase tracking-wider">
+                <span>Valor Contractual</span>
+                <DollarSign size={14} className="text-sky-400" />
+              </div>
+              <div className="text-lg font-black text-white mt-1.5 font-mono">
+                {currency === 'COP' ? formatCOP(contractAmountCOP) : `${currency} $${rawContractAmount.toLocaleString('en-US')}`}
+              </div>
             </div>
-            <div className="text-[10px] text-slate-300 mt-0.5 flex items-center justify-between">
+            <div className="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
               {offerBudget.subtotal > 0 ? (
                 <>
-                  <span>Presupuesto Construido: {formatCOP(offerBudget.subtotal)}</span>
-                  <span className={`text-[9px] font-mono font-bold ${
-                    contractAmountCOP >= offerBudget.subtotal ? 'text-emerald-300' : 'text-amber-300'
+                  <span className="truncate pr-1">Plan: {formatCOP(offerBudget.subtotal)}</span>
+                  <span className={`text-[10px] font-mono font-bold shrink-0 px-1.5 py-0.2 rounded ${
+                    contractAmountCOP >= offerBudget.subtotal ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
                   }`}>
-                    {contractAmountCOP >= offerBudget.subtotal ? '✓ Cubierto' : '⚠️ Desviación'}
+                    {contractAmountCOP >= offerBudget.subtotal ? '✓ Cubierto' : '⚠️ Desvío'}
                   </span>
                 </>
               ) : (
-                <span className="text-slate-400">Sin presupuesto construido aún</span>
+                <span className="text-slate-400 text-[10px]">Sin oferta construida</span>
               )}
             </div>
           </div>
 
-          {/* Costos Reales Incurridos */}
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Costos Totales Incurridos</span>
-            <div className="text-sm font-bold text-rose-300 mt-0.5">
-              {formatCOP(totalIncurred)}
+          {/* Costos Incurridos */}
+          <div className="p-4 bg-white/[0.07] hover:bg-white/[0.09] transition-all rounded-2xl border border-white/10 backdrop-blur-md flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-rose-300 text-[11px] font-bold uppercase tracking-wider">
+                <span>Costos Incurridos</span>
+                <TrendingDown size={14} className="text-rose-400" />
+              </div>
+              <div className="text-lg font-black text-rose-300 mt-1.5 font-mono">
+                {formatCOP(totalIncurred)}
+              </div>
             </div>
-            <div className="text-[10px] text-slate-300 mt-0.5 flex items-center justify-between">
-              <span>Presupuesto Plan: {formatCOP(activeCostBudgetPlan)}</span>
-              {offerBudget.totalBudgetedCost > 0 ? (
-                <span className="text-[9px] text-cyan-300 font-semibold">(Consolidado Oferta)</span>
-              ) : initialCostBudget > 0 ? (
-                <span className="text-[9px] text-amber-300 font-semibold">(Presupuesto Inicial)</span>
-              ) : null}
+            <div className="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
+              <span>Presupuesto Plan:</span>
+              <span className="font-mono font-bold text-white">{formatCOP(activeCostBudgetPlan)}</span>
             </div>
           </div>
 
           {/* Utilidad Bruta */}
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Utilidad Bruta Proyectada</span>
-            <div className={`text-sm font-bold mt-0.5 ${grossProfitCOP >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
-              {hasCostData ? formatCOP(grossProfitCOP) : '--'}
+          <div className="p-4 bg-white/[0.07] hover:bg-white/[0.09] transition-all rounded-2xl border border-white/10 backdrop-blur-md flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
+                <span>Utilidad Proyectada</span>
+                <TrendingUp size={14} className="text-emerald-400" />
+              </div>
+              <div className={`text-lg font-black mt-1.5 font-mono ${grossProfitCOP >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
+                {hasCostData ? formatCOP(grossProfitCOP) : '--'}
+              </div>
             </div>
-            <div className="text-[10px] text-slate-300 mt-0.5">
-              Estado: {!hasCostData ? 'Sin costos registrados' : grossMarginPct >= 30 ? 'Excelente' : grossMarginPct >= 15 ? 'Aceptable' : 'Alerta de Margen'}
+            <div className="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
+              <span>Estado:</span>
+              <span className="font-semibold text-white">
+                {!hasCostData ? 'Sin costos' : grossMarginPct >= 30 ? 'Saludable' : grossMarginPct >= 15 ? 'En rango' : 'Riesgo'}
+              </span>
             </div>
           </div>
 
           {/* Facturación y Saldo */}
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-            <span className="text-[10px] text-sky-300 uppercase font-semibold block">Facturación & Saldos</span>
-            <div className="text-sm font-bold text-cyan-200 mt-0.5">
-              Facturado: {formatCOP(totalInvoiced)}
+          <div className="p-4 bg-white/[0.07] hover:bg-white/[0.09] transition-all rounded-2xl border border-white/10 backdrop-blur-md flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-cyan-300 text-[11px] font-bold uppercase tracking-wider">
+                <span>Facturación & Cobro</span>
+                <Receipt size={14} className="text-cyan-400" />
+              </div>
+              <div className="text-lg font-black text-cyan-200 mt-1.5 font-mono">
+                {formatCOP(totalInvoiced)}
+              </div>
             </div>
-            <div className="text-[10px] text-sky-300 mt-0.5">
-              Pendiente por Facturar: {formatCOP(pendingToInvoice)}
+            <div className="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
+              <span>Por Cobrar / Facturar:</span>
+              <span className="font-mono font-bold text-sky-300">{formatCOP(pendingToInvoice)}</span>
             </div>
           </div>
         </div>
+
+        {/* SECCIÓN INTERACTIVA: Termómetro Visual de Distribución y Salud del Proyecto (Estilo Happyhour Bento) */}
+        {(() => {
+          const costBurnPct = contractAmountCOP > 0 ? Math.min(100, (totalIncurred / contractAmountCOP) * 100) : 0;
+          const invoicedPct = contractAmountCOP > 0 ? Math.min(100, (totalInvoiced / contractAmountCOP) * 100) : 0;
+          const profitProjectedPct = contractAmountCOP > 0 ? Math.max(0, Math.min(100, (grossProfitCOP / contractAmountCOP) * 100)) : 0;
+
+          return (
+            <div className="p-4 bg-white/[0.05] rounded-2xl border border-white/10 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <span className="font-bold text-white flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    Flujo de Control del Proyecto • Balance Dinámico (Contrato 100%)
+                  </span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">
+                    Proporción en tiempo real de lo facturado, costos ejecutados y utilidad reservada
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 font-mono text-[11px]">
+                  <span className="flex items-center gap-1.5 text-rose-300">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Costos: {costBurnPct.toFixed(1)}%
+                  </span>
+                  <span className="flex items-center gap-1.5 text-cyan-300">
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Facturado: {invoicedPct.toFixed(1)}%
+                  </span>
+                  <span className="flex items-center gap-1.5 text-emerald-300">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Utilidad: {profitProjectedPct.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Barra Multicapa Tecnológica con Marcadores */}
+              <div className="space-y-1.5">
+                <div className="h-3.5 w-full bg-slate-800/80 rounded-full overflow-hidden flex p-0.5 border border-white/10 shadow-inner">
+                  <div
+                    style={{ width: `${costBurnPct}%` }}
+                    className="bg-gradient-to-r from-rose-500 to-rose-400 rounded-l-full h-full transition-all duration-500"
+                    title={`Costos Incurridos: ${costBurnPct.toFixed(1)}%`}
+                  />
+                  <div
+                    style={{ width: `${profitProjectedPct}%` }}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500"
+                    title={`Margen Proyectado: ${profitProjectedPct.toFixed(1)}%`}
+                  />
+                  <div
+                    style={{ width: `${Math.max(0, 100 - (costBurnPct + profitProjectedPct))}%` }}
+                    className="bg-slate-700/50 rounded-r-full h-full"
+                    title="Remanente / Saldo contractual"
+                  />
+                </div>
+
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>0% (Inicio)</span>
+                  <span>50% Ejecución</span>
+                  <span>100% Contrato ({formatCOP(contractAmountCOP)})</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 1. TARJETAS DE CATEGORÍAS FINANCIERAS PRINCIPALES */}
@@ -1207,228 +1296,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
           <div className="text-[10px] text-slate-400">Plan: {formatCOP(viaticosSub.planned)} ({viaticosSub.count} rubros)</div>
         </div>
       </div>
-
-      {/* DASHBOARD GRÁFICO INTERACTIVO ESTILO STIMULSOFT & BI MODERNO */}
-      {(() => {
-        // Datos para gráfico de barras comparativo (Presupuesto Plan vs Costo Incurrido)
-        const comparisonBarData = [
-          {
-            name: 'Mano de Obra',
-            Plan: manoObra.planned,
-            Real: manoObra.actual,
-            categoryKey: 'mano_obra_itk',
-          },
-          {
-            name: 'END & MRT',
-            Plan: ensayosEndMrt.planned,
-            Real: ensayosEndMrt.actual,
-            categoryKey: 'end_mrt',
-          },
-          {
-            name: 'Repuestos',
-            Plan: repuestos.planned,
-            Real: repuestos.actual,
-            categoryKey: 'repuestos_fabricacion',
-          },
-          {
-            name: 'Viáticos & Subc.',
-            Plan: viaticosSub.planned,
-            Real: viaticosSub.actual,
-            categoryKey: 'viaticos_transporte',
-          },
-        ];
-
-        // Datos para gráfico de torta/distribución del gasto real
-        const pieData = [
-          { name: 'Mano de Obra', value: manoObra.actual, color: '#0284c7' },
-          { name: 'END, MRT & Diagnóstico', value: ensayosEndMrt.actual, color: '#9333ea' },
-          { name: 'Repuestos & Fabricación', value: repuestos.actual, color: '#059669' },
-          { name: 'Viáticos & Subcontratos', value: viaticosSub.actual, color: '#d97706' },
-        ].filter((d) => d.value > 0);
-
-        const totalCostGraph = manoObra.actual + ensayosEndMrt.actual + repuestos.actual + viaticosSub.actual;
-
-        return (
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-sky-50 text-[#00668F]">
-                  <BarChart3 size={18} />
-                </span>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                    Panel Analítico Financiero • Control Interactivo en Vivo
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Comparativa de ejecución presupuestal y distribución porcentual del proyecto
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowFinancialCharts(!showFinancialCharts)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  {showFinancialCharts ? 'Ocultar Gráficos' : 'Mostrar Gráficos'}
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${showFinancialCharts ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-            </div>
-
-            {showFinancialCharts && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
-                {/* GRÁFICO 1: BARRAS COMPARATIVAS (PRESUPUESTO VS REAL) */}
-                <div className="lg:col-span-7 bg-slate-50/60 p-4 rounded-2xl border border-slate-200/70 flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <BarChart3 size={14} className="text-[#00668F]" />
-                        Presupuesto Plan vs. Costo Real Incurrido
-                      </span>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">
-                        Haz clic en una barra para filtrar las tablas por categoría
-                      </span>
-                    </div>
-                    {activeCategoryFilter !== 'todos' && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveCategoryFilter('todos')}
-                        className="text-[10px] font-bold text-[#00668F] hover:underline bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200"
-                      >
-                        Limpiar Filtro ({activeCategoryFilter})
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="h-[240px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={comparisonBarData}
-                        margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
-                        onClick={(data: any) => {
-                          if (data && data.activePayload && data.activePayload.length > 0) {
-                            const cat = data.activePayload[0].payload.categoryKey;
-                            setActiveCategoryFilter(activeCategoryFilter === cat ? 'todos' : cat);
-                          }
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
-                          tickLine={false}
-                          axisLine={{ stroke: '#cbd5e1' }}
-                        />
-                        <YAxis
-                          tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }}
-                          tickLine={false}
-                          axisLine={false}
-                          tickFormatter={(val) => `$${(val / 1000000).toFixed(1)}M`}
-                        />
-                        <Tooltip
-                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name === 'Plan' ? 'Presupuesto Plan' : 'Costo Real']}
-                          labelStyle={{ fontWeight: 700, color: '#0f172a' }}
-                          contentStyle={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            border: '1px solid #e2e8f0',
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                            fontSize: '11px',
-                          }}
-                        />
-                        <Legend
-                          verticalAlign="top"
-                          align="right"
-                          iconType="circle"
-                          wrapperStyle={{ paddingBottom: '10px', fontSize: '11px', fontWeight: 600 }}
-                        />
-                        <Bar
-                          dataKey="Plan"
-                          name="Presupuesto Plan"
-                          fill="#94a3b8"
-                          radius={[6, 6, 0, 0]}
-                          maxBarSize={36}
-                          cursor="pointer"
-                        />
-                        <Bar
-                          dataKey="Real"
-                          name="Costo Real Incurrido"
-                          fill="#00668F"
-                          radius={[6, 6, 0, 0]}
-                          maxBarSize={36}
-                          cursor="pointer"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* GRÁFICO 2: DONA / COMPOSICIÓN DEL GASTO REAL */}
-                <div className="lg:col-span-5 bg-slate-50/60 p-4 rounded-2xl border border-slate-200/70 flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <PieChartIcon size={14} className="text-emerald-700" />
-                      Distribución del Gasto Real
-                    </span>
-                    <span className="text-[11px] font-mono font-bold text-slate-700">
-                      Total: {formatCOP(totalCostGraph)}
-                    </span>
-                  </div>
-
-                  {pieData.length === 0 ? (
-                    <div className="h-[240px] flex flex-col items-center justify-center text-center p-4 text-slate-400">
-                      <PieChartIcon size={32} className="opacity-40 mb-2" />
-                      <span className="text-xs font-semibold">Sin gastos incurridos aún</span>
-                      <span className="text-[10px] mt-0.5">Agrega costos para ver la distribución</span>
-                    </div>
-                  ) : (
-                    <div className="h-[240px] w-full flex items-center justify-center">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={55}
-                            outerRadius={80}
-                            paddingAngle={4}
-                            dataKey="value"
-                          >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: any, name: any) => [
-                              `${formatCOP(Number(value) || 0)} (${totalCostGraph > 0 ? ((Number(value) / totalCostGraph) * 100).toFixed(1) : 0}%)`,
-                              name,
-                            ]}
-                            contentStyle={{
-                              backgroundColor: '#ffffff',
-                              borderRadius: '12px',
-                              border: '1px solid #e2e8f0',
-                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                              fontSize: '11px',
-                            }}
-                          />
-                          <Legend
-                            verticalAlign="bottom"
-                            align="center"
-                            iconType="circle"
-                            wrapperStyle={{ paddingTop: '10px', fontSize: '10px', fontWeight: 600 }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       {/* SELECTOR DE VISTA PRINCIPAL: PRESUPUESTO INICIAL (OFERTA) VS EJECUCIÓN (ITEMS Y COSTOS) */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-xl">
