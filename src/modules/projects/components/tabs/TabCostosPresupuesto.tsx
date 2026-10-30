@@ -486,6 +486,23 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     color: string;
   } | null>(null);
 
+  // Segmento activo en el hover de la dona de Costos (Directos vs Indirectos / Categorías)
+  const [hoveredCostDonutSegment, setHoveredCostDonutSegment] = useState<{
+    name: string;
+    value: number;
+    pct: number;
+    color: string;
+    count?: number;
+  } | null>(null);
+
+  // Segmento activo en el hover de la dona de Presupuesto (Oferta por Rubros)
+  const [hoveredOfferDonutSegment, setHoveredOfferDonutSegment] = useState<{
+    name: string;
+    value: number;
+    pct: number;
+    color: string;
+  } | null>(null);
+
   // Navegación: Vista general de carpetas o Carpeta de ITEM abierta
   const [selectedFolderCode, setSelectedFolderCode] = useState<string | null>(null);
 
@@ -1055,45 +1072,6 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* CABECERA RESUMIDA DEL PROYECTO (SIEMPRE VISIBLE) */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-[#00668F] border border-sky-200 px-2.5 py-0.5 rounded-full">
-              Kardex Financiero & Control Operativo
-            </span>
-            <span className="text-xs text-slate-700 font-mono font-bold bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
-              {project.code}
-            </span>
-          </div>
-          <h2 className="text-base font-black text-slate-900 mt-1.5 tracking-tight">
-            {project.name}
-          </h2>
-          <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-x-4 gap-y-1">
-            <span>Cliente: <strong className="text-slate-800 font-semibold">{project.clientName}</strong></span>
-            {project.contractCode && <span>Contrato / OC: <strong className="text-slate-800 font-semibold">{project.contractCode}</strong></span>}
-            {project.quoteCode && <span>Cotización: <strong className="text-slate-800 font-semibold">{project.quoteCode}</strong></span>}
-          </div>
-        </div>
-
-        {/* Resumen rápido de Valor Contractual y Costos Incurridos */}
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Valor Contractual</span>
-            <span className="text-sm font-black font-mono text-slate-900">
-              {currency === 'COP' ? formatCOP(contractAmountCOP) : `${currency} $${rawContractAmount.toLocaleString('en-US')}`}
-            </span>
-          </div>
-          <div className="h-8 w-px bg-slate-200" />
-          <div className="text-right">
-            <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Costos Incurridos</span>
-            <span className="text-sm font-black font-mono text-rose-600">
-              {formatCOP(totalIncurred)}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* SELECTOR DE 3 SUBPESTAÑAS PRINCIPALES: DASHBOARD CON GRÁFICOS | MATRIZ DE ITEMS Y COSTOS | PRESUPUESTO */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-2xl">
         <button
@@ -1139,7 +1117,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         <div className="space-y-4 animate-in fade-in duration-150">
       {/* 0. PANEL EJECUTIVO DE CONTROL DE PROYECTO (ESTILO MODERNO BENTO / HAPPYHOUR DASHBOARD) */}
       <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-[#003b54] p-5 sm:p-6 rounded-3xl border border-sky-900/60 text-white shadow-xl space-y-5">
-        {/* Cabecera del Proyecto */}
+        {/* Cabecera del Panel Ejecutivo */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2">
@@ -1150,14 +1128,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 {project.code}
               </span>
             </div>
-            <h2 className="text-lg font-black text-white mt-2 tracking-tight">
-              {project.name}
-            </h2>
-            <div className="text-xs text-slate-300 mt-1 flex flex-wrap gap-x-4 gap-y-1">
-              <span>Cliente: <strong className="text-white font-semibold">{project.clientName}</strong></span>
-              {project.contractCode && <span>Contrato / OC: <strong className="text-white font-semibold">{project.contractCode}</strong></span>}
-              {project.quoteCode && <span>Cotización: <strong className="text-white font-semibold">{project.quoteCode}</strong></span>}
-            </div>
+            <p className="text-xs text-slate-300 mt-2">
+              Balance financiero consolidado, costos reales, presupuesto contractual y márgenes proyectados.
+            </p>
           </div>
 
           {/* Margen de Rentabilidad estilo Happyhour (Badge tecnológico destacado) */}
@@ -1574,17 +1547,48 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
 
           {(() => {
-            // 1. Datos para Dona de Costos Directos vs Indirectos
+            // 1. Desglose detallado por Categorías Financieras reales
+            const catColors: Record<string, string> = {
+              mano_obra_itk: '#0284c7', // Sky Blue
+              mano_obra_externa: '#38bdf8', // Light Sky
+              viaticos_transporte: '#f59e0b', // Amber
+              consumibles_taller: '#f97316', // Orange
+              repuestos_fabricacion: '#10b981', // Emerald
+              subcontratos_gruas: '#64748b', // Slate
+              inspeccion_mrt: '#8b5cf6', // Violet
+              ensayos_end: '#6366f1', // Indigo
+              analisis_vibraciones: '#14b8a6', // Teal
+              termografia: '#ec4899', // Pink
+              imprevistos_contingencia: '#eab308', // Yellow
+            };
+
+            const catMap = new Map<string, { name: string; value: number; count: number; color: string }>();
+            costItems.forEach((c) => {
+              const catKey = c.category || 'mano_obra_itk';
+              const meta = getCategoryMeta(catKey);
+              const existing = catMap.get(catKey) || {
+                name: meta.shortLabel || meta.label,
+                value: 0,
+                count: 0,
+                color: catColors[catKey] || '#00668F',
+              };
+              existing.value += (c.actualTotal || 0);
+              existing.count += 1;
+              catMap.set(catKey, existing);
+            });
+
+            const sumCostsTotal = costItems.reduce((acc, c) => acc + (c.actualTotal || 0), 0);
             const totalDirectCost = costItems.filter((c) => c.costType !== 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
             const totalIndirectCost = costItems.filter((c) => c.costType === 'indirecto').reduce((acc, c) => acc + (c.actualTotal || 0), 0);
-            const sumCostsTotal = totalDirectCost + totalIndirectCost;
-            const pctDirect = sumCostsTotal > 0 ? (totalDirectCost / sumCostsTotal) * 100 : 0;
-            const pctIndirect = sumCostsTotal > 0 ? (totalIndirectCost / sumCostsTotal) * 100 : 0;
+            const totalIvaCosts = costItems.reduce((acc, c) => acc + (c.hasIva ? (c.ivaAmount || 0) : 0), 0);
+            const totalRetentionCosts = costItems.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
 
-            const costTypeDonutData = [
-              { name: 'Costos Directos (MO, Obra, Insumos)', value: totalDirectCost, color: '#0284c7' },
-              { name: 'Costos Indirectos (Pólizas, Peajes, Grúas)', value: totalIndirectCost, color: '#9333ea' },
-            ].filter((d) => d.value > 0);
+            const costCategoryDonutData = Array.from(catMap.values())
+              .filter((d) => d.value > 0)
+              .map((d) => ({
+                ...d,
+                pct: sumCostsTotal > 0 ? (d.value / sumCostsTotal) * 100 : 0,
+              }));
 
             // 2. Datos para Gráfico de Presupuesto que se va construyendo por Categorías de la Oferta
             const offerCategoriesMap = new Map<string, number>();
@@ -1598,6 +1602,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               return {
                 name,
                 value,
+                pct: offerBudget.subtotal > 0 ? (value / offerBudget.subtotal) * 100 : 0,
                 color: colors[idx % colors.length],
               };
             }).filter((d) => d.value > 0);
@@ -1612,16 +1617,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
             return (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* DONA 1: DESGLOSE DE COSTOS INCURRIDOS (DIRECTOS VS INDIRECTOS) */}
+                {/* DONA 1: DESGLOSE DE COSTOS INCURRIDOS POR CATEGORÍA FINANCIERA & IMPUESTOS */}
                 <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-2xs flex flex-col justify-between">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div>
                       <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                         <PieChartIcon size={16} className="text-[#00668F]" />
-                        Desglose de Costos (Directos vs Indirectos)
+                        Costos por Categoría Financiera
                       </h4>
                       <p className="text-[11px] text-slate-500">
-                        Proporción operativa de costos reales incurridos
+                        Distribución interactiva de gastos reales, IVA y Retención
                       </p>
                     </div>
                     <span className="text-xs font-mono font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded-xl">
@@ -1633,63 +1638,77 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={costTypeDonutData.length > 0 ? costTypeDonutData : [{ name: 'Sin costos', value: 1, color: '#e2e8f0' }]}
+                          data={costCategoryDonutData.length > 0 ? costCategoryDonutData : [{ name: 'Sin costos', value: 1, color: '#e2e8f0', pct: 0 }]}
                           cx="50%"
                           cy="50%"
                           innerRadius={68}
                           outerRadius={95}
-                          paddingAngle={6}
+                          paddingAngle={5}
                           dataKey="value"
                           stroke="none"
                           cornerRadius={6}
+                          onMouseEnter={(entry: any) => {
+                            if (entry && entry.name) {
+                              setHoveredCostDonutSegment(entry);
+                            }
+                          }}
+                          onMouseLeave={() => setHoveredCostDonutSegment(null)}
                         >
-                          {(costTypeDonutData.length > 0 ? costTypeDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
+                          {(costCategoryDonutData.length > 0 ? costCategoryDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip
-                          position={{ y: 240 }}
-                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name]}
-                          contentStyle={{
-                            backgroundColor: '#0f172a',
-                            borderRadius: '12px',
-                            border: '1px solid #334155',
-                            color: '#ffffff',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                          }}
-                        />
                       </PieChart>
                     </ResponsiveContainer>
 
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Total Costos</span>
-                      <span className="text-lg font-black font-mono text-slate-900">{formatCOP(sumCostsTotal)}</span>
-                      <span className="text-[10px] text-sky-700 font-semibold">{costItems.length} registros</span>
+                    {/* Centro Tecnológico de la Dona de Costos */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                      {hoveredCostDonutSegment ? (
+                        <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-900/95 border border-sky-400/30 shadow-2xl backdrop-blur-md max-w-[170px]">
+                          <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredCostDonutSegment.color }}>
+                            {hoveredCostDonutSegment.name}
+                          </span>
+                          <span className="text-base font-black font-mono text-white tracking-tight mt-0.5">
+                            {formatCOP(hoveredCostDonutSegment.value)}
+                          </span>
+                          <span className="text-[10px] font-mono text-cyan-300 font-bold mt-0.5">
+                            {hoveredCostDonutSegment.pct ? `${hoveredCostDonutSegment.pct.toFixed(1)}% del costo` : ''}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Total Incurrido</span>
+                          <span className="text-lg font-black font-mono text-slate-900">{formatCOP(sumCostsTotal)}</span>
+                          <span className="text-[10px] text-sky-700 font-semibold">{costItems.length} rubros cargados</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-                    <div className="p-3 bg-sky-50/60 rounded-2xl border border-sky-100">
-                      <div className="flex items-center gap-1.5 text-[#00668F] font-bold text-[11px]">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#00668F]"></span>
-                        <span>Directos ({pctDirect.toFixed(1)}%)</span>
-                      </div>
-                      <span className="text-sm font-black font-mono text-slate-900 block mt-1">{formatCOP(totalDirectCost)}</span>
-                      <span className="text-[10px] text-slate-500 block mt-0.5">
-                        {costItems.filter((c) => c.costType !== 'indirecto').length} rubros directos
-                      </span>
+                  {/* Resumen de Especificaciones Financieras: Directos, Indirectos, IVA y Retención */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 text-xs">
+                    <div className="p-2.5 bg-sky-50/60 rounded-xl border border-sky-100">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase block">Costos Directos</span>
+                      <span className="text-xs font-black font-mono text-[#00668F] block mt-0.5">{formatCOP(totalDirectCost)}</span>
+                      <span className="text-[9px] text-slate-400">MO, Obra, Insumos</span>
                     </div>
 
-                    <div className="p-3 bg-purple-50/60 rounded-2xl border border-purple-100">
-                      <div className="flex items-center gap-1.5 text-purple-700 font-bold text-[11px]">
-                        <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-                        <span>Indirectos ({pctIndirect.toFixed(1)}%)</span>
-                      </div>
-                      <span className="text-sm font-black font-mono text-purple-950 block mt-1">{formatCOP(totalIndirectCost)}</span>
-                      <span className="text-[10px] text-purple-500 block mt-0.5">
-                        {costItems.filter((c) => c.costType === 'indirecto').length} rubros indirectos
-                      </span>
+                    <div className="p-2.5 bg-purple-50/60 rounded-xl border border-purple-100">
+                      <span className="text-[10px] text-purple-700 font-bold uppercase block">Indirectos</span>
+                      <span className="text-xs font-black font-mono text-purple-900 block mt-0.5">{formatCOP(totalIndirectCost)}</span>
+                      <span className="text-[9px] text-purple-400">Pólizas, Grúas</span>
+                    </div>
+
+                    <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100">
+                      <span className="text-[10px] text-amber-700 font-bold uppercase block">IVA Pagado</span>
+                      <span className="text-xs font-black font-mono text-amber-900 block mt-0.5">{formatCOP(totalIvaCosts)}</span>
+                      <span className="text-[9px] text-amber-500">Impuesto soportado</span>
+                    </div>
+
+                    <div className="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100">
+                      <span className="text-[10px] text-rose-700 font-bold uppercase block">Retenciones</span>
+                      <span className="text-xs font-black font-mono text-rose-900 block mt-0.5">{formatCOP(totalRetentionCosts)}</span>
+                      <span className="text-[9px] text-rose-400">ReteFuente / ICA</span>
                     </div>
                   </div>
                 </div>
@@ -1715,7 +1734,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ name: 'Sin presupuesto', value: 1, color: '#e2e8f0' }]}
+                          data={offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ name: 'Sin presupuesto', value: 1, color: '#e2e8f0', pct: 0 }]}
                           cx="50%"
                           cy="50%"
                           innerRadius={68}
@@ -1724,37 +1743,48 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           dataKey="value"
                           stroke="none"
                           cornerRadius={6}
+                          onMouseEnter={(entry: any) => {
+                            if (entry && entry.name) {
+                              setHoveredOfferDonutSegment(entry);
+                            }
+                          }}
+                          onMouseLeave={() => setHoveredOfferDonutSegment(null)}
                         >
                           {(offerBudgetDonutData.length > 0 ? offerBudgetDonutData : [{ color: '#e2e8f0' }]).map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip
-                          position={{ y: 240 }}
-                          formatter={(value: any, name: any) => [formatCOP(Number(value) || 0), name]}
-                          contentStyle={{
-                            backgroundColor: '#0f172a',
-                            borderRadius: '12px',
-                            border: '1px solid #334155',
-                            color: '#ffffff',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                          }}
-                        />
                       </PieChart>
                     </ResponsiveContainer>
 
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Total Oferta</span>
-                      <span className="text-lg font-black font-mono text-emerald-700">{formatCOP(offerBudget.grandTotalOffer)}</span>
-                      <span className="text-[10px] text-slate-500 font-semibold">{offerBudget.items.length} rubros oferta</span>
+                    {/* Centro Tecnológico de la Dona de Oferta */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                      {hoveredOfferDonutSegment ? (
+                        <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-900/95 border border-emerald-400/30 shadow-2xl backdrop-blur-md max-w-[170px]">
+                          <span className="text-[10px] uppercase tracking-wider font-extrabold truncate max-w-[150px] block" style={{ color: hoveredOfferDonutSegment.color }}>
+                            {hoveredOfferDonutSegment.name}
+                          </span>
+                          <span className="text-base font-black font-mono text-white tracking-tight mt-0.5">
+                            {formatCOP(hoveredOfferDonutSegment.value)}
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-300 font-bold mt-0.5">
+                            {hoveredOfferDonutSegment.pct ? `${hoveredOfferDonutSegment.pct.toFixed(1)}% de la oferta` : ''}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Total Oferta</span>
+                          <span className="text-lg font-black font-mono text-emerald-700">{formatCOP(offerBudget.grandTotalOffer)}</span>
+                          <span className="text-[10px] text-slate-500 font-semibold">{offerBudget.items.length} rubros oferta</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center justify-between text-xs">
                     <div>
                       <span className="text-[10px] text-slate-500 block">Costo Planeado + Utilidad</span>
-                      <span className="font-bold text-slate-800 font-mono">
+                      <span className="font-bold text-slate-800 font-mono text-[11px]">
                         Costos: {formatCOP(offerBudget.totalBudgetedCost)} | Utilidad: {formatCOP(offerBudget.totalBudgetedProfit)}
                       </span>
                     </div>
