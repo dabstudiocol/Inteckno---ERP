@@ -26,7 +26,7 @@ interface TalentoHumanoProps {
 }
 
 export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab = 'empleados' }) => {
-  const { employees, createEmployee, updateEmployee, timesheets, activeModuleId } = useErp();
+  const { employees, createEmployee, updateEmployee, timesheets, expenses, activeModuleId } = useErp();
 
   const currentTab = (activeModuleId === 'vacaciones' || activeModuleId === 'encuestas' || activeModuleId === 'nomina' || activeModuleId === 'empleados')
     ? (activeModuleId as 'empleados' | 'vacaciones' | 'encuestas' | 'nomina')
@@ -247,18 +247,36 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {employees.map((emp) => {
-                  const empTimesheets = timesheets.filter((t) => t.userName.includes(emp.name.split(' ')[0]));
-                  const totalHours = empTimesheets.reduce((sum, t) => sum + t.hours, 0);
+                  // Conexión real con horas aprobadas en Timesheet
+                  const empTimesheets = timesheets.filter(
+                    (t) =>
+                      t.userId === emp.id ||
+                      t.userName.toLowerCase() === emp.name.toLowerCase() ||
+                      t.userName.toLowerCase().includes(emp.name.split(' ')[0].toLowerCase())
+                  );
+                  const totalHours = empTimesheets.reduce((sum, t) => sum + (Number(t.hours) || 0), 0);
+
+                  // Conexión real con viáticos aprobados en el módulo de Gastos
+                  const empExpenses = expenses.filter(
+                    (e) =>
+                      (e.userId === emp.id ||
+                        e.userName.toLowerCase() === emp.name.toLowerCase() ||
+                        e.userName.toLowerCase().includes(emp.name.split(' ')[0].toLowerCase())) &&
+                      (e.status === 'approved' || e.status === 'legalized')
+                  );
+                  const totalViaticosCOP = empExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+                  const totalLiquidarCOP = (emp.baseSalaryCOP || 0) + totalViaticosCOP;
 
                   return (
                     <tr key={emp.id} className="hover:bg-slate-50/80">
                       <td className="p-3 font-bold text-gray-900">{emp.name}</td>
                       <td className="p-3 text-gray-600">{emp.role}</td>
-                      <td className="p-3 font-semibold text-gray-900">${emp.baseSalaryCOP.toLocaleString()} COP</td>
+                      <td className="p-3 font-semibold text-gray-900">${(emp.baseSalaryCOP || 0).toLocaleString()} COP</td>
                       <td className="p-3 font-bold text-[#00668F]">{totalHours} horas</td>
-                      <td className="p-3 text-gray-600">$140 USD</td>
+                      <td className="p-3 text-gray-600">${totalViaticosCOP.toLocaleString()} COP</td>
                       <td className="p-3 text-right font-bold text-gray-900">
-                        ${(emp.baseSalaryCOP + totalHours * 35000).toLocaleString()} COP
+                        ${totalLiquidarCOP.toLocaleString()} COP
                       </td>
                     </tr>
                   );
