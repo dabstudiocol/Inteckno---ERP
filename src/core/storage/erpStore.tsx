@@ -2947,10 +2947,67 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return eq;
         });
 
+        // Calcular valor de materiales consumibles / repuestos despachados directamente al proyecto
+        let dispatchTotalCOP = 0;
+        let dispatchTotalUSD = 0;
+        const currentTrmVal = getStoredTRM() || 3236.84;
+        const consumedItemsDesc: string[] = [];
+
+        remData.items.forEach((it) => {
+          const prod = prev.products.find((p) => p.id === it.productId || p.sku === it.sku);
+          // Los equipos e instrumentación retornable no son costo de insumo de obra
+          const isTool = prev.equipment.some((eq) => eq.id === it.productId || eq.code === it.sku);
+          if (!isTool) {
+            const qty = Number(it.qtyDispatched) || 0;
+            const unitCostCOP = it.unitCostCOP || prod?.costPriceCOP || 0;
+            const itemTotalCOP = qty * unitCostCOP;
+            if (itemTotalCOP > 0) {
+              dispatchTotalCOP += itemTotalCOP;
+              dispatchTotalUSD += Math.round(itemTotalCOP / currentTrmVal);
+              consumedItemsDesc.push(`${it.name} (x${qty})`);
+            }
+          }
+        });
+
+        // Imputar a la matriz de costos del proyecto si es para un Proyecto STC y hay materiales consumibles
+        const updatedProjects = prev.projects.map((prj) => {
+          if ((prj.id === remData.projectId || prj.code === remData.projectCode) && dispatchTotalCOP > 0) {
+            const newAC = (prj.actualCostAC || 0) + dispatchTotalUSD;
+            const newCV = (prj.earnedValueEV || 0) - newAC;
+            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+            const existingMatrix = (prj as any).costMatrix || [];
+            const newCostItem = {
+              id: `cost-rem-out-${Date.now()}`,
+              category: 'repuestos_fabricacion' as const,
+              concept: `Salida de Almacén (${remissionNumber}): ${consumedItemsDesc.join(', ')}`,
+              unit: 'Global',
+              plannedQuantity: 1,
+              plannedUnitCost: dispatchTotalCOP,
+              plannedTotal: dispatchTotalCOP,
+              actualQuantity: 1,
+              actualUnitCost: dispatchTotalCOP,
+              actualTotal: dispatchTotalCOP,
+              variance: 0,
+              costType: 'directo' as const,
+              date: remData.departureDate || new Date().toISOString().split('T')[0],
+              observations: `Despacho por Remisión de Salida ${remissionNumber} a cargo de ${remData.responsibleTechnicianName}.`,
+            };
+            return {
+              ...prj,
+              actualCostAC: newAC,
+              cv: newCV,
+              cpi: newCPI,
+              costMatrix: [...existingMatrix, newCostItem],
+            };
+          }
+          return prj;
+        });
+
         return {
           ...prev,
           products: updatedProducts,
           equipment: updatedEquipment,
+          projects: updatedProjects,
           remissions: [newRemission, ...prev.remissions],
         };
       });

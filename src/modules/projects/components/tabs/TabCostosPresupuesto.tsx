@@ -313,7 +313,15 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   currentTrm,
   onUpdateProject,
 }) => {
-  const { timesheets } = useErp();
+  const { timesheets, currentUser } = useErp();
+
+  // Permiso de visualización de datos sensibles de ganancia y margen
+  const canViewFinancialProfit =
+    currentUser?.role === 'gerente_general' ||
+    currentUser?.role === 'gerente_administrativa' ||
+    currentUser?.role === 'gerente_proyectos' ||
+    currentUser?.role === 'admin_sistemas' ||
+    currentUser?.role === 'lider_proyectos';
 
   // Matriz de Costos cargada desde el proyecto o inicializada
   const [costItems, setCostItems] = useState<CostMatrixItem[]>(() => {
@@ -1233,19 +1241,27 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                 <TrendingUp size={14} className="text-emerald-400" />
               </div>
               <div className="text-lg font-black text-emerald-300 mt-1.5 font-mono">
-                {offerBudget.totalBudgetedProfit > 0
-                  ? formatCOP(offerBudget.totalBudgetedProfit)
-                  : hasCostData
-                  ? formatCOP(grossProfitCOP)
-                  : '$ 0'}
+                {canViewFinancialProfit ? (
+                  offerBudget.totalBudgetedProfit > 0
+                    ? formatCOP(offerBudget.totalBudgetedProfit)
+                    : hasCostData
+                    ? formatCOP(grossProfitCOP)
+                    : '$ 0'
+                ) : (
+                  '•••••••••'
+                )}
               </div>
             </div>
             <div className="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
               <span>Sobre Costos:</span>
               <span className="font-semibold text-emerald-300 font-mono">
-                {offerBudget.totalBudgetedCost > 0
-                  ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(1) + '%'
-                  : '0.0%'}
+                {canViewFinancialProfit ? (
+                  offerBudget.totalBudgetedCost > 0
+                    ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(1) + '%'
+                    : '0.0%'
+                ) : (
+                  'Confidencial'
+                )}
               </span>
             </div>
           </div>
