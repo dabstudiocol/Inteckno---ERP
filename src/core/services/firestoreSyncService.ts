@@ -19,6 +19,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from './firebaseClient';
+import { initModuleConfigsCloudSync } from './moduleConfigService';
 import { User, ChatMessage, Product } from '../../types';
 
 // Sanitize string to prevent basic script injection (XSS defense)
@@ -469,6 +470,8 @@ export async function loadAllModulesFromCloud(): Promise<{
   hr?: Record<string, any> | null;
   products?: Product[] | null;
 }> {
+  initModuleConfigsCloudSync();
+
   const [projects, procurement, operations, commercial, productivity, hr, products] = await Promise.all([
     loadModuleFromCloud('projects'),
     loadModuleFromCloud('procurement'),

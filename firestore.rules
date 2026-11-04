@@ -324,6 +324,16 @@ service cloud.firestore {
       allow write: if request.resource.data.size() <= 200;
     }
 
+    // Continuous Automated Backups Collection (Agente Guardián de Datos - inteckno_data_guardian)
+    match /erp_backups/{backupId} {
+      allow read, write: if true;
+    }
+
+    // Module Configurations & Parametric Catalogs (moduleConfigService)
+    match /erp_module_configs/{configId} {
+      allow read, write: if true;
+    }
+
     // Chat messages collection for real-time collaboration between users
     match /chat_messages/{messageId} {
       allow read, write: if true;

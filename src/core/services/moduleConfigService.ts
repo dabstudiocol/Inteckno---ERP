@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { doc, setDoc, collection, onSnapshot } from 'firebase/firestore';
+import { getFirebaseDb } from './firebaseClient';
 import { ExpenseCategory } from '../../types';
 
 export interface CatalogItem {
@@ -1335,6 +1337,15 @@ export function saveModuleCatalogs(moduleId: string, config: ModuleConfigGroup):
   const resolvedId = getResolvedModuleId(moduleId);
   try {
     localStorage.setItem(`${STORAGE_PREFIX}${resolvedId.toUpperCase()}`, JSON.stringify(config));
+    const db = getFirebaseDb();
+    if (db) {
+      const cfgRef = doc(db, 'erp_module_configs', resolvedId.toUpperCase());
+      const cleanPayload = JSON.parse(JSON.stringify(config));
+      setDoc(cfgRef, {
+        ...cleanPayload,
+        lastUpdated: new Date().toISOString(),
+      }, { merge: true }).catch(console.warn);
+    }
     // Notificar a todos los componentes que escuchan cambios en tiempo real
     window.dispatchEvent(
       new CustomEvent('inteckno:module-config-updated', {
@@ -1360,6 +1371,47 @@ export function resetModuleCatalogs(moduleId: string): ModuleConfigGroup {
   } catch (e) {
     console.error(`Error restableciendo configuración para el módulo ${resolvedId}:`, e);
     return defaultConfig;
+  }
+}
+
+let hasInitializedCloudConfigs = false;
+
+/**
+ * Escucha reactiva en tiempo real de configuraciones de módulo en Cloud Firestore
+ */
+export function initModuleConfigsCloudSync(): void {
+  if (hasInitializedCloudConfigs || typeof window === 'undefined') return;
+  const db = getFirebaseDb();
+  if (!db) return;
+  hasInitializedCloudConfigs = true;
+
+  try {
+    const colRef = collection(db, 'erp_module_configs');
+    onSnapshot(colRef, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const docData = change.doc.data();
+          const docId = change.doc.id.toUpperCase();
+          if (docData && docData.catalogs) {
+            const localKey = `${STORAGE_PREFIX}${docId}`;
+            const localRaw = localStorage.getItem(localKey);
+            const currentStr = JSON.stringify(docData);
+            if (localRaw !== currentStr) {
+              localStorage.setItem(localKey, currentStr);
+              window.dispatchEvent(
+                new CustomEvent('inteckno:module-config-updated', {
+                  detail: { moduleId: docId.toLowerCase() },
+                })
+              );
+            }
+          }
+        }
+      });
+    }, (err) => {
+      console.warn('[ModuleConfigService] Error en listener cloud:', err);
+    });
+  } catch (err) {
+    console.warn('[ModuleConfigService] No se pudo inicializar listener cloud:', err);
   }
 }
 
