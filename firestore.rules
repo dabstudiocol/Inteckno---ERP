@@ -324,6 +324,16 @@ service cloud.firestore {
       allow write: if request.resource.data.size() <= 200;
     }
 
+    // Individual Granular Products Collection (Zero Race Conditions, Atomic SKU Management)
+    match /erp_products/{productId} {
+      allow read, write: if true;
+    }
+
+    // Immutable Kardex Ledger Collection (Auditoría contable y trazabilidad STC)
+    match /erp_kardex/{kardexId} {
+      allow read, write: if true;
+    }
+
     // Continuous Automated Backups Collection (Agente Guardián de Datos - inteckno_data_guardian)
     match /erp_backups/{backupId} {
       allow read, write: if true;

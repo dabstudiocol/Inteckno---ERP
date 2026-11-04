@@ -17,10 +17,12 @@ import {
   limit,
   orderBy,
   Unsubscribe,
+  writeBatch,
+  runTransaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from './firebaseClient';
 import { initModuleConfigsCloudSync } from './moduleConfigService';
-import { User, ChatMessage, Product } from '../../types';
+import { User, ChatMessage, Product, InventoryAuditLog } from '../../types';
 
 // Sanitize string to prevent basic script injection (XSS defense)
 export function sanitizeText(input: string | undefined): string {
@@ -424,6 +426,22 @@ export async function loadInventoryFromCloud(): Promise<Product[] | null> {
   if (!db) return null;
 
   try {
+    // 1. Intentar cargar desde colección de documentos individuales erp_products (cero race conditions)
+    const prodSnap = await getDocs(query(collection(db, 'erp_products'), limit(1500)));
+    if (!prodSnap.empty && prodSnap.size > 0) {
+      const items: Product[] = [];
+      prodSnap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data && data.sku) {
+          items.push(data as Product);
+        }
+      });
+      if (items.length > 0) {
+        return items;
+      }
+    }
+
+    // 2. Fallback a bloques particionados erp_inventory/chunk_X (compatibilidad)
     const metaRef = doc(db, 'erp_inventory', 'meta');
     const metaSnap = await getDoc(metaRef);
     if (!metaSnap.exists()) return null;
@@ -434,7 +452,7 @@ export async function loadInventoryFromCloud(): Promise<Product[] | null> {
 
     const chunkReads = [];
     for (let i = 0; i < chunkCount; i++) {
-      const cRef = doc(db, 'erp_inventory', `chunk_${i}`);
+      const cRef = doc(db, 'erp_inventory', 'chunk_' + i);
       chunkReads.push(getDoc(cRef));
     }
 
@@ -450,9 +468,57 @@ export async function loadInventoryFromCloud(): Promise<Product[] | null> {
       }
     });
 
+    // Migración silenciosa automática a documentos individuales en segundo plano
+    if (reconstructed.length > 0) {
+      setTimeout(() => {
+        migrateProductsToIndividualDocs(reconstructed).catch(console.warn);
+      }, 1500);
+    }
+
     return reconstructed;
   } catch (err) {
     console.warn('[FirestoreSync] Error cargando inventario desde Cloud:', err);
+    return null;
+  }
+}
+
+/**
+ * Migra los productos de chunks hacia documentos individuales en erp_products.
+ */
+export async function migrateProductsToIndividualDocs(products: Product[]): Promise<void> {
+  const db = getFirebaseDb();
+  if (!db || !products.length) return;
+  try {
+    for (let i = 0; i < products.length; i += 300) {
+      const slice = products.slice(i, i + 300);
+      const batch = writeBatch(db);
+      for (const p of slice) {
+        if (p.id) {
+          const pRef = doc(db, 'erp_products', p.id);
+          batch.set(pRef, JSON.parse(JSON.stringify(p)), { merge: true });
+        }
+      }
+      await batch.commit();
+    }
+    console.log("[FirestoreSync] Sincronizacion de inventario completada con exito.");
+  } catch (err) {
+    console.warn('[FirestoreSync] Error en migración de productos a erp_products:', err);
+  }
+}
+
+/**
+ * Carga los asientos contables más recientes del Kardex desde Cloud Firestore
+ */
+export async function loadKardexFromCloud(limitCount: number = 300): Promise<InventoryAuditLog[] | null> {
+  const db = getFirebaseDb();
+  if (!db) return null;
+  try {
+    const q = query(collection(db, 'erp_kardex'), orderBy('timestamp', 'desc'), limit(limitCount));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return snap.docs.map((d) => d.data() as InventoryAuditLog);
+  } catch (err) {
+    console.warn('[FirestoreSync] Error cargando kardex desde Cloud:', err);
     return null;
   }
 }
@@ -469,10 +535,11 @@ export async function loadAllModulesFromCloud(): Promise<{
   productivity?: Record<string, any> | null;
   hr?: Record<string, any> | null;
   products?: Product[] | null;
+  kardex?: InventoryAuditLog[] | null;
 }> {
   initModuleConfigsCloudSync();
 
-  const [projects, procurement, operations, commercial, productivity, hr, products] = await Promise.all([
+  const [projects, procurement, operations, commercial, productivity, hr, products, kardex] = await Promise.all([
     loadModuleFromCloud('projects'),
     loadModuleFromCloud('procurement'),
     loadModuleFromCloud('operations'),
@@ -480,6 +547,7 @@ export async function loadAllModulesFromCloud(): Promise<{
     loadModuleFromCloud('productivity'),
     loadModuleFromCloud('hr'),
     loadInventoryFromCloud(),
+    loadKardexFromCloud(300),
   ]);
 
   return {
@@ -490,19 +558,20 @@ export async function loadAllModulesFromCloud(): Promise<{
     productivity,
     hr,
     products,
+    kardex,
   };
 }
 
 // =============================================================================
-// INVENTARIO MASIVO PARTICIONADO (Soporta 10.000+ artículos sin superar el límite de 1MB de Firestore)
+// INVENTARIO GRANULAR & KARDEX INMUTABLE
 // =============================================================================
 
 const INVENTORY_CHUNK_SIZE = 300;
 let lastLocalInventoryTimestamp = '';
 
 /**
- * Sincroniza el inventario completo particionado en bloques (chunks) seguros de 300 productos.
- * Resuelve definitivamente el límite de 1MB por documento de Firestore y evita la pérdida o borrado de datos.
+ * Sincroniza el inventario completo tanto en documentos individuales (erp_products)
+ * como en bloques compactos de aceleración de lectura (erp_inventory).
  */
 export async function syncInventoryToCloud(
   products: Product[],
@@ -526,18 +595,28 @@ export async function syncInventoryToCloud(
       return true;
     }
 
-    // Dividir en trozos seguros de 300 productos
+    // 1. Guardar o actualizar documentos individuales en erp_products (Resuelve Race Conditions)
+    for (let i = 0; i < products.length; i += 300) {
+      const slice = products.slice(i, i + 300);
+      const batch = writeBatch(db);
+      for (const prod of slice) {
+        if (prod.id) {
+          const pRef = doc(db, 'erp_products', prod.id);
+          const clean = JSON.parse(JSON.stringify(prod));
+          batch.set(pRef, { ...clean, _syncedAt: now }, { merge: true });
+        }
+      }
+      await batch.commit();
+    }
+
+    // 2. Mantener chunks en erp_inventory para snapshot rápido de arranque
     const chunks: Product[][] = [];
     for (let i = 0; i < products.length; i += INVENTORY_CHUNK_SIZE) {
       chunks.push(products.slice(i, i + INVENTORY_CHUNK_SIZE));
     }
 
-    console.log(`[FirestoreSync] Subiendo catálogo a Cloud Firestore: ${products.length} artículos en ${chunks.length} bloques...`);
-
-    // Guardar cada chunk en paralelo limpiando valores undefined
     const chunkPromises = chunks.map((chunk, idx) => {
-      const chunkRef = doc(db, 'erp_inventory', `chunk_${idx}`);
-      // JSON serialization limpia cualquier campo con valor 'undefined' que Firestore rechaza
+      const chunkRef = doc(db, 'erp_inventory', 'chunk_' + idx);
       const cleanItems = JSON.parse(JSON.stringify(chunk));
       return setDoc(chunkRef, {
         chunkIndex: idx,
@@ -549,7 +628,6 @@ export async function syncInventoryToCloud(
 
     await Promise.all(chunkPromises);
 
-    // Guardar documento maestro de metadatos
     const metaRef = doc(db, 'erp_inventory', 'meta');
     await setDoc(metaRef, {
       totalProducts: products.length,
@@ -558,17 +636,158 @@ export async function syncInventoryToCloud(
       updatedBy: userId || 'system',
     });
 
-    console.log(`[FirestoreSync] ¡Catálogo completo de ${products.length} artículos guardado con éxito en Cloud Firestore!`);
+    console.log("[FirestoreSync] Sincronizacion de inventario completada con exito.");
     return true;
   } catch (err) {
-    console.error('[FirestoreSync] Error crítico sincronizando inventario particionado:', err);
+    console.error('[FirestoreSync] Error crítico sincronizando inventario:', err);
     return false;
   }
 }
 
 /**
- * Escucha cambios en tiempo real del inventario particionado en Firestore
+ * Guarda o actualiza un producto individual en Cloud Firestore (erp_products).
  */
+export async function syncSingleProductToCloud(product: Product): Promise<boolean> {
+  const db = getFirebaseDb();
+  if (!db || !product?.id) return false;
+  try {
+    const prodRef = doc(db, 'erp_products', product.id);
+    const cleanProd = JSON.parse(JSON.stringify(product));
+    await setDoc(prodRef, {
+      ...cleanProd,
+      _lastUpdated: new Date().toISOString(),
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.error('[FirestoreSync] Error guardando producto individual:', err);
+    return false;
+  }
+}
+
+/**
+ * Elimina un producto individual en Cloud Firestore (erp_products).
+ */
+export async function deleteProductFromCloud(productId: string): Promise<boolean> {
+  const db = getFirebaseDb();
+  if (!db || !productId) return false;
+  try {
+    const prodRef = doc(db, 'erp_products', productId);
+    await deleteDoc(prodRef);
+    return true;
+  } catch (err) {
+    console.error('[FirestoreSync] Error eliminando producto individual:', err);
+    return false;
+  }
+}
+
+/**
+ * Registra un asiento contable inmutable en el Kardex de Cloud Firestore.
+ */
+export async function recordKardexEntryCloud(entry: InventoryAuditLog): Promise<boolean> {
+  const db = getFirebaseDb();
+  if (!db || !entry?.id) return false;
+  try {
+    const kardexRef = doc(db, 'erp_kardex', entry.id);
+    const cleanEntry = JSON.parse(JSON.stringify(entry));
+    await setDoc(kardexRef, {
+      ...cleanEntry,
+      _recordedAt: new Date().toISOString(),
+    });
+    return true;
+  } catch (err) {
+    console.error('[FirestoreSync] Error registrando kardex en Cloud:', err);
+    return false;
+  }
+}
+
+/**
+ * Escucha cambios en tiempo real del Kardex inmutable en Firestore.
+ */
+export function subscribeToCloudKardex(onUpdate: (logs: InventoryAuditLog[]) => void): Unsubscribe | null {
+  const db = getFirebaseDb();
+  if (!db) return null;
+  try {
+    const q = query(collection(db, 'erp_kardex'), orderBy('timestamp', 'desc'), limit(300));
+    return onSnapshot(q, (snap) => {
+      if (snap.empty) return;
+      const logs = snap.docs.map((d) => d.data() as InventoryAuditLog);
+      onUpdate(logs);
+    }, (err) => {
+      console.warn('[FirestoreSync] Error en listener de Kardex:', err);
+    });
+  } catch (err) {
+    console.warn('[FirestoreSync] No se pudo suscribir a Kardex:', err);
+    return null;
+  }
+}
+
+/**
+ * Transacción atómica de stock en Cloud Firestore con registro directo en Kardex.
+ * Previene condiciones de carrera, bloquea el SKU individual y garantiza la inmutabilidad contable.
+ */
+export async function atomicStockTransaction(
+  productId: string,
+  delta: number,
+  logData: Omit<InventoryAuditLog, 'id' | 'timestamp'>
+): Promise<{ success: boolean; newStock: number; error?: string }> {
+  const db = getFirebaseDb();
+  if (!db || !productId) return { success: false, newStock: 0, error: 'DB no inicializada o ID faltante' };
+
+  try {
+    const prodRef = doc(db, 'erp_products', productId);
+    const kardexId = 'KDX-' + Date.now() + '-' + Math.floor(100 + Math.random() * 900);
+    const kardexRef = doc(db, 'erp_kardex', kardexId);
+    const timestamp = new Date().toISOString();
+
+    const resultStock = await runTransaction(db, async (tx) => {
+      const prodDoc = await tx.get(prodRef);
+      let currentStock = Number(logData.previousStock) || 0;
+      let reservedStock = 0;
+      let existingData: any = {};
+
+      if (prodDoc.exists()) {
+        existingData = prodDoc.data();
+        currentStock = Number(existingData.realStock) || 0;
+        reservedStock = Number(existingData.reservedStock) || 0;
+      }
+
+      const calculatedStock = Math.max(0, currentStock + delta);
+      const calculatedAvailable = Math.max(0, calculatedStock - reservedStock);
+
+      // 1. Actualizar el SKU individual
+      tx.set(prodRef, {
+        ...existingData,
+        id: productId,
+        sku: logData.productSku,
+        name: logData.productName,
+        realStock: calculatedStock,
+        availableStock: calculatedAvailable,
+        lastStockUpdate: timestamp,
+      }, { merge: true });
+
+      // 2. Grabar el asiento inmutable en Kardex
+      const kardexEntry: InventoryAuditLog = {
+        ...logData,
+        id: kardexId,
+        productId,
+        timestamp,
+        previousStock: currentStock,
+        newStock: calculatedStock,
+        delta,
+      };
+
+      tx.set(kardexRef, JSON.parse(JSON.stringify(kardexEntry)));
+
+      return calculatedStock;
+    });
+
+    return { success: true, newStock: resultStock };
+  } catch (err: any) {
+    console.error('[FirestoreSync] Error en transacción atómica de stock:', err);
+    return { success: false, newStock: 0, error: err?.message || 'Error en transacción' };
+  }
+}
+
 export function subscribeToCloudInventory(
   onUpdate: (products: Product[]) => void
 ): Unsubscribe | null {

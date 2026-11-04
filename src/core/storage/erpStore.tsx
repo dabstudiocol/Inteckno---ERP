@@ -82,6 +82,11 @@ import {
   syncInventoryToCloud,
   subscribeToCloudInventory,
   loadAllModulesFromCloud,
+  syncSingleProductToCloud,
+  deleteProductFromCloud,
+  recordKardexEntryCloud,
+  subscribeToCloudKardex,
+  atomicStockTransaction,
 } from '../services/firestoreSyncService';
 import { recordAuditEvent } from '../services/auditService';
 import { undoRedoService, UserUndoAction, SupportedCollection } from '../services/undoRedoService';
@@ -736,6 +741,16 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           hasChanges = true;
         }
 
+        // Kardex inmutable sincronizado desde Cloud
+        if (Array.isArray(cloudData.kardex) && cloudData.kardex.length > 0) {
+          const existingIds = new Set(next.inventoryAuditLogs.map((l) => l.id));
+          const toAdd = cloudData.kardex.filter((l) => !existingIds.has(l.id));
+          if (toAdd.length > 0) {
+            next.inventoryAuditLogs = [...toAdd, ...next.inventoryAuditLogs];
+            hasChanges = true;
+          }
+        }
+
         // Operations
         if (cloudData.operations) {
           if (Array.isArray(cloudData.operations.timesheets)) { next.timesheets = cloudData.operations.timesheets; hasChanges = true; }
@@ -1055,6 +1070,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
     });
 
+    const unsubKardex = subscribeToCloudKardex((remoteLogs) => {
+      if (!isMounted || !Array.isArray(remoteLogs)) return;
+      setState((prev) => {
+        const existingIds = new Set(prev.inventoryAuditLogs.map((l) => l.id));
+        const toAdd = remoteLogs.filter((l) => !existingIds.has(l.id));
+        if (toAdd.length === 0) return prev;
+        return {
+          ...prev,
+          inventoryAuditLogs: [...toAdd, ...prev.inventoryAuditLogs],
+        };
+      });
+    });
+
     // 6. Suscribirse a Operaciones en Campo (Horas, Gastos, DDRs, Remisiones) en tiempo real
     const unsubOperations = subscribeToCloudModule('operations', (data) => {
       if (!isMounted || !data) return;
@@ -1103,6 +1131,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubProjects) unsubProjects();
       if (unsubProcurement) unsubProcurement();
       if (unsubInventory) unsubInventory();
+      if (unsubKardex) unsubKardex();
       if (unsubOperations) unsubOperations();
       if (unsubCommercial) unsubCommercial();
       if (unsubProductivity) unsubProductivity();
@@ -1684,6 +1713,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         products: prev.products.filter((p) => p.id !== id),
       }));
+      deleteProductFromCloud(id).catch(console.warn);
       notify('info', 'Artículo Eliminado', 'El artículo ha sido retirado del inventario.');
     },
     [state.products, state.currentUser, notify]
@@ -2469,6 +2499,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
 
       // Registrar también en auditoría transversal del ERP
+      recordKardexEntryCloud(newLog).catch(console.warn);
+
       recordAuditEvent({
         action: 'stock_adjusted',
         module: 'inventario',
@@ -2714,6 +2746,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         products: [newProd, ...prev.products],
       }));
+      syncSingleProductToCloud(newProd).catch(console.warn);
       notify('success', 'Repuesto Registrado', `${newProd.sku}: ${newProd.name} agregado a bodega.`);
     },
     [notify]
@@ -2721,10 +2754,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateProduct = useCallback(
     (id: string, data: Partial<Product>) => {
-      setState((prev) => ({
-        ...prev,
-        products: prev.products.map((p) => (p.id === id ? { ...p, ...data } : p)),
-      }));
+      setState((prev) => {
+        const updated = prev.products.map((p) => {
+          if (p.id === id) {
+            const merged = { ...p, ...data };
+            syncSingleProductToCloud(merged).catch(console.warn);
+            return merged;
+          }
+          return p;
+        });
+        return {
+          ...prev,
+          products: updated,
+        };
+      });
     },
     []
   );
@@ -2785,6 +2828,31 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reason,
         projectCode,
       });
+      // Sincronizar producto individual en Firestore
+      syncSingleProductToCloud({
+        ...targetProd,
+        realStock: newStock,
+        availableStock: Math.max(0, newStock - targetProd.reservedStock),
+      }).catch(console.warn);
+
+      // Ejecutar transacción atómica de stock en Cloud Firestore
+      atomicStockTransaction(targetProd.id, delta, {
+        productId: targetProd.id,
+        productSku: targetProd.sku,
+        productName: targetProd.name,
+        userId: state.currentUser?.id || 'USR-001',
+        userName: state.currentUser?.name || 'Almacén ITK',
+        userEmail: state.currentUser?.email || 'almacen@inteckno.com',
+        source,
+        previousStock: prevStock,
+        newStock,
+        delta,
+        reason,
+        projectCode,
+        movementType: delta > 0 ? 'ENTRADA' : 'SALIDA',
+        unitCostCOP: targetProd.costPriceCOP || 0,
+        totalCostCOP: Math.abs(delta) * (targetProd.costPriceCOP || 0),
+      }).catch(console.warn);
 
       // Sincronización transparente con Microsoft Excel Online
       syncProductChangeToExcelOnline(targetProd.sku, newStock).catch(() => {});

@@ -646,6 +646,12 @@ export interface InventoryAuditLog {
   anomalyReason?: string;
   anomalySeverity?: 'baja' | 'media' | 'alta' | 'critica';
   notifiedToGM?: boolean;
+  // Kardex Transaccional
+  movementType?: 'ENTRADA' | 'SALIDA' | 'DEVOLUCION' | 'BAJA' | 'AJUSTE';
+  unitCostCOP?: number;
+  totalCostCOP?: number;
+  remissionId?: string;
+  notes?: string;
 }
 
 // ----------------------------------------------------------------------------
