@@ -39,6 +39,7 @@ import { WikiArticle, WikiArticleChecklistStep, WikiArticleMediaItem } from '../
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { MargaritaIcon } from '../../components/common/MargaritaIcon';
 import {
   generateWikiArticleWithLuciana,
@@ -247,6 +248,7 @@ export const ArticulosModule: React.FC = () => {
   // Vistas principales: Catálogo General vs. Rutas de Inducción
   const [viewTab, setViewTab] = useState<'catalogo' | 'induccion'>('catalogo');
   const [selectedOnboardingRole, setSelectedOnboardingRole] = useState<string>('induccion_corporativa');
+  const [articleToDelete, setArticleToDelete] = useState<WikiArticle | null>(null);
 
   // Filtros de Catálogo
   const [searchQuery, setSearchQuery] = useState('');
@@ -1334,10 +1336,7 @@ export const ArticulosModule: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    deleteArticle(readingArticle.id);
-                    setReadingArticle(null);
-                  }}
+                  onClick={() => setArticleToDelete(readingArticle)}
                   className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Trash2 size={13} />
@@ -1840,6 +1839,26 @@ export const ArticulosModule: React.FC = () => {
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="articulos"
         moduleTitle="Artículos & Wiki Técnica"
+      />
+
+      {/* Modal de Confirmación de Eliminación con Palabra 'BORRAR' (Regla #7) */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(articleToDelete)}
+        title="Eliminar Artículo de Conocimiento"
+        itemName={articleToDelete?.title || ''}
+        description="Esta acción eliminará permanentemente el artículo técnico de la base de conocimiento y de las rutas de inducción."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (articleToDelete) {
+            deleteArticle(articleToDelete.id);
+            if (readingArticle?.id === articleToDelete.id) {
+              setReadingArticle(null);
+            }
+            setArticleToDelete(null);
+          }
+        }}
+        onCancel={() => setArticleToDelete(null)}
       />
     </div>
   );

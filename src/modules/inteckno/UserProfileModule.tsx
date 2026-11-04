@@ -1634,7 +1634,7 @@ export const UserProfileModule: React.FC = () => {
               className="px-6 py-3 bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold rounded-2xl transition-all shadow-sm flex items-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
             >
               {isSyncingCloud ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-              <span>{isSyncingCloud ? 'Sincronizando con la Nube...' : 'Guardar y Sincronizar'}</span>
+              <span>{isSyncingCloud ? 'Guardando...' : 'Guardar Cambios'}</span>
             </button>
           </div>
         </form>

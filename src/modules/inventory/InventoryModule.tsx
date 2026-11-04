@@ -345,6 +345,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       qtyDispatched: number;
       unitCostUSD: number;
       unitCostCOP: number;
+      suggestedUnitCostCOP?: number;
+      approvedCostCOP?: number;
     }[]
   >([]);
 
@@ -618,6 +620,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
   // --------------------------------------------------------------------------
   const addDispatchItemRow = () => {
     const defaultProd = products[0];
+    const costCOP = defaultProd?.costPriceCOP || 0;
     setDispatchItems([
       ...dispatchItems,
       {
@@ -629,7 +632,9 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
         category: defaultProd?.category || 'General',
         qtyDispatched: 1,
         unitCostUSD: defaultProd?.costPriceUSD || 0,
-        unitCostCOP: defaultProd?.costPriceCOP || 0,
+        unitCostCOP: costCOP,
+        suggestedUnitCostCOP: costCOP,
+        approvedCostCOP: costCOP,
       },
     ]);
   };
@@ -650,6 +655,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 category: p.category,
                 unitCostUSD: p.costPriceUSD,
                 unitCostCOP: p.costPriceCOP,
+                suggestedUnitCostCOP: p.costPriceCOP,
+                approvedCostCOP: p.costPriceCOP,
               };
             }
           }
@@ -696,21 +703,34 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       projectCode: project.code,
       projectName: project.name,
       notes: dispatchNotes || 'Despacho de materiales e instrumentación para labores en campo.',
-      items: dispatchItems.map((it) => ({
-        id: `RIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        productId: it.productId,
-        sku: it.sku,
-        name: it.name,
-        unit: it.unit,
-        category: it.category,
-        qtyDispatched: Math.max(1, Number(it.qtyDispatched) || 1),
-        qtyReturned: 0,
-        qtyConsumed: 0,
-        unitCostUSD: it.unitCostUSD,
-        unitCostCOP: it.unitCostCOP,
-        condition: 'bueno',
-        notes: '',
-      })),
+      items: dispatchItems.map((it) => {
+        const prod = products.find((p) => p.id === it.productId);
+        const suggested = it.suggestedUnitCostCOP || it.unitCostCOP || prod?.costPriceCOP || 0;
+        const approved = (it.approvedCostCOP !== undefined && it.approvedCostCOP !== null)
+          ? Number(it.approvedCostCOP)
+          : suggested;
+
+        return {
+          id: `RIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          productId: it.productId,
+          sku: it.sku,
+          name: it.name,
+          unit: it.unit,
+          category: it.category,
+          qtyDispatched: Math.max(1, Number(it.qtyDispatched) || 1),
+          qtyReturned: 0,
+          qtyConsumed: 0,
+          unitCostUSD: it.unitCostUSD,
+          unitCostCOP: approved,
+          suggestedUnitCostCOP: suggested,
+          approvedCostCOP: approved,
+          costApprovedBy: tech.name,
+          costApprovedAt: new Date().toISOString(),
+          imputedToProjectCost: Boolean(project.id),
+          condition: 'bueno',
+          notes: '',
+        };
+      }),
       recipientSignatureUrl: signatureData?.signatureUrl,
       recipientSignedAt: signatureData?.timestamp,
       recipientSignerName: signatureData?.signerName || tech.name,
@@ -1207,6 +1227,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                               qtyDispatched: 1,
                               unitCostUSD: p.costPriceUSD,
                               unitCostCOP: p.costPriceCOP,
+                              suggestedUnitCostCOP: p.costPriceCOP,
+                              approvedCostCOP: p.costPriceCOP,
                             },
                           ]);
                           setActiveTab('dispatch');
@@ -1988,6 +2010,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                                     qtyDispatched: 1,
                                     unitCostUSD: p.costPriceUSD,
                                     unitCostCOP: p.costPriceCOP,
+                                    suggestedUnitCostCOP: p.costPriceCOP,
+                                    approvedCostCOP: p.costPriceCOP,
                                   },
                                 ]);
                                 setActiveTab('dispatch');
@@ -2256,13 +2280,32 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-bold text-slate-400 block mb-1">
-                            Subtotal Estimado
+                          <label className="text-[10px] font-bold text-slate-700 block mb-1">
+                            Costo Aprobado COP
                           </label>
-                          <div className="h-10 flex items-center justify-end font-mono font-black text-slate-900 text-xs">
-                            ${(item.qtyDispatched * item.unitCostUSD).toLocaleString()} USD
-                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder={String(prod?.costPriceCOP || 0)}
+                            value={item.approvedCostCOP !== undefined ? (item.approvedCostCOP || '') : (item.unitCostCOP || '')}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : Number(e.target.value);
+                              updateDispatchItem(item.id, 'approvedCostCOP', val);
+                              updateDispatchItem(item.id, 'unitCostCOP', val);
+                            }}
+                            className="w-full h-10 px-2 text-right font-mono font-bold text-xs rounded-xl bg-slate-100 focus:bg-white"
+                          />
+                          <span className="block text-[9px] text-slate-400 text-right mt-0.5">
+                            Sugerido: ${(prod?.costPriceCOP || 0).toLocaleString()} COP
+                          </span>
                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Subtotal Imputado</span>
+                        <span className="font-mono font-black text-slate-900">
+                          ${((item.qtyDispatched || 1) * (item.approvedCostCOP !== undefined ? item.approvedCostCOP : (item.unitCostCOP || 0))).toLocaleString()} COP
+                        </span>
                       </div>
                     </div>
                   );
@@ -2272,23 +2315,24 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
               {/* VISTA DESKTOP: TABLA CON SCROLL HORIZONTAL DE SEGURIDAD */}
               <div className="hidden md:block rounded-2xl overflow-hidden bg-white shadow-2xs w-full max-w-full min-w-0">
                 <div className="overflow-x-auto w-full max-w-full">
-                  <div className="min-w-[760px]">
-                    <div className="grid grid-cols-12 bg-slate-50 p-2.5 font-bold text-gray-600 text-[11px]">
-                      <div className="col-span-5">Seleccionar del Inventario / Repuesto</div>
-                      <div className="col-span-2 text-center">Categoría</div>
+                  <div className="min-w-[840px]">
+                    <div className="grid grid-cols-12 bg-slate-50 p-2.5 font-bold text-gray-600 text-[11px] items-center">
+                      <div className="col-span-4">Seleccionar del Inventario / Repuesto</div>
                       <div className="col-span-1 text-center">Unidad</div>
                       <div className="col-span-2 text-center">Cant. a Despachar</div>
-                      <div className="col-span-1 text-right">Valor USD</div>
+                      <div className="col-span-2 text-right">Costo Unit. COP (Aprobado)</div>
+                      <div className="col-span-2 text-right">Subtotal COP</div>
                       <div className="col-span-1 text-center">Acción</div>
                     </div>
 
                     <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto">
                       {dispatchItems.map((item) => {
                         const prod = products.find((p) => p.id === item.productId);
+                        const effectiveCostCOP = item.approvedCostCOP !== undefined ? item.approvedCostCOP : (item.unitCostCOP || prod?.costPriceCOP || 0);
 
                         return (
                           <div key={item.id} className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-sky-50/30">
-                            <div className="col-span-5">
+                            <div className="col-span-4">
                               <CreatableSelect
                                 value={
                                   products.find((p) => p.id === item.productId)
@@ -2308,15 +2352,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                                 }))}
                                 placeholder="Buscar repuesto..."
                                 allowCustomText={false}
-                                
                                 inputClassName="w-full h-10 px-3 text-xs rounded-xl bg-slate-100 font-medium"
                               />
-                            </div>
-
-                            <div className="col-span-2 text-center">
-                              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-bold">
-                                {item.category}
-                              </span>
                             </div>
 
                             <div className="col-span-1 text-center font-mono font-bold text-gray-700">
@@ -2336,8 +2373,26 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                               />
                             </div>
 
-                            <div className="col-span-1 text-right font-mono font-bold text-gray-900">
-                              ${(item.qtyDispatched * item.unitCostUSD).toLocaleString()}
+                            <div className="col-span-2">
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder={String(prod?.costPriceCOP || 0)}
+                                value={item.approvedCostCOP !== undefined ? (item.approvedCostCOP || '') : (item.unitCostCOP || '')}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                  updateDispatchItem(item.id, 'approvedCostCOP', val);
+                                  updateDispatchItem(item.id, 'unitCostCOP', val);
+                                }}
+                                className="w-full h-9 px-2 text-right font-mono font-bold text-xs rounded-lg bg-slate-100"
+                              />
+                              <span className="block text-[9px] text-slate-400 text-right mt-0.5">
+                                Sugerido: ${(prod?.costPriceCOP || 0).toLocaleString()} COP
+                              </span>
+                            </div>
+
+                            <div className="col-span-2 text-right font-mono font-bold text-gray-900 text-xs">
+                              ${((item.qtyDispatched || 1) * effectiveCostCOP).toLocaleString()} COP
                             </div>
 
                             <div className="col-span-1 text-center">
@@ -3108,6 +3163,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                           qtyDispatched: 1,
                           unitCostUSD: (scannedResult as any).costPriceUSD || 0,
                           unitCostCOP: (scannedResult as any).costPriceCOP || 0,
+                          suggestedUnitCostCOP: (scannedResult as any).costPriceCOP || 0,
+                          approvedCostCOP: (scannedResult as any).costPriceCOP || 0,
                         },
                       ]);
                       setActiveTab('dispatch');

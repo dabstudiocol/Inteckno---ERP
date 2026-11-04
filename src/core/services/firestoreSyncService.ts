@@ -322,7 +322,8 @@ export type ErpModuleKey =
   | 'procurement'
   | 'operations'
   | 'commercial'
-  | 'productivity';
+  | 'productivity'
+  | 'hr';
 
 const lastLocalWriteTimestamps: Record<string, string> = {};
 
@@ -465,14 +466,16 @@ export async function loadAllModulesFromCloud(): Promise<{
   operations?: Record<string, any> | null;
   commercial?: Record<string, any> | null;
   productivity?: Record<string, any> | null;
+  hr?: Record<string, any> | null;
   products?: Product[] | null;
 }> {
-  const [projects, procurement, operations, commercial, productivity, products] = await Promise.all([
+  const [projects, procurement, operations, commercial, productivity, hr, products] = await Promise.all([
     loadModuleFromCloud('projects'),
     loadModuleFromCloud('procurement'),
     loadModuleFromCloud('operations'),
     loadModuleFromCloud('commercial'),
     loadModuleFromCloud('productivity'),
+    loadModuleFromCloud('hr'),
     loadInventoryFromCloud(),
   ]);
 
@@ -482,6 +485,7 @@ export async function loadAllModulesFromCloud(): Promise<{
     operations,
     commercial,
     productivity,
+    hr,
     products,
   };
 }

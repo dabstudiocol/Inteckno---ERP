@@ -393,6 +393,7 @@ export interface Project {
   serviceId?: string;
   dynamicData?: Record<string, any>;
   costMatrix?: CostMatrixItem[];
+  offerBudget?: ProjectOfferBudget | ProjectOfferBudgetItem[];
   billingItems?: ProjectBillingItem[];
   staffAssignments?: StaffAssignment[];
   updatedAt?: string;
@@ -662,6 +663,12 @@ export interface RemissionItem {
   qtyConsumed: number; // qtyDispatched - qtyReturned (se imputa a costo del proyecto)
   unitCostUSD: number;
   unitCostCOP: number;
+  suggestedUnitCostCOP?: number; // Costo sugerido según catálogo / inventario promedio
+  approvedCostCOP?: number; // Costo revisado, aprobado o modificado por el usuario
+  costApprovedBy?: string;
+  costApprovedAt?: string;
+  imputedToProjectCost?: boolean;
+  itemCode?: string; // ITEM Contractual al que se imputa en la matriz de costos del proyecto
   condition?: 'bueno' | 'regular' | 'danado' | 'consumido';
   notes?: string;
 }
@@ -1573,16 +1580,39 @@ export interface EmployeeRecord {
   emergencyPhone: string;
 }
 
-export interface LeaveRequest {
+export type PayrollNoveltyType = 
+  | 'vacaciones' 
+  | 'compensatorio' 
+  | 'incapacidad_general' 
+  | 'incapacidad_laboral' 
+  | 'licencia_remunerada' 
+  | 'licencia_no_remunerada'
+  | 'permiso_medico'
+  | 'calamidad'
+  | 'dia_familia';
+
+export interface PayrollNovelty {
   id: string;
   employeeId: string;
   employeeName: string;
-  type: 'vacaciones' | 'permiso_medico' | 'calamidad' | 'dia_familia';
+  documentId: string;
+  type: PayrollNoveltyType;
+  typeLabel?: string;
   startDate: string;
   endDate: string;
   daysCount: number;
-  status: 'pendiente' | 'aprobada' | 'rechazada';
+  status: 'solicitada' | 'aprobada' | 'rechazada' | 'disfrutada';
+  requestedAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  justification: string;
+  replacementEmployeeId?: string;
+  replacementEmployeeName?: string;
+  impactsAvailability: boolean;
+  notes?: string;
 }
+
+export type LeaveRequest = PayrollNovelty;
 
 // 5. OPERACIONES Y MANTENIMIENTO TÉCNICO
 export interface MaintenancePlan {

@@ -25,6 +25,7 @@ import {
   WikiArticle,
   InternationalLead,
   EmployeeRecord,
+  PayrollNovelty,
   MaintenancePlan,
   DispatchRemission,
   RemissionItem,
@@ -211,6 +212,7 @@ interface ErpState {
   articles: WikiArticle[];
   leads: InternationalLead[];
   employees: EmployeeRecord[];
+  novelties: PayrollNovelty[];
   maintenancePlans: MaintenancePlan[];
 }
 
@@ -374,6 +376,10 @@ export interface ErpContextType extends ErpState {
   createEmployee: (emp: Omit<EmployeeRecord, 'id'>) => void;
   updateEmployee: (id: string, data: Partial<EmployeeRecord>) => void;
   deleteEmployee: (id: string) => void;
+  requestPayrollNovelty: (novelty: Omit<PayrollNovelty, 'id' | 'status' | 'requestedAt'>) => { success: boolean; id?: string };
+  approvePayrollNovelty: (id: string, approverName: string) => void;
+  rejectPayrollNovelty: (id: string, approverName: string, reason?: string) => void;
+  deletePayrollNovelty: (id: string) => void;
   completeMaintenance: (id: string) => void;
 
   // SISTEMA DESHACER / REHACER (MULTI-USUARIO AISLADO)
@@ -419,6 +425,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       articles: [],
       leads: [],
       employees: [],
+      novelties: [],
       maintenancePlans: [],
       remissions: [],
       inventoryAuditLogs: [],
@@ -544,6 +551,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           articles: Array.isArray(parsed.articles) ? parsed.articles : [],
           leads: Array.isArray(parsed.leads) ? parsed.leads : [],
           employees: Array.isArray(parsed.employees) ? parsed.employees : [],
+          novelties: Array.isArray(parsed.novelties) ? parsed.novelties : [],
           maintenancePlans: Array.isArray(parsed.maintenancePlans) ? parsed.maintenancePlans : [],
           remissions: Array.isArray(parsed.remissions) ? parsed.remissions : [],
           inventoryAuditLogs: Array.isArray(parsed.inventoryAuditLogs) ? parsed.inventoryAuditLogs : [],
@@ -736,6 +744,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.operations.remissions)) { next.remissions = cloudData.operations.remissions; hasChanges = true; }
           if (Array.isArray(cloudData.operations.maintenancePlans)) { next.maintenancePlans = cloudData.operations.maintenancePlans; hasChanges = true; }
           if (Array.isArray(cloudData.operations.employees)) { next.employees = cloudData.operations.employees; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.novelties)) { next.novelties = cloudData.operations.novelties; hasChanges = true; }
+        }
+
+        // HR (Talento Humano & SST)
+        if (cloudData.hr) {
+          if (Array.isArray(cloudData.hr.employees)) { next.employees = cloudData.hr.employees; hasChanges = true; }
+          if (Array.isArray(cloudData.hr.novelties)) { next.novelties = cloudData.hr.novelties; hasChanges = true; }
         }
 
         // Commercial
@@ -1872,7 +1887,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         applicableRates: customData?.applicableRates,
         quoteCode: (customData as any)?.quoteCode || opp.quotations?.[0]?.code || '',
         contractCode: (customData as any)?.contractCode || '',
-        costMatrix: (customData as any)?.costMatrix || [], // Los precios cotizados son precio de VENTA (offerBudget); no se copian como costo planeado
+        costMatrix: [], // Cero Mock Data y Precio != Costo: La matriz de costos reales inicia limpia para reflejar la ejecución de obra
+        offerBudget: (customData as any)?.offerBudget,
       };
 
       // Crear Hito Inicial de Facturación para conectar directamente con el módulo de Facturación (O2C)
@@ -2911,6 +2927,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalReturnedItems: 0,
         totalConsumedValueUSD: 0,
         totalConsumedValueCOP: 0,
+        items: remData.items.map((it) => {
+          const prod = state.products.find((p) => p.id === it.productId || p.sku === it.sku);
+          const suggested = it.suggestedUnitCostCOP || it.unitCostCOP || prod?.costPriceCOP || 0;
+          const approved = (it.approvedCostCOP !== undefined && it.approvedCostCOP !== null)
+            ? Number(it.approvedCostCOP)
+            : suggested;
+          return {
+            ...it,
+            suggestedUnitCostCOP: suggested,
+            approvedCostCOP: approved,
+            unitCostCOP: approved,
+            imputedToProjectCost: Boolean(remData.projectId),
+          };
+        }),
       };
 
       // Descontar inventario de cada producto despachado y registrar auditoría forense
@@ -2959,7 +2989,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const isTool = prev.equipment.some((eq) => eq.id === it.productId || eq.code === it.sku);
           if (!isTool) {
             const qty = Number(it.qtyDispatched) || 0;
-            const unitCostCOP = it.unitCostCOP || prod?.costPriceCOP || 0;
+            const unitCostCOP = (it.approvedCostCOP !== undefined && it.approvedCostCOP !== null)
+              ? Number(it.approvedCostCOP)
+              : (it.unitCostCOP || prod?.costPriceCOP || 0);
             const itemTotalCOP = qty * unitCostCOP;
             if (itemTotalCOP > 0) {
               dispatchTotalCOP += itemTotalCOP;
@@ -2989,6 +3021,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               actualTotal: dispatchTotalCOP,
               variance: 0,
               costType: 'directo' as const,
+              hasIva: false,
               date: remData.departureDate || new Date().toISOString().split('T')[0],
               observations: `Despacho por Remisión de Salida ${remissionNumber} a cargo de ${remData.responsibleTechnicianName}.`,
             };
@@ -4570,6 +4603,130 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [notify]
   );
 
+  const requestPayrollNovelty = useCallback(
+    (noveltyData: Omit<PayrollNovelty, 'id' | 'status' | 'requestedAt'>): { success: boolean; id?: string } => {
+      const newNovelty: PayrollNovelty = {
+        ...noveltyData,
+        id: `NOV-${Date.now()}`,
+        status: 'solicitada',
+        requestedAt: new Date().toISOString(),
+      };
+
+      setState((prev) => {
+        const updatedNovelties = [newNovelty, ...(prev.novelties || [])];
+        syncModuleToCloud('hr', {
+          employees: prev.employees,
+          novelties: updatedNovelties,
+        }, prev.currentUser?.id).catch(console.warn);
+        return {
+          ...prev,
+          novelties: updatedNovelties,
+        };
+      });
+
+      notify('success', 'Novedad Registrada', `Solicitud de ${newNovelty.type} radicada para ${newNovelty.employeeName}.`);
+      return { success: true, id: newNovelty.id };
+    },
+    [notify]
+  );
+
+  const approvePayrollNovelty = useCallback(
+    (id: string, approverName: string) => {
+      let targetNovelty: PayrollNovelty | undefined;
+      setState((prev) => {
+        const list = prev.novelties || [];
+        targetNovelty = list.find((n) => n.id === id);
+        if (!targetNovelty) return prev;
+
+        const updatedNovelties = list.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                status: 'aprobada' as const,
+                approvedAt: new Date().toISOString(),
+                approvedBy: approverName,
+              }
+            : n
+        );
+
+        let updatedEmployees = prev.employees;
+        if (targetNovelty.type === 'vacaciones' && targetNovelty.employeeId) {
+          const daysToDeduct = Number(targetNovelty.daysCount) || 0;
+          updatedEmployees = prev.employees.map((emp) =>
+            emp.id === targetNovelty?.employeeId
+              ? {
+                  ...emp,
+                  vacationDaysAvailable: Math.max(0, (emp.vacationDaysAvailable || 0) - daysToDeduct),
+                }
+              : emp
+          );
+        }
+
+        syncModuleToCloud('hr', {
+          employees: updatedEmployees,
+          novelties: updatedNovelties,
+        }, prev.currentUser?.id).catch(console.warn);
+
+        return {
+          ...prev,
+          novelties: updatedNovelties,
+          employees: updatedEmployees,
+        };
+      });
+
+      if (targetNovelty) {
+        notify('success', 'Novedad Aprobada', `Se aprobó la novedad de ${(targetNovelty as any).type} para ${(targetNovelty as any).employeeName}.`);
+      }
+    },
+    [notify]
+  );
+
+  const rejectPayrollNovelty = useCallback(
+    (id: string, approverName: string, reason?: string) => {
+      setState((prev) => {
+        const updatedNovelties = (prev.novelties || []).map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                status: 'rechazada' as const,
+                approvedAt: new Date().toISOString(),
+                approvedBy: approverName,
+                notes: reason || n.notes,
+              }
+            : n
+        );
+        syncModuleToCloud('hr', {
+          employees: prev.employees,
+          novelties: updatedNovelties,
+        }, prev.currentUser?.id).catch(console.warn);
+        return {
+          ...prev,
+          novelties: updatedNovelties,
+        };
+      });
+      notify('info', 'Novedad Rechazada', 'La solicitud ha sido rechazada.');
+    },
+    [notify]
+  );
+
+  const deletePayrollNovelty = useCallback(
+    (id: string) => {
+      setState((prev) => {
+        const updatedNovelties = (prev.novelties || []).filter((n) => n.id !== id);
+        syncModuleToCloud('hr', {
+          employees: prev.employees,
+          novelties: updatedNovelties,
+        }, prev.currentUser?.id).catch(console.warn);
+        return {
+          ...prev,
+          novelties: updatedNovelties,
+        };
+      });
+      notify('info', 'Novedad Eliminada', 'El registro de novedad fue retirado.');
+    },
+    [notify]
+  );
+
   const completeMaintenance = useCallback(
     (id: string) => {
       setState((prev) => ({
@@ -5036,6 +5193,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteArticle,
         createEmployee,
         updateEmployee,
+        requestPayrollNovelty,
+        approvePayrollNovelty,
+        rejectPayrollNovelty,
+        deletePayrollNovelty,
         completeMaintenance,
         canUndo,
         canRedo,

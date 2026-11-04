@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Sparkles,
   Building2,
@@ -7,10 +7,57 @@ import {
   UserCheck,
   CheckCircle2,
   AlertTriangle,
+  Plus,
+  Trash2,
+  Layers,
+  Calculator,
+  Percent,
 } from 'lucide-react';
-import { Opportunity, Partner, CRMContact, User, Project } from '../../../types';
+import { Opportunity, Partner, CRMContact, User, Project, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../types';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
+import { getProjectTaxRate } from '../../../core/services/taxService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+
+interface OfferItemDraft {
+  id: string;
+  rubroName: string;
+  description: string;
+  budgetPlanned: number;
+  hasIva: boolean;
+}
+
+const SUGGESTED_RUBROS: Record<string, { name: string; pct: number; desc: string; hasIva: boolean }[]> = {
+  'Familia 1': [
+    { name: '1. RECURSO HUMANO (Cuadrilla Empalme STC)', pct: 0.38, desc: 'Empalmador certificado UNE EN 12927, técnicos electromecánicos y supervisión', hasIva: true },
+    { name: '2. EQUIPOS PARA EL MONTAJE Y HERRAMENTAL', pct: 0.22, desc: 'Winches de tiro, mordazas de acuñamiento, prensa hidráulica de empalme', hasIva: true },
+    { name: '3. SUBCONTRATOS Y SERVICIOS EXTERNOS (Grúas)', pct: 0.15, desc: 'Grúas telescópicas para izaje de bobinas y transporte pesado', hasIva: true },
+    { name: '4. VIÁTICOS Y GASTOS DE VIAJE EN SITIO', pct: 0.15, desc: 'Alojamiento, alimentación cuadrilla de obra y transporte local', hasIva: false },
+    { name: '5. CONSUMIBLES Y REPUESTOS DE OBRA', pct: 0.10, desc: 'Alambres de ligadura, grasas especiales Nyrosten, insumos de taller', hasIva: true },
+  ],
+  'Familia 2': [
+    { name: '1. RECURSO HUMANO (Especialistas END / MRT Nivel II)', pct: 0.45, desc: 'Ingeniero inspector NDT certificado, técnico operador de sensor magnético', hasIva: true },
+    { name: '2. EQUIPOS ESPECIALIZADOS Y SENSORES MRT', pct: 0.25, desc: 'Cabezal magneto-inductivo, registrador digital y ultrasonido phased array', hasIva: true },
+    { name: '3. VIÁTICOS Y MOVILIZACIÓN TÉCNICA', pct: 0.18, desc: 'Tiquetes aéreos, transporte de instrumental calibrado y viáticos', hasIva: false },
+    { name: '4. INFORMES TÉCNICOS Y CERTIFICACIONES', pct: 0.12, desc: 'Procesamiento de señales, memoria técnica y emisión de certificado', hasIva: true },
+  ],
+  'Familia 3': [
+    { name: '1. RECURSO HUMANO (Mantenimiento Mayor & Overhaul)', pct: 0.35, desc: 'Líder electromecánico, mecánicos de ajuste, electricista de potencia', hasIva: true },
+    { name: '2. REPUESTOS Y COMPONENTES OEM', pct: 0.30, desc: 'Rodamientos SKF/FAG, retenes, sellos y tornillería de alta resistencia', hasIva: true },
+    { name: '3. MAQUINADO Y SERVICIOS DE TALLER EXTERNO', pct: 0.15, desc: 'Rectificado de volantes, equilibrado dinámico y ensayos no destructivos', hasIva: true },
+    { name: '4. VIÁTICOS Y LOGÍSTICA DE PARADA TÉCNICA', pct: 0.20, desc: 'Alimentación en ventana nocturna/parada y transporte de componentes', hasIva: false },
+  ],
+  'Familia 4': [
+    { name: '1. REPUESTOS Y COMPONENTES OEM FABRICADOS', pct: 0.65, desc: 'Cables de acero, mordazas, rodillos de balancín y repuestos certificados', hasIva: true },
+    { name: '2. FLETES Y LOGÍSTICA DE IMPORTACIÓN', pct: 0.20, desc: 'Flete marítimo/aéreo, aranceles de importación y nacionalización', hasIva: true },
+    { name: '3. GESTIÓN TÉCNICA Y ASEGURAMIENTO QC', pct: 0.15, desc: 'Inspección de fábrica (FAT), trazabilidad de colada y certificados 3.1', hasIva: true },
+  ],
+  'Familia 5': [
+    { name: '1. INGENIERÍA Y DIRECCIÓN CONSULTORÍA', pct: 0.55, desc: 'Ingeniero senior especialista en teleféricos, calculista estructural', hasIva: true },
+    { name: '2. ENSAYOS Y VERIFICACIONES DE CAMPO', pct: 0.22, desc: 'Levantamiento topográfico, peritaje técnico y ensayos destructivos/no destructivos', hasIva: true },
+    { name: '3. VIÁTICOS Y DESPLAZAMIENTOS', pct: 0.13, desc: 'Visitas técnicas a estaciones y pilonas del sistema', hasIva: false },
+    { name: '4. ENTREGABLES, PLANOS Y MEMORIAS', pct: 0.10, desc: 'Planos as-built en CAD, memorias de cálculo y dictamen pericial', hasIva: true },
+  ],
+};
 
 interface AwardOpportunityModalProps {
   opportunity: Opportunity;
@@ -95,8 +142,90 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
     return baseValueUSD;
   });
 
-  // 4. Plantilla de Proyecto WBS Inicial (Familias Inteckno - seleccionada por el usuario)
-  const [selectedTemplateFamily, setSelectedTemplateFamily] = useState<string>('');
+  // 4. Plantilla de Proyecto WBS Inicial & Hoja de Costos
+  const [selectedTemplateFamily, setSelectedTemplateFamily] = useState<string>('Familia 1: Montaje y Empalme Mayor de Cables (EN 12927)');
+  const [profitPercent, setProfitPercent] = useState<number>(25);
+
+  const [offerItems, setOfferItems] = useState<OfferItemDraft[]>(() => {
+    const costTarget = Math.round(contractAmount * 0.75);
+    const rubros = SUGGESTED_RUBROS['Familia 1'];
+    return rubros.map((r, idx) => ({
+      id: `OB-${Date.now()}-${idx + 1}`,
+      rubroName: r.name,
+      description: r.desc,
+      budgetPlanned: Math.round(costTarget * r.pct),
+      hasIva: r.hasIva,
+    }));
+  });
+
+  const handleFamilyChange = (familyName: string) => {
+    setSelectedTemplateFamily(familyName);
+    const matchedKey = Object.keys(SUGGESTED_RUBROS).find((k) => familyName.includes(k)) || 'Familia 1';
+    const rubros = SUGGESTED_RUBROS[matchedKey] || SUGGESTED_RUBROS['Familia 1'];
+    const costTarget = Math.round(contractAmount * 0.75);
+    setOfferItems(
+      rubros.map((r, idx) => ({
+        id: `OB-${Date.now()}-${idx + 1}`,
+        rubroName: r.name,
+        description: r.desc,
+        budgetPlanned: Math.round(costTarget * r.pct),
+        hasIva: r.hasIva,
+      }))
+    );
+  };
+
+  const handleItemCostChange = (id: string, value: number) => {
+    setOfferItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, budgetPlanned: value } : it))
+    );
+  };
+
+  const handleItemIvaToggle = (id: string) => {
+    setOfferItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, hasIva: !it.hasIva } : it))
+    );
+  };
+
+  const handleAddCustomRubro = () => {
+    setOfferItems((prev) => [
+      ...prev,
+      {
+        id: `OB-${Date.now()}-${prev.length + 1}`,
+        rubroName: `Rubro Adicional ${prev.length + 1}`,
+        description: 'Partida complementaria de ingeniería o montaje',
+        budgetPlanned: 0,
+        hasIva: true,
+      },
+    ]);
+  };
+
+  const handleRemoveRubro = (id: string) => {
+    setOfferItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  // Cálculos dinámicos de costos, utilidades e impuestos
+  const taxRateData = useMemo(() => getProjectTaxRate(opportunity.country || 'Colombia'), [opportunity.country]);
+
+  const totalBudgetedCost = useMemo(() => {
+    return offerItems.reduce((acc, it) => acc + (Number(it.budgetPlanned) || 0), 0);
+  }, [offerItems]);
+
+  const profitAmount = useMemo(() => {
+    return Math.round(totalBudgetedCost * (profitPercent / 100));
+  }, [totalBudgetedCost, profitPercent]);
+
+  const subtotalBeforeTax = totalBudgetedCost + profitAmount;
+
+  const totalIvaAmount = useMemo(() => {
+    const itemsTax = offerItems.reduce((acc, it) => {
+      if (it.hasIva === false) return acc;
+      return acc + Math.round((Number(it.budgetPlanned) || 0) * taxRateData.rate);
+    }, 0);
+    const profitTax = Math.round(profitAmount * taxRateData.rate);
+    return itemsTax + profitTax;
+  }, [offerItems, profitAmount, taxRateData.rate]);
+
+  const grandTotalOffer = subtotalBeforeTax + totalIvaAmount;
 
   // Cambio dinámico de moneda: recalcula el monto según la TRM
   const handleCurrencyChange = (newCurrency: 'USD' | 'COP') => {
@@ -104,10 +233,15 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
     setCurrency(newCurrency);
     if (newCurrency === 'COP') {
       // De USD a COP
-      setContractAmount(Math.round(contractAmount * currentTrm));
+      const converted = Math.round(contractAmount * currentTrm);
+      setContractAmount(converted);
+      const costTarget = Math.round(converted * 0.75);
+      setOfferItems((prev) => prev.map((it) => ({ ...it, budgetPlanned: Math.round(it.budgetPlanned * currentTrm) })));
     } else {
       // De COP a USD
-      setContractAmount(Math.round(contractAmount / (currentTrm > 0 ? currentTrm : 4000)));
+      const converted = Math.round(contractAmount / (currentTrm > 0 ? currentTrm : 4000));
+      setContractAmount(converted);
+      setOfferItems((prev) => prev.map((it) => ({ ...it, budgetPlanned: Math.round(it.budgetPlanned / (currentTrm > 0 ? currentTrm : 4000)) })));
     }
   };
 
@@ -128,24 +262,25 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
 
     const chosenLeader = erpUsers.find((u) => u.id === selectedLeaderId);
     const cleanCode = projectCode.trim().toUpperCase() || `PRJ-${Date.now()}`;
-
-    // Transferir partidas de la cotización activa si existen
     const activeQuote = opportunity.quotations?.[0];
-    const initialCostMatrix = (activeQuote?.items || []).map((it, idx) => ({
-      id: `COST-${Date.now()}-${idx}`,
-      category: it.category === 'Ensayos NDT/MRT' ? 'inspeccion_mrt' :
-                it.category === 'Repuestos OEM' ? 'repuestos_fabricacion' :
-                it.category === 'Viáticos & Logística' ? 'viaticos_transporte' : 'mano_obra_itk',
-      concept: it.description,
-      unit: 'Unidad',
-      plannedQuantity: it.qty,
-      plannedUnitCost: it.unitPrice,
-      plannedTotal: it.qty * it.unitPrice,
-      actualQuantity: 0,
-      actualUnitCost: it.unitPrice,
-      actualTotal: 0,
-      variance: it.qty * it.unitPrice,
-    }));
+
+    const projectOfferBudget: ProjectOfferBudget = {
+      items: offerItems.map((it) => ({
+        id: it.id,
+        rubroName: it.rubroName,
+        description: it.description,
+        budgetPlanned: Number(it.budgetPlanned) || 0,
+        hasIva: it.hasIva,
+      })),
+      totalBudgetedCost,
+      budgetedProfitPercent: profitPercent,
+      totalBudgetedProfit: profitAmount,
+      subtotal: subtotalBeforeTax,
+      ivaPercent: Math.round(taxRateData.rate * 100),
+      ivaAmount: totalIvaAmount,
+      grandTotalOffer,
+      lastUpdated: new Date().toISOString(),
+    };
 
     const projectPayload: Partial<Project> = {
       code: cleanCode,
@@ -165,14 +300,15 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
       supervisorName: chosenLeader?.name || '',
       startDate,
       endDate,
-      contractAmount,
-      budgetPV: currency === 'USD' ? contractAmount * currentTrm : contractAmount,
+      contractAmount: grandTotalOffer > 0 ? grandTotalOffer : contractAmount,
+      budgetPV: totalBudgetedCost > 0 ? totalBudgetedCost : (currency === 'USD' ? contractAmount * currentTrm : contractAmount),
       currency,
       costCenter: `CC-${cleanCode}`,
       location: `${opportunity.country || 'Colombia'}`,
       serviceType: opportunity.cableType,
       templateName: selectedTemplateFamily,
-      costMatrix: initialCostMatrix as any,
+      offerBudget: projectOfferBudget,
+      costMatrix: [], // Cero Mock Data: La matriz de costos reales inicia limpia para registrar la ejecución
     };
 
     onConfirmAward(opportunity.id, projectPayload);
@@ -418,13 +554,137 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
                   { id: 'Familia 5: Consultoría, Interventoría y Asistencia Técnica', name: 'Familia 5: Consultoría, Interventoría y Asistencia Técnica' },
                 ]}
                 value={selectedTemplateFamily}
-                onChange={(val) => setSelectedTemplateFamily(val)}
+                onChange={(val) => handleFamilyChange(val || '')}
                 allowCustomText={true}
                 placeholder="Seleccionar plantilla de fases..."
               />
               <p className="text-[10px] text-slate-500 leading-relaxed">
-                El proyecto se creará automáticamente con sus fases, tareas críticas, cálculo CPM y matriz de costos inicial transferida desde la oferta comercial.
+                El proyecto se creará automáticamente con sus fases, tareas críticas, cálculo CPM y la hoja de costos de oferta transferida.
               </p>
+            </div>
+
+            {/* HOJA DE COSTOS DE OFERTA / INGENIERÍA DE DETALLE (PRESUPUESTO INICIAL ESTIMADO) */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/90 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#00668F] text-white flex items-center justify-center shadow-xs">
+                    <Calculator size={14} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-xs">
+                      Hoja de Costos de Oferta (Ingeniería de Detalle)
+                    </h4>
+                    <p className="text-[10px] text-slate-500">
+                      Sugerencia según la familia técnica elegida. Puedes editar costos, IVA o agregar rubros.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddCustomRubro}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-100 text-[#00668F] border border-sky-200 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <Plus size={12} />
+                  <span>Agregar Rubro</span>
+                </button>
+              </div>
+
+              {/* Lista de Rubros Presupuestales */}
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {offerItems.map((item) => (
+                  <div key={item.id} className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={item.rubroName}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setOfferItems((prev) => prev.map((it) => it.id === item.id ? { ...it, rubroName: val } : it));
+                          }}
+                          className="w-full font-bold text-xs text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#00668F] focus:outline-none"
+                        />
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5">{item.description}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRubro(item.id)}
+                        className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
+                        title="Eliminar rubro"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100">
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-600 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={item.hasIva}
+                          onChange={() => handleItemIvaToggle(item.id)}
+                          className="w-3.5 h-3.5 text-[#00668F] rounded"
+                        />
+                        <span>Aplica IVA ({Math.round(taxRateData.rate * 100)}%)</span>
+                      </label>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400">Costo Estimado:</span>
+                        <div className="relative w-36">
+                          <input
+                            type="number"
+                            value={item.budgetPlanned || ''}
+                            placeholder="0"
+                            onChange={(e) => handleItemCostChange(item.id, Number(e.target.value) || 0)}
+                            className="w-full px-2.5 py-1 text-right text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#00668F]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Resumen de Hoja de Costos */}
+              <div className="p-3 bg-slate-100/90 rounded-xl space-y-1.5 text-xs border border-slate-200/80">
+                <div className="flex items-center justify-between text-slate-600 text-[11px]">
+                  <span>Costos Directos Planeados:</span>
+                  <span className="font-mono font-bold text-slate-900">{formatCOP(totalBudgetedCost)}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-slate-600 text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <span>Margen Utilidad Presupuestada:</span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={profitPercent || ''}
+                        placeholder="0"
+                        onChange={(e) => setProfitPercent(Number(e.target.value) || 0)}
+                        className="w-12 px-1 py-0.5 text-center text-[10px] font-bold bg-white border border-slate-300 rounded font-mono"
+                      />
+                      <span>%</span>
+                    </div>
+                  </div>
+                  <span className="font-mono font-bold text-emerald-700">+{formatCOP(profitAmount)}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-slate-700 font-semibold text-[11px] pt-1 border-t border-slate-200/70">
+                  <span>Subtotal Oferta:</span>
+                  <span className="font-mono font-bold text-slate-900">{formatCOP(subtotalBeforeTax)}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                  <span>IVA Calculado ({Math.round(taxRateData.rate * 100)}% {taxRateData.countryName}):</span>
+                  <span className="font-mono text-slate-700">{formatCOP(totalIvaAmount)}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-slate-900 font-black text-xs pt-1.5 border-t border-slate-300/80">
+                  <span>Gran Total Oferta Comercial:</span>
+                  <span className="font-mono text-emerald-800 text-sm">{formatCOP(grandTotalOffer)}</span>
+                </div>
+              </div>
             </div>
 
             {/* Pie del Formulario */}

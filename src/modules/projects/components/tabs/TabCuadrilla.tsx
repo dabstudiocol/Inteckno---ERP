@@ -30,7 +30,29 @@ interface TabCuadrillaProps {
 }
 
 export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdateProject }) => {
-  const { users, employees } = useErp();
+  const { users, employees, novelties = [] } = useErp();
+
+  // Helper para detectar novedades aprobadas activas o que solapan con las fechas del proyecto
+  const getEmployeeActiveNovelty = (employeeName: string) => {
+    if (!employeeName) return null;
+    const today = new Date().toISOString().split('T')[0];
+    const pStart = project.startDate || today;
+    const pEnd = project.endDate || '2099-12-31';
+
+    return novelties.find((n) => {
+      if (n.status !== 'aprobada') return false;
+      if (!n.impactsAvailability) return false;
+      const matchName =
+        n.employeeName.toLowerCase() === employeeName.toLowerCase() ||
+        n.employeeName.toLowerCase().includes(employeeName.toLowerCase()) ||
+        employeeName.toLowerCase().includes(n.employeeName.toLowerCase());
+      if (!matchName) return false;
+
+      const overlapsProject = n.startDate <= pEnd && n.endDate >= pStart;
+      const isActiveNow = n.startDate <= today && n.endDate >= today;
+      return overlapsProject || isActiveNow;
+    });
+  };
 
   // Estado real vinculado al proyecto (Cero Mock Data)
   const assignments: StaffAssignment[] = useMemo(() => {
@@ -322,59 +344,72 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
                 </td>
               </tr>
             ) : (
-              filtered.map((assign) => (
-                <tr key={assign.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-2.5 px-3">
-                    <div className="font-bold text-slate-900">{assign.employeeName}</div>
-                    <div className="text-[10px] text-slate-500">{assign.role}</div>
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <div className="text-xs font-semibold text-[#00668F]">{assign.projectCode || project.code}</div>
-                    <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <MapPin size={10} />
-                      <span>{assign.location || project.location || 'Sin ubicación'}</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-2 text-center">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black ${
-                      assign.allocationPct === 100
-                        ? 'bg-blue-100 text-[#00668F]'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {assign.allocationPct}%
-                    </span>
-                  </td>
-                  {weekList.map((wk) => {
-                    const active = isAssignedInWeek(assign, wk);
-                    return (
-                      <td key={wk} className="py-2.5 px-1.5 text-center">
-                        {active ? (
-                          <div
-                            title={`${assign.employeeName} activo en ${wk} (${assign.allocationPct}%)`}
-                            className={`w-6 h-6 mx-auto rounded-md flex items-center justify-center text-[10px] font-bold text-white shadow-2xs ${
-                              assign.allocationPct === 100 ? 'bg-[#00668F]' : 'bg-amber-500'
-                            }`}
-                          >
-                            ✓
-                          </div>
-                        ) : (
-                          <div className="w-1.5 h-1.5 mx-auto rounded-full bg-slate-200"></div>
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td className="py-2.5 px-2 text-center">
-                    <button
-                      type="button"
-                      title="Eliminar asignación"
-                      onClick={() => setAssignmentToDelete(assign)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))
+              filtered.map((assign) => {
+                const conflictNovelty = getEmployeeActiveNovelty(assign.employeeName);
+
+                return (
+                  <tr key={assign.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-2.5 px-3">
+                      <div className="font-bold text-slate-900">{assign.employeeName}</div>
+                      <div className="text-[10px] text-slate-500">{assign.role}</div>
+                      {conflictNovelty && (
+                        <span
+                          title={`Novedad aprobada: ${conflictNovelty.typeLabel || conflictNovelty.type} del ${conflictNovelty.startDate} al ${conflictNovelty.endDate} (${conflictNovelty.daysCount} días)`}
+                          className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300"
+                        >
+                          <AlertCircle size={10} className="text-amber-600 shrink-0" />
+                          <span>Novedad hasta {conflictNovelty.endDate}</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="text-xs font-semibold text-[#00668F]">{assign.projectCode || project.code}</div>
+                      <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <MapPin size={10} />
+                        <span>{assign.location || project.location || 'Sin ubicación'}</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-2 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black ${
+                        assign.allocationPct === 100
+                          ? 'bg-blue-100 text-[#00668F]'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {assign.allocationPct}%
+                      </span>
+                    </td>
+                    {weekList.map((wk) => {
+                      const active = isAssignedInWeek(assign, wk);
+                      return (
+                        <td key={wk} className="py-2.5 px-1.5 text-center">
+                          {active ? (
+                            <div
+                              title={`${assign.employeeName} activo en ${wk} (${assign.allocationPct}%)`}
+                              className={`w-6 h-6 mx-auto rounded-md flex items-center justify-center text-[10px] font-bold text-white shadow-2xs ${
+                                assign.allocationPct === 100 ? 'bg-[#00668F]' : 'bg-amber-500'
+                              }`}
+                            >
+                              ✓
+                            </div>
+                          ) : (
+                            <div className="w-1.5 h-1.5 mx-auto rounded-full bg-slate-200"></div>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="py-2.5 px-2 text-center">
+                      <button
+                        type="button"
+                        title="Eliminar asignación"
+                        onClick={() => setAssignmentToDelete(assign)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -427,16 +462,46 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
                       setEmpName(val);
                     }
                   }}
-                  options={availableStaff.map((s) => ({
-                    id: s.id,
-                    name: `${s.name} (${s.role})`,
-                    code: s.department || s.role,
-                  }))}
+                  options={availableStaff.map((s) => {
+                    const hasNov = getEmployeeActiveNovelty(s.name);
+                    return {
+                      id: s.id,
+                      name: hasNov
+                        ? `${s.name} (${s.role}) — ⚠️ En Novedad hasta ${hasNov.endDate}`
+                        : `${s.name} (${s.role})`,
+                      code: s.department || s.role,
+                    };
+                  })}
                   placeholder="Seleccionar colaborador de nómina o escribir..."
                   allowCustomText={true}
                   inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                 />
               </div>
+
+              {/* Alerta Preventiva de Novedad Aprobada */}
+              {(() => {
+                const selectedStaffNovelty = empName ? getEmployeeActiveNovelty(empName) : null;
+                if (selectedStaffNovelty) {
+                  return (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                        <AlertCircle size={14} className="text-amber-600 shrink-0" />
+                        <span>Alerta de Disponibilidad (Novedad Aprobada)</span>
+                      </div>
+                      <p className="text-[11px] text-amber-700">
+                        <strong>{empName}</strong> cuenta con una novedad aprobada de tipo{' '}
+                        <strong>{selectedStaffNovelty.typeLabel || selectedStaffNovelty.type}</strong> del{' '}
+                        <strong>{selectedStaffNovelty.startDate}</strong> al{' '}
+                        <strong>{selectedStaffNovelty.endDate}</strong> ({selectedStaffNovelty.daysCount} días).
+                      </p>
+                      <p className="text-[10px] text-amber-600 italic">
+                        Puedes continuar con la asignación si el colaborador prestará apoyo fuera del período de su descanso.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Cargo / Especialidad *</label>
