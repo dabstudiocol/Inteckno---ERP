@@ -23,6 +23,12 @@ import {
   Users,
   Ban,
   CalendarDays,
+  Printer,
+  DollarSign,
+  Send,
+  History,
+  Sparkles,
+  Building2,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { EmployeeRecord, PayrollNovelty, PayrollNoveltyType } from '../../types';
@@ -31,6 +37,33 @@ import { UniversalModuleConfigModal } from '../../components/common/UniversalMod
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { formatCOP } from '../../core/services/trmService';
+
+export interface SstInspectionRecord {
+  id: string;
+  code: string;
+  date: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  technicianId: string;
+  technicianName: string;
+  inspectorName: string;
+  windSpeedKmh: number;
+  checks: {
+    arnes: boolean;
+    eslinga: boolean;
+    casco: boolean;
+    lineaVida: boolean;
+    radio: boolean;
+    clima: boolean;
+  };
+  verdict: 'aprobado' | 'rechazado';
+  observations?: string;
+  createdAt: string;
+}
+
+const STORAGE_KEY_SST = 'itk_sst_inspections_history';
 
 interface TalentoHumanoProps {
   initialTab?: 'empleados' | 'vacaciones' | 'encuestas' | 'nomina';
@@ -43,6 +76,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
     updateEmployee,
     timesheets,
     expenses,
+    projects = [],
+    users = [],
     activeModuleId,
     novelties = [],
     requestPayrollNovelty,
@@ -50,6 +85,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
     rejectPayrollNovelty,
     deletePayrollNovelty,
     currentUser,
+    notify,
   } = useErp();
 
   const currentTab = (activeModuleId === 'vacaciones' || activeModuleId === 'encuestas' || activeModuleId === 'nomina' || activeModuleId === 'empleados')
@@ -68,6 +104,105 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
   const [noveltySearch, setNoveltySearch] = useState('');
   const [noveltyTypeFilter, setNoveltyTypeFilter] = useState<string>('all');
   const [noveltyStatusFilter, setNoveltyStatusFilter] = useState<string>('all');
+
+  // Estados para SST e Inspecciones Pre-Operacionales
+  const [sstInspections, setSstInspections] = useState<SstInspectionRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SST);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [isNewInspectionModalOpen, setIsNewInspectionModalOpen] = useState(false);
+  const [inspectionToDelete, setInspectionToDelete] = useState<SstInspectionRecord | null>(null);
+  const [sstSubTab, setSstSubTab] = useState<'alturas' | 'clima'>('alturas');
+  const [inspDate, setInspDate] = useState(new Date().toISOString().split('T')[0]);
+  const [inspProjectId, setInspProjectId] = useState('');
+  const [inspTechnicianId, setInspTechnicianId] = useState('');
+  const [inspWindSpeed, setInspWindSpeed] = useState<number>(15);
+  const [inspChecks, setInspChecks] = useState({
+    arnes: true,
+    eslinga: true,
+    casco: true,
+    lineaVida: true,
+    radio: true,
+    clima: true,
+  });
+  const [inspObservations, setInspObservations] = useState('');
+
+  // Encuesta de clima laboral anónima
+  const [climateRating, setClimateRating] = useState(5);
+  const [climateFeedback, setClimateFeedback] = useState('');
+
+  // Estados para Nómina y Desprendibles (Colillas)
+  const [selectedPayrollEmp, setSelectedPayrollEmp] = useState<EmployeeRecord | null>(null);
+  const [payrollPeriod, setPayrollPeriod] = useState('1ra Quincena Noviembre 2026');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_SST, JSON.stringify(sstInspections));
+    } catch (e) {
+      console.warn('Error saving SST inspections', e);
+    }
+  }, [sstInspections]);
+
+  // Selección automática de proyecto/técnico si no están seleccionados
+  useEffect(() => {
+    if (!inspProjectId && projects.length > 0) {
+      setInspProjectId(projects[0].id);
+    }
+    if (!inspTechnicianId && employees.length > 0) {
+      setInspTechnicianId(employees[0].id);
+    }
+  }, [projects, employees, inspProjectId, inspTechnicianId]);
+
+  const handleCreateInspection = (e: React.FormEvent) => {
+    e.preventDefault();
+    const prj = projects.find((p) => p.id === inspProjectId) || projects[0];
+    const tech = employees.find((emp) => emp.id === inspTechnicianId) || employees[0];
+    
+    // Todos los 6 checks deben ser verdaderos Y viento <= 45 km/h
+    const allChecksPassed = Object.values(inspChecks).every(Boolean);
+    const windSafe = Number(inspWindSpeed) <= 45;
+    const verdict: 'aprobado' | 'rechazado' = allChecksPassed && windSafe ? 'aprobado' : 'rechazado';
+
+    const newRecord: SstInspectionRecord = {
+      id: `SST-${Date.now()}`,
+      code: `ARO-SST-${new Date().getFullYear()}-${String(sstInspections.length + 1).padStart(3, '0')}`,
+      date: inspDate,
+      projectId: prj?.id || '',
+      projectCode: prj?.code || 'STC-GENERAL',
+      projectName: prj?.name || 'Operación General Teleféricos',
+      technicianId: tech?.id || currentUser.id,
+      technicianName: tech?.name || currentUser.name,
+      inspectorName: currentUser.name || 'Inspector SST Inteckno',
+      windSpeedKmh: Number(inspWindSpeed) || 0,
+      checks: { ...inspChecks },
+      verdict,
+      observations: inspObservations.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    setSstInspections([newRecord, ...sstInspections]);
+    setIsNewInspectionModalOpen(false);
+    setInspObservations('');
+    notify?.(
+      verdict === 'aprobado' ? 'success' : 'warning',
+      `Inspección ${newRecord.code} Radicada`,
+      verdict === 'aprobado' 
+        ? `Autorizado el ascenso en alturas para ${newRecord.technicianName}.`
+        : `NO AUTORIZADO: Se detectó riesgo inminente o viento excesivo (${newRecord.windSpeedKmh} km/h).`
+    );
+  };
+
+  const handleSendClimateSurvey = (e: React.FormEvent) => {
+    e.preventDefault();
+    notify?.('success', 'Encuesta Registrada', 'Gracias por tu retroalimentación anónima de clima laboral y condiciones de trabajo.');
+    setClimateFeedback('');
+    setClimateRating(5);
+  };
 
   // Formulario radicación novedad
   const [noveltyEmpId, setNoveltyEmpId] = useState('');
@@ -872,58 +1007,265 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
         </div>
       )}
 
-      {/* 3. CHECKLIST SST PRE-TURNO */}
+      {/* 3. CENTRO DE INSPECCIONES SST Y CLIMA LABORAL */}
       {activeTab === 'encuestas' && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs max-w-2xl mx-auto space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-gray-900">Inspección Pre-Operacional de Alturas STC</h3>
-              <p className="text-xs text-gray-500">Comprobación obligatoria antes del ascenso a pilonas y cabezales</p>
+        <div className="space-y-4">
+          {/* Sub-navegación interna SST */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-gray-200 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSstSubTab('alturas')}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  sstSubTab === 'alturas'
+                    ? 'bg-[#00668F] text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <ShieldCheck size={14} />
+                <span>Inspecciones de Alturas (ARO / SST-04)</span>
+                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]">
+                  {sstInspections.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSstSubTab('clima')}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  sstSubTab === 'clima'
+                    ? 'bg-[#00668F] text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Users size={14} />
+                <span>Encuesta de Clima & Bienestar</span>
+              </button>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
-              Protocolo SST-04
-            </span>
+
+            {sstSubTab === 'alturas' && (
+              <button
+                type="button"
+                onClick={() => setIsNewInspectionModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all"
+              >
+                <Plus size={14} />
+                <span>+ Nueva Inspección Pre-Operacional</span>
+              </button>
+            )}
           </div>
 
-          <div className="space-y-2.5 text-xs">
-            {[
-              'Verificación visual de arnés de cuerpo entero (sin cortes ni costuras reventadas)',
-              'Comprobación de eslinga de posicionamiento y absorbedor de impacto',
-              'Casco con barbuquejo de 3 puntos y protección dieléctrica',
-              'Inspección de línea de vida vertical de acero en pilona',
-              'Prueba de comunicación por radio VHF con operador de estación',
-              'Verificación climática (Viento < 50 km/h y sin tormenta eléctrica)',
-            ].map((item, idx) => (
-              <label key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-gray-200 cursor-pointer hover:bg-slate-100/70">
-                <input type="checkbox" className="w-4 h-4 text-[#00668F] rounded-md" />
-                <span className="text-gray-800 font-medium">{item}</span>
-              </label>
-            ))}
-          </div>
+          {sstSubTab === 'alturas' && (
+            <div className="space-y-3">
+              {/* Tarjeta de Resumen Normativo */}
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck size={22} className="text-[#F39200] shrink-0" />
+                  <div>
+                    <strong className="block font-bold">Protocolo Obligatorio SST-04 (Trabajo Seguro en Alturas):</strong>
+                    <span>
+                      Ningún técnico puede ascender a pilonas, cabezales o estaciones motrices sin la verificación de los 6 puntos críticos y viento inferior a 45 km/h.
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                    {sstInspections.filter((i) => i.verdict === 'aprobado').length} Aprobadas
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 font-bold text-[11px]">
+                    {sstInspections.filter((i) => i.verdict === 'rechazado').length} Rechazadas
+                  </span>
+                </div>
+              </div>
+
+              {/* Listado de Inspecciones */}
+              {sstInspections.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-sky-50 text-[#00668F] flex items-center justify-center mx-auto">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-sm">Sin inspecciones pre-operacionales radicadas</h4>
+                    <p className="text-xs text-gray-500 max-w-md mx-auto mt-1">
+                      Crea la primera comprobación técnica de EPP y condiciones de seguridad antes de iniciar la jornada en teleféricos.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsNewInspectionModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-[#00668F] text-white text-xs font-bold hover:bg-[#005073] cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Plus size={14} />
+                    <span>Radicar Primera Inspección SST</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-2xs">
+                  <div className="overflow-x-auto w-full">
+                    <table className="w-full text-xs text-left min-w-[700px]">
+                      <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-200">
+                        <tr>
+                          <th className="p-3">Código / Fecha</th>
+                          <th className="p-3">Proyecto / Teleférico</th>
+                          <th className="p-3">Técnico Inspeccionado</th>
+                          <th className="p-3">Inspector SST</th>
+                          <th className="p-3 text-center">Viento</th>
+                          <th className="p-3 text-center">Veredicto</th>
+                          <th className="p-3 text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {sstInspections.map((insp) => (
+                          <tr key={insp.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="p-3">
+                              <span className="font-bold text-[#00668F] block font-mono">{insp.code}</span>
+                              <span className="text-[11px] text-gray-400">{insp.date}</span>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-bold text-gray-900 block">{insp.projectCode}</span>
+                              <span className="text-[11px] text-gray-500 truncate block max-w-[180px]">{insp.projectName}</span>
+                            </td>
+                            <td className="p-3 font-semibold text-gray-800">{insp.technicianName}</td>
+                            <td className="p-3 text-gray-600">{insp.inspectorName}</td>
+                            <td className="p-3 text-center font-bold">
+                              <span className={insp.windSpeedKmh > 45 ? 'text-rose-600 font-bold' : 'text-slate-700'}>
+                                {insp.windSpeedKmh} km/h
+                              </span>
+                            </td>
+                            <td className="p-3 text-center">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                  insp.verdict === 'aprobado'
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                    : 'bg-rose-50 text-rose-800 border border-rose-200 animate-pulse'
+                                }`}
+                              >
+                                {insp.verdict === 'aprobado' ? <CheckCircle2 size={11} /> : <AlertTriangle size={11} />}
+                                {insp.verdict === 'aprobado' ? 'APTO ASCENSO' : 'NO AUTORIZADO'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setInspectionToDelete(insp)}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Eliminar inspección"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {sstSubTab === 'clima' && (
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-2xs max-w-2xl mx-auto space-y-4">
+              <div className="border-b border-gray-100 pb-3">
+                <h3 className="text-sm font-bold text-gray-900">Encuesta Confidencial de Clima & Bienestar Laboral</h3>
+                <p className="text-xs text-gray-500">
+                  Espacio anónimo para evaluar el liderazgo, la dotación de seguridad y la comunicación de equipo en campo.
+                </p>
+              </div>
+
+              <form onSubmit={handleSendClimateSurvey} className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-2">
+                    ¿Cómo calificas tu nivel general de satisfacción y respaldo en tu labor en Inteckno? (1 = Mínimo, 5 = Excelente)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setClimateRating(val)}
+                        className={`w-10 h-10 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+                          climateRating === val
+                            ? 'bg-[#00668F] text-white shadow-xs scale-105'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    Comentarios, Sugerencias de Mejora o Necesidades de Dotación / Herramientas
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={climateFeedback}
+                    onChange={(e) => setClimateFeedback(e.target.value)}
+                    placeholder="Escribe libremente cualquier sugerencia sobre descansos, viáticos, herramientas o seguridad..."
+                    className="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#00668F]"
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  >
+                    <Send size={13} />
+                    <span>Enviar Encuesta Anónima</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
-      {/* 4. NÓMINA DE CAMPO */}
+      {/* 4. CENTRO DE LIQUIDACIÓN DE NÓMINA TÉCNICA (LEY 2101/2021) */}
       {activeTab === 'nomina' && (
-        <div className="bg-white p-3.5 sm:p-5 rounded-xl w-full max-w-full min-w-0 space-y-3 shadow-2xs">
-          <h3 className="text-sm font-bold text-gray-900">Liquidación Preliminar de Horas de Campo</h3>
-          <p className="text-xs text-gray-500">Cálculo con base en las horas reportadas en el módulo de Registro de Horas</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl w-full max-w-full min-w-0 space-y-4 shadow-2xs border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">Liquidación de Nómina Técnica de Campo (Ley 2101/2021)</h3>
+              <p className="text-xs text-gray-500">
+                Consolidación automática de horas reportadas en obra, viáticos de campo legalizados y aportes de ley.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-600">Periodo:</span>
+              <select
+                value={payrollPeriod}
+                onChange={(e) => setPayrollPeriod(e.target.value)}
+                className="p-2 rounded-xl border border-gray-300 text-xs font-semibold bg-slate-50 text-slate-800"
+              >
+                <option value="1ra Quincena Noviembre 2026">1ra Quincena Noviembre 2026</option>
+                <option value="2da Quincena Noviembre 2026">2da Quincena Noviembre 2026</option>
+                <option value="1ra Quincena Octubre 2026">1ra Quincena Octubre 2026</option>
+                <option value="2da Quincena Octubre 2026">2da Quincena Octubre 2026</option>
+              </select>
+            </div>
+          </div>
 
           <div className="overflow-x-auto w-full max-w-full">
-            <table className="w-full text-xs text-left min-w-[650px]">
-              <thead className="bg-gray-50 text-gray-500 font-semibold">
+            <table className="w-full text-xs text-left min-w-[750px]">
+              <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-200">
                 <tr>
-                  <th className="p-3">Empleado</th>
+                  <th className="p-3">Colaborador / C.C.</th>
                   <th className="p-3">Cargo</th>
-                  <th className="p-3">Salario Base</th>
-                  <th className="p-3">Horas Campo Validadas</th>
-                  <th className="p-3">Viáticos Acumulados</th>
-                  <th className="p-3 text-right">Total a Liquidar</th>
+                  <th className="p-3 text-right">Salario Base</th>
+                  <th className="p-3 text-center">Horas Validadas</th>
+                  <th className="p-3 text-right">Viáticos Campo</th>
+                  <th className="p-3 text-right font-bold text-gray-900">Total a Liquidar</th>
+                  <th className="p-3 text-right">Desprendible</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {employees.map((emp) => {
-                  // Conexión real con horas aprobadas en Timesheet
                   const empTimesheets = timesheets.filter(
                     (t) =>
                       t.userId === emp.id ||
@@ -932,7 +1274,6 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   );
                   const totalHours = empTimesheets.reduce((sum, t) => sum + (Number(t.hours) || 0), 0);
 
-                  // Conexión real con viáticos aprobados en el módulo de Gastos
                   const empExpenses = expenses.filter(
                     (e) =>
                       (e.userId === emp.id ||
@@ -941,18 +1282,35 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       (e.status === 'approved' || e.status === 'legalized')
                   );
                   const totalViaticosCOP = empExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-
-                  const totalLiquidarCOP = (emp.baseSalaryCOP || 0) + totalViaticosCOP;
+                  const baseQuincenal = Math.round((emp.baseSalaryCOP || 0) / 2);
+                  const totalLiquidarCOP = baseQuincenal + totalViaticosCOP;
 
                   return (
-                    <tr key={emp.id} className="hover:bg-slate-50/80">
-                      <td className="p-3 font-bold text-gray-900">{emp.name}</td>
-                      <td className="p-3 text-gray-600">{emp.role}</td>
-                      <td className="p-3 font-semibold text-gray-900">${(emp.baseSalaryCOP || 0).toLocaleString()} COP</td>
-                      <td className="p-3 font-bold text-[#00668F]">{totalHours} horas</td>
-                      <td className="p-3 text-gray-600">${totalViaticosCOP.toLocaleString()} COP</td>
+                    <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3">
+                        <span className="font-bold text-gray-900 block">{emp.name}</span>
+                        <span className="text-[11px] text-gray-400">C.C. {emp.documentId || 'S/N'}</span>
+                      </td>
+                      <td className="p-3 text-gray-600 font-medium">{emp.role}</td>
+                      <td className="p-3 text-right font-semibold text-gray-900">{formatCOP(emp.baseSalaryCOP || 0)}</td>
+                      <td className="p-3 text-center">
+                        <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-50 text-[#00668F] font-bold text-[11px]">
+                          {totalHours} h
+                        </span>
+                      </td>
+                      <td className="p-3 text-right font-medium text-emerald-700">{formatCOP(totalViaticosCOP)}</td>
                       <td className="p-3 text-right font-bold text-gray-900">
-                        ${totalLiquidarCOP.toLocaleString()} COP
+                        {formatCOP(totalLiquidarCOP)}
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPayrollEmp(emp)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-[#00668F] hover:text-white text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer inline-flex items-center gap-1"
+                        >
+                          <FileText size={13} />
+                          <span>Ver Colilla</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -962,6 +1320,309 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
           </div>
         </div>
       )}
+
+      {/* MODAL: RADICAR NUEVA INSPECCIÓN SST-04 */}
+      {isNewInspectionModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                <ShieldCheck size={18} className="text-[#00668F]" />
+                Nueva Inspección Pre-Operacional de Alturas
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNewInspectionModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 text-lg font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateInspection} className="mt-4 space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Fecha de Inspección</label>
+                  <input
+                    type="date"
+                    value={inspDate}
+                    onChange={(e) => setInspDate(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 bg-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Velocidad del Viento (km/h)</label>
+                  <input
+                    type="number"
+                    value={inspWindSpeed || ''}
+                    placeholder="0"
+                    onChange={(e) => setInspWindSpeed(Number(e.target.value) || 0)}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 bg-white font-bold"
+                  />
+                  {inspWindSpeed > 45 && (
+                    <span className="text-[10px] text-rose-600 font-bold block mt-0.5">
+                      ⚠️ ¡Alerta! Supera el límite de 45 km/h. Veredicto será RECHAZADO.
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Proyecto / Sistema de Cable</label>
+                <select
+                  value={inspProjectId}
+                  onChange={(e) => setInspProjectId(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-300 bg-white font-medium"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.code} — {p.name} ({p.clientName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Técnico que ascenderá</label>
+                <select
+                  value={inspTechnicianId}
+                  onChange={(e) => setInspTechnicianId(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-300 bg-white font-medium"
+                >
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="text-[11px] font-bold text-slate-700 block">
+                  Checklist de 6 Puntos Críticos (Obligatorio)
+                </span>
+                {[
+                  { key: 'arnes', label: 'Arnés de cuerpo entero verificado (sin cortes ni costuras sueltas)' },
+                  { key: 'eslinga', label: 'Eslinga doble con absorbedor de impacto y mosquetones doble seguro' },
+                  { key: 'casco', label: 'Casco de seguridad con barbuquejo de 3 puntos y protección dieléctrica' },
+                  { key: 'lineaVida', label: 'Línea de vida vertical en acero de pilona inspeccionada' },
+                  { key: 'radio', label: 'Radio VHF operativo con canal de emergencia sintonizado' },
+                  { key: 'clima', label: 'Condiciones climáticas seguras (sin tormenta eléctrica en radar)' },
+                ].map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={(inspChecks as any)[key]}
+                      onChange={(e) =>
+                        setInspChecks((prev) => ({ ...prev, [key]: e.target.checked }))
+                      }
+                      className="w-4 h-4 text-[#00668F] rounded-md"
+                    />
+                    <span className="text-gray-800 text-[11px]">{label}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Observaciones / Novedades de Sitio</label>
+                <textarea
+                  rows={2}
+                  value={inspObservations}
+                  onChange={(e) => setInspObservations(e.target.value)}
+                  placeholder="Observaciones de pilona, condiciones del terreno o equipo especial..."
+                  className="w-full p-2.5 rounded-xl border border-gray-300"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsNewInspectionModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#00668F] text-white font-bold hover:bg-[#005073] shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
+                >
+                  <ShieldCheck size={14} />
+                  <span>Radicar Inspección Pre-Turno</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN CON PALABRA 'BORRAR' PARA INSPECCIÓN SST */}
+      {inspectionToDelete && (
+        <ConfirmDeleteModal
+          isOpen={true}
+          title="Eliminar Inspección SST"
+          itemName={`${inspectionToDelete.code} — ${inspectionToDelete.technicianName}`}
+          description="¿Estás seguro de eliminar este registro de inspección de alturas? Esta acción borrará el registro de seguridad histórica."
+          confirmWord="BORRAR"
+          requireConfirmWord={true}
+          onConfirm={() => {
+            setSstInspections(sstInspections.filter((i) => i.id !== inspectionToDelete.id));
+            setInspectionToDelete(null);
+            notify?.('info', 'Inspección Eliminada', 'El registro de seguridad ha sido removido.');
+          }}
+          onCancel={() => setInspectionToDelete(null)}
+        />
+      )}
+
+      {/* MODAL: DESPRENDIBLE DE NÓMINA (COLILLA DE PAGO OFICIAL) */}
+      {selectedPayrollEmp && (() => {
+        const empTimesheets = timesheets.filter(
+          (t) =>
+            t.userId === selectedPayrollEmp.id ||
+            t.userName.toLowerCase() === selectedPayrollEmp.name.toLowerCase() ||
+            t.userName.toLowerCase().includes(selectedPayrollEmp.name.split(' ')[0].toLowerCase())
+        );
+        const totalHours = empTimesheets.reduce((sum, t) => sum + (Number(t.hours) || 0), 0);
+
+        const empExpenses = expenses.filter(
+          (e) =>
+            (e.userId === selectedPayrollEmp.id ||
+              e.userName.toLowerCase() === selectedPayrollEmp.name.toLowerCase() ||
+              e.userName.toLowerCase().includes(selectedPayrollEmp.name.split(' ')[0].toLowerCase())) &&
+            (e.status === 'approved' || e.status === 'legalized')
+        );
+        const totalViaticosCOP = empExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+        const baseQuincenal = Math.round((selectedPayrollEmp.baseSalaryCOP || 0) / 2);
+        const deduccionSalud = Math.round(baseQuincenal * 0.04);
+        const deduccionPension = Math.round(baseQuincenal * 0.04);
+        const totalDeducciones = deduccionSalud + deduccionPension;
+        const totalDevengado = baseQuincenal + totalViaticosCOP;
+        const netoPagar = totalDevengado - totalDeducciones;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 animate-in zoom-in-95 duration-150 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-sky-50 text-[#00668F] flex items-center justify-center font-bold">
+                    ITK
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-sm">Desprendible Oficial de Pago</h4>
+                    <p className="text-[11px] text-gray-500">Inteckno S.A.S. • NIT: 901.458.789-2</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPayrollEmp(null)}
+                  className="text-gray-400 hover:text-gray-600 text-lg font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Datos del Trabajador */}
+              <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-bold">Colaborador:</span>
+                  <span className="font-bold text-gray-900 block">{selectedPayrollEmp.name}</span>
+                  <span className="text-[11px] text-gray-500">C.C. {selectedPayrollEmp.documentId || 'S/N'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-bold">Cargo & Periodo:</span>
+                  <span className="font-bold text-gray-900 block">{selectedPayrollEmp.role}</span>
+                  <span className="text-[11px] text-[#00668F] font-semibold">{payrollPeriod}</span>
+                </div>
+              </div>
+
+              {/* Desglose de Conceptos */}
+              <div className="space-y-3 text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">
+                    (+) Devengados
+                  </span>
+                  <div className="space-y-1.5 p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Sueldo Básico Quincenal (15 días)</span>
+                      <span className="font-bold text-gray-900">{formatCOP(baseQuincenal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Horas de Campo ({totalHours} h registradas)</span>
+                      <span className="font-semibold text-gray-800">Incluidas en turno</span>
+                    </div>
+                    {totalViaticosCOP > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Viáticos de Alimentación y Transporte Legalizados</span>
+                        <span className="font-bold text-emerald-700">{formatCOP(totalViaticosCOP)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-1 border-t border-emerald-200/60 font-bold">
+                      <span className="text-emerald-900">Total Devengado:</span>
+                      <span className="text-emerald-900">{formatCOP(totalDevengado)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">
+                    (-) Deducciones Legales
+                  </span>
+                  <div className="space-y-1.5 p-3 rounded-xl bg-rose-50/60 border border-rose-100">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Aporte Obligatorio Salud EPS (4%)</span>
+                      <span className="font-semibold text-rose-700">-{formatCOP(deduccionSalud)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Aporte Obligatorio Pensión AFP (4%)</span>
+                      <span className="font-semibold text-rose-700">-{formatCOP(deduccionPension)}</span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-rose-200/60 font-bold">
+                      <span className="text-rose-900">Total Deducido:</span>
+                      <span className="text-rose-900">-{formatCOP(totalDeducciones)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gran Total Neto a Pagar */}
+                <div className="p-3.5 rounded-xl bg-slate-900 text-white flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">
+                      Neto a Consignar en Cuenta
+                    </span>
+                    <span className="text-xs text-slate-300">Banco de Nómina Registrado</span>
+                  </div>
+                  <span className="text-lg font-black text-emerald-400">
+                    {formatCOP(netoPagar)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Printer size={14} />
+                  <span>Imprimir / PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    notify?.('success', 'Pago Aprobado', `Se generó la orden de transferencia por ${formatCOP(netoPagar)} para ${selectedPayrollEmp.name}.`);
+                    setSelectedPayrollEmp(null);
+                  }}
+                  className="px-5 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all"
+                >
+                  Aprobar Liquidación Quincenal
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL: NUEVO EMPLEADO */}
       {isNewEmpModalOpen && (

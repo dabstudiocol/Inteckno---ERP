@@ -36,7 +36,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
   onUpdateProject,
   onUpdateTask,
 }) => {
-  const { employees, submitTimesheet } = useErp();
+  const { employees, submitTimesheet, notify } = useErp();
 
   // Lista combinada de colaboradores para asignación en el proyecto
   const unifiedStaff = React.useMemo(() => {
@@ -260,7 +260,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
     e.preventDefault();
 
     if (form.isEndTask && !certValidation.valid) {
-      alert(`BLOQUEO DE TALENTO HUMANO (RRHH): ${certValidation.reason}`);
+      notify?.('urgent', 'Bloqueo RRHH', certValidation.reason || 'Certificación SST vencida.');
       return;
     }
 
@@ -270,7 +270,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
       eq.calibrationExpiryDate && new Date(eq.calibrationExpiryDate).getTime() < Date.now()
     );
     if (form.isEndTask && expiredEquip) {
-      alert(`BLOQUEO METROLÓGICO: El equipo de medición "${expiredEquip.equipmentName}" (Serial ${expiredEquip.serialNumber || 'N/A'}) tiene la calibración vencida desde el ${expiredEquip.calibrationExpiryDate}. Prohibido registrar o firmar ensayos.`);
+      notify?.('urgent', 'Bloqueo Metrológico', `El equipo "${expiredEquip.equipmentName}" tiene la calibración vencida (${expiredEquip.calibrationExpiryDate}). Prohibido firmar ensayos.`);
       return;
     }
 

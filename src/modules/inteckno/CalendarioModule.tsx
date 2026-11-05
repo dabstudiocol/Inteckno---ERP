@@ -210,6 +210,7 @@ export const CalendarioModule: React.FC = () => {
     employees,
     milestones,
     triggerCalendarReminderToast,
+    notify,
   } = useErp();
 
   // Lista unificada de colaboradores para convocatorias y eventos
@@ -436,7 +437,7 @@ export const CalendarioModule: React.FC = () => {
         setEndPeriod(matchEnd[3].toUpperCase() as 'AM' | 'PM');
       }
     } else {
-      alert('No se encontraron horarios libres adicionales de 1 hora en esta fecha para los participantes seleccionados.');
+      notify?.('info', 'Sin Horarios Libres', 'No se encontraron horarios libres adicionales de 1 hora en esta fecha para los participantes seleccionados.');
     }
   };
 
@@ -700,7 +701,7 @@ export const CalendarioModule: React.FC = () => {
       const busyUsers = conflicts
         .map((c) => `${c.userName} ("${c.conflictingEventTitle}" a las ${c.conflictingTime})`)
         .join(', ');
-      alert(`No es posible agendar: La Memoria Colectiva de Inteckno detectó cruce de horarios para:\n${busyUsers}.\n\nPor favor ajusta el horario o presiona "Auto-ajustar a próximo horario libre".`);
+      notify?.('warning', 'Cruce de Horarios', `Cruce de agenda para: ${busyUsers}. Ajusta el horario o presiona Auto-ajustar.`);
       return;
     }
 
@@ -744,7 +745,7 @@ export const CalendarioModule: React.FC = () => {
 
   const handleDeleteEvent = async (evt: CalendarEvent) => {
     if (evt.isContractualMilestone) {
-      alert('Este es un hito de facturación contractual proyectado. Para modificarlo gestiona los hitos del proyecto.');
+      notify?.('info', 'Hito Contractual', 'Este es un hito contractual proyectado. Modifícalo desde Facturación.');
       return;
     }
 
@@ -789,7 +790,7 @@ export const CalendarioModule: React.FC = () => {
       await handleSyncWithOutlook();
     } catch (err: any) {
       console.warn('Error al conectar M365:', err);
-      alert(err.message || 'No se pudo conectar la cuenta de Microsoft 365.');
+      notify?.('warning', 'Conexión Microsoft', err.message || 'No se pudo conectar la cuenta de Microsoft 365.');
     } finally {
       setIsSyncingApi(false);
     }
@@ -811,14 +812,14 @@ export const CalendarioModule: React.FC = () => {
           m365EventId: res.m365EventId,
           teamsMeetingUrl: res.teamsMeetingUrl || evt.teamsMeetingUrl,
         });
-        alert('¡Evento sincronizado con éxito en Microsoft Teams y Outlook!');
+        notify?.('success', 'Microsoft Teams & Outlook', '¡Evento sincronizado con éxito en Microsoft Teams y Outlook!');
         return res;
       } else {
-        alert(res.message || 'No se pudo sincronizar con Microsoft Graph.');
+        notify?.('warning', 'Microsoft Graph', res.message || 'No se pudo sincronizar con Microsoft Graph.');
       }
     } catch (err: any) {
       console.warn('Error al sincronizar evento con M365:', err);
-      alert(err.message || 'Error de conexión con Microsoft.');
+      notify?.('warning', 'Error Microsoft', err.message || 'Error de conexión con Microsoft.');
     } finally {
       setIsSyncingApi(false);
     }

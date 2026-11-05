@@ -243,7 +243,7 @@ function exportArticleToWord(article: WikiArticle) {
 }
 
 export const ArticulosModule: React.FC = () => {
-  const { articles, addArticle, updateArticle, deleteArticle, currentUser } = useErp();
+  const { articles, addArticle, updateArticle, deleteArticle, currentUser, notify } = useErp();
 
   // Vistas principales: Catálogo General vs. Rutas de Inducción
   const [viewTab, setViewTab] = useState<'catalogo' | 'induccion'>('catalogo');
@@ -325,7 +325,7 @@ export const ArticulosModule: React.FC = () => {
   const handleToggleVoiceDraft = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('El reconocimiento de voz no está disponible en este navegador. Puedes escribir el requerimiento en el campo de texto.');
+      notify?.('info', 'Reconocimiento de Voz', 'El reconocimiento de voz no está disponible en este navegador. Puedes escribir en el campo de texto.');
       return;
     }
 
@@ -359,7 +359,7 @@ export const ArticulosModule: React.FC = () => {
   const handleToggleVoiceLesson = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('El reconocimiento de voz no está disponible en este navegador. Puedes escribir el texto.');
+      notify?.('info', 'Reconocimiento de Voz', 'El reconocimiento de voz no está disponible en este navegador. Puedes escribir el texto.');
       return;
     }
 

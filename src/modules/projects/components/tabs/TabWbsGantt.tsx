@@ -412,9 +412,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
       const predEnd = predTask.endDate || addDaysSafe(predTask.startDate || project.startDate || formatDateStr(new Date()), predTask.durationDays || 1);
       const minStartAllowed = addDaysSafe(predEnd, taskForm.lagDays);
       if (newStart < minStartAllowed) {
-        alert(
-          `SECUENCIA TÉCNICA OBLIGATORIA: La actividad depende de "${predTask.code} - ${predTask.name}" que finaliza el ${predEnd}. Por relación Fin a Comienzo (FC), esta actividad no puede iniciar antes del ${minStartAllowed}. Ajustando a la fecha válida más pronta.`
-        );
+        notify?.('warning', 'Secuencia Obligatoria FC', `La actividad depende de "${predTask.code}" (fin: ${predEnd}). Por relación FC, no puede iniciar antes de ${minStartAllowed}. Ajustando automáticamente.`);
         newStart = minStartAllowed;
       }
     }
@@ -435,7 +433,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
   const handleEndDateChange = (newEnd: string) => {
     if (!newEnd || !taskForm.startDate) return;
     if (newEnd < taskForm.startDate) {
-      alert('La fecha de fin no puede ser anterior a la fecha de inicio.');
+      notify?.('warning', 'Fecha Inválida', 'La fecha de fin no puede ser anterior a la fecha de inicio.');
       return;
     }
     const dur = calculateDaysDiff(taskForm.startDate, newEnd);

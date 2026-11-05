@@ -72,7 +72,7 @@ const STORAGE_KEY_TESTS = 'itk_operaciones_bench_tests';
 export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   initialSubTab = 'mantenimiento',
 }) => {
-  const { maintenancePlans, completeMaintenance, activeModuleId, projects, users, setActiveModule, notify } = useErp();
+  const { maintenancePlans, completeMaintenance, createMaintenancePlan, activeModuleId, projects, users, setActiveModule, notify } = useErp();
   
   const currentTab = (activeModuleId === 'reparacion' || activeModuleId === 'manufactura' || activeModuleId === 'taller' || activeModuleId === 'plm' || activeModuleId === 'mantenimiento')
     ? (activeModuleId as 'mantenimiento' | 'reparacion' | 'manufactura' | 'taller' | 'plm')
@@ -147,6 +147,30 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
       setActiveTab(activeModuleId as any);
     }
   }, [initialSubTab, activeModuleId]);
+
+  // Modal Crear Plan de Mantenimiento
+  const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
+  const [planComponent, setPlanComponent] = useState('Pinzas Desembragables');
+  const [planProjectCode, setPlanProjectCode] = useState(projects[0]?.code || 'STC-GENERAL');
+  const [planSystemName, setPlanSystemName] = useState('Teleférico Monocable Desembragable');
+  const [planFrequency, setPlanFrequency] = useState<'Mensual' | 'Trimestral' | 'Semestral' | 'Anual'>('Semestral');
+  const [planNextDueDate, setPlanNextDueDate] = useState(
+    new Date(Date.now() + 180 * 24 * 3600 * 1000).toISOString().split('T')[0]
+  );
+  const [planTechnician, setPlanTechnician] = useState('');
+
+  const handleCreatePlan = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMaintenancePlan({
+      projectCode: planProjectCode,
+      systemName: planSystemName,
+      component: planComponent as any,
+      frequency: planFrequency,
+      nextDueDate: planNextDueDate,
+      responsibleTechnician: planTechnician || 'Técnico Especialista STC',
+    });
+    setIsNewPlanModalOpen(false);
+  };
 
   // Modal Crear OT
   const [isOtModalOpen, setIsOtModalOpen] = useState(false);
@@ -242,24 +266,59 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
       {/* 1. MANTENIMIENTO PREVENTIVO */}
       {activeTab === 'mantenimiento' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-gray-900">
                 Planes de Mantenimiento Preventivo por Componente Crítico
               </h3>
               <span className="text-xs text-gray-500">Conforme a Normas EN 1709 / EN 12929</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsConfigModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-2xs cursor-pointer"
-            >
-              <Settings size={14} className="text-[#00668F]" />
-              <span>Configurar Opciones</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsConfigModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-2xs cursor-pointer"
+              >
+                <Settings size={14} className="text-[#00668F]" />
+                <span>Configurar</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (projects.length > 0) setPlanProjectCode(projects[0].code);
+                  setIsNewPlanModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all"
+              >
+                <Plus size={14} />
+                <span>+ Programar Plan de Mantenimiento</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {maintenancePlans.length === 0 ? (
+            <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-sky-50 text-[#00668F] flex items-center justify-center mx-auto">
+                <Wrench size={24} />
+              </div>
+              <h4 className="font-bold text-gray-900 text-sm">Sin planes preventivos programados</h4>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Crea ciclos de inspección periódica para pinzas, cables, grupos motrices o pilonas bajo normas EN 1709 / EN 12929.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (projects.length > 0) setPlanProjectCode(projects[0].code);
+                  setIsNewPlanModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-[#00668F] text-white text-xs font-bold hover:bg-[#005073] cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+              >
+                <Plus size={14} />
+                <span>Programar Primer Plan</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {maintenancePlans.map((plan) => (
               <div key={plan.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
@@ -305,7 +364,8 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

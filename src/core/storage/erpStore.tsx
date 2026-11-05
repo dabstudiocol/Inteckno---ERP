@@ -334,6 +334,7 @@ export interface ErpContextType extends ErpState {
   submitExpense: (entry: Omit<ExpenseEntry, 'id' | 'status'>) => void;
   approveExpense: (id: string) => void;
   deleteExpense: (id: string) => void;
+  createMilestone: (milestoneData: Partial<BillingMilestone>) => void;
   signMilestoneAct: (milestoneId: string) => void;
   issueMilestoneInvoice: (milestoneId: string, invoiceNumber: string) => void;
   markMilestonePaid: (milestoneId: string, paymentData?: { paidAt?: string; paymentReference?: string; paymentAmountCOP?: number }) => void;
@@ -387,6 +388,7 @@ export interface ErpContextType extends ErpState {
   approvePayrollNovelty: (id: string, approverName: string) => void;
   rejectPayrollNovelty: (id: string, approverName: string, reason?: string) => void;
   deletePayrollNovelty: (id: string) => void;
+  createMaintenancePlan: (plan: Partial<MaintenancePlan>) => void;
   completeMaintenance: (id: string) => void;
 
   // SISTEMA DESHACER / REHACER (MULTI-USUARIO AISLADO)
@@ -4126,6 +4128,45 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [state.expenses, state.currentUser, notify]
   );
 
+  const createMilestone = useCallback(
+    (milestoneData: Partial<BillingMilestone>) => {
+      const newMilestone: BillingMilestone = {
+        id: milestoneData.id || `MS-${Date.now()}`,
+        projectId: milestoneData.projectId || '',
+        projectCode: milestoneData.projectCode || 'STC-GENERAL',
+        projectName: milestoneData.projectName || 'Proyecto General ITK',
+        clientId: milestoneData.clientId,
+        clientNit: milestoneData.clientNit,
+        clientName: milestoneData.clientName || 'Cliente STC',
+        milestoneIndex: milestoneData.milestoneIndex || (state.milestones.length + 1),
+        title: milestoneData.title || `Hito Contractual ${state.milestones.length + 1}`,
+        percentage: Number(milestoneData.percentage) || 10,
+        amountCOP: Number(milestoneData.amountCOP) || 0,
+        amountUSD: Number(milestoneData.amountUSD) || 0,
+        dueDate: milestoneData.dueDate || new Date().toISOString().split('T')[0],
+        acceptanceActSigned: Boolean(milestoneData.acceptanceActSigned),
+        acceptanceActSignedAt: milestoneData.acceptanceActSignedAt,
+        invoiceDeadlineTimestamp: milestoneData.invoiceDeadlineTimestamp,
+        invoiceIssued: Boolean(milestoneData.invoiceIssued),
+        invoiceNumber: milestoneData.invoiceNumber,
+        invoiceIssuedAt: milestoneData.invoiceIssuedAt,
+        billingItemId: milestoneData.billingItemId,
+        isPaid: Boolean(milestoneData.isPaid),
+        paidAt: milestoneData.paidAt,
+        paymentReference: milestoneData.paymentReference,
+        paymentAmountCOP: milestoneData.paymentAmountCOP,
+      };
+
+      setState((prev) => ({
+        ...prev,
+        milestones: [newMilestone, ...prev.milestones],
+      }));
+
+      notify('success', 'Hito Contractual Radicado', `Se creó el hito "${newMilestone.title}" para ${newMilestone.projectCode}.`);
+    },
+    [state.milestones, notify]
+  );
+
   const signMilestoneAct = useCallback(
     (milestoneId: string) => {
       const milestone = state.milestones.find((m) => m.id === milestoneId);
@@ -5514,6 +5555,30 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [notify]
   );
 
+  const createMaintenancePlan = useCallback(
+    (planData: Partial<MaintenancePlan>) => {
+      const newPlan: MaintenancePlan = {
+        id: planData.id || `MP-${Date.now()}`,
+        code: planData.code || `MP-${new Date().getFullYear()}-${String(state.maintenancePlans.length + 1).padStart(3, '0')}`,
+        projectCode: planData.projectCode || 'STC-GENERAL',
+        systemName: planData.systemName || 'Teleférico Monocable Desembragable',
+        component: (planData.component as any) || 'Pinzas Desembragables',
+        frequency: (planData.frequency as any) || 'Semestral',
+        lastDoneDate: planData.lastDoneDate || new Date().toISOString().split('T')[0],
+        nextDueDate: planData.nextDueDate || new Date(Date.now() + 180 * 24 * 3600 * 1000).toISOString().split('T')[0],
+        responsibleTechnician: planData.responsibleTechnician || state.currentUser?.name || 'Técnico Especialista STC',
+        status: (planData.status as any) || 'al_dia',
+      };
+
+      setState((prev) => ({
+        ...prev,
+        maintenancePlans: [newPlan, ...prev.maintenancePlans],
+      }));
+      notify('success', 'Plan de Mantenimiento Creado', `Se programó el mantenimiento ${newPlan.code} para ${newPlan.component}.`);
+    },
+    [state.maintenancePlans, state.currentUser, notify]
+  );
+
   const completeMaintenance = useCallback(
     (id: string) => {
       setState((prev) => ({
@@ -5947,6 +6012,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         processReturnRemission,
         submitExpense,
         approveExpense,
+        createMilestone,
         signMilestoneAct,
         issueMilestoneInvoice,
         markMilestonePaid,
@@ -5985,6 +6051,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approvePayrollNovelty,
         rejectPayrollNovelty,
         deletePayrollNovelty,
+        createMaintenancePlan,
         completeMaintenance,
         canUndo,
         canRedo,

@@ -93,6 +93,7 @@ export const ActividadesModule: React.FC = () => {
     currentUser,
     projects,
     createCalendarEvent,
+    notify,
   } = useErp();
 
   // Lista unificada de colaboradores (Usuarios de sistema + Personal registrado en Talento Humano)
@@ -326,7 +327,7 @@ export const ActividadesModule: React.FC = () => {
     });
 
     updateTodo(todo.id, { calendarEventId: `EVT-${Date.now()}` });
-    alert(`¡La actividad "${todo.title}" ha sido proyectada en el Calendario de Operaciones para el ${todo.dueDate}!`);
+    notify?.('success', 'Actividad Proyectada', `La actividad "${todo.title}" ha sido proyectada en el Calendario para el ${todo.dueDate}.`);
   };
 
   // Subir foto de evidencia técnica
@@ -380,7 +381,7 @@ export const ActividadesModule: React.FC = () => {
   const handleToggleVoiceInput = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('El reconocimiento de voz no está soportado en este navegador. Puedes escribir la solicitud.');
+      notify?.('info', 'Reconocimiento de Voz', 'El reconocimiento de voz no está soportado en este navegador. Puedes escribir la solicitud.');
       return;
     }
 

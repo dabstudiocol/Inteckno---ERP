@@ -87,9 +87,14 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (initialView === 'gantt') setViewMode('gantt');
-    else if (initialView === 'kanban') setViewMode('kanban');
-    else if (initialView === 'list' || initialView === 'table') setViewMode('table');
+    if (initialView === 'gantt') {
+      setViewMode('gantt');
+      setActiveTab('wbs');
+    } else if (initialView === 'kanban') {
+      setViewMode('kanban');
+    } else if (initialView === 'list' || initialView === 'table') {
+      setViewMode('table');
+    }
   }, [initialView]);
 
   // Filters
@@ -488,7 +493,8 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             <TabDashboard 
               project={selectedProject} 
               tasks={projectTasks} 
-              currentTrm={currentTrm} 
+              currentTrm={currentTrm}
+              onNavigateTab={(tab) => setActiveTab(tab as any)}
             />
           )}
 
@@ -1079,17 +1085,33 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             {filteredProjects.map(proj => (
               <div 
                 key={proj.id} 
-                onClick={() => setSelectedProjectId(proj.id)}
-                className="p-3 border border-slate-100 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
+                onClick={() => {
+                  setSelectedProjectId(proj.id);
+                  setActiveTab('wbs');
+                }}
+                className="p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-all shadow-xs group"
               >
-                <div className="flex items-center justify-between text-xs mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs mb-2 gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-[#00668F]">{proj.code}</span>
-                    <span className="font-medium text-slate-800 dark:text-slate-200">{proj.name}</span>
+                    <span className="font-mono font-bold text-[#00668F] bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-md">{proj.code}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{proj.name}</span>
                     <span className="text-slate-400">({proj.clientName})</span>
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    {proj.startDate || 'Sin fecha'} → {proj.endDate || 'Sin fecha'}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-500">
+                      {proj.startDate || 'Sin fecha'} → {proj.endDate || 'Sin fecha'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedProjectId(proj.id);
+                        setActiveTab('wbs');
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-[#00668F] hover:bg-[#005073] text-white text-[11px] font-bold transition-all shadow-2xs"
+                    >
+                      Abrir WBS / Gantt →
+                    </button>
                   </div>
                 </div>
 
