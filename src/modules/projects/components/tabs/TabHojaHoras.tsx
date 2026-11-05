@@ -320,6 +320,8 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
       projectCode: project.code,
       projectName: project.name,
       taskId: newEntry.taskId,
+      itemCode: task?.itemCode || undefined,
+      origin: 'proyecto',
       taskName: newEntry.taskName,
       date: newEntry.date,
       hours: newEntry.hours,

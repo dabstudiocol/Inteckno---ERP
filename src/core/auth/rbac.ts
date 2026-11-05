@@ -112,6 +112,7 @@ export const ALL_AREAS: { [key in AreaId]: AreaInfo } = {
     bgBadge: 'bg-slate-200/70 text-slate-800',
     modules: [
       { id: 'empleados', label: 'Empleados', description: 'Fichas técnicas y certificaciones vigentes' },
+      { id: 'cargos', label: 'Cargos y Vacantes', description: 'Estructura organizacional, perfiles ITK y reclutamiento IA' },
       { id: 'vacaciones', label: 'Vacaciones', description: 'Control de días y solicitudes' },
       { id: 'encuestas', label: 'Encuestas', description: 'Inspecciones SST de campo y clima laboral' },
       { id: 'nomina', label: 'Nómina', description: 'Cálculo de horas y recargos técnicos' },
@@ -368,4 +369,165 @@ export function getEffectiveModulePermission(role: UserRole, moduleId: string): 
     return custom[role][moduleId];
   }
   return getDefaultPermissionLevel(role, moduleId);
+}
+
+
+export interface SystemHubSubModule {
+  id: string;
+  label: string;
+  shortLabel: string;
+  description: string;
+  icon: any;
+}
+
+export interface SystemHub {
+  id: string;
+  label: string;
+  tagline: string;
+  icon: any;
+  areaId: AreaId;
+  accentColor: string;
+  bgBadge: string;
+  defaultModuleId: string;
+  subModules: SystemHubSubModule[];
+}
+
+export const SYSTEM_HUBS: SystemHub[] = [
+  {
+    id: 'empresa',
+    label: 'Colaboración & Herramientas',
+    tagline: 'Herramientas transversales y de equipo STC',
+    icon: MessageSquare,
+    areaId: 'empresa',
+    accentColor: '#00668F',
+    bgBadge: 'bg-sky-100/70 text-sky-800',
+    defaultModuleId: 'conversaciones',
+    subModules: [
+      { id: 'conversaciones', label: 'Conversaciones', shortLabel: 'Chat', description: 'Canales internos y mensajería directa', icon: MessageSquare },
+      { id: 'documentos', label: 'Gestión Documental', shortLabel: 'Documentos', description: 'Planos CAD, manuales y certificados STC', icon: FileText },
+      { id: 'calendario', label: 'Calendario de Visitas', shortLabel: 'Calendario', description: 'Cronograma de visitas a campo e hitos', icon: Calendar },
+      { id: 'actividades', label: 'Actividades & Tareas', shortLabel: 'Tareas', description: 'To-Dos y compromisos operativos', icon: CheckSquare },
+      { id: 'articulos', label: 'Wiki Técnica STC', shortLabel: 'Wiki', description: 'Normas EN 1709 / EN 12929 y procedimientos', icon: BookOpen },
+      { id: 'requisiciones', label: 'Pedir Materiales (SOLPED)', shortLabel: 'SOLPED', description: 'Solicitudes de materiales y repuestos', icon: ShoppingCart },
+    ],
+  },
+  {
+    id: 'comercial',
+    label: 'Gestión Comercial',
+    tagline: 'Prospección, cotizaciones y relaciones con clientes',
+    icon: Briefcase,
+    areaId: 'comercial',
+    accentColor: '#DC2626',
+    bgBadge: 'bg-rose-100/70 text-rose-800',
+    defaultModuleId: 'crm',
+    subModules: [
+      { id: 'crm', label: 'Pipeline Oportunidades', shortLabel: 'Pipeline', description: 'Licitaciones y embudo comercial STC', icon: Briefcase },
+      { id: 'contactos', label: 'Directorio Contactos', shortLabel: 'Contactos', description: 'Operadores, clientes y aliados', icon: Users },
+      { id: 'ventas', label: 'Cotizaciones & Ventas', shortLabel: 'Cotizaciones', description: 'Propuestas comerciales y conversión', icon: TrendingUp },
+      { id: 'whatsapp', label: 'WhatsApp Comercial', shortLabel: 'WhatsApp', description: 'Comunicación directa con clientes', icon: MessageCircle },
+    ],
+  },
+  {
+    id: 'operaciones',
+    label: 'Proyectos & Ingeniería',
+    tagline: 'Maestro de proyectos, WBS y valor ganado EVM',
+    icon: FolderKanban,
+    areaId: 'operaciones',
+    accentColor: '#16A34A',
+    bgBadge: 'bg-emerald-100/70 text-emerald-800',
+    defaultModuleId: 'proyectos',
+    subModules: [
+      { id: 'proyectos', label: 'Maestro de Proyectos', shortLabel: 'Proyectos', description: 'Control de proyectos STC y EVM', icon: FolderKanban },
+      { id: 'planeacion', label: 'Cronograma Gantt & WBS', shortLabel: 'Gantt WBS', description: 'Ruta crítica y dependencias de obra', icon: CalendarRange },
+      { id: 'registro-horas', label: 'Registro de Horas (HH)', shortLabel: 'Horas Campo', description: 'Control de horas-hombre imputadas a WBS', icon: Clock },
+    ],
+  },
+  {
+    id: 'taller_mantenimiento',
+    label: 'Taller & Mantenimiento STC',
+    tagline: 'Mantenimiento preventivo, OT de campo y banco de pruebas',
+    icon: Wrench,
+    areaId: 'operaciones',
+    accentColor: '#059669',
+    bgBadge: 'bg-teal-100/70 text-teal-800',
+    defaultModuleId: 'mantenimiento',
+    subModules: [
+      { id: 'mantenimiento', label: 'Planes Preventivos EN', shortLabel: 'Preventivo', description: 'Normas EN 1709 / EN 12929 por componente', icon: Wrench },
+      { id: 'reparacion', label: 'Órdenes de Trabajo (OT)', shortLabel: 'OT Reparación', description: 'Diagnósticos e intervenciones electromecánicas', icon: Hammer },
+      { id: 'manufactura', label: 'Manufactura de Piezas', shortLabel: 'Manufactura', description: 'Maquinado y tratamientos térmicos', icon: Factory },
+      { id: 'taller', label: 'Banco de Ensayos Pinzas', shortLabel: 'Banco Ensayos', description: 'Calibración y pruebas de fuerza de retención', icon: Cog },
+      { id: 'plm', label: 'Fichas Técnicas PLM', shortLabel: 'PLM', description: 'Ciclo de vida y especificaciones técnicas', icon: FileCode2 },
+    ],
+  },
+  {
+    id: 'abastecimiento',
+    label: 'Abastecimiento & Almacén',
+    tagline: 'Compras homologadas, existencias críticas y trazabilidad',
+    icon: ShoppingCart,
+    areaId: 'abastecimiento',
+    accentColor: '#D97706',
+    bgBadge: 'bg-amber-100/70 text-amber-800',
+    defaultModuleId: 'compras',
+    subModules: [
+      { id: 'compras', label: 'Órdenes de Compra', shortLabel: 'Compras OC', description: 'Gestión de proveedores y aprobación GM', icon: ShoppingCart },
+      { id: 'inventario', label: 'Inventario & Kardex', shortLabel: 'Inventario', description: 'Existencias de repuestos críticos STC', icon: Package },
+      { id: 'codigo-barras', label: 'Lector Código de Barras', shortLabel: 'Escáner', description: 'Escaneo óptico de SKU, seriales y lotes', icon: Barcode },
+    ],
+  },
+  {
+    id: 'talento',
+    label: 'Talento Humano & SST',
+    tagline: 'Personal técnico, cargos, licencias de alturas y nómina',
+    icon: UserCheck,
+    areaId: 'talento',
+    accentColor: '#4B5563',
+    bgBadge: 'bg-slate-200/70 text-slate-800',
+    defaultModuleId: 'empleados',
+    subModules: [
+      { id: 'empleados', label: 'Personal Técnico & Licencias', shortLabel: 'Colaboradores', description: 'Fichas, licencias de alturas y exámenes', icon: UserCheck },
+      { id: 'cargos', label: 'Cargos & Reclutamiento IA', shortLabel: 'Cargos / Vacantes', description: 'Estructura organizacional y perfiles', icon: Briefcase },
+      { id: 'vacaciones', label: 'Control de Vacaciones', shortLabel: 'Vacaciones', description: 'Programación de descansos y solicitudes', icon: Palmtree },
+      { id: 'encuestas', label: 'Inspecciones SST & ARO', shortLabel: 'SST / ARO', description: 'Checklists de seguridad y trabajo en alturas', icon: ClipboardList },
+      { id: 'nomina', label: 'Nómina Técnica de Campo', shortLabel: 'Nómina', description: 'Cálculo de horas, recargos y asignaciones', icon: Coins },
+    ],
+  },
+  {
+    id: 'financiera',
+    label: 'Finanzas & Facturación',
+    tagline: 'Facturación de hitos, viáticos de campo y tableros',
+    icon: Calculator,
+    areaId: 'financiera',
+    accentColor: '#EA580C',
+    bgBadge: 'bg-orange-100/70 text-orange-800',
+    defaultModuleId: 'contabilidad',
+    subModules: [
+      { id: 'contabilidad', label: 'Facturación & Cartera', shortLabel: 'Facturación', description: 'Facturación oportuna tras hito (Regla 48h)', icon: Calculator },
+      { id: 'firma-electronica', label: 'Firma Actas de Entrega', shortLabel: 'Firma Actas', description: 'Actas de hito con validez jurídica', icon: FileSignature },
+      { id: 'gastos', label: 'Gastos & Viáticos de Campo', shortLabel: 'Gastos Viáticos', description: 'Legalización fotográfica y centros de costos', icon: Receipt },
+      { id: 'tableros', label: 'Tableros de Control & EBITDA', shortLabel: 'Dashboard KPIs', description: 'Rentabilidad de proyectos y margen real EAC', icon: LayoutDashboard },
+    ],
+  },
+  {
+    id: 'internacional',
+    label: 'Negocios Internacionales',
+    tagline: 'Radar de licitaciones globales y calculadora de exportación',
+    icon: Globe2,
+    areaId: 'internacional',
+    accentColor: '#00668F',
+    bgBadge: 'bg-sky-100 text-[#00668F]',
+    defaultModuleId: 'radar-oportunidades',
+    subModules: [
+      { id: 'radar-oportunidades', label: 'Radar de Licitaciones Globales', shortLabel: 'Radar Licitaciones', description: 'Monitoreo de licitaciones y proyectos STC', icon: Radar },
+      { id: 'calculadora-precios', label: 'Calculadora de Exportación', shortLabel: 'Incoterms 2020', description: 'Cotizaciones en USD con Incoterms y aranceles', icon: Calculator },
+    ],
+  },
+];
+
+export function getHubForModule(moduleId: string): SystemHub | undefined {
+  return SYSTEM_HUBS.find((hub) => hub.subModules.some((m) => m.id === moduleId));
+}
+
+export function getUserAccessibleHubs(role: UserRole): SystemHub[] {
+  const allowedAreaIds = ROLE_PERMISSIONS[role] || ['empresa'];
+  return SYSTEM_HUBS.filter((hub) => allowedAreaIds.includes(hub.areaId));
 }

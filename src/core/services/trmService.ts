@@ -6,7 +6,7 @@
 
 const TRM_CACHE_KEY = 'inteckno_erp_trm_cache';
 // TRM Oficial de Colombia vigente hoy
-export const DEFAULT_FALLBACK_TRM = 3236.84;
+export const DEFAULT_FALLBACK_TRM = 4150.00;
 
 export interface TRMCacheData {
   rate: number;

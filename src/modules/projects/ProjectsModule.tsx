@@ -43,6 +43,7 @@ import { DetailModal } from '../../components/common/DetailModal';
 import { TemplateManagerModal } from '../../components/common/TemplateManagerModal';
 import { formatCOP, getStoredTRM } from '../../core/services/trmService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { DocumentFlowBar } from '../../components/common/DocumentFlowBar';
 
 type GlobalViewMode = 'table' | 'kanban' | 'gantt';
 type InternalTab = 'dashboard' | 'wbs' | 'costos' | 'cuadrilla' | 'suministros' | 'horas' | 'hseq' | 'cambios' | 'documentos' | 'asistentes';
@@ -459,6 +460,9 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             </button>
           </div>
         </div>
+
+        {/* Autopista de Negocio / Flujo de Documentos */}
+        <DocumentFlowBar projectId={selectedProject.id} className="mb-2" />
 
         {/* Dynamic Internal Tabs Navigation */}
         <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar pb-px">

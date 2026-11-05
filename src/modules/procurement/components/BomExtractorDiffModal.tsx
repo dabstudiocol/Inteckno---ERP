@@ -20,19 +20,21 @@ import { CreatableSelect } from '../../../components/common/CreatableSelect';
 interface BomExtractorDiffModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultProjectId?: string;
   onImportBOMToRequisition?: (items: { sku: string; name: string; qty: number; unit: string; notes?: string }[], revision: string) => void;
 }
 
 export const BomExtractorDiffModal: React.FC<BomExtractorDiffModalProps> = ({
   isOpen,
   onClose,
+  defaultProjectId,
   onImportBOMToRequisition,
 }) => {
   const { projects, createRequisition, currentUser } = useErp();
 
   if (!isOpen) return null;
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(defaultProjectId || projects[0]?.id || '');
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
 
   const [activeView, setActiveView] = useState<'compare' | 'upload'>('compare');

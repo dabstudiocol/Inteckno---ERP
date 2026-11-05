@@ -84,7 +84,7 @@ import {
 } from '../../core/services/geminiChatService';
 
 export function getOppFinancialBreakdown(opp: Opportunity, currentTrm: number) {
-  const trm = currentTrm > 0 ? currentTrm : 4150;
+  const trm = currentTrm > 0 ? currentTrm : getStoredTRM();
   const rawCurr = opp.currency;
   const isCop = rawCurr === 'COP' || (!rawCurr && (opp.estimatedValueUSD > 2000000 || (opp.estimatedValue && opp.estimatedValue > 2000000)));
 
@@ -497,7 +497,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     let quotations = opp.quotations;
     const isCo = (opp.country || '').toLowerCase().includes('colombia');
     const quoteCurrency: 'COP' | 'USD' | 'EUR' = opp.currency || (isCo ? 'COP' : 'USD');
-    const trm = currentTrm > 0 ? currentTrm : 4150;
+    const trm = currentTrm > 0 ? currentTrm : getStoredTRM();
 
     if (!quotations || quotations.length === 0) {
       const opType = isCo ? 'nacional' : 'exportacion';
@@ -695,10 +695,55 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
   const catalogLeadSources = useModuleCatalog('crm', 'leadSources');
   const catalogCountries = useModuleCatalog('crm', 'countries');
 
+  // Opciones combinadas de clientes provenientes de partners y contactos
+  const combinedClientOptions = React.useMemo(() => {
+    const list: { id: string; name: string; code?: string; taxId?: string; contact?: string; email?: string; phone?: string; country?: string; cableType?: string }[] = [];
+    const seenNames = new Set<string>();
+
+    partners.forEach((p) => {
+      const name = (p.name || '').trim();
+      if (name && !seenNames.has(name.toLowerCase())) {
+        seenNames.add(name.toLowerCase());
+        list.push({
+          id: p.id,
+          name: p.name,
+          code: p.taxId ? `NIT: ${p.taxId}` : p.country,
+          taxId: p.taxId,
+          contact: p.contactPerson,
+          email: p.email,
+          phone: p.phone,
+          country: p.country,
+        });
+      }
+    });
+
+    contacts.forEach((c) => {
+      const company = (c.company || '').trim();
+      if (company && !seenNames.has(company.toLowerCase())) {
+        seenNames.add(company.toLowerCase());
+        list.push({
+          id: c.id,
+          name: company,
+          code: (c as any).nit ? `NIT: ${(c as any).nit}` : c.country,
+          taxId: (c as any).nit,
+          contact: c.name,
+          email: c.email,
+          phone: c.phone,
+          country: c.country,
+          cableType: c.stcSystem,
+        });
+      }
+    });
+
+    return list;
+  }, [partners, contacts]);
+
   // Formulario Nueva Oportunidad
   const [oppForm, setOppForm] = useState({
     title: '',
     clientName: '',
+    clientId: '',
+    clientNit: '',
     clientContactPerson: '',
     clientEmail: '',
     clientPhone: '',
@@ -873,7 +918,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     e.preventDefault();
     if (!oppForm.title || !oppForm.clientName) return;
 
-    const trm = currentTrm > 0 ? currentTrm : 4150;
+    const trm = currentTrm > 0 ? currentTrm : getStoredTRM();
     const isCop = oppForm.currency === 'COP';
     const numVal = Number(oppForm.estimatedValue) || 0;
     const estUSD = isCop ? Math.round(numVal / trm) : numVal;
@@ -882,7 +927,9 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
       ...oppForm,
       estimatedValue: numVal,
       estimatedValueUSD: estUSD,
-      clientId: `CLI-${Date.now()}`,
+      clientId: oppForm.clientId || `CLI-${Date.now()}`,
+      clientTaxId: oppForm.clientNit || undefined,
+      clientNit: oppForm.clientNit || undefined,
       assignedOwnerId: currentUser.id,
       assignedOwnerName: currentUser.name,
     });
@@ -891,6 +938,8 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     setOppForm({
       title: '',
       clientName: '',
+      clientId: '',
+      clientNit: '',
       clientContactPerson: '',
       clientEmail: '',
       clientPhone: '',
@@ -934,6 +983,12 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     if (result.success) {
       setSelectedOppForAward(null);
       setOppPreviousStage(null);
+      setActiveModule('proyectos');
+      notify?.(
+        'success',
+        'Oportunidad Adjudicada a Proyecto',
+        `El proyecto ${customProjectData?.code || ''} ha sido creado y transferido a Operaciones con su presupuesto de oferta.`
+      );
     }
   };
 
@@ -949,15 +1004,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     setOppPreviousStage(null);
   };
 
-  // Cuando se adjudica o gana una oportunidad, se retira del CRM y pasa a Proyectos
-  useEffect(() => {
-    const alreadyAwarded = opportunities.filter((o) => o.stage === 'awarded' || o.awardedProjectId);
-    if (alreadyAwarded.length > 0) {
-      alreadyAwarded.forEach((o) => {
-        deleteOpportunity(o.id);
-      });
-    }
-  }, [opportunities, deleteOpportunity]);
+  // Las oportunidades adjudicadas se preservan en el pipeline histórico con stage 'awarded' y awardedProjectId
 
   const activeOpportunities = opportunities.filter(
     (o) => o.stage !== 'lost' && o.stage !== 'awarded' && !o.awardedProjectId
@@ -966,7 +1013,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     (sum, o) => sum + getOppFinancialBreakdown(o, currentTrm).copVal,
     0
   );
-  const totalPipelineValue = Math.round(totalPipelineValueCOP / (currentTrm > 0 ? currentTrm : 4150));
+  const totalPipelineValue = Math.round(totalPipelineValueCOP / (currentTrm > 0 ? currentTrm : getStoredTRM()));
 
   const awardedCount = opportunities.filter((o) => o.stage === 'awarded' || o.awardedProjectId).length;
   const lostCount = opportunities.filter((o) => o.stage === 'lost').length;
@@ -1704,28 +1751,33 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                       required
                       value={oppForm.clientName}
                       onChange={(val) => {
-                        const match = contacts.find((c) => c.company.toLowerCase() === val.toLowerCase());
+                        const match = combinedClientOptions.find(
+                          (c) => c.name.toLowerCase() === val.toLowerCase() || c.id === val
+                        );
                         if (match) {
                           setOppForm({
                             ...oppForm,
-                            clientName: match.company,
-                            clientContactPerson: match.name || oppForm.clientContactPerson,
+                            clientId: match.id,
+                            clientName: match.name,
+                            clientNit: match.taxId || oppForm.clientNit,
+                            clientContactPerson: match.contact || oppForm.clientContactPerson,
                             clientEmail: match.email || oppForm.clientEmail,
                             clientPhone: match.phone || oppForm.clientPhone,
                             country: match.country || oppForm.country,
-                            cableType: match.stcSystem || oppForm.cableType,
+                            cableType: match.cableType || oppForm.cableType,
                           });
                         } else {
-                          setOppForm({ ...oppForm, clientName: val });
+                          setOppForm({ ...oppForm, clientName: val, clientId: '' });
                         }
                       }}
-                      options={contacts.map((c) => ({
+                      options={combinedClientOptions.map((c) => ({
                         id: c.id,
-                        name: c.company,
-                        code: c.country,
+                        name: c.name,
+                        code: c.code,
                       }))}
                       placeholder="Seleccionar o escribir cliente..."
                       allowCustomText={true}
+                      isClearable={true}
                     />
                   </div>
                   <div>
@@ -1737,6 +1789,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                       moduleId="crm"
                       catalogKey="countries"
                       placeholder="Seleccionar o escribir país..."
+                      isClearable={true}
                     />
                   </div>
                 </div>
@@ -1746,15 +1799,27 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                   <span className="text-[11px] font-bold text-[#00668F] uppercase tracking-wide block">
                     Información del Contacto (Sincronización Automática al Directorio)
                   </span>
-                  <div>
-                    <label className="text-[11px] font-semibold text-gray-700 mb-0.5 min-h-[20px] flex items-center">Persona de Contacto / Encargado</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Ing. Jorge Restrepo (Gerente de Mantenimiento)"
-                      value={oppForm.clientContactPerson}
-                      onChange={(e) => setOppForm({ ...oppForm, clientContactPerson: e.target.value })}
-                      className="w-full text-xs p-2 rounded-lg bg-white text-gray-800 focus:outline-hidden"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-700 mb-0.5 min-h-[20px] flex items-center">NIT / Identificación Tributaria</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: 900.123.456-7"
+                        value={oppForm.clientNit}
+                        onChange={(e) => setOppForm({ ...oppForm, clientNit: e.target.value })}
+                        className="w-full text-xs p-2 rounded-lg bg-white text-gray-800 focus:outline-hidden"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-700 mb-0.5 min-h-[20px] flex items-center">Persona de Contacto / Encargado</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Ing. Jorge Restrepo (Gerente de Mantenimiento)"
+                        value={oppForm.clientContactPerson}
+                        onChange={(e) => setOppForm({ ...oppForm, clientContactPerson: e.target.value })}
+                        className="w-full text-xs p-2 rounded-lg bg-white text-gray-800 focus:outline-hidden"
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                     <div>

@@ -17,6 +17,9 @@ import { CreatableSelect } from '../../../components/common/CreatableSelect';
 interface CreateRequisitionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialProjectId?: string;
+  initialCategory?: string;
+  initialItemConcept?: string;
 }
 
 interface RequisitionItemDraft {
@@ -32,6 +35,9 @@ interface RequisitionItemDraft {
 export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   isOpen,
   onClose,
+  initialProjectId,
+  initialCategory,
+  initialItemConcept,
 }) => {
   const { projects, products, currentUser, createRequisition } = useErp();
 
@@ -47,6 +53,26 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   const [neededDate, setNeededDate] = useState<string>('');
   const [justification, setJustification] = useState<string>('');
   const [drawingVersion, setDrawingVersion] = useState<string>('');
+  useEffect(() => {
+    if (isOpen) {
+      if (initialProjectId) {
+        setReqType('project');
+        setSelectedProjectId(initialProjectId);
+      }
+      if (initialItemConcept) {
+        setItems([
+          {
+            id: `it-${Date.now()}`,
+            name: initialItemConcept,
+            sku: 'GEN-' + Date.now().toString().slice(-4),
+            qty: 1,
+            unit: 'unid',
+          },
+        ]);
+      }
+    }
+  }, [isOpen, initialProjectId, initialItemConcept]);
+
 
   // Sincronizar selección inicial de catálogos dinámicos
   useEffect(() => {

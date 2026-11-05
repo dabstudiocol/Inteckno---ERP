@@ -14,8 +14,8 @@ import {
   Radio,
   FileCheck2,
   Search,
-  Clock,
-  Info
+  Info,
+  Layers,
 } from 'lucide-react';
 import { Project } from '../../../../types';
 import { CriticalSparePart, InspectionEquipment } from '../../../../types/ProjectSchema';
@@ -23,6 +23,8 @@ import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteM
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { useErp } from '../../../../core/storage/erpStore';
+import { EngineeringBomFunnel } from '../EngineeringBomFunnel';
+import { BomExtractorDiffModal } from '../../../procurement/components/BomExtractorDiffModal';
 
 interface TabSuministrosQCProps {
   project: Project;
@@ -49,6 +51,11 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
   const productOptions = React.useMemo(() => {
     return products.map((p) => ({ value: p.name, label: `${p.sku} — ${p.name}`, code: p.sku }));
   }, [products]);
+
+  // Subpestaña activa: Control QC vs Despiece BOM
+  const [activeSubTab, setActiveSubTab] = useState<'qc_equipos' | 'bom_funnel'>('qc_equipos');
+  const [isBomDiffModalOpen, setIsBomDiffModalOpen] = useState<boolean>(false);
+
   // Lista de Repuestos Críticos
   const [criticalSpares, setCriticalSpares] = useState<CriticalSparePart[]>(() => {
     return (project as any).criticalSpares || [];
@@ -238,6 +245,49 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
         </div>
       )}
 
+      {/* Selector de Sub-Pestaña: Control QC vs Despiece BOM */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-2xs flex items-center gap-1.5 max-w-xl">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('qc_equipos')}
+            className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeSubTab === 'qc_equipos'
+                ? 'bg-[#00668F] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <ShieldCheck size={15} />
+            <span>Equipos & Calidad QC</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('bom_funnel')}
+            className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeSubTab === 'bom_funnel'
+                ? 'bg-[#00668F] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Layers size={15} />
+            <span>Despiece BOM & SOLPEDs (IA)</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsBomDiffModalOpen(true)}
+          className="px-3.5 py-2 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 text-[#00668F] dark:text-sky-400 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer shrink-0"
+        >
+          <FileCheck2 size={15} />
+          <span>Comparador Revisiones BOM (Diff Plano)</span>
+        </button>
+      </div>
+
+      {activeSubTab === 'bom_funnel' ? (
+        <EngineeringBomFunnel project={project} />
+      ) : (
+        <>
       {/* SECCIÓN 1: EQUIPOS DE INSPECCIÓN (MRT, ULTRASONIDO, CALIBRACIÓN) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -471,6 +521,8 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* MODAL REGISTRAR EQUIPO DE INSPECCIÓN MRT */}
       {isEquipModalOpen && (
@@ -894,6 +946,13 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
           { label: 'Inspector que Verificó', value: detailSpare.verifiedBy },
           { label: 'N° Certificado Calidad', value: detailSpare.certificateNumber || 'Adjunto OK', isMono: true },
         ] : []}
+      />
+
+      {/* Modal Comparador de Revisiones BOM */}
+      <BomExtractorDiffModal
+        isOpen={isBomDiffModalOpen}
+        onClose={() => setIsBomDiffModalOpen(false)}
+        defaultProjectId={project.id}
       />
     </div>
   );

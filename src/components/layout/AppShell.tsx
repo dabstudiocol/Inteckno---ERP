@@ -37,7 +37,7 @@ import { UniversalModuleConfigModal } from '../common/UniversalModuleConfigModal
 import { UserLoginAlertsModal } from '../common/UserLoginAlertsModal';
 import { UndoRedoConfirmModal } from '../common/UndoRedoConfirmModal';
 import { UserUndoAction } from '../../core/services/undoRedoService';
-import { getUserAccessibleAreas, ALL_AREAS, MODULE_ICONS } from '../../core/auth/rbac';
+import { getUserAccessibleAreas, ALL_AREAS, MODULE_ICONS, getUserAccessibleHubs, getHubForModule, SYSTEM_HUBS, SystemHub } from '../../core/auth/rbac';
 import { AreaId } from '../../types';
 import { LucianaFloatingWidget } from '../ai/LucianaFloatingWidget';
 import { getStoredTRM, formatTRM, fetchLiveTRM, fetchTRMWithLucianaWeb, setCustomTRM, getTRMDetails } from '../../core/services/trmService';
@@ -304,6 +304,11 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   // Áreas y módulos autorizados para el usuario activo
   const accessibleAreas = getUserAccessibleAreas(currentUser.role);
+  const accessibleHubs = useMemo(() => getUserAccessibleHubs(currentUser.role), [currentUser.role]);
+  const activeHub = useMemo(() => getHubForModule(activeModuleId) || accessibleHubs[0], [activeModuleId, accessibleHubs]);
+  const canAccessUserMgmt = useMemo(() => {
+    return ['admin_sistemas', 'gerente_general', 'gerente_administrativa', 'coord_talento_humano'].includes(currentUser.role);
+  }, [currentUser.role]);
   const isSuperAdmin =
     currentUser.role === 'gerente_general' || currentUser.role === 'gerente_administrativa';
 
@@ -812,76 +817,144 @@ export const AppShell: React.FC<AppShellProps> = ({
           )}
 
           {/* Lista de Módulos Autorizados con Scroll Cómodo */}
-          <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4 scrollbar-none">
-            {displayedAreas.map((area) => (
-              <div key={area.id} className="space-y-1">
-                {/* Título de Sección del Área (Solo cuando está expandido) */}
-                {!isSidebarCollapsed && (
-                  <div className="px-2 py-1 flex items-center justify-between text-[10px] font-black tracking-wider uppercase">
-                    <span style={{ color: area.accentColor }}>{area.name}</span>
-                    <span className="text-slate-500 font-normal">{area.modules.length}</span>
-                  </div>
-                )}
+          <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-2 scrollbar-none">
+            {/* Lista de Espacios de Trabajo / Hubs */}
+            {accessibleHubs.map((hub) => {
+              const HubIcon = hub.icon;
+              const isHubActive = activeHub?.id === hub.id;
 
-                {/* Botones de Módulos */}
-                {area.modules.map((mod) => {
-                  const Icon = MODULE_ICONS[mod.id] || Layers;
-                  const isActive = activeModuleId === mod.id;
-
-                  return (
-                    <button
-                      key={mod.id}
-                      onClick={() => {
-                        setActiveModule(mod.id);
-                        setIsMobileDrawerOpen(false);
-                      }}
-                      title={mod.label}
-                      className={`w-full text-left rounded-xl transition-all cursor-pointer group flex items-center relative ${
-                        isSidebarCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2 justify-between'
-                      } ${
-                        isActive
-                          ? 'bg-[#14232F] text-white font-bold shadow-xs'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-[#0E171E]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative shrink-0 flex items-center justify-center">
-                          <Icon
-                            size={18}
-                            style={{ color: isActive ? area.accentColor : undefined }}
-                            className={`shrink-0 transition-colors ${
-                              isActive ? '' : 'text-slate-400 group-hover:text-slate-200'
-                            }`}
-                          />
-                          {isSidebarCollapsed && mod.id === 'conversaciones' && unreadChatCount > 0 && (
-                            <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-1 bg-emerald-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-slate-900 shadow-xs animate-pulse">
-                              {unreadChatCount > 9 ? '9+' : unreadChatCount}
-                            </span>
-                          )}
-                        </div>
-                        {!isSidebarCollapsed && <span className="truncate text-xs">{mod.label}</span>}
+              return (
+                <div key={hub.id} className="space-y-1">
+                  {/* Botón Principal del Hub */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isHubActive) {
+                        setActiveModule(hub.defaultModuleId);
+                      }
+                      setIsMobileDrawerOpen(false);
+                    }}
+                    title={hub.label}
+                    className={`w-full text-left rounded-xl transition-all cursor-pointer group flex items-center relative ${
+                      isSidebarCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2 justify-between'
+                    } ${
+                      isHubActive
+                        ? 'bg-[#14232F] text-white font-bold shadow-xs'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-[#0E171E]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="relative shrink-0 flex items-center justify-center">
+                        <HubIcon
+                          size={18}
+                          style={{ color: isHubActive ? hub.accentColor : undefined }}
+                          className={`shrink-0 transition-colors ${
+                            isHubActive ? '' : 'text-slate-400 group-hover:text-slate-200'
+                          }`}
+                        />
+                        {isSidebarCollapsed && hub.id === 'empresa' && unreadChatCount > 0 && (
+                          <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-1 bg-emerald-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-slate-900 shadow-xs animate-pulse">
+                            {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                          </span>
+                        )}
                       </div>
+                      {!isSidebarCollapsed && (
+                        <span className="truncate text-xs font-bold">{hub.label}</span>
+                      )}
+                    </div>
 
+                    {!isSidebarCollapsed && (
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {!isSidebarCollapsed && mod.id === 'conversaciones' && unreadChatCount > 0 && (
+                        {hub.id === 'empresa' && unreadChatCount > 0 && (
                           <span className="px-1.5 py-0.2 rounded-full font-black text-[9.5px] bg-emerald-500 text-white shadow-xs">
                             {unreadChatCount}
                           </span>
                         )}
-                        {isActive && (
+                        <span
+                          className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md transition-colors ${
+                            isHubActive ? 'bg-black/40 text-slate-200 font-bold' : 'text-slate-500'
+                          }`}
+                        >
+                          {hub.subModules.length}
+                        </span>
+                        {isHubActive && (
                           <span
-                            className={`rounded-full shrink-0 shadow-xs ${
-                              isSidebarCollapsed ? 'w-1.5 h-1.5 absolute right-1' : 'w-1.5 h-1.5'
-                            }`}
-                            style={{ backgroundColor: area.accentColor }}
+                            className="w-1.5 h-1.5 rounded-full shrink-0 shadow-xs"
+                            style={{ backgroundColor: hub.accentColor }}
                           />
                         )}
                       </div>
-                    </button>
-                  );
-                })}
+                    )}
+                  </button>
+
+                  {/* Submódulos Contextuales del Hub Activo (Solo cuando está expandido) */}
+                  {!isSidebarCollapsed && isHubActive && hub.subModules.length > 1 && (
+                    <div className="pl-5 pr-1 py-1 space-y-0.5 border-l border-slate-800/80 ml-4 animate-in fade-in-50 duration-200">
+                      {hub.subModules.map((sub) => {
+                        const SubIcon = sub.icon;
+                        const isSubActive = activeModuleId === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveModule(sub.id);
+                              setIsMobileDrawerOpen(false);
+                            }}
+                            title={sub.description}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all flex items-center justify-between cursor-pointer ${
+                              isSubActive
+                                ? 'bg-[#1C2C39] text-white font-bold shadow-2xs'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-[#121E27]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <SubIcon
+                                size={13}
+                                style={{ color: isSubActive ? hub.accentColor : undefined }}
+                                className={isSubActive ? '' : 'text-slate-500'}
+                              />
+                              <span className="truncate">{sub.label}</span>
+                            </div>
+                            {sub.id === 'conversaciones' && unreadChatCount > 0 && (
+                              <span className="px-1 py-0.1 rounded-full text-[8.5px] font-black bg-emerald-500 text-white shadow-2xs">
+                                {unreadChatCount}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Acceso Rápido a Usuarios TI para Administradores */}
+            {canAccessUserMgmt && !isSidebarCollapsed && (
+              <div className="pt-3 mt-3 border-t border-slate-800/80">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveModule('usuarios-ti');
+                    setIsMobileDrawerOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                    activeModuleId === 'usuarios-ti'
+                      ? 'bg-[#14232F] text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-[#0E171E]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Shield size={16} className="text-sky-400" />
+                    <span>Administración TI & Accesos</span>
+                  </div>
+                  <span className="text-[9px] bg-sky-950 text-sky-400 border border-sky-800/60 px-1.5 py-0.5 rounded-md font-mono">
+                    ADMIN
+                  </span>
+                </button>
               </div>
-            ))}
+            )}
           </nav>
 
           {/* Pie de la Barra Lateral: Resumen de Permisos y Botón Personalizar Barra Móvil */}

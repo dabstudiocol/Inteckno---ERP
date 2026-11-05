@@ -106,6 +106,26 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       setSolpedNumber(req.reqNumber);
       if (req.requesterName) setRequesterName(req.requesterName);
       if (req.projectId) setSelectedProjectId(req.projectId);
+      if (req.costMatrixItemId) setSelectedCostItemId(req.costMatrixItemId);
+      if (req.category) setCostCategory(req.category);
+
+      // Proveedor sugerido
+      if (req.suggestedSupplierId && partners.some((p) => p.id === req.suggestedSupplierId)) {
+        setSelectedSupplierId(req.suggestedSupplierId);
+        setSupplierType('registered');
+      } else if (req.suggestedSupplierName) {
+        const matched = partners.find(
+          (p) => p.name.toLowerCase().includes(req.suggestedSupplierName!.toLowerCase())
+        );
+        if (matched) {
+          setSelectedSupplierId(matched.id);
+          setSupplierType('registered');
+        } else {
+          setCustomSupplierName(req.suggestedSupplierName);
+          setSupplierType('custom');
+        }
+      }
+
       if (req.items && req.items.length > 0) {
         const mappedItems: PoItemRow[] = req.items.map((it, idx) => {
           const prod = products.find((p) => p.id === it.productId || p.sku === it.productSku);
@@ -323,19 +343,25 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
     const supplierName = supplierType === 'registered' ? (selectedSupplier?.name || 'Proveedor General') : customSupplierName.trim();
     const supplierId = supplierType === 'registered' ? selectedSupplierId : `PROV-TEMP-${Date.now()}`;
 
-    const formattedItems: PurchaseOrderItem[] = items.map((it) => ({
-      productId: it.productId || `PRD-${it.sku}`,
-      sku: it.sku,
-      name: it.name,
-      qty: it.qty,
-      orderedQty: it.qty,
-      receivedQty: 0,
-      unitPriceUSD: it.unitPriceUSD,
-      unitPriceCOP: it.unitPriceCOP,
-      subtotalUSD: it.unitPriceUSD * it.qty,
-      subtotalCOP: it.unitPriceCOP * it.qty,
-      historicalPriceCOP: it.historicalPriceCOP,
-    }));
+    const req = requisitions.find((r) => r.id === originReqId);
+    const formattedItems: PurchaseOrderItem[] = items.map((it, idx) => {
+      const origReqItem = req?.items?.[idx];
+      return {
+        productId: it.productId || `PRD-${it.sku}`,
+        sku: it.sku,
+        name: it.name,
+        qty: it.qty,
+        orderedQty: it.qty,
+        receivedQty: 0,
+        unitPriceUSD: it.unitPriceUSD,
+        unitPriceCOP: it.unitPriceCOP,
+        subtotalUSD: it.unitPriceUSD * it.qty,
+        subtotalCOP: it.unitPriceCOP * it.qty,
+        historicalPriceCOP: it.historicalPriceCOP,
+        itemCode: origReqItem?.itemCode || req?.itemCode,
+        costMatrixItemId: origReqItem?.costMatrixItemId || selectedCostItemId || undefined,
+      };
+    });
 
     onCreatePo({
       supplierId,
@@ -374,9 +400,11 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       costMatrixItemId: selectedCostItemId || undefined,
       costType,
       itemCode: (() => {
-        if (!selectedCostItemId) return undefined;
-        const found = selectedProject?.costMatrix?.find((cm) => cm.id === selectedCostItemId);
-        return found?.itemCode || undefined;
+        if (selectedCostItemId) {
+          const found = selectedProject?.costMatrix?.find((cm) => cm.id === selectedCostItemId);
+          if (found?.itemCode) return found.itemCode;
+        }
+        return req?.itemCode || undefined;
       })(),
       deliveryStatus: 'pendiente',
       weekOfYear: (() => {

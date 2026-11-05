@@ -362,6 +362,12 @@ export interface ProjectBillingItem {
   grandTotal: number; // Gran total
   observations?: string; // Observaciones
   paymentDate?: string; // Fecha pago
+  status?: 'pending' | 'invoiced' | 'paid';
+  paidAmount?: number;
+  milestoneName?: string;
+  milestonePercentage?: number;
+  dueDate?: string;
+  acceptanceActSigned?: boolean;
 }
 
 // Carpeta / Bloque de ITEM de Control de Proyecto (ej. ITEM 11)
@@ -465,6 +471,8 @@ export interface STCFullProject {
 
 export interface StaffAssignment {
   id: string;
+  employeeId?: string;
+  projectId?: string;
   employeeName: string;
   role: string;
   department: string;

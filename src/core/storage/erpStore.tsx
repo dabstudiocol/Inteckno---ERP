@@ -14,6 +14,7 @@ import {
   TimesheetEntry,
   ExpenseEntry,
   BillingMilestone,
+  ProjectBillingItem,
   AppNotification,
   Opportunity,
   CRMContact,
@@ -335,6 +336,7 @@ export interface ErpContextType extends ErpState {
   deleteExpense: (id: string) => void;
   signMilestoneAct: (milestoneId: string) => void;
   issueMilestoneInvoice: (milestoneId: string, invoiceNumber: string) => void;
+  markMilestonePaid: (milestoneId: string, paymentData?: { paidAt?: string; paymentReference?: string; paymentAmountCOP?: number }) => void;
   deleteMilestone: (milestoneId: string) => void;
 
   // MÓDULOS INTECKNO (TRANSVERSALES)
@@ -1562,7 +1564,78 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const setActiveModule = useCallback((moduleId: string) => {
-    setState((prev) => ({ ...prev, activeModuleId: moduleId }));
+    const CANONICAL_MODULE_MAP: Record<string, string> = {
+      projects: 'proyectos',
+      proyectos: 'proyectos',
+      procurement: 'compras',
+      compras: 'compras',
+      orders: 'compras',
+      'purchase-orders': 'compras',
+      timesheet: 'registro-horas',
+      'registro-horas': 'registro-horas',
+      timesheets: 'registro-horas',
+      horas: 'registro-horas',
+      billing: 'contabilidad',
+      contabilidad: 'contabilidad',
+      facturacion: 'contabilidad',
+      invoices: 'contabilidad',
+      commercial: 'crm',
+      comercial: 'crm',
+      crm: 'crm',
+      pipeline: 'crm',
+      inventory: 'inventario',
+      inventario: 'inventario',
+      almacen: 'inventario',
+      bodega: 'inventario',
+      stock: 'inventario',
+      requisitions: 'requisiciones',
+      requisiciones: 'requisiciones',
+      solped: 'requisiciones',
+      hr: 'empleados',
+      empleados: 'empleados',
+      'talento-humano': 'empleados',
+      expenses: 'gastos',
+      gastos: 'gastos',
+      viaticos: 'gastos',
+      'caja-menor': 'gastos',
+      dashboard: 'tableros',
+      tableros: 'tableros',
+      kpis: 'tableros',
+      indicadores: 'tableros',
+      international: 'calculadora-precios',
+      'calculadora-precios': 'calculadora-precios',
+      calculator: 'calculadora-precios',
+      calculadora: 'calculadora-precios',
+      'radar-oportunidades': 'radar-oportunidades',
+      radar: 'radar-oportunidades',
+      licitaciones: 'radar-oportunidades',
+      documents: 'documentos',
+      documentos: 'documentos',
+      archivos: 'documentos',
+      chat: 'conversaciones',
+      conversaciones: 'conversaciones',
+      mensajes: 'conversaciones',
+      calendar: 'calendario',
+      calendario: 'calendario',
+      tasks: 'actividades',
+      actividades: 'actividades',
+      todos: 'actividades',
+      wiki: 'articulos',
+      articulos: 'articulos',
+      positions: 'cargos',
+      cargos: 'cargos',
+      profile: 'perfil',
+      perfil: 'perfil',
+      users: 'usuarios-ti',
+      usuarios: 'usuarios-ti',
+      'usuarios-ti': 'usuarios-ti',
+      sst: 'encuestas',
+      'hseq-gate': 'encuestas',
+      hseq: 'encuestas',
+      encuestas: 'encuestas',
+    };
+    const canonical = CANONICAL_MODULE_MAP[moduleId.toLowerCase()] || moduleId;
+    setState((prev) => ({ ...prev, activeModuleId: canonical }));
   }, []);
 
   // MÉTODOS DE BORRADO INDIVIDUAL
@@ -1579,6 +1652,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           description: `Eliminación del proyecto ${target.code} (${target.name})`,
           previousData: target,
         });
+
+        // Agente Guardián: Respaldo continuo de seguridad (Regla 14)
+        createSystemBackup(
+          'projects',
+          `Eliminación de Proyecto ${target.code || target.id} (${target.name}) (Respaldo de recuperación)`,
+          target,
+          state.currentUser.id,
+          state.currentUser.name
+        ).catch(console.warn);
       }
       setState((prev) => ({
         ...prev,
@@ -1649,27 +1731,144 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           description: `Eliminación de la orden ${target.orderNumber || target.id}`,
           previousData: target,
         });
+
+        // Agente Guardián: Respaldo continuo de seguridad (Regla 14)
+        createSystemBackup(
+          'procurement',
+          `Eliminación de Orden de Compra ${target.orderNumber || target.id} (Respaldo de recuperación)`,
+          target,
+          state.currentUser.id,
+          state.currentUser.name
+        ).catch(console.warn);
       }
-      setState((prev) => ({
-        ...prev,
-        purchaseOrders: prev.purchaseOrders.filter((po) => po.id !== id),
-      }));
-      notify('info', 'Orden de Compra Eliminada', 'La orden de compra ha sido retirada.');
+      setState((prev) => {
+        let updatedProjects = prev.projects;
+        if (target && (target.projectId || target.projectCode)) {
+          const costCOP = target.totalAmountCOP || 0;
+          const wasReceived = target.status === 'received';
+          updatedProjects = prev.projects.map((prj) => {
+            if (prj.id === target.projectId || prj.code === target.projectCode) {
+              const newAC = wasReceived ? Math.max(0, (prj.actualCostAC || 0) - costCOP) : (prj.actualCostAC || 0);
+              const newCommitted = !wasReceived ? Math.max(0, (prj.committedCostPO || 0) - costCOP) : (prj.committedCostPO || 0);
+              const newCV = (prj.earnedValueEV || 0) - newAC;
+              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+              
+              const existingMatrix: any[] = (prj as any).costMatrix || [];
+              const updatedMatrix = existingMatrix
+                .map((item) => {
+                  if (target.costMatrixItemId && item.id === target.costMatrixItemId) {
+                    const newQty = Math.max(0, (item.actualQuantity || 1) - 1);
+                    const newTotal = Math.max(0, (item.actualTotal || 0) - costCOP);
+                    return {
+                      ...item,
+                      actualQuantity: newQty,
+                      actualTotal: newTotal,
+                      actualUnitCost: newQty > 0 ? Math.round(newTotal / newQty) : item.actualUnitCost,
+                      variance: (item.plannedTotal || 0) - newTotal,
+                    };
+                  }
+                  return item;
+                })
+                .filter((item) => {
+                  const isCreatedByPo = item.id === `cost-po-${target.id}` || 
+                                       (item.concept && target.orderNumber && item.concept.includes(`OC ${target.orderNumber}`));
+                  return !isCreatedByPo;
+                });
+
+              return {
+                ...prj,
+                actualCostAC: newAC,
+                committedCostPO: newCommitted,
+                cv: newCV,
+                cpi: newCPI,
+                costMatrix: updatedMatrix,
+              };
+            }
+            return prj;
+          });
+        }
+
+        return {
+          ...prev,
+          purchaseOrders: prev.purchaseOrders.filter((po) => po.id !== id),
+          projects: updatedProjects,
+        };
+      });
+      notify('info', 'Orden de Compra Eliminada', 'La orden de compra ha sido retirada y sus costos reversados.');
     },
     [state.purchaseOrders, state.currentUser, notify]
   );
 
   const updatePurchaseOrder = useCallback(
     (id: string, data: Partial<PurchaseOrder>) => {
-      setState((prev) => ({
-        ...prev,
-        purchaseOrders: prev.purchaseOrders.map((po) =>
-          po.id === id ? { ...po, ...data } : po
-        ),
-      }));
+      const prevPo = state.purchaseOrders.find((p) => p.id === id);
+      setState((prev) => {
+        let updatedProjects = prev.projects;
+        if (prevPo && data.status === 'received' && prevPo.status !== 'received' && (prevPo.projectId || prevPo.projectCode)) {
+          const costCOP = (data.totalAmountCOP !== undefined ? data.totalAmountCOP : prevPo.totalAmountCOP) || 0;
+          updatedProjects = prev.projects.map((prj) => {
+            if (prj.id === prevPo.projectId || prj.code === prevPo.projectCode) {
+              const newCommitted = Math.max(0, (prj.committedCostPO || 0) - costCOP);
+              const newAC = (prj.actualCostAC || 0) + costCOP;
+              const newCV = (prj.earnedValueEV || 0) - newAC;
+              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+              
+              const existingMatrix: any[] = (prj as any).costMatrix || [];
+              let updatedMatrix: any[];
+              if (prevPo.costMatrixItemId && existingMatrix.some((m) => m.id === prevPo.costMatrixItemId)) {
+                updatedMatrix = existingMatrix.map((item) => {
+                  if (item.id === prevPo.costMatrixItemId) {
+                    const newQty = (item.actualQuantity || 0) + 1;
+                    const newTotal = (item.actualTotal || 0) + costCOP;
+                    return {
+                      ...item,
+                      actualQuantity: newQty,
+                      actualTotal: newTotal,
+                      actualUnitCost: newQty > 0 ? Math.round(newTotal / newQty) : item.actualUnitCost,
+                      variance: (item.plannedTotal || 0) - newTotal,
+                    };
+                  }
+                  return item;
+                });
+              } else {
+                updatedMatrix = existingMatrix.map((item) => {
+                  if (item.id === `cost-po-${prevPo.id}` || (item.concept && prevPo.orderNumber && item.concept.includes(`OC ${prevPo.orderNumber}`))) {
+                    return {
+                      ...item,
+                      actualTotal: costCOP,
+                      actualQuantity: 1,
+                      actualUnitCost: costCOP,
+                      observations: `Imputado por OC ${prevPo.orderNumber} (Cumplida y Recibida).`,
+                    };
+                  }
+                  return item;
+                });
+              }
+
+              return {
+                ...prj,
+                actualCostAC: newAC,
+                committedCostPO: newCommitted,
+                cv: newCV,
+                cpi: newCPI,
+                costMatrix: updatedMatrix,
+              };
+            }
+            return prj;
+          });
+        }
+
+        return {
+          ...prev,
+          purchaseOrders: prev.purchaseOrders.map((po) =>
+            po.id === id ? { ...po, ...data } : po
+          ),
+          projects: updatedProjects,
+        };
+      });
       notify('success', 'Orden de Compra Actualizada', 'Los datos de la orden han sido sincronizados.');
     },
-    [notify]
+    [state.purchaseOrders, notify]
   );
 
   const deleteRequisition = useCallback(
@@ -1740,15 +1939,68 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           actionType: 'delete',
           collection: 'expenses',
           entityName: `Gasto: ${target.description || target.category || target.id}`,
-          description: `Eliminación de comprobante de gasto por $${target.amount?.toLocaleString()} COP`,
+          description: `Eliminación de comprobante de gasto por ${target.amount?.toLocaleString()} COP`,
           previousData: target,
         });
+
+        // Agente Guardián: Respaldo continuo de seguridad (Regla 14)
+        createSystemBackup(
+          'expenses',
+          `Eliminación de comprobante de gasto (${target.description || target.category || target.id}) por ${target.amount?.toLocaleString()} ${target.currency}`,
+          target,
+          state.currentUser.id,
+          state.currentUser.name
+        ).catch(console.warn);
       }
-      setState((prev) => ({
-        ...prev,
-        expenses: prev.expenses.filter((e) => e.id !== id),
-      }));
-      notify('info', 'Gasto Eliminado', 'El comprobante de gasto ha sido retirado.');
+      setState((prev) => {
+        let updatedProjects = prev.projects;
+        if (target && (target.projectId || target.projectCode) && (target.status === 'approved' || target.status === 'legalized')) {
+          const expTrm = getStoredTRM() || 4150.00;
+          const costCOP = target.currency === 'USD'
+            ? Math.round((target.amount || 0) * expTrm)
+            : target.currency === 'EUR'
+            ? Math.round((target.amount || 0) * expTrm * 1.08)
+            : (target.amount || 0);
+
+          updatedProjects = prev.projects.map((prj) => {
+            if (prj.id === target.projectId || prj.code === target.projectCode) {
+              const newAC = Math.max(0, (prj.actualCostAC || 0) - costCOP);
+              const newCV = (prj.earnedValueEV || 0) - newAC;
+              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+              const existingMatrix: any[] = (prj as any).costMatrix || [];
+              const updatedMatrix = existingMatrix
+                .map((item) => {
+                  if (target.costMatrixItemId && item.id === target.costMatrixItemId) {
+                    const newTotal = Math.max(0, (item.actualTotal || 0) - costCOP);
+                    return {
+                      ...item,
+                      actualTotal: newTotal,
+                      variance: (item.plannedTotal || 0) - newTotal,
+                    };
+                  }
+                  return item;
+                })
+                .filter((item) => item.id !== `cost-exp-${target.id}`);
+
+              return {
+                ...prj,
+                actualCostAC: newAC,
+                cv: newCV,
+                cpi: newCPI,
+                costMatrix: updatedMatrix,
+              };
+            }
+            return prj;
+          });
+        }
+
+        return {
+          ...prev,
+          expenses: prev.expenses.filter((e) => e.id !== id),
+          projects: updatedProjects,
+        };
+      });
+      notify('info', 'Gasto Eliminado', 'El comprobante de gasto ha sido retirado y sus costos reversados.');
     },
     [state.expenses, state.currentUser, notify]
   );
@@ -1767,10 +2019,62 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           previousData: target,
         });
       }
-      setState((prev) => ({
-        ...prev,
-        timesheets: prev.timesheets.filter((t) => t.id !== id),
-      }));
+      setState((prev) => {
+        let updatedProjects = prev.projects;
+        let updatedTasks = prev.tasks;
+
+        // Rollback de horas en la tarea WBS si aplica
+        if (target?.taskId) {
+          updatedTasks = prev.tasks.map((task) => {
+            if (task.id === target.taskId) {
+              const newActualHours = Math.max(0, (task.actualHours || 0) - (target.hours || 0));
+              const progressPct = task.plannedHours > 0
+                ? Math.min(100, Math.round((newActualHours / task.plannedHours) * 100))
+                : task.progressPct;
+              return { ...task, actualHours: newActualHours, progressPct };
+            }
+            return task;
+          });
+        }
+
+        // Rollback de costo si la hoja de horas ya había sido aprobada
+        if (target && target.status === 'approved' && (target.projectId || target.projectCode)) {
+          updatedProjects = prev.projects.map((prj) => {
+            if (prj.id === target.projectId || prj.code === target.projectCode) {
+              const existingMatrix: any[] = (prj as any).costMatrix || [];
+              const matchedCostItem = existingMatrix.find(
+                (item) => item.id === `cost-ts-${target.id}` || (item.concept && item.concept.includes(`cost-ts-${target.id}`))
+              );
+              const laborCOP = (target.hours || 0) * (target.hourlyRateCOP || 0) || (matchedCostItem?.actualTotal || 0);
+              const newAC = Math.max(0, (prj.actualCostAC || 0) - laborCOP);
+              const newCV = (prj.earnedValueEV || 0) - newAC;
+              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+              const updatedMatrix = existingMatrix.filter(
+                (item) => item.id !== `cost-ts-${target.id}` && !item.concept?.includes(`cost-ts-${target.id}`)
+              );
+              const existingTs = (prj as any).timesheetEntries || [];
+              const updatedTs = existingTs.filter((ts: any) => ts.id !== target.id);
+
+              return {
+                ...prj,
+                actualCostAC: newAC,
+                cv: newCV,
+                cpi: newCPI,
+                costMatrix: updatedMatrix,
+                timesheetEntries: updatedTs,
+              };
+            }
+            return prj;
+          });
+        }
+
+        return {
+          ...prev,
+          timesheets: prev.timesheets.filter((t) => t.id !== id),
+          tasks: updatedTasks,
+          projects: updatedProjects,
+        };
+      });
       notify('info', 'Horas Eliminadas', 'El registro de horas de trabajo ha sido retirado.');
     },
     [state.timesheets, state.currentUser, notify]
@@ -1789,13 +2093,28 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMilestone = useCallback(
     (id: string) => {
-      setState((prev) => ({
-        ...prev,
-        milestones: prev.milestones.filter((m) => m.id !== id),
-      }));
+      const target = state.milestones.find((m) => m.id === id);
+      setState((prev) => {
+        const updatedProjects = target?.projectId
+          ? prev.projects.map((p) => {
+              if (p.id === target.projectId || p.code === target.projectCode) {
+                const updatedBilling = (p.billingItems || []).filter((b) => b.id !== id && b.invoiceNumber !== target.invoiceNumber);
+                const totalInvoiced = updatedBilling.reduce((acc, b) => acc + (Number(b.subtotal) || 0), 0);
+                const totalPaid = updatedBilling.filter((b) => b.status === 'paid').reduce((acc, b) => acc + (Number(b.paidAmount || b.subtotal) || 0), 0);
+                return { ...p, billingItems: updatedBilling, totalInvoiced, totalPaid };
+              }
+              return p;
+            })
+          : prev.projects;
+        return {
+          ...prev,
+          milestones: prev.milestones.filter((m) => m.id !== id),
+          projects: updatedProjects,
+        };
+      });
       notify('info', 'Hito Eliminado', 'El hito de facturación ha sido retirado.');
     },
-    [notify]
+    [state.milestones, notify]
   );
 
   const deleteEmployee = useCallback(
@@ -1880,6 +2199,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: projectId,
         code: projectCode,
         name: customData?.name || opp.title,
+        clientId: customData?.clientId || opp.clientId,
+        opportunityId: oppId,
         clientName: customData?.clientName || opp.clientName,
         lineOfBusiness: (customData?.lineOfBusiness as any) || (opp.title.toLowerCase().includes('overhaul') ? 'Mantenimiento' : 'Montaje'),
         serviceType: customData?.serviceType || opp.cableType,
@@ -1888,8 +2209,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         endDate: customData?.endDate || opp.expectedCloseDate,
         location: customData?.location || `${opp.country} (En sitio)`,
         costCenter: customData?.costCenter || `CC-${projectCode}`,
-        budgetPV: customData?.budgetPV || (customData?.contractAmount ? customData.contractAmount : opp.estimatedValueUSD * 4200),
+        budgetPV: customData?.budgetPV || (customData?.contractAmount ? customData.contractAmount : opp.estimatedValueUSD * (getStoredTRM() || 4150.00)),
         actualCostAC: 0,
+        committedCostPO: 0,
         earnedValueEV: 0,
         spi: 1.0,
         cpi: 1.0,
@@ -1906,14 +2228,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         closedDossierSigned: false,
         liquidationSigned: false,
         lessonLearnedDone: false,
-        clientNit: customData?.clientNit,
+        clientNit: customData?.clientNit || opp.clientNit || opp.clientTaxId,
+        clientCountry: customData?.clientCountry || opp.country,
         commercialContact: customData?.commercialContact,
         technicalContact: customData?.technicalContact,
         projectCategory: customData?.projectCategory,
         contractAmount: customData?.contractAmount,
         currency: customData?.currency || opp.currency || 'COP',
         billingMethod: customData?.billingMethod || 'fixed_price',
-        paymentMilestones: customData?.paymentMilestones,
+        paymentMilestones: customData?.paymentMilestones || opp.paymentMilestones,
         applicableRates: customData?.applicableRates,
         quoteCode: (customData as any)?.quoteCode || opp.quotations?.[0]?.code || '',
         contractCode: (customData as any)?.contractCode || '',
@@ -1921,26 +2244,73 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         offerBudget: (customData as any)?.offerBudget,
       };
 
-      // Crear Hito Inicial de Facturación para conectar directamente con el módulo de Facturación (O2C)
-      const initialContractCOP = newProject.budgetPV || 0;
-      const initialMilestones: BillingMilestone[] = initialContractCOP > 0 ? [
-        {
-          id: `M-${Date.now()}-1`,
+      // Crear Hitos de Facturación a partir de los hitos comerciales pactados o hito inicial contractual
+      const milestonesToUse = customData?.paymentMilestones || opp.paymentMilestones;
+      const initialContractCOP = newProject.contractAmount || newProject.budgetPV || 0;
+      let initialMilestones: BillingMilestone[] = [];
+      if (milestonesToUse && milestonesToUse.length > 0) {
+        initialMilestones = milestonesToUse.map((m, idx) => ({
+          id: m.id || `M-${Date.now()}-${idx + 1}`,
           projectId,
           projectCode,
           projectName: newProject.name,
+          clientId: newProject.clientId,
+          clientNit: newProject.clientNit,
           clientName: newProject.clientName,
-          milestoneIndex: 1,
-          title: `Hito 1: Facturación contractual - ${newProject.name}`,
-          percentage: 100,
-          amountCOP: initialContractCOP,
-          amountUSD: Math.round(initialContractCOP / (getStoredTRM() || 3236.84)),
+          milestoneIndex: idx + 1,
+          title: m.name || `Hito ${idx + 1}: Facturación contractual`,
+          percentage: m.percentage,
+          amountCOP: m.amount,
+          amountUSD: Math.round(m.amount / (getStoredTRM() || 4150.00)),
           dueDate: newProject.endDate,
           acceptanceActSigned: false,
-          invoiceIssued: false,
-          isPaid: false,
-        },
-      ] : [];
+          invoiceIssued: m.status === 'invoiced' || m.status === 'paid',
+          isPaid: m.status === 'paid',
+        }));
+      } else if (initialContractCOP > 0) {
+        initialMilestones = [
+          {
+            id: `M-${Date.now()}-1`,
+            projectId,
+            projectCode,
+            projectName: newProject.name,
+            clientId: newProject.clientId,
+            clientNit: newProject.clientNit,
+            clientName: newProject.clientName,
+            milestoneIndex: 1,
+            title: `Hito 1: Facturación contractual - ${newProject.name}`,
+            percentage: 100,
+            amountCOP: initialContractCOP,
+            amountUSD: Math.round(initialContractCOP / (getStoredTRM() || 4150.00)),
+            dueDate: newProject.endDate,
+            acceptanceActSigned: false,
+            invoiceIssued: false,
+            isPaid: false,
+          },
+        ];
+      }
+
+      const initialBillingItems: ProjectBillingItem[] = initialMilestones.map((m) => {
+        const cop = m.amountCOP || 0;
+        const taxRate = getProjectTaxRate(newProject.location || (newProject as any).clientCountry).rate;
+        const iva = Math.round(cop * taxRate);
+        return {
+          id: m.id,
+          itemCode: `HITO-${m.milestoneIndex}`,
+          invoiceDate: m.dueDate || new Date().toISOString().split('T')[0],
+          invoiceNumber: m.invoiceNumber || `FAC-PEND-${m.milestoneIndex}`,
+          subtotal: cop,
+          ivaAmount: iva,
+          grandTotal: cop + iva,
+          observations: `Hito comercial: ${m.title} (${m.percentage}%)`,
+          milestoneName: m.title,
+          milestonePercentage: m.percentage,
+          dueDate: m.dueDate,
+          status: m.isPaid ? 'paid' : m.invoiceIssued ? 'invoiced' : 'pending',
+          acceptanceActSigned: m.acceptanceActSigned,
+        };
+      });
+      newProject.billingItems = customData?.billingItems || initialBillingItems;
 
       // Inyectar Estructura WBS únicamente si el usuario seleccionó explícitamente una Plantilla Maestra Inteckno
       const allTemplates = templateManagerService.getWbsTemplates();
@@ -1970,18 +2340,35 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setState((prev) => ({
         ...prev,
-        // Cuando se adjudica o gana una oportunidad, se retira del CRM y pasa a ser un Proyecto
-        opportunities: prev.opportunities.filter((o) => o.id !== oppId),
+        // Preservar la oportunidad en el CRM con stage 'awarded' y enlace al proyecto
+        opportunities: prev.opportunities.map((o) =>
+          o.id === oppId
+            ? {
+                ...o,
+                stage: 'awarded' as const,
+                awardedProjectId: projectId,
+              }
+            : o
+        ),
         projects: [newProject, ...prev.projects],
         tasks: [...standardTasks, ...prev.tasks],
         milestones: [...initialMilestones, ...prev.milestones],
         activeModuleId: 'proyectos',
       }));
 
+      // Agente Guardián: Respaldo continuo al adjudicar proyecto (Regla 14)
+      createSystemBackup(
+        'projects',
+        `Adjudicación de oportunidad comercial: Creación de proyecto ${projectCode} (${newProject.name})`,
+        newProject,
+        state.currentUser?.id || 'USR-01',
+        state.currentUser?.name || 'Sistema Inteckno'
+      ).catch(console.warn);
+
       notify(
         'success',
         '¡Oportunidad Adjudicada!',
-        `Se creó automáticamente el proyecto ${projectCode} (${newProject.name}) con 5 fases WBS precargadas.`
+        `Se creó automáticamente el proyecto ${projectCode} (${newProject.name}) con su traza contractual completa.`
       );
 
       return { success: true, projectId, projectCode };
@@ -2179,6 +2566,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState((prev) => {
         const targetTs = prev.timesheets.find((t) => t.id === id);
         if (!targetTs) return prev;
+        if (targetTs.status === 'approved') return prev;
 
         // Buscar tarifa real del colaborador en la base de datos de Talento Humano / Usuarios
         const employeeRecord = prev.employees.find(
@@ -2192,7 +2580,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Costo hora empleador: salario base x factor prestacional (Ley 2101/2021: 42 h/sem = 210 h/mes)
         const LABOR_BURDEN_FACTOR = 1.52;
         const MONTHLY_LEGAL_HOURS = 210;
-        const projectTrmForCost = getStoredTRM() || 3236.84;
+        const projectTrmForCost = getStoredTRM() || 4150.00;
         let hourlyRateCOP = 0; // Sin salario registrado en RRHH no se inventa tarifa; técnica estándar de respaldo
         if (employeeRecord?.baseSalaryCOP && employeeRecord.baseSalaryCOP > 0) {
           hourlyRateCOP = Math.round((employeeRecord.baseSalaryCOP * LABOR_BURDEN_FACTOR) / MONTHLY_LEGAL_HOURS);
@@ -2206,13 +2594,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === targetTs.projectId || prj.code === targetTs.projectCode) {
             const laborCOP = (targetTs.hours || 0) * hourlyRateCOP;
-            const laborUSD = Math.round(laborCOP / projectTrmForCost);
-            const newAC = (prj.actualCostAC || 0) + laborUSD;
+            const newAC = (prj.actualCostAC || 0) + laborCOP;
             const newCV = (prj.earnedValueEV || 0) - newAC;
             const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
             const existingMatrix = (prj as any).costMatrix || [];
             const newCostItem = {
-              id: `cost-ts-${Date.now()}`,
+              id: `cost-ts-${targetTs.id}`,
+              itemCode: targetTs.itemCode || undefined,
               category: 'mano_obra_itk' as const,
               concept: `Mano de Obra ITK - ${targetTs.userName || 'Técnico'} (${targetTs.hours}h @ $${hourlyRateCOP.toLocaleString('es-CO')}/h - ${targetTs.taskName || 'Labores'})`,
               unit: 'Horas',
@@ -2290,7 +2678,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           ...prev,
-          timesheets: prev.timesheets.map((t) => (t.id === id ? { ...t, status: 'approved' } : t)),
+          timesheets: prev.timesheets.map((t) => (t.id === id ? { ...t, status: 'approved', hourlyRateCOP } : t)),
           projects: updatedProjects,
           tasks: updatedTasks,
         };
@@ -2342,12 +2730,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             )
           : prev.requisitions;
 
-        // 2. Imputar costo directamente a la Matriz Financiera del Proyecto
+        // 2. Imputar costo a la Matriz Financiera del Proyecto (Comprometido vs Real Devengado)
+        const isReceived = newPo.status === 'received';
+        const currentTrm = getStoredTRM();
+        const costCOP = poData.totalAmountCOP || (poData.currency === 'USD' ? Math.round((poData.totalAmountUSD || 0) * currentTrm) : (poData.totalAmountUSD || 0));
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === poData.projectId || prj.code === poData.projectCode) {
-            const costCOP = poData.totalAmountCOP || 0;
-            const costUSD = poData.totalAmountUSD || Math.round(costCOP / (getStoredTRM() || 3236.84));
-            const newAC = (prj.actualCostAC || 0) + costUSD;
+            const newAC = isReceived ? (prj.actualCostAC || 0) + costCOP : (prj.actualCostAC || 0);
+            const newCommitted = !isReceived ? (prj.committedCostPO || 0) + costCOP : (prj.committedCostPO || 0);
             const newCV = (prj.earnedValueEV || 0) - newAC;
             const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
             const existingMatrix: any[] = (prj as any).costMatrix || [];
@@ -2357,8 +2747,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (poData.costMatrixItemId && existingMatrix.some((m) => m.id === poData.costMatrixItemId)) {
               updatedCostMatrix = existingMatrix.map((item) => {
                 if (item.id === poData.costMatrixItemId) {
-                  const newActualQty = (item.actualQuantity || 0) + 1;
-                  const newActualTotal = (item.actualTotal || 0) + costCOP;
+                  const newActualQty = isReceived ? (item.actualQuantity || 0) + 1 : (item.actualQuantity || 0);
+                  const newActualTotal = isReceived ? (item.actualTotal || 0) + costCOP : (item.actualTotal || 0);
                   return {
                     ...item,
                     actualQuantity: newActualQty,
@@ -2367,8 +2757,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     variance: (item.plannedTotal || 0) - newActualTotal,
                     costType: poData.costType || item.costType || 'directo',
                     observations: item.observations
-                      ? `${item.observations} | Imputado por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`
-                      : `Imputado por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`,
+                      ? `${item.observations} | ${isReceived ? 'Imputado' : 'Comprometido'} por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`
+                      : `${isReceived ? 'Imputado' : 'Comprometido'} por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`,
                   };
                 }
                 return item;
@@ -2378,7 +2768,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               const poCategory = (poData.costCategory as any) || 'repuestos_fabricacion';
               const effectiveCostType = poData.costType || (['subcontratos_gruas', 'viaticos_transporte'].includes(poCategory) ? 'indirecto' : 'directo');
               const newMatrixItem = {
-                id: `cost-po-${Date.now()}`,
+                id: `cost-po-${newPo.id}`,
                 itemCode: poData.itemCode || undefined,
                 category: poCategory,
                 concept: `OC ${orderNumber} - ${poData.supplierName || 'Proveedor'}`,
@@ -2386,13 +2776,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 plannedQuantity: 1,
                 plannedUnitCost: costCOP,
                 plannedTotal: costCOP,
-                actualQuantity: 1,
-                actualUnitCost: costCOP,
-                actualTotal: costCOP,
-                variance: 0,
+                actualQuantity: isReceived ? 1 : 0,
+                actualUnitCost: isReceived ? costCOP : 0,
+                actualTotal: isReceived ? costCOP : 0,
+                variance: isReceived ? 0 : costCOP,
                 costType: effectiveCostType,
                 date: poData.date || new Date().toISOString().split('T')[0],
-                observations: `Orden de compra vinculada a ${poData.supplierName || 'Proveedor'}.`,
+                observations: isReceived
+                  ? `Orden de compra cumplida y recibida (${poData.supplierName || 'Proveedor'}).`
+                  : `[Comprometido] Orden de compra emitida a ${poData.supplierName || 'Proveedor'}.`,
               };
               updatedCostMatrix = [...existingMatrix, newMatrixItem];
             }
@@ -2400,6 +2792,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return {
               ...prj,
               actualCostAC: newAC,
+              committedCostPO: newCommitted,
               cv: newCV,
               cpi: newCPI,
               costMatrix: updatedCostMatrix,
@@ -2521,6 +2914,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     (poId: string) => {
       const po = state.purchaseOrders.find((p) => p.id === poId);
       if (!po) return { success: false, error: 'Orden no encontrada' };
+      if (po.status === 'received') return { success: false, error: 'La orden ya ha sido recibida previamente' };
 
       setState((prev) => {
         const updatedProducts = prev.products.map((prod) => {
@@ -2537,6 +2931,88 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return prod;
         });
 
+        let updatedProjects = prev.projects;
+        if (po.projectId || po.projectCode) {
+          const costCOP = po.totalAmountCOP || 0;
+          updatedProjects = prev.projects.map((prj) => {
+            if (prj.id === po.projectId || prj.code === po.projectCode) {
+              const newCommitted = Math.max(0, (prj.committedCostPO || 0) - costCOP);
+              const newAC = (prj.actualCostAC || 0) + costCOP;
+              const newCV = (prj.earnedValueEV || 0) - newAC;
+              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+              const existingMatrix: any[] = (prj as any).costMatrix || [];
+              let updatedCostMatrix: any[];
+
+              if (po.costMatrixItemId && existingMatrix.some((m) => m.id === po.costMatrixItemId)) {
+                updatedCostMatrix = existingMatrix.map((item) => {
+                  if (item.id === po.costMatrixItemId) {
+                    const newQty = (item.actualQuantity || 0) + 1;
+                    const newTotal = (item.actualTotal || 0) + costCOP;
+                    return {
+                      ...item,
+                      actualQuantity: newQty,
+                      actualTotal: newTotal,
+                      actualUnitCost: newQty > 0 ? Math.round(newTotal / newQty) : item.actualUnitCost,
+                      variance: (item.plannedTotal || 0) - newTotal,
+                      observations: item.observations
+                        ? `${item.observations} | Recibida OC ${po.orderNumber}`
+                        : `Recibida OC ${po.orderNumber}`,
+                    };
+                  }
+                  return item;
+                });
+              } else {
+                let foundMatch = false;
+                updatedCostMatrix = existingMatrix.map((item) => {
+                  if (item.id === `cost-po-${po.id}` || (item.concept && po.orderNumber && item.concept.includes(`OC ${po.orderNumber}`))) {
+                    foundMatch = true;
+                    return {
+                      ...item,
+                      actualTotal: costCOP,
+                      actualQuantity: 1,
+                      actualUnitCost: costCOP,
+                      variance: 0,
+                      observations: `Imputado por OC ${po.orderNumber} (Cumplida y Recibida).`,
+                    };
+                  }
+                  return item;
+                });
+                if (!foundMatch) {
+                  const poCategory = (po.costCategory as any) || 'repuestos_fabricacion';
+                  const effectiveCostType = po.costType || (['subcontratos_gruas', 'viaticos_transporte'].includes(poCategory) ? 'indirecto' : 'directo');
+                  updatedCostMatrix.push({
+                    id: `cost-po-${po.id}`,
+                    itemCode: po.itemCode || undefined,
+                    category: poCategory,
+                    concept: `OC ${po.orderNumber} - ${po.supplierName || 'Proveedor'}`,
+                    unit: 'unid',
+                    plannedQuantity: 1,
+                    plannedUnitCost: costCOP,
+                    plannedTotal: costCOP,
+                    actualQuantity: 1,
+                    actualUnitCost: costCOP,
+                    actualTotal: costCOP,
+                    variance: 0,
+                    costType: effectiveCostType,
+                    date: po.date || new Date().toISOString().split('T')[0],
+                    observations: `Imputado por OC ${po.orderNumber} (Cumplida y Recibida).`,
+                  });
+                }
+              }
+
+              return {
+                ...prj,
+                actualCostAC: newAC,
+                committedCostPO: newCommitted,
+                cv: newCV,
+                cpi: newCPI,
+                costMatrix: updatedCostMatrix,
+              };
+            }
+            return prj;
+          });
+        }
+
         return {
           ...prev,
           products: updatedProducts,
@@ -2546,6 +3022,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           requisitions: prev.requisitions.map((r) =>
             r.id === po.originRequisitionId ? { ...r, status: 'fulfilled' as const } : r
           ),
+          projects: updatedProjects,
         };
       });
 
@@ -2593,6 +3070,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           items: poItemsToEntrada,
         }).catch(() => {});
       }
+
+      // Agente Guardián: Respaldo continuo de recepción en almacén (Regla 14)
+      createSystemBackup(
+        'procurement',
+        `Recepción total en bodega de Orden de Compra ${po.orderNumber} (Proveedor: ${po.supplierName})`,
+        po,
+        state.currentUser?.id || 'USR-001',
+        state.currentUser?.name || 'Recepción Bodega ITK'
+      ).catch(console.warn);
 
       notify('success', 'Mercancía Recibida en Bodega', `${po.orderNumber}: Repuestos ingresados a bodega e inventario.`);
       return { success: true };
@@ -2643,6 +3129,77 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const hasAnyReceived = updatedPoItems.some((it) => (it.receivedQty || 0) > 0);
         const newStatus: PurchaseOrder['status'] = allCompleted ? 'received' : hasAnyReceived ? 'partial' : po.status;
 
+        // Calcular delta de costo en COP transferido de Comprometido a Real
+        let deltaCostCOP = 0;
+        itemReceipts.forEach((r) => {
+          if (r.receivedQty <= 0) return;
+          const it = po.items.find((pItem) => pItem.sku === r.sku);
+          const unitCOP = it?.unitPriceCOP || (po.totalAmountCOP && po.items.length > 0 ? Math.round(po.totalAmountCOP / po.items.length) : 0);
+          deltaCostCOP += r.receivedQty * unitCOP;
+        });
+
+        let updatedProjects = prev.projects;
+        if ((po.projectId || po.projectCode) && (deltaCostCOP > 0 || allCompleted)) {
+          updatedProjects = prev.projects.map((prj) => {
+            if (prj.id === po.projectId || prj.code === po.projectCode) {
+              const transferAmount = allCompleted
+                ? Math.max(deltaCostCOP, (prj.committedCostPO || 0))
+                : deltaCostCOP;
+              const newCommitted = Math.max(0, (prj.committedCostPO || 0) - transferAmount);
+              const newAC = (prj.actualCostAC || 0) + deltaCostCOP;
+              const newCV = (prj.earnedValueEV || 0) - newAC;
+              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+
+              const existingMatrix: any[] = (prj as any).costMatrix || [];
+              let updatedCostMatrix: any[];
+              if (po.costMatrixItemId && existingMatrix.some((m) => m.id === po.costMatrixItemId)) {
+                updatedCostMatrix = existingMatrix.map((item) => {
+                  if (item.id === po.costMatrixItemId) {
+                    const newQty = (item.actualQuantity || 0) + 1;
+                    const newTotal = (item.actualTotal || 0) + deltaCostCOP;
+                    return {
+                      ...item,
+                      actualQuantity: newQty,
+                      actualTotal: newTotal,
+                      actualUnitCost: newQty > 0 ? Math.round(newTotal / newQty) : item.actualUnitCost,
+                      variance: (item.plannedTotal || 0) - newTotal,
+                      observations: item.observations
+                        ? `${item.observations} | Recepción ${allCompleted ? 'completa' : 'parcial'} OC ${po.orderNumber}`
+                        : `Recepción ${allCompleted ? 'completa' : 'parcial'} OC ${po.orderNumber}`,
+                    };
+                  }
+                  return item;
+                });
+              } else {
+                updatedCostMatrix = existingMatrix.map((item) => {
+                  if (item.id === `cost-po-${po.id}` || (item.concept && po.orderNumber && item.concept.includes(`OC ${po.orderNumber}`))) {
+                    const newTotal = (item.actualTotal || 0) + deltaCostCOP;
+                    return {
+                      ...item,
+                      actualTotal: newTotal,
+                      actualQuantity: 1,
+                      actualUnitCost: newTotal,
+                      variance: Math.max(0, (item.plannedTotal || 0) - newTotal),
+                      observations: `Imputado por OC ${po.orderNumber} (${allCompleted ? 'Cumplida y Recibida' : 'Recepción Parcial'}).`,
+                    };
+                  }
+                  return item;
+                });
+              }
+
+              return {
+                ...prj,
+                actualCostAC: newAC,
+                committedCostPO: newCommitted,
+                cv: newCV,
+                cpi: newCPI,
+                costMatrix: updatedCostMatrix,
+              };
+            }
+            return prj;
+          });
+        }
+
         return {
           ...prev,
           products: updatedProducts,
@@ -2661,6 +3218,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           requisitions: prev.requisitions.map((r) =>
             r.id === po.originRequisitionId && allCompleted ? { ...r, status: 'fulfilled' as const } : r
           ),
+          projects: updatedProjects,
         };
       });
 
@@ -3048,7 +3606,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Calcular valor de materiales consumibles / repuestos despachados directamente al proyecto
         let dispatchTotalCOP = 0;
         let dispatchTotalUSD = 0;
-        const currentTrmVal = getStoredTRM() || 3236.84;
+        const currentTrmVal = getStoredTRM() || 4150.00;
         const consumedItemsDesc: string[] = [];
 
         remData.items.forEach((it) => {
@@ -3072,12 +3630,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Imputar a la matriz de costos del proyecto si es para un Proyecto STC y hay materiales consumibles
         const updatedProjects = prev.projects.map((prj) => {
           if ((prj.id === remData.projectId || prj.code === remData.projectCode) && dispatchTotalCOP > 0) {
-            const newAC = (prj.actualCostAC || 0) + dispatchTotalUSD;
+            const newAC = (prj.actualCostAC || 0) + dispatchTotalCOP;
             const newCV = (prj.earnedValueEV || 0) - newAC;
             const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
             const existingMatrix = (prj as any).costMatrix || [];
             const newCostItem = {
-              id: `cost-rem-out-${Date.now()}`,
+              id: `cost-rem-out-${remissionNumber}`,
               category: 'repuestos_fabricacion' as const,
               concept: `Salida de Almacén (${remissionNumber}): ${consumedItemsDesc.join(', ')}`,
               unit: 'Global',
@@ -3235,38 +3793,76 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return eq;
         });
 
-        // Si se consumieron artículos, imputar el costo al proyecto y registrar en su Matriz de Costos
+        // Si se consumieron artículos, imputar el costo al proyecto y registrar en su Matriz de Costos sin doble conteo
         const consumedItemsList = updatedItems.filter((it) => it.qtyConsumed > 0);
         const consumedNames = consumedItemsList.map((it) => `${it.name} (x${it.qtyConsumed})`).join(', ');
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === remission.projectId || prj.code === remission.projectCode) {
-            const newAC = prj.actualCostAC + consumedCostUSD;
-            const newCPI = newAC > 0 ? Number((prj.earnedValueEV / newAC).toFixed(2)) : prj.cpi;
-            const newCV = prj.earnedValueEV - newAC;
-            const existingMatrix = prj.costMatrix || [];
-            const newCostMatrix = consumedCostCOP > 0
-              ? [
-                  ...existingMatrix,
-                  {
-                    id: `cost-rem-${Date.now()}`,
-                    category: 'repuestos_fabricacion' as const,
-                    concept: `Consumo de Bodega (${returnNumber}): ${consumedNames}`,
-                    unit: 'Global',
-                    plannedQuantity: 0,
-                    plannedUnitCost: 0,
-                    plannedTotal: 0,
-                    actualQuantity: 1,
-                    actualUnitCost: consumedCostCOP,
-                    actualTotal: consumedCostCOP,
-                    variance: -consumedCostCOP,
-                    spendingNature: 'PRESUPUESTO' as const,
-                    costType: 'directo' as const,
-                    date: returnDate || new Date().toISOString().split('T')[0],
-                    invoiceNumber: returnNumber,
-                    observations: returnNotes || `Imputación automática por consumo en remisión ${remission.remissionNumber}`,
-                  },
-                ]
-              : existingMatrix;
+            const existingMatrix = (prj as any).costMatrix || [];
+            // Verificar si hubo una imputación previa en la salida (createDispatchRemission)
+            const dispatchItem = existingMatrix.find(
+              (m: any) =>
+                m.id === `cost-rem-out-${remission.remissionNumber}` ||
+                (m.concept && m.concept.includes(`Salida de Almacén (${remission.remissionNumber})`))
+            );
+
+            let newAC: number;
+            let newCostMatrix: any[];
+
+            if (dispatchItem) {
+              // Reversar el valor provisional de la salida y fijar el consumo neto real
+              const previousDispatchCOP = dispatchItem.actualTotal || 0;
+              newAC = Math.max(0, (prj.actualCostAC || 0) - previousDispatchCOP + consumedCostCOP);
+
+              if (consumedCostCOP > 0) {
+                newCostMatrix = existingMatrix.map((item: any) =>
+                  item.id === dispatchItem.id
+                    ? {
+                        ...item,
+                        concept: `Consumo Neto Bodega (${remission.remissionNumber} / Ret: ${returnNumber}): ${consumedNames}`,
+                        plannedUnitCost: consumedCostCOP,
+                        plannedTotal: consumedCostCOP,
+                        actualUnitCost: consumedCostCOP,
+                        actualTotal: consumedCostCOP,
+                        observations: `Liquidación final de consumo. Retornaron ${totalReturned} ítems.`,
+                      }
+                    : item
+                );
+              } else {
+                // Todo retornó intacto: se retira el rubro provisional de la salida
+                newCostMatrix = existingMatrix.filter((item: any) => item.id !== dispatchItem.id);
+              }
+            } else {
+              // No había registro previo de salida: imputar directamente el costo consumido en COP
+              newAC = (prj.actualCostAC || 0) + consumedCostCOP;
+              newCostMatrix = consumedCostCOP > 0
+                ? [
+                    ...existingMatrix,
+                    {
+                      id: `cost-rem-${Date.now()}`,
+                      category: 'repuestos_fabricacion' as const,
+                      concept: `Consumo de Bodega (${returnNumber}): ${consumedNames}`,
+                      unit: 'Global',
+                      plannedQuantity: 0,
+                      plannedUnitCost: 0,
+                      plannedTotal: 0,
+                      actualQuantity: 1,
+                      actualUnitCost: consumedCostCOP,
+                      actualTotal: consumedCostCOP,
+                      variance: -consumedCostCOP,
+                      spendingNature: 'PRESUPUESTO' as const,
+                      costType: 'directo' as const,
+                      date: returnDate || new Date().toISOString().split('T')[0],
+                      invoiceNumber: returnNumber,
+                      observations: returnNotes || `Imputación automática por consumo en remisión ${remission.remissionNumber}`,
+                    },
+                  ]
+                : existingMatrix;
+            }
+
+            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+            const newCV = (prj.earnedValueEV || 0) - newAC;
+
             return {
               ...prj,
               actualCostAC: newAC,
@@ -3420,19 +4016,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const exp = state.expenses.find((e) => e.id === id);
       setState((prev) => {
         const targetExp = prev.expenses.find((e) => e.id === id);
+        if (!targetExp) return prev;
+        if (targetExp.status === 'approved') return prev;
         let updatedProjects = prev.projects;
 
         // Si el gasto está imputado a un Proyecto y no es una recarga/depósito de caja, inyectar en la Matriz de Costos del Proyecto
         if (targetExp && (targetExp.projectId || targetExp.projectCode) && targetExp.movementType !== 'deposito') {
-          const expTrm = getStoredTRM() || 3236.84;
+          const expTrm = getStoredTRM() || 4150.00;
           const amountCOP = targetExp.currency === 'USD'
             ? Math.round((targetExp.amount || 0) * expTrm)
             : targetExp.currency === 'EUR'
             ? Math.round((targetExp.amount || 0) * expTrm * 1.08) // misma convención EUR/USD que TabCostosPresupuesto
             : (targetExp.amount || 0);
-          const amountUSD = targetExp.currency === 'USD'
-            ? (targetExp.amount || 0)
-            : Math.round(amountCOP / expTrm);
 
           const mappedCategory = (
             ['viaticos_alimentacion', 'tiquetes_transporte', 'alojamiento', 'transporte_urbano'].includes(targetExp.category) ? 'viaticos_transporte' :
@@ -3443,16 +4038,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           updatedProjects = prev.projects.map((prj) => {
             if (prj.id === targetExp.projectId || prj.code === targetExp.projectCode) {
-              const existingMatrix = prj.costMatrix || [];
-              const alreadyInjected = existingMatrix.some((c) => c.id === `cost-exp-${targetExp.id}`);
+              const existingMatrix = (prj as any).costMatrix || [];
+              const alreadyInjected = existingMatrix.some((c: any) => c.id === `cost-exp-${targetExp.id}`);
               if (alreadyInjected) return prj;
 
-              const newAC = (prj.actualCostAC || 0) + amountUSD;
+              const newAC = (prj.actualCostAC || 0) + amountCOP;
               const newCV = (prj.earnedValueEV || 0) - newAC;
               const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
 
               const newCostItem = {
                 id: `cost-exp-${targetExp.id}`,
+                itemCode: targetExp.itemCode || undefined,
                 category: mappedCategory,
                 concept: `${targetExp.isPettyCash ? '[Caja Menor] ' : '[Gasto Legalizado] '}${targetExp.description}${targetExp.supplierName ? ` - ${targetExp.supplierName}` : ''}`,
                 unit: 'Global',
@@ -3471,12 +4067,35 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 observations: `Radicado por ${targetExp.userName}. Categoría original: ${targetExp.category}.`,
               };
 
+              let updatedCostMatrix: any[];
+              if (targetExp.costMatrixItemId && existingMatrix.some((m: any) => m.id === targetExp.costMatrixItemId)) {
+                updatedCostMatrix = existingMatrix.map((item: any) => {
+                  if (item.id === targetExp.costMatrixItemId) {
+                    const newActualQty = (item.actualQuantity || 0) + 1;
+                    const newActualTotal = (item.actualTotal || 0) + amountCOP;
+                    return {
+                      ...item,
+                      actualQuantity: newActualQty,
+                      actualTotal: newActualTotal,
+                      actualUnitCost: newActualQty > 0 ? Math.round(newActualTotal / newActualQty) : item.actualUnitCost,
+                      variance: (item.plannedTotal || 0) - newActualTotal,
+                      observations: item.observations
+                        ? `${item.observations} | Gasto: ${targetExp.description}`
+                        : `Gasto: ${targetExp.description}`,
+                    };
+                  }
+                  return item;
+                });
+              } else {
+                updatedCostMatrix = [...existingMatrix, newCostItem];
+              }
+
               return {
                 ...prj,
                 actualCostAC: newAC,
                 cv: newCV,
                 cpi: newCPI,
-                costMatrix: [...existingMatrix, newCostItem],
+                costMatrix: updatedCostMatrix,
               };
             }
             return prj;
@@ -3570,6 +4189,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                       b.id === milestoneId
                         ? {
                             ...b,
+                            status: b.status === 'paid' ? ('paid' as const) : ('invoiced' as const),
                             invoiceNumber,
                             invoiceDate: new Date().toISOString().split('T')[0],
                             subtotal: b.subtotal || cop,
@@ -3584,6 +4204,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                       {
                         id: milestoneId,
                         itemCode: `FAC-${milestone.milestoneIndex || 1}`,
+                        status: 'invoiced' as const,
                         invoiceNumber,
                         invoiceDate: new Date().toISOString().split('T')[0],
                         subtotal: cop,
@@ -3593,7 +4214,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                       },
                     ];
                 const totalInvoiced = updatedBilling.reduce((acc, b) => acc + (Number(b.subtotal) || 0), 0);
-                return { ...p, billingItems: updatedBilling, totalInvoiced };
+                const updatedPaymentMilestones = p.paymentMilestones?.map((pm) =>
+                  pm.id === milestoneId || pm.name === milestone.title
+                    ? { ...pm, status: (pm.status === 'paid' ? ('paid' as const) : ('invoiced' as const)) }
+                    : pm
+                );
+                return { ...p, billingItems: updatedBilling, totalInvoiced, paymentMilestones: updatedPaymentMilestones || p.paymentMilestones };
               }
               return p;
             })
@@ -3619,6 +4245,99 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }).catch(() => {});
 
       notify('success', 'Factura Emitida', `${invoiceNumber} registrada exitosamente.`);
+    },
+    [state.milestones, state.currentUser, notify]
+  );
+
+  const markMilestonePaid = useCallback(
+    (milestoneId: string, paymentData?: { paidAt?: string; paymentReference?: string; paymentAmountCOP?: number }) => {
+      const milestone = state.milestones.find((m) => m.id === milestoneId);
+      setState((prev) => {
+        const paidAt = paymentData?.paidAt || new Date().toISOString();
+        const paymentReference = paymentData?.paymentReference || '';
+        const paidCOP = paymentData?.paymentAmountCOP || milestone?.amountCOP || 0;
+
+        const updatedMilestones = prev.milestones.map((m) =>
+          m.id === milestoneId
+            ? {
+                ...m,
+                isPaid: true,
+                paidAt,
+                paymentReference,
+                paymentAmountCOP: paidCOP,
+              }
+            : m
+        );
+
+        // Si el hito pertenece a un proyecto, sincronizar su registro en billingItems y totalPaid
+        const updatedProjects = milestone?.projectId
+          ? prev.projects.map((p) => {
+              if (p.id === milestone.projectId || p.code === milestone.projectCode) {
+                const existingBilling = p.billingItems || [];
+                const updatedBilling = existingBilling.map((b) =>
+                  b.id === milestoneId || (milestone.invoiceNumber && b.invoiceNumber === milestone.invoiceNumber)
+                    ? {
+                        ...b,
+                        status: 'paid' as const,
+                        paymentDate: paidAt.split('T')[0],
+                        paidAmount: paidCOP,
+                        observations: b.observations
+                          ? `${b.observations} | Pago recaudado Ref: ${paymentReference}`
+                          : `Pago recaudado Ref: ${paymentReference}`,
+                      }
+                    : b
+                );
+                const totalPaid = updatedBilling
+                  .filter((b) => b.status === 'paid')
+                  .reduce((acc, b) => acc + (Number(b.paidAmount || b.subtotal) || 0), 0);
+
+                // Sincronizar también con paymentMilestones del proyecto si existen
+                const updatedPaymentMilestones = p.paymentMilestones?.map((pm) =>
+                  pm.id === milestoneId || pm.name === milestone.title
+                    ? { ...pm, status: 'paid' as const }
+                    : pm
+                );
+
+                return {
+                  ...p,
+                  billingItems: updatedBilling,
+                  totalPaid,
+                  paymentMilestones: updatedPaymentMilestones || p.paymentMilestones,
+                };
+              }
+              return p;
+            })
+          : prev.projects;
+
+        return {
+          ...prev,
+          milestones: updatedMilestones,
+          projects: updatedProjects,
+        };
+      });
+
+      // Huella Digital: Registro de Pago / Recaudo
+      recordAuditEvent({
+        action: 'milestone_paid',
+        module: 'facturacion',
+        performedByUserId: state.currentUser?.id || 'USR-001',
+        performedByName: state.currentUser?.name || 'Tesorería & Cartera ITK',
+        targetEntityId: milestoneId,
+        details: `Registro de pago / recaudo de hito "${milestone?.title || milestoneId}" por COP $${(paymentData?.paymentAmountCOP || milestone?.amountCOP || 0).toLocaleString()} (Ref: ${paymentData?.paymentReference || 'N/A'}).`,
+        previousValue: 'Pendiente de pago',
+        newValue: 'isPaid: true',
+      }).catch(() => {});
+
+      // Agente Guardián: Respaldo de recaudo y tesorería (Regla 14)
+      createSystemBackup(
+        'billing',
+        `Recaudo registrado para hito "${milestone?.title || milestoneId}" (${milestone?.projectCode || ''})`,
+        { milestoneId, paymentData },
+        state.currentUser?.id || 'USR-001',
+        state.currentUser?.name || 'Tesorería & Cartera ITK'
+      ).catch(console.warn);
+
+      notify('success', 'Recaudo Registrado', `El hito "${milestone?.title || milestoneId}" ha sido marcado como pagado.`);
     },
     [state.milestones, state.currentUser, notify]
   );
@@ -5230,6 +5949,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approveExpense,
         signMilestoneAct,
         issueMilestoneInvoice,
+        markMilestonePaid,
         setActiveChatChannel,
         markChatAsRead,
         markAllChatsAsRead,

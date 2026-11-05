@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Wrench,
   Hammer,
@@ -11,19 +11,68 @@ import {
   Sparkles,
   Calendar,
   Settings,
+  Plus,
+  ArrowRight,
+  ShieldCheck,
+  FileText,
+  User,
+  Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
+import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { DocumentFlowBar } from '../../components/common/DocumentFlowBar';
 
 interface OperacionesProps {
   initialSubTab?: 'mantenimiento' | 'reparacion' | 'manufactura' | 'taller' | 'plm';
 }
 
+interface WorkOrderOT {
+  id: string;
+  code: string;
+  projectId: string;
+  projectCode: string;
+  component: string;
+  priority: 'baja' | 'media' | 'alta' | 'urgente';
+  technician: string;
+  description: string;
+  status: 'diagnostico' | 'en_reparacion' | 'pruebas_banco' | 'completada';
+  createdAt: string;
+}
+
+interface ManufacturingOrder {
+  id: string;
+  code: string;
+  partName: string;
+  material: string;
+  quantity: number;
+  projectCode: string;
+  stage: 'corte' | 'torno_cnc' | 'fresado' | 'tratamiento_termico' | 'listo_almacen';
+  createdAt: string;
+}
+
+interface BenchTestRecord {
+  id: string;
+  testCode: string;
+  gripSerial: string;
+  gripType: string;
+  clampingForceKN: number;
+  requiredForceKN: number;
+  verdict: 'conforme' | 'no_conforme';
+  technician: string;
+  testDate: string;
+}
+
+const STORAGE_KEY_OTS = 'itk_operaciones_ots';
+const STORAGE_KEY_MANUF = 'itk_operaciones_manuf';
+const STORAGE_KEY_TESTS = 'itk_operaciones_bench_tests';
+
 export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   initialSubTab = 'mantenimiento',
 }) => {
-  const { maintenancePlans, completeMaintenance, activeModuleId } = useErp();
+  const { maintenancePlans, completeMaintenance, activeModuleId, projects, users, setActiveModule, notify } = useErp();
   
   const currentTab = (activeModuleId === 'reparacion' || activeModuleId === 'manufactura' || activeModuleId === 'taller' || activeModuleId === 'plm' || activeModuleId === 'mantenimiento')
     ? (activeModuleId as 'mantenimiento' | 'reparacion' | 'manufactura' | 'taller' | 'plm')
@@ -37,6 +86,60 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const catalogFrequencies = useModuleCatalog('mantenimiento', 'frequencies');
   const catalogOtPriorities = useModuleCatalog('mantenimiento', 'otPriorities');
 
+  // Estado persistente: Órdenes de Trabajo (OT)
+  const [workOrders, setWorkOrders] = useState<WorkOrderOT[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_OTS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Estado persistente: Lotes de Manufactura
+  const [manufacturingOrders, setManufacturingOrders] = useState<ManufacturingOrder[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_MANUF);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Estado persistente: Ensayos de Banco Hidráulico
+  const [benchTests, setBenchTests] = useState<BenchTestRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_TESTS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_OTS, JSON.stringify(workOrders));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [workOrders]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_MANUF, JSON.stringify(manufacturingOrders));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [manufacturingOrders]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(benchTests));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [benchTests]);
+
   React.useEffect(() => {
     if (initialSubTab) {
       setActiveTab(initialSubTab);
@@ -44,6 +147,94 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
       setActiveTab(activeModuleId as any);
     }
   }, [initialSubTab, activeModuleId]);
+
+  // Modal Crear OT
+  const [isOtModalOpen, setIsOtModalOpen] = useState(false);
+  const [otProject, setOtProject] = useState(projects[0]?.id || '');
+  const [otComponent, setOtComponent] = useState('Pinza Desembragable');
+  const [otPriority, setOtPriority] = useState<'baja' | 'media' | 'alta' | 'urgente'>('media');
+  const [otTechnician, setOtTechnician] = useState('');
+  const [otDescription, setOtDescription] = useState('');
+
+  const handleCreateOt = (e: React.FormEvent) => {
+    e.preventDefault();
+    const prj = projects.find((p) => p.id === otProject) || projects[0];
+    const newOt: WorkOrderOT = {
+      id: `OT-${Date.now()}`,
+      code: `OT-${new Date().getFullYear()}-${String(workOrders.length + 1).padStart(3, '0')}`,
+      projectId: prj?.id || '',
+      projectCode: prj?.code || 'STC-GENERAL',
+      component: otComponent,
+      priority: otPriority,
+      technician: otTechnician || 'Técnico Especialista STC',
+      description: otDescription || 'Intervención electromecánica programada.',
+      status: 'diagnostico',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setWorkOrders([newOt, ...workOrders]);
+    setIsOtModalOpen(false);
+    setOtDescription('');
+    notify?.('success', 'Orden de Trabajo Creada', `Se registró la ${newOt.code} para el componente ${otComponent}.`);
+  };
+
+  // Modal Crear Manufactura
+  const [isManufModalOpen, setIsManufModalOpen] = useState(false);
+  const [manufPartName, setManufPartName] = useState('');
+  const [manufMaterial, setManufMaterial] = useState('Acero 4140 Tratado');
+  const [manufQty, setManufQty] = useState(1);
+  const [manufProject, setManufProject] = useState(projects[0]?.code || 'STOCK-ITK');
+
+  const handleCreateManuf = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manufPartName.trim()) return;
+    const newOrder: ManufacturingOrder = {
+      id: `MANUF-${Date.now()}`,
+      code: `OF-${new Date().getFullYear()}-${String(manufacturingOrders.length + 1).padStart(3, '0')}`,
+      partName: manufPartName,
+      material: manufMaterial,
+      quantity: Math.max(1, Number(manufQty) || 1),
+      projectCode: manufProject,
+      stage: 'corte',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setManufacturingOrders([newOrder, ...manufacturingOrders]);
+    setIsManufModalOpen(false);
+    setManufPartName('');
+    notify?.('success', 'Orden de Fabricación Creada', `Se programó el maquinado de ${newOrder.partName}.`);
+  };
+
+  // Modal Registrar Ensayo Banco
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testSerial, setTestSerial] = useState('');
+  const [testGripType, setTestGripType] = useState('Pinza Desembragable Doble Resorte');
+  const [testForce, setTestForce] = useState(38);
+  const [testRequired, setTestRequired] = useState(35);
+  const [testTechnician, setTestTechnician] = useState('');
+
+  const handleCreateTest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testSerial.trim()) return;
+    const verdict = Number(testForce) >= Number(testRequired) ? 'conforme' : 'no_conforme';
+    const newTest: BenchTestRecord = {
+      id: `TEST-${Date.now()}`,
+      testCode: `ENS-${new Date().getFullYear()}-${String(benchTests.length + 1).padStart(3, '0')}`,
+      gripSerial: testSerial.trim(),
+      gripType: testGripType,
+      clampingForceKN: Number(testForce),
+      requiredForceKN: Number(testRequired),
+      verdict,
+      technician: testTechnician || 'Ingeniero de Ensayos STC',
+      testDate: new Date().toISOString().split('T')[0],
+    };
+    setBenchTests([newTest, ...benchTests]);
+    setIsTestModalOpen(false);
+    setTestSerial('');
+    notify?.(
+      verdict === 'conforme' ? 'success' : 'warning',
+      `Ensayo ${newTest.testCode} Registrado`,
+      `Fuerza: ${testForce} kN vs Req: ${testRequired} kN. Resultado: ${verdict.toUpperCase()}`
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -72,7 +263,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
             {maintenancePlans.map((plan) => (
               <div key={plan.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-bold text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md font-mono">
                     {plan.code} • {plan.projectCode}
                   </span>
                   <span
@@ -120,68 +311,481 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
 
       {/* 2. REPARACIÓN & ÓRDENES DE TRABAJO */}
       {activeTab === 'reparacion' && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-gray-900">Órdenes de Trabajo de Reparación Electromecánica (OT)</h3>
-              <p className="text-xs text-gray-500">Gestión de reparaciones mayores, bobinados y mantenimiento electromecánico.</p>
+              <p className="text-xs text-gray-500">Gestión de diagnósticos, desmontajes, overhauls y reparaciones mayores de componentes STC.</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsOtModalOpen(true)}
+              className="px-4 py-2 bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Plus size={15} />
+              <span>+ Nueva Orden de Trabajo (OT)</span>
+            </button>
           </div>
-          <div className="p-8 text-center text-gray-400 bg-slate-50 rounded-2xl border border-dashed border-gray-200">
-            <Wrench size={32} className="mx-auto mb-2 opacity-40 text-[#00668F]" />
-            <p className="text-xs font-bold text-gray-700">No hay órdenes de reparación activas</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Las nuevas órdenes de trabajo de taller o campo se registrarán aquí.</p>
-          </div>
+
+          {workOrders.length === 0 ? (
+            <div className="p-10 text-center text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+              <Hammer size={36} className="mx-auto mb-2 text-[#00668F] opacity-40" />
+              <p className="text-xs font-bold text-gray-700">No hay órdenes de reparación activas</p>
+              <p className="text-[11px] text-gray-500 mt-1 max-w-sm mx-auto">
+                Registra una nueva OT para componentes mecánicos o eléctricos asignados a un proyecto.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              {workOrders.map((ot) => (
+                <div key={ot.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
+                      {ot.code} • {ot.projectCode}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                      ot.priority === 'urgente' ? 'bg-rose-100 text-rose-800' :
+                      ot.priority === 'alta' ? 'bg-amber-100 text-amber-800' :
+                      'bg-slate-100 text-slate-800'
+                    }`}>
+                      {ot.priority}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">{ot.component}</h4>
+                    <p className="text-xs text-slate-600 mt-1 line-clamp-2">{ot.description}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                    <span className="text-slate-500 font-medium">Resp: <strong>{ot.technician}</strong></span>
+                    <span className={`font-bold text-[10px] px-2 py-0.5 rounded-md ${
+                      ot.status === 'completada' ? 'bg-emerald-100 text-emerald-800' :
+                      ot.status === 'pruebas_banco' ? 'bg-purple-100 text-purple-800' :
+                      'bg-sky-100 text-sky-800'
+                    }`}>
+                      {ot.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* 3. MANUFACTURA DE PIEZAS */}
       {activeTab === 'manufactura' && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-gray-900">Fabricación y Maquinado Especializado de Componentes STC</h3>
-              <p className="text-xs text-gray-500">Trazabilidad de torneado, fresado y tratamientos térmicos para repuestos.</p>
+              <p className="text-xs text-gray-500">Trazabilidad de corte, torneado CNC, fresado y tratamientos térmicos para repuestos de teleféricos.</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsManufModalOpen(true)}
+              className="px-4 py-2 bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Plus size={15} />
+              <span>+ Nueva Orden de Fabricación (OF)</span>
+            </button>
           </div>
-          <div className="p-8 text-center text-gray-400 bg-slate-50 rounded-2xl border border-dashed border-gray-200">
-            <Cog size={32} className="mx-auto mb-2 opacity-40 text-[#00668F]" />
-            <p className="text-xs font-bold text-gray-700">No hay lotes de fabricación en curso</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Los lotes y fichas de maquinado programados se visualizarán en esta sección.</p>
-          </div>
+
+          {manufacturingOrders.length === 0 ? (
+            <div className="p-10 text-center text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+              <Cog size={36} className="mx-auto mb-2 text-[#00668F] opacity-40" />
+              <p className="text-xs font-bold text-gray-700">No hay lotes de fabricación en curso</p>
+              <p className="text-[11px] text-gray-500 mt-1 max-w-sm mx-auto">
+                Registra órdenes de maquinado de bujes, rodillos o pines con enlace directo al stock de almacén.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              {manufacturingOrders.map((mo) => (
+                <div key={mo.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
+                      {mo.code}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-800">
+                      Cant: {mo.quantity} unid
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">{mo.partName}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">Material: <strong className="text-slate-800">{mo.material}</strong></p>
+                    <p className="text-xs text-slate-500">Destino: <strong className="text-slate-800">{mo.projectCode}</strong></p>
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded uppercase">
+                      Fase: {mo.stage.replace('_', ' ')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveModule('inventario');
+                        notify?.('info', 'Traspaso a Inventario', `La pieza ${mo.partName} está lista para recepción en Bodega.`);
+                      }}
+                      className="text-xs font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Ingresar a Stock</span>
+                      <ArrowRight size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* 4. TALLER & BANCO DE PRUEBAS */}
       {activeTab === 'taller' && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Banco Hidráulico de Ensayo de Pinzas Desembragables</h3>
-              <p className="text-xs text-gray-500">Ensayos destructivos y no destructivos de mordazas y pinzas STC.</p>
+              <h3 className="text-sm font-bold text-gray-900">Banco Hidráulico de Ensayo de Pinzas Desembragables (Norma EN 1709)</h3>
+              <p className="text-xs text-gray-500">Calibración de resortes helicoidales, ensayos de fuerza de retención y certificado técnico de mordazas.</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsTestModalOpen(true)}
+              className="px-4 py-2 bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Plus size={15} />
+              <span>+ Registrar Ensayo de Pinza</span>
+            </button>
           </div>
-          <div className="p-8 text-center text-gray-400 bg-slate-50 rounded-2xl border border-dashed border-gray-200">
-            <Factory size={32} className="mx-auto mb-2 opacity-40 text-[#00668F]" />
-            <p className="text-xs font-bold text-gray-700">Sin ensayos en banco programados</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Registra calibraciones y pruebas de fuerza de retención en mordazas cuando se ejecuten.</p>
-          </div>
+
+          {benchTests.length === 0 ? (
+            <div className="p-10 text-center text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+              <Factory size={36} className="mx-auto mb-2 text-[#00668F] opacity-40" />
+              <p className="text-xs font-bold text-gray-700">Sin ensayos en banco registrados</p>
+              <p className="text-[11px] text-gray-500 mt-1 max-w-sm mx-auto">
+                Registra las pruebas de fuerza de pinza en banco hidráulico para emisión de certificados de conformidad EN 1709.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              {benchTests.map((t) => (
+                <div key={t.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
+                      {t.testCode}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                      t.verdict === 'conforme' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {t.verdict === 'conforme' ? '✓ Conforme EN 1709' : '✗ No Conforme'}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">Pinza Serial: {t.gripSerial}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">{t.gripType}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-medium">Fuerza Obtenida:</span>
+                      <strong className="text-slate-900 font-mono text-sm">{t.clampingForceKN} kN</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-medium">Mínimo Exigido:</span>
+                      <strong className="text-slate-900 font-mono text-sm">{t.requiredForceKN} kN</strong>
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-slate-500 flex justify-between pt-1 border-t border-slate-100">
+                    <span>Ensayo: {t.testDate}</span>
+                    <span>Técnico: <strong>{t.technician}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* 5. PLM & ESPECIFICACIONES TÉCNICAS */}
       {activeTab === 'plm' && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Ciclo de Vida de Producto y Especificaciones Normativas STC</h3>
-              <p className="text-xs text-gray-500">Biblioteca técnica y criterios de diseño según normatividad vigente.</p>
+              <h3 className="text-sm font-bold text-gray-900">Biblioteca PLM & Normativa Técnica Oficial STC</h3>
+              <p className="text-xs text-gray-500">Criterios de diseño, tolerancias y especificaciones europeas e internacionales aplicables a Inteckno.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveModule('documentos')}
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileText size={14} className="text-[#00668F]" />
+              <span>Ver Planos y Manuales en Gestor Documental</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md">UNE EN 12927:2019</span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">Vigente</span>
+              </div>
+              <h4 className="font-bold text-sm text-slate-900">Cables Tractores y Portadores para Transporte de Personas</h4>
+              <p className="text-xs text-slate-600">Requisitos de seguridad para empalmes, terminales de cable, ensayos no destructivos magneto-inductivos (MRT) y criterios de descarte por roturas de alambres.</p>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md">EN 1709:2019</span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">Vigente</span>
+              </div>
+              <h4 className="font-bold text-sm text-slate-900">Pinzas Desembragables y Sistemas de Fijación</h4>
+              <p className="text-xs text-slate-600">Cálculo y verificación de fuerza de apriete, control de desgaste en mordazas y protocolos de ensayo en banco hidráulico.</p>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md">EN 12929-1:2015</span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">Vigente</span>
+              </div>
+              <h4 className="font-bold text-sm text-slate-900">Disposiciones Generales de Seguridad en Teleféricos</h4>
+              <p className="text-xs text-slate-600">Geometría de la línea, distancias de gálibo entre vehículos y obstáculos, cargas de viento admisibles y estaciones motrices.</p>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md">EN 1908:2015</span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">Vigente</span>
+              </div>
+              <h4 className="font-bold text-sm text-slate-900">Grupos Motrices, Volantes y Frenos</h4>
+              <p className="text-xs text-slate-600">Requisitos para frenos de servicio y de seguridad que actúan directamente sobre la polea motriz, tiempos de deceleración e inspección.</p>
             </div>
           </div>
-          <div className="p-8 text-center text-gray-400 bg-slate-50 rounded-2xl border border-dashed border-gray-200">
-            <FileCode2 size={32} className="mx-auto mb-2 opacity-40 text-[#00668F]" />
-            <p className="text-xs font-bold text-gray-700">Sin especificaciones particulares registradas</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Sube normas de referencia o especificaciones técnicas del fabricante en el Gestor Documental.</p>
+        </div>
+      )}
+
+      {/* Modal Crear OT */}
+      {isOtModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-slate-200">
+            <h3 className="text-base font-bold text-slate-900">Nueva Orden de Trabajo (OT) de Reparación</h3>
+            <form onSubmit={handleCreateOt} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Proyecto Asignado</label>
+                <select
+                  value={otProject}
+                  onChange={(e) => setOtProject(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-xl"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Componente STC</label>
+                <input
+                  type="text"
+                  value={otComponent}
+                  onChange={(e) => setOtComponent(e.target.value)}
+                  placeholder="ej. Mordaza, Pilona 4, Balancín de entrada..."
+                  className="w-full p-2 border border-slate-300 rounded-xl"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Prioridad</label>
+                  <select
+                    value={otPriority}
+                    onChange={(e) => setOtPriority(e.target.value as any)}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  >
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="urgente">Urgente</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Técnico Asignado</label>
+                  <input
+                    type="text"
+                    value={otTechnician}
+                    onChange={(e) => setOtTechnician(e.target.value)}
+                    placeholder="Nombre del técnico..."
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Diagnóstico / Descripción de la Falla</label>
+                <textarea
+                  value={otDescription}
+                  onChange={(e) => setOtDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Detalla la intervención requerida..."
+                  className="w-full p-2 border border-slate-300 rounded-xl"
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsOtModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white font-bold"
+                >
+                  Crear Orden de Trabajo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Manufactura */}
+      {isManufModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-slate-200">
+            <h3 className="text-base font-bold text-slate-900">Nueva Orden de Fabricación y Maquinado (OF)</h3>
+            <form onSubmit={handleCreateManuf} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Nombre de la Pieza / Repuesto</label>
+                <input
+                  type="text"
+                  value={manufPartName}
+                  onChange={(e) => setManufPartName(e.target.value)}
+                  placeholder="ej. Buje cónico de bronce para pilona..."
+                  className="w-full p-2 border border-slate-300 rounded-xl"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Material</label>
+                  <input
+                    type="text"
+                    value={manufMaterial}
+                    onChange={(e) => setManufMaterial(e.target.value)}
+                    placeholder="ej. Acero 4140, Bronce..."
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Cantidad (unid)</label>
+                  <input
+                    type="number"
+                    value={manufQty || ''}
+                    placeholder="0"
+                    onChange={(e) => setManufQty(Number(e.target.value))}
+                    min={1}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Proyecto / Destino</label>
+                <select
+                  value={manufProject}
+                  onChange={(e) => setManufProject(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-xl"
+                >
+                  <option value="STOCK-ITK">Bodega Central (Stock Inteckno)</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.code}>{p.code} - {p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsManufModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white font-bold"
+                >
+                  Programar Maquinado
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Registrar Ensayo Banco */}
+      {isTestModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-slate-200">
+            <h3 className="text-base font-bold text-slate-900">Registrar Ensayo en Banco Hidráulico (EN 1709)</h3>
+            <form onSubmit={handleCreateTest} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Serial de la Pinza / Mordaza</label>
+                <input
+                  type="text"
+                  value={testSerial}
+                  onChange={(e) => setTestSerial(e.target.value)}
+                  placeholder="ej. PZ-2026-089..."
+                  className="w-full p-2 border border-slate-300 rounded-xl font-mono"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Fuerza Obtenida (kN)</label>
+                  <input
+                    type="number"
+                    value={testForce || ''}
+                    placeholder="0"
+                    onChange={(e) => setTestForce(Number(e.target.value))}
+                    className="w-full p-2 border border-slate-300 rounded-xl font-mono font-bold"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Exigido por Norma (kN)</label>
+                  <input
+                    type="number"
+                    value={testRequired || ''}
+                    placeholder="0"
+                    onChange={(e) => setTestRequired(Number(e.target.value))}
+                    className="w-full p-2 border border-slate-300 rounded-xl font-mono font-bold"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Técnico Calibrador</label>
+                <input
+                  type="text"
+                  value={testTechnician}
+                  onChange={(e) => setTestTechnician(e.target.value)}
+                  placeholder="Nombre del técnico o ingeniero..."
+                  className="w-full p-2 border border-slate-300 rounded-xl"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsTestModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white font-bold"
+                >
+                  Guardar Certificado de Ensayo
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

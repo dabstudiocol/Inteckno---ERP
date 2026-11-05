@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { BillingMilestone, DianRutData } from '../../types';
+import { getStoredTRM } from '../../core/services/trmService';
 import { LightTable } from '../../components/ui/LightTable';
 import { BusinessRulesEngine } from '../../core/rules/businessRules';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
@@ -38,10 +39,14 @@ interface BillingModuleProps {
 type BillingSubTab = 'milestones' | 'zero_digitation' | 'support_docs' | 'fev_radian' | 'payroll';
 
 export const BillingModule: React.FC<BillingModuleProps> = () => {
-  const { milestones, projects, currentUser, signMilestoneAct, issueMilestoneInvoice } = useErp();
+  const { milestones, projects, currentUser, signMilestoneAct, issueMilestoneInvoice, markMilestonePaid } = useErp();
   const [activeTab, setActiveTab] = useState<BillingSubTab>('milestones');
   const [invoiceModalMilestone, setInvoiceModalMilestone] = useState<BillingMilestone | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [paymentModalMilestone, setPaymentModalMilestone] = useState<BillingMilestone | null>(null);
+  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentAmountCOP, setPaymentAmountCOP] = useState<number>(0);
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isRutModalOpen, setIsRutModalOpen] = useState(false);
 
@@ -75,6 +80,20 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
 
     setInvoiceModalMilestone(null);
     setInvoiceNumber('');
+  };
+
+  const handleRegisterPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentModalMilestone) return;
+
+    markMilestonePaid(paymentModalMilestone.id, {
+      paidAt: paymentDate,
+      paymentReference: paymentRef || 'Transferencia Bancaria',
+      paymentAmountCOP: Number(paymentAmountCOP) || paymentModalMilestone.amountCOP || 0,
+    });
+
+    setPaymentModalMilestone(null);
+    setPaymentRef('');
   };
 
   const isFinance =
@@ -205,7 +224,7 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
                     <div>
                       <div className="font-bold text-xs text-gray-900">{m.title}</div>
                       <div className="text-[11px] text-[#00668F] font-semibold">
-                        {m.projectCode} — {m.clientName}
+                        {m.projectCode} — {m.clientName} {m.clientNit ? `(NIT: ${m.clientNit})` : ''}
                       </div>
                     </div>
                   ),
@@ -274,22 +293,53 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
                 },
                 {
                   key: 'actions',
-                  header: 'Emisión de Factura',
+                  header: 'Gestión / Recaudo',
                   align: 'right',
                   render: (m) => {
                     if (m.acceptanceActSigned && !m.invoiceIssued) {
                       return (
                         <button
                           onClick={() => setInvoiceModalMilestone(m)}
-                          className="px-4 py-1.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-xs active:scale-95 ml-auto block"
+                          className="px-4 py-1.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-xs active:scale-95 ml-auto block cursor-pointer"
                         >
                           Expedir Factura
                         </button>
                       );
                     }
+                    if (m.invoiceIssued && !m.isPaid) {
+                      const prj = projects.find((p) => p.id === m.projectId || p.code === m.projectCode);
+                      const trm = prj?.trmApplied || getStoredTRM();
+                      const initialCOP = m.amountCOP || Math.round((m.amountUSD || 0) * trm);
+                      return (
+                        <button
+                          onClick={() => {
+                            setPaymentModalMilestone(m);
+                            setPaymentRef('');
+                            setPaymentAmountCOP(initialCOP);
+                            setPaymentDate(new Date().toISOString().split('T')[0]);
+                          }}
+                          className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 ml-auto cursor-pointer"
+                        >
+                          <DollarSign size={13} />
+                          <span>Registrar Pago</span>
+                        </button>
+                      );
+                    }
+                    if (m.isPaid) {
+                      return (
+                        <div className="text-right">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 size={12} /> Recaudado
+                          </span>
+                          {m.paymentReference && (
+                            <span className="block text-[10px] text-gray-400 mt-0.5">Ref: {m.paymentReference}</span>
+                          )}
+                        </div>
+                      );
+                    }
                     return (
                       <span className="text-[11px] text-gray-400 font-medium">
-                        {m.isPaid ? 'Cobro Liquidado' : 'Radicada ante Cliente'}
+                        Pendiente de Firma
                       </span>
                     );
                   },
@@ -488,6 +538,107 @@ export const BillingModule: React.FC<BillingModuleProps> = () => {
                   className="px-5 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white font-bold cursor-pointer transition-colors"
                 >
                   Confirmar Emisión
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Registrar Pago / Recaudo */}
+      {paymentModalMilestone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                  <DollarSign size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Registrar Pago / Recaudo</h3>
+                  <p className="text-xs text-slate-500">
+                    Factura {paymentModalMilestone.invoiceNumber || 'Emitida'} — {paymentModalMilestone.projectCode}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPaymentModalMilestone(null)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRegisterPayment} className="space-y-3.5 text-xs">
+              <div className="p-3 bg-slate-50 rounded-xl space-y-1">
+                <span className="text-[11px] font-bold text-slate-600 block">Hito Contractual:</span>
+                <span className="font-semibold text-slate-800">{paymentModalMilestone.title}</span>
+                <div className="flex items-center justify-between text-slate-500 pt-1 text-[11px]">
+                  <span>Cliente: {paymentModalMilestone.clientName}</span>
+                  <span>Valor Contractual: USD ${paymentModalMilestone.amountUSD?.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Fecha de Pago / Recaudo *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-600 font-semibold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Referencia de Transferencia / Comprobante Bancario *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={paymentRef}
+                  onChange={(e) => setPaymentRef(e.target.value)}
+                  placeholder="Ej. Transferencia Bancolombia #839201"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-600 font-medium text-slate-800"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700">Monto Recaudado en COP *</label>
+                  <span className="text-[11px] font-bold text-emerald-700">
+                    $ {Number(paymentAmountCOP || 0).toLocaleString('es-CO')} COP
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="1000"
+                  value={paymentAmountCOP || ''}
+                  onChange={(e) => setPaymentAmountCOP(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-600 font-bold text-slate-800 text-right"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentModalMilestone(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition-colors"
+                >
+                  Confirmar Recaudo
                 </button>
               </div>
             </form>

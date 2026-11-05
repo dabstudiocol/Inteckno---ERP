@@ -18,6 +18,7 @@ import {
   Flame,
   Clock,
   Layers,
+  ShoppingCart,
   Folder,
   FolderPlus,
   ChevronRight,
@@ -61,7 +62,7 @@ import {
 import { Project } from '../../../../types';
 import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
 import { useErp } from '../../../../core/storage/erpStore';
-import { formatCOP, formatUSD } from '../../../../core/services/trmService';
+import { formatCOP, formatUSD, getStoredTRM } from '../../../../core/services/trmService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { DetailModal } from '../../../../components/common/DetailModal';
@@ -313,7 +314,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   currentTrm,
   onUpdateProject,
 }) => {
-  const { timesheets, currentUser } = useErp();
+  const { timesheets, currentUser, createRequisition, setActiveModule, notify } = useErp();
 
   // Permiso de visualización de datos sensibles de ganancia y margen
   const canViewFinancialProfit =
@@ -1090,6 +1091,90 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
     return Array.from(map.values()).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
   })();
+
+  // Acción de Cableado Relacional: Generar SOLPED desde un rubro de costo
+  const handleCreateSolpedFromCost = (c: CostMatrixItem) => {
+    const itemCode = c.itemCode || selectedFolderCode || undefined;
+    const cat = c.category || 'repuestos_fabricacion';
+    const result = createRequisition({
+      projectId: project.id,
+      projectCode: project.code,
+      projectName: project.name,
+      itemCode,
+      costMatrixItemId: c.id,
+      requesterId: currentUser?.id || 'USR-001',
+      requesterName: currentUser?.name || 'Líder de Proyecto',
+      department: 'Ingeniería de Obra',
+      neededDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      priority: 'normal',
+      justification: `Requisición de insumos de obra para: ${c.concept} (ITEM: ${itemCode || 'Sin ITEM'})`,
+      category: cat,
+      destinationCity: project.location,
+      items: [
+        {
+          id: `req-item-${Date.now()}`,
+          productId: `PRD-${c.id}`,
+          productName: c.concept,
+          productSku: `SKU-${c.id.slice(-6).toUpperCase()}`,
+          category: cat,
+          qtyRequested: c.plannedQuantity || 1,
+          qtyApproved: c.plannedQuantity || 1,
+          unit: c.unit || 'unid',
+          unitCostUSD: c.plannedUnitCost ? Math.round(c.plannedUnitCost / (currentTrm || getStoredTRM())) : 0,
+          totalCostUSD: c.plannedTotal ? Math.round(c.plannedTotal / (currentTrm || getStoredTRM())) : 0,
+          itemCode,
+          costMatrixItemId: c.id,
+        },
+      ],
+    });
+
+    notify(
+      'success',
+      'SOLPED Generada',
+      `Se creó la requisición ${result.requisition?.reqNumber || ''} para ${c.concept}. Lista en Requisiciones / Compras.`
+    );
+  };
+
+  // Acción de Cableado Relacional: Generar SOLPED desde la carpeta de un ITEM
+  const handleCreateSolpedFromFolder = (folderCode: string) => {
+    const itemDef = allAvailableItems.find((it) => it.code.toUpperCase() === folderCode.toUpperCase());
+    const itemName = itemDef?.name || folderCode;
+    const result = createRequisition({
+      projectId: project.id,
+      projectCode: project.code,
+      projectName: project.name,
+      itemCode: folderCode,
+      requesterId: currentUser?.id || 'USR-001',
+      requesterName: currentUser?.name || 'Líder de Proyecto',
+      department: 'Ingeniería de Obra',
+      neededDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      priority: 'normal',
+      justification: `Requisición de materiales e insumos para ITEM ${folderCode}: ${itemName}`,
+      category: 'repuestos_fabricacion',
+      destinationCity: project.location,
+      items: [
+        {
+          id: `req-item-${Date.now()}`,
+          productId: `PRD-${folderCode}`,
+          productName: `Materiales e insumos para ${folderCode} - ${itemName}`,
+          productSku: `SKU-${folderCode}`,
+          category: 'repuestos_fabricacion',
+          qtyRequested: 1,
+          qtyApproved: 1,
+          unit: 'Global',
+          unitCostUSD: 0,
+          totalCostUSD: 0,
+          itemCode: folderCode,
+        },
+      ],
+    });
+
+    notify(
+      'success',
+      'SOLPED Generada',
+      `Se creó la requisición ${result.requisition?.reqNumber || ''} para el ITEM ${folderCode}.`
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -2758,6 +2843,15 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
               </button>
               <button
                 type="button"
+                onClick={() => handleCreateSolpedFromFolder(selectedFolderCode)}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Generar Requisición / SOLPED para este ITEM"
+              >
+                <ShoppingCart size={14} />
+                <span>Solicitar Insumo (SOLPED)</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const target = allAvailableItems.find((it) => it.code.toUpperCase() === selectedFolderCode.toUpperCase());
                   setFolderToDelete({
@@ -2933,6 +3027,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             </td>
                             <td className="py-2.5 px-3 text-right">
                               <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateSolpedFromCost(c)}
+                                  className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors cursor-pointer"
+                                  title="Solicitar Insumo / Generar SOLPED"
+                                >
+                                  <ShoppingCart size={13} />
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -3121,6 +3223,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             </td>
                             <td className="py-2.5 px-3 text-right">
                               <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateSolpedFromCost(c)}
+                                  className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors cursor-pointer"
+                                  title="Solicitar Insumo / Generar SOLPED"
+                                >
+                                  <ShoppingCart size={13} />
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {

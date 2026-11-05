@@ -17,8 +17,10 @@ import {
   X,
   FolderKanban,
   Copy,
+  ShoppingCart,
 } from 'lucide-react';
 import { Project, WBSTask, DependencyType } from '../../../../types';
+import { useErp } from '../../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../../core/services/moduleConfigService';
 import { generateWBSWithLuciana } from '../../../../core/services/lucianaService';
 import { UniversalModuleConfigModal } from '../../../../components/common/UniversalModuleConfigModal';
@@ -132,6 +134,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
   onUpdateTask,
   onDeleteTask,
 }) => {
+  const { createRequisition, currentUser, notify } = useErp();
   const [viewMode, setViewMode] = useState<'gantt' | 'arbol'>('gantt');
   const [isGeneratingWBS, setIsGeneratingWBS] = useState(false);
   const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
@@ -140,6 +143,47 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
   const [editingTask, setEditingTask] = useState<WBSTask | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<WBSTask | null>(null);
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<CalculatedTask | null>(null);
+
+  // Acción de Cableado Relacional: Solicitar Materiales / Insumos (SOLPED) desde una Tarea WBS
+  const handleCreateSolpedFromTask = (task: WBSTask) => {
+    const result = createRequisition({
+      projectId: project.id,
+      projectCode: project.code,
+      projectName: project.name,
+      itemCode: task.itemCode || undefined,
+      taskId: task.id,
+      requesterId: currentUser?.id || 'USR-001',
+      requesterName: task.assignedToName || currentUser?.name || 'Ingeniería de Obra',
+      department: 'Ingeniería de Obra',
+      neededDate: task.endDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      priority: task.isCriticalPath ? 'urgente' : 'normal',
+      justification: `Materiales e insumos requeridos para actividad ${task.code}: ${task.name}`,
+      category: 'repuestos_fabricacion',
+      destinationCity: project.location,
+      items: [
+        {
+          id: `req-item-${Date.now()}`,
+          productId: `PRD-${task.code}`,
+          productName: `Insumos para ${task.code} - ${task.name}`,
+          productSku: `SKU-${task.code}`,
+          category: 'repuestos_fabricacion',
+          qtyRequested: 1,
+          qtyApproved: 1,
+          unit: 'Global',
+          unitCostUSD: 0,
+          totalCostUSD: 0,
+          taskId: task.id,
+          itemCode: task.itemCode,
+        },
+      ],
+    });
+
+    notify(
+      'success',
+      'SOLPED Generada',
+      `Se creó la requisición ${result.requisition?.reqNumber || ''} para la actividad ${task.code} (${task.name}).`
+    );
+  };
 
   // Catálogos reactivos desde la Configuración de Módulo del ERP
   const deliverableItems = useModuleCatalog('proyectos', 'deliverables');
@@ -184,11 +228,38 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
     return parseISODateSafe(project.startDate);
   }, [project.startDate]);
 
+  // Catálogo de Ítems Contractuales y Rubros del Proyecto para vinculación WBS
+  const itemOptions = useMemo(() => {
+    const list: { id: string; name: string }[] = [];
+    const addedCodes = new Set<string>();
+
+    if (project.projectItems && project.projectItems.length > 0) {
+      project.projectItems.forEach((pi: any) => {
+        if (pi.code && !addedCodes.has(pi.code)) {
+          addedCodes.add(pi.code);
+          list.push({ id: pi.code, name: `${pi.code} — ${pi.name || 'Ítem Contractual'}` });
+        }
+      });
+    }
+
+    if (project.costMatrix && project.costMatrix.length > 0) {
+      project.costMatrix.forEach((cm: any) => {
+        if (cm.itemCode && !addedCodes.has(cm.itemCode)) {
+          addedCodes.add(cm.itemCode);
+          list.push({ id: cm.itemCode, name: `${cm.itemCode} — ${cm.description || cm.category}` });
+        }
+      });
+    }
+
+    return list;
+  }, [project.projectItems, project.costMatrix]);
+
   // Formulario de Actividad WBS con Avance y Fechas Vinculadas
   const [taskForm, setTaskForm] = useState({
     code: '',
     name: '',
     description: '',
+    itemCode: '',
     plannedHours: 0,
     actualHours: 0,
     progressPct: 0,
@@ -425,6 +496,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
       code: nextCode,
       name: '',
       description: '',
+      itemCode: '',
       plannedHours: 0,
       actualHours: 0,
       progressPct: 0,
@@ -456,6 +528,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
       code: task.code || '',
       name: task.name || '',
       description: task.description || '',
+      itemCode: task.itemCode || '',
       plannedHours: task.plannedHours || Math.min(40, dur * 24),
       actualHours: task.actualHours || 0,
       progressPct: task.progressPct || 0,
@@ -836,6 +909,7 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
       code: taskForm.code.trim(),
       name: taskForm.name.trim(),
       description: taskForm.description.trim(),
+      itemCode: taskForm.itemCode ? taskForm.itemCode.trim().toUpperCase() : undefined,
       plannedHours: Number(taskForm.plannedHours) || 8,
       durationDays: taskForm.isMilestone ? 0 : Number(taskForm.durationDays) || 1,
       isMilestone: taskForm.isMilestone,
@@ -1207,6 +1281,14 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                           <div className="flex items-center justify-center gap-1">
                             <button
                               type="button"
+                              onClick={() => handleCreateSolpedFromTask(task)}
+                              className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors"
+                              title="Solicitar Materiales (SOLPED) para esta actividad"
+                            >
+                              <ShoppingCart size={13} />
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => openEditTaskModal(task)}
                               className="p-1 text-slate-400 hover:text-[#00668F] hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                               title="Editar actividad completa"
@@ -1450,8 +1532,24 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                   </div>
                 </div>
 
-                {/* Renglón B: Prioridad Técnica y Entregable */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Renglón B: ITEM Contractual, Prioridad Técnica y Entregable */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      ITEM Contractual / Rubro
+                    </label>
+                    <CreatableSelect
+                      value={taskForm.itemCode ? (itemOptions.find(o => o.id === taskForm.itemCode)?.name || taskForm.itemCode) : ''}
+                      onChange={(val) => {
+                        const code = val ? (val.includes(' — ') ? val.split(' — ')[0].trim() : val.trim()) : '';
+                        setTaskForm({ ...taskForm, itemCode: code });
+                      }}
+                      options={itemOptions.map((o) => o.name)}
+                      placeholder="Vincular ITEM de obra..."
+                      allowCustomText={true}
+                    />
+                  </div>
+
                   <div>
                     <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Prioridad Técnica
@@ -1467,7 +1565,6 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
                       }}
                       options={customPrioridades.map((p) => p.label)}
                       placeholder="Prioridad..."
-                      
                       allowCustomText={false}
                       inputClassName="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                     />

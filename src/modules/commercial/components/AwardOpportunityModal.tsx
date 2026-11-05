@@ -14,7 +14,7 @@ import {
   Percent,
 } from 'lucide-react';
 import { Opportunity, Partner, CRMContact, User, Project, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../types';
-import { formatCOP, formatUSD } from '../../../core/services/trmService';
+import { formatCOP, formatUSD, getStoredTRM } from '../../../core/services/trmService';
 import { getProjectTaxRate } from '../../../core/services/taxService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
@@ -81,12 +81,16 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
   // Buscar coincidencia en el maestro de partners o contactos para auto-rellenar NIT
   const foundPartner = partners.find(
     (p) =>
+      p.id === opportunity.clientId ||
+      (opportunity.clientTaxId && p.taxId === opportunity.clientTaxId) ||
+      (opportunity.clientNit && p.taxId === opportunity.clientNit) ||
       p.name.toLowerCase().includes(opportunity.clientName.toLowerCase()) ||
       opportunity.clientName.toLowerCase().includes(p.name.toLowerCase())
   );
 
   const foundContact = contacts.find(
     (c) =>
+      c.id === opportunity.clientId ||
       c.company.toLowerCase().includes(opportunity.clientName.toLowerCase()) ||
       c.name.toLowerCase() === (opportunity.clientContactPerson || '').toLowerCase()
   );
@@ -96,7 +100,11 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
   const [projectName, setProjectName] = useState(opportunity.title);
   const [clientName, setClientName] = useState(opportunity.clientName);
   const [clientNit, setClientNit] = useState(
-    foundPartner?.taxId || (foundContact as any)?.nit || ''
+    opportunity.clientNit ||
+      opportunity.clientTaxId ||
+      foundPartner?.taxId ||
+      (foundContact as any)?.nit ||
+      ''
   );
   const [clientContact, setClientContact] = useState(
     opportunity.clientContactPerson ||
@@ -133,7 +141,7 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
       if (initialCurrency === 'COP') {
         return opportunity.currency === 'COP' ? opportunity.estimatedValue : Math.round(opportunity.estimatedValue * currentTrm);
       } else {
-        return opportunity.currency === 'USD' ? opportunity.estimatedValue : Math.round(opportunity.estimatedValue / (currentTrm || 4150));
+        return opportunity.currency === 'USD' ? opportunity.estimatedValue : Math.round(opportunity.estimatedValue / (currentTrm || getStoredTRM()));
       }
     }
     if (initialCurrency === 'COP') {
@@ -147,20 +155,23 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
   const [profitPercent, setProfitPercent] = useState<number>(25);
 
   const [offerItems, setOfferItems] = useState<OfferItemDraft[]>(() => {
-    const costTarget = Math.round(contractAmount * 0.75);
-    const rubros = SUGGESTED_RUBROS['Familia 1'];
-    return rubros.map((r, idx) => ({
-      id: `OB-${Date.now()}-${idx + 1}`,
-      rubroName: r.name,
-      description: r.desc,
-      budgetPlanned: Math.round(costTarget * r.pct),
-      hasIva: r.hasIva,
-    }));
+    // Si la cotización activa tiene ítems reales, arrastrarlos legítimamente
+    const quoteItems = opportunity.quotations?.[0]?.items;
+    if (quoteItems && quoteItems.length > 0) {
+      return quoteItems.map((q, idx) => ({
+        id: `OB-${Date.now()}-${idx + 1}`,
+        rubroName: q.description || `Ítem ${idx + 1}`,
+        description: q.category || '',
+        budgetPlanned: Math.round((q.qty || 1) * (q.unitPrice || 0)),
+        hasIva: true,
+      }));
+    }
+    // Cero mock data obligatorio (Regla 4): Inicia limpio listo para entrada o carga bajo demanda
+    return [];
   });
 
-  const handleFamilyChange = (familyName: string) => {
-    setSelectedTemplateFamily(familyName);
-    const matchedKey = Object.keys(SUGGESTED_RUBROS).find((k) => familyName.includes(k)) || 'Familia 1';
+  const handleLoadSuggestedRubros = () => {
+    const matchedKey = Object.keys(SUGGESTED_RUBROS).find((k) => selectedTemplateFamily.includes(k)) || 'Familia 1';
     const rubros = SUGGESTED_RUBROS[matchedKey] || SUGGESTED_RUBROS['Familia 1'];
     const costTarget = Math.round(contractAmount * 0.75);
     setOfferItems(
@@ -172,6 +183,25 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
         hasIva: r.hasIva,
       }))
     );
+  };
+
+  const handleFamilyChange = (familyName: string) => {
+    setSelectedTemplateFamily(familyName);
+    // Si ya tiene rubros cargados de plantilla, actualizarlos; si está vacío, mantener limpio
+    if (offerItems.length > 0) {
+      const matchedKey = Object.keys(SUGGESTED_RUBROS).find((k) => familyName.includes(k)) || 'Familia 1';
+      const rubros = SUGGESTED_RUBROS[matchedKey] || SUGGESTED_RUBROS['Familia 1'];
+      const costTarget = Math.round(contractAmount * 0.75);
+      setOfferItems(
+        rubros.map((r, idx) => ({
+          id: `OB-${Date.now()}-${idx + 1}`,
+          rubroName: r.name,
+          description: r.desc,
+          budgetPlanned: Math.round(costTarget * r.pct),
+          hasIva: r.hasIva,
+        }))
+      );
+    }
   };
 
   const handleItemCostChange = (id: string, value: number) => {
@@ -239,9 +269,9 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
       setOfferItems((prev) => prev.map((it) => ({ ...it, budgetPlanned: Math.round(it.budgetPlanned * currentTrm) })));
     } else {
       // De COP a USD
-      const converted = Math.round(contractAmount / (currentTrm > 0 ? currentTrm : 4000));
+      const converted = Math.round(contractAmount / (currentTrm > 0 ? currentTrm : getStoredTRM()));
       setContractAmount(converted);
-      setOfferItems((prev) => prev.map((it) => ({ ...it, budgetPlanned: Math.round(it.budgetPlanned / (currentTrm > 0 ? currentTrm : 4000)) })));
+      setOfferItems((prev) => prev.map((it) => ({ ...it, budgetPlanned: Math.round(it.budgetPlanned / (currentTrm > 0 ? currentTrm : getStoredTRM())) })));
     }
   };
 
@@ -285,8 +315,12 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
     const projectPayload: Partial<Project> = {
       code: cleanCode,
       name: projectName,
+      clientId: opportunity.clientId || foundPartner?.id || foundContact?.id,
+      opportunityId: opportunity.id,
       clientName: clientName,
       clientNit: clientNit,
+      clientCountry: opportunity.country || 'Colombia',
+      paymentMilestones: opportunity.paymentMilestones,
       quoteCode: activeQuote?.code || `COT-${opportunity.code}-01`,
       contractCode: `TL-OF-${new Date().getFullYear()}-${cleanCode.slice(-3)}`,
       commercialContact: {
@@ -530,7 +564,7 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
                 <div className="text-[10px] text-slate-500 font-medium mt-1 truncate">
                   {currency === 'USD'
                     ? `Equiv: ${formatCOP(contractAmount * currentTrm)}`
-                    : `Equiv: ${formatUSD(contractAmount / (currentTrm || 4000))}`}
+                    : `Equiv: ${formatUSD(contractAmount / (currentTrm || getStoredTRM()))}`}
                 </div>
               </div>
             </div>
@@ -579,19 +613,45 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddCustomRubro}
-                  className="px-2.5 py-1 bg-white hover:bg-slate-100 text-[#00668F] border border-sky-200 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                >
-                  <Plus size={12} />
-                  <span>Agregar Rubro</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {offerItems.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={handleLoadSuggestedRubros}
+                      className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-[#00668F] border border-sky-200 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <Layers size={12} />
+                      <span>Cargar Sugeridos</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleAddCustomRubro}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-[#00668F] border border-sky-200 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                  >
+                    <Plus size={12} />
+                    <span>Agregar Rubro</span>
+                  </button>
+                </div>
               </div>
 
               {/* Lista de Rubros Presupuestales */}
               <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {offerItems.map((item) => (
+                {offerItems.length === 0 ? (
+                  <div className="py-6 px-4 text-center text-xs text-slate-500 bg-white rounded-xl border border-dashed border-slate-200">
+                    <p className="font-semibold text-slate-600">No hay rubros de oferta presupuestados</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Puedes cargar los rubros sugeridos de la plantilla técnica o agregarlos manualmente.</p>
+                    <button
+                      type="button"
+                      onClick={handleLoadSuggestedRubros}
+                      className="mt-2.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-[#00668F] font-bold text-xs rounded-lg border border-sky-200 cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <Layers size={12} />
+                      <span>Cargar rubros de la plantilla</span>
+                    </button>
+                  </div>
+                ) : (
+                  offerItems.map((item) => (
                   <div key={item.id} className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -641,7 +701,7 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
                       </div>
                     </div>
                   </div>
-                ))}
+                )))}
               </div>
 
               {/* Resumen de Hoja de Costos */}

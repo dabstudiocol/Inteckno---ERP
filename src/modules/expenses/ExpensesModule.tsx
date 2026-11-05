@@ -98,6 +98,9 @@ export const ExpensesModule: React.FC = () => {
   );
 
   // Datos Contables de la Factura
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
+  const [selectedItemCode, setSelectedItemCode] = useState<string>('');
+  const [selectedCostMatrixItemId, setSelectedCostMatrixItemId] = useState<string>('');
   const [supplierName, setSupplierName] = useState<string>('');
   const [supplierTaxId, setSupplierTaxId] = useState<string>('');
   const [invoiceNumber, setInvoiceNumber] = useState<string>('');
@@ -134,10 +137,42 @@ export const ExpensesModule: React.FC = () => {
   const selectedOffice =
     moduleConfig.offices.find((o) => o.id === selectedOfficeId) || moduleConfig.offices[0];
 
+  // Opciones de ITEM contractual / Rubros de obra del proyecto seleccionado
+  const projectItemOptions = React.useMemo(() => {
+    if (!selectedProject) return [];
+    const itemsMap = new Map<string, { id: string; name: string; code: string; costMatrixItemId?: string }>();
+    
+    // De los items contractuales
+    ((selectedProject as any).items || []).forEach((it: any) => {
+      itemsMap.set(it.code, {
+        id: it.code,
+        name: `${it.code} — ${it.name}`,
+        code: it.code,
+      });
+    });
+
+    // De los rubros en matriz de costos
+    ((selectedProject as any).costMatrix || []).forEach((c: any) => {
+      if (c.itemCode && !itemsMap.has(c.itemCode)) {
+        itemsMap.set(c.itemCode, {
+          id: c.itemCode,
+          name: `${c.itemCode} — ${c.concept}`,
+          code: c.itemCode,
+          costMatrixItemId: c.id,
+        });
+      }
+    });
+
+    return Array.from(itemsMap.values());
+  }, [selectedProject]);
+
   // Limpiar y resetear el modal al abrir
   const handleOpenNewExpenseModal = () => {
     setReceiptImage(null);
     setUploadedFile(null);
+    setSelectedPartnerId('');
+    setSelectedItemCode('');
+    setSelectedCostMatrixItemId('');
     setSupplierName('');
     setSupplierTaxId('');
     setInvoiceNumber('');
@@ -365,6 +400,9 @@ export const ExpensesModule: React.FC = () => {
       imputationType,
       projectId: isProject ? selectedProject?.id : undefined,
       projectCode: isProject ? selectedProject?.code : undefined,
+      itemCode: isProject && selectedItemCode ? selectedItemCode : undefined,
+      costMatrixItemId: isProject && selectedCostMatrixItemId ? selectedCostMatrixItemId : undefined,
+      partnerId: selectedPartnerId || undefined,
       costCenter,
       date: expenseDate || new Date().toISOString().split('T')[0],
       category: category as ExpenseCategory,
@@ -848,40 +886,66 @@ export const ExpensesModule: React.FC = () => {
                   </div>
 
                   {imputationType === 'proyecto' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <CreatableSelect
-                          label="Asignar al Proyecto STC"
-                          required
-                          value={selectedProject ? `${selectedProject.code} — ${selectedProject.name}` : ''}
-                          onChange={(val) => {
-                            const match = projects.find((p) => `${p.code} — ${p.name}`.toLowerCase() === val.toLowerCase() || p.id === val);
-                            if (match) setSelectedProjectId(match.id);
-                          }}
-                          options={projects.map((p) => ({
-                            id: p.id,
-                            name: `${p.code} — ${p.name}`,
-                            code: p.costCenter,
-                          }))}
-                          placeholder="Buscar o seleccionar proyecto..."
-                          inputClassName="bg-white"
-                        />
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <CreatableSelect
+                            label="Asignar al Proyecto STC"
+                            required
+                            value={selectedProject ? `${selectedProject.code} — ${selectedProject.name}` : ''}
+                            onChange={(val) => {
+                              const match = projects.find((p) => `${p.code} — ${p.name}`.toLowerCase() === val.toLowerCase() || p.id === val);
+                              if (match) setSelectedProjectId(match.id);
+                            }}
+                            options={projects.map((p) => ({
+                              id: p.id,
+                              name: `${p.code} — ${p.name}`,
+                              code: p.costCenter,
+                            }))}
+                            placeholder="Buscar o seleccionar proyecto..."
+                            inputClassName="bg-white"
+                          />
+                        </div>
+                        <div>
+                          <CreatableSelect
+                            label="Colaborador Responsable del Gasto"
+                            required
+                            value={selectedUserId}
+                            onChange={(val) => setSelectedUserId(val)}
+                            options={collaboratorsList.map((collab) => ({
+                              id: collab.id,
+                              name: `${collab.name} (${collab.role})`,
+                              code: collab.role,
+                            }))}
+                            placeholder="Seleccionar colaborador de campo..."
+                            inputClassName="bg-white"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <CreatableSelect
-                          label="Colaborador Responsable del Gasto"
-                          required
-                          value={selectedUserId}
-                          onChange={(val) => setSelectedUserId(val)}
-                          options={collaboratorsList.map((collab) => ({
-                            id: collab.id,
-                            name: `${collab.name} (${collab.role})`,
-                            code: collab.role,
-                          }))}
-                          placeholder="Seleccionar colaborador de campo..."
-                          inputClassName="bg-white"
-                        />
-                      </div>
+
+                      {/* Selector Relacional de ITEM Contractual de Obra */}
+                      {projectItemOptions.length > 0 && (
+                        <div>
+                          <CreatableSelect
+                            label="ITEM Contractual de Obra / Rubro en Matriz (Opcional)"
+                            value={selectedItemCode}
+                            onChange={(val) => {
+                              setSelectedItemCode(val);
+                              const match = projectItemOptions.find((o) => o.code.toUpperCase() === val.toUpperCase() || o.id === val);
+                              if (match?.costMatrixItemId) {
+                                setSelectedCostMatrixItemId(match.costMatrixItemId);
+                              } else {
+                                const matrixMatch = ((selectedProject as any)?.costMatrix || []).find((c: any) => c.itemCode?.toUpperCase() === val.toUpperCase());
+                                setSelectedCostMatrixItemId(matrixMatch?.id || '');
+                              }
+                            }}
+                            options={projectItemOptions.map((o) => ({ id: o.code, name: o.name, code: o.code }))}
+                            placeholder="Vincular a ITEM de obra (ej. ITEM 01, ITEM 02)..."
+                            inputClassName="bg-white"
+                            isClearable={true}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -936,18 +1000,26 @@ export const ExpensesModule: React.FC = () => {
                       value={supplierName}
                       onChange={(val) => {
                         setSupplierName(val);
-                        const matched = (partners || []).find((p) => p.name.toLowerCase() === val.toLowerCase());
-                        if (matched && (matched.nit || matched.taxId)) {
-                          setSupplierTaxId(matched.nit || matched.taxId || '');
+                        const matched = (partners || []).find(
+                          (p) => p.name.toLowerCase() === val.toLowerCase() || p.id === val
+                        );
+                        if (matched) {
+                          setSelectedPartnerId(matched.id);
+                          setSupplierName(matched.name);
+                          if (matched.nit || matched.taxId) {
+                            setSupplierTaxId(matched.nit || matched.taxId || '');
+                          }
+                        } else {
+                          setSelectedPartnerId('');
                         }
                       }}
                       options={(partners || []).map((p) => ({
-                        id: p.name,
+                        id: p.id,
                         name: `${p.name}${p.nit || p.taxId ? ` (${p.nit || p.taxId})` : ''}`,
                         code: p.nit || p.taxId,
                       }))}
                       allowCustomText={true}
-                      placeholder="Seleccionar proveedor o escribir nombre del establecimiento..."
+                      placeholder="Seleccionar proveedor de la base de datos o escribir nombre..."
                       inputClassName="w-full p-2.5 rounded-xl bg-slate-50 font-medium text-gray-900 shadow-2xs"
                     />
                   </div>

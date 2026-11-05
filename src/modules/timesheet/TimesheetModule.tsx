@@ -108,6 +108,11 @@ export const TimesheetModule: React.FC = () => {
     e.preventDefault();
     if (!selectedProject) return;
 
+    const matchedTask = projectWbsTasks.find(
+      (t) => t.id === taskName || t.name === taskName || `[WBS ${t.code}] ${t.name}` === taskName || t.code === taskName
+    );
+    const itemCode = matchedTask?.itemCode || (selectedProject as any)?.projectItems?.[0]?.code || (selectedProject as any)?.items?.[0]?.code || undefined;
+
     submitTimesheet({
       userId: selectedCollaborator.id,
       userName: selectedCollaborator.name,
@@ -115,6 +120,9 @@ export const TimesheetModule: React.FC = () => {
       projectId: selectedProject.id,
       projectCode: selectedProject.code,
       projectName: selectedProject.name,
+      taskId: matchedTask?.id || undefined,
+      itemCode,
+      origin: 'global',
       taskName: taskName || 'Labores en Teleférico',
       date: new Date().toISOString().split('T')[0],
       hours: Number(hours),

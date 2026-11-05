@@ -282,7 +282,8 @@ export interface AuditLogEntry {
     | 'po_created'
     | 'po_approved'
     | 'act_signed'
-    | 'invoice_issued';
+    | 'invoice_issued'
+    | 'milestone_paid';
   performedByUserId: string;
   performedByName: string;
   targetUserId?: string;
@@ -320,6 +321,8 @@ export interface Project {
   id: string;
   code: string; // ej. PRJ-2026-MED-01
   name: string;
+  clientId?: string; // ID foráneo de Partner o CRMContact
+  opportunityId?: string; // ID foráneo de Opportunity comercial
   clientName: string;
   lineOfBusiness: LineOfBusiness;
   serviceType: string; // ej. Magnetografía de cables, Inspección Anual, Overhaul de Cabinas
@@ -329,7 +332,8 @@ export interface Project {
   location: string;
   costCenter: string;
   budgetPV: number; // Planned Value (Valor Planificado)
-  actualCostAC: number; // Actual Cost (Costo Real acumulado)
+  actualCostAC: number; // Actual Cost (Costo Real acumulado en COP)
+  committedCostPO?: number; // Costo Comprometido en Órdenes de Compra activas
   earnedValueEV: number; // Earned Value (Valor Ganado según avance físico)
   spi: number; // EV / PV (>1 adelantado, <1 retrasado)
   cpi: number; // EV / AC (>1 eficiente, <1 sobrecosto)
@@ -363,6 +367,7 @@ export interface Project {
   projectCategory?: string;
   contractAmount?: number;
   currency?: 'COP' | 'USD' | 'EUR';
+  trmApplied?: number; // TRM fijada o pactada para el proyecto
   quoteCode?: string; // Código de Cotización Comercial ITK-AAAAMM-XXX
   contractCode?: string; // Código de Contrato / Orden de Compra Cliente
   clientCountry?: string; // País de Ejecución de la Obra / Servicio
@@ -393,6 +398,7 @@ export interface Project {
   serviceId?: string;
   dynamicData?: Record<string, any>;
   costMatrix?: CostMatrixItem[];
+  projectItems?: ProjectItemFolder[];
   offerBudget?: ProjectOfferBudget | ProjectOfferBudgetItem[];
   billingItems?: ProjectBillingItem[];
   staffAssignments?: StaffAssignment[];
@@ -426,6 +432,8 @@ export interface WBSTask {
   priority?: 'alta' | 'media' | 'baja';
   deliverable?: string; // Entregable clave
   assignedToName?: string;
+  assignedToUserId?: string;
+  itemCode?: string;
   assignedResources?: string[]; // Mano de obra, maquinaria, herramientas especiales
   startDate?: string;
   endDate?: string;
@@ -480,6 +488,9 @@ export interface TimesheetEntry {
   taskName: string;
   taskId?: string; // Tarea WBS vinculada (si aplica)
   origin?: 'proyecto' | 'global'; // Evita doble conteo de horas WBS
+  itemCode?: string; // ITEM contractual de obra vinculado
+  costMatrixItemId?: string; // ID en costMatrix
+  hourlyRateCOP?: number; // Tarifa horaria en COP calculada por RRHH
   date: string;
   hours: number;
   isBillable: boolean;
@@ -514,6 +525,9 @@ export interface ExpenseEntry {
   userName: string;
   projectId?: string;
   projectCode?: string;
+  itemCode?: string; // ITEM contractual de obra vinculado
+  costMatrixItemId?: string; // ID en costMatrix
+  partnerId?: string; // Tercero / Proveedor en Partners
   costCenter: string;
   date: string;
   category: ExpenseCategory;
@@ -748,6 +762,8 @@ export interface PurchaseOrderItem {
   unitPriceCOP: number;
   subtotalUSD: number;
   subtotalCOP: number;
+  itemCode?: string;
+  costMatrixItemId?: string;
   historicalPriceCOP?: number;
   historicalPriceUSD?: number;
   priceInflationPercent?: number; // > 10% activa warning visual
@@ -851,17 +867,23 @@ export interface PurchaseOrder {
 
 export interface InternalRequisitionItem {
   id?: string;
-  productId: string;
+  productId?: string;
   productSku: string;
   productName: string;
   description?: string;
   measures?: string; // Medidas exactas requeridas por ingeniería
   unit?: string;
   qtyRequested: number;
-  inStock: boolean;
-  availableStock: number;
+  qtyApproved?: number;
+  inStock?: boolean;
+  availableStock?: number;
   qtyToPurchase?: number; // Cantidad faltante que se debe comprar
   unitCostUSD?: number;
+  totalCostUSD?: number;
+  category?: string; // Rubro o categoría de compras
+  itemCode?: string; // ITEM contractual vinculado (ej. ITEM 01)
+  costMatrixItemId?: string; // Rubro específico en la matriz de costos
+  taskId?: string; // Tarea WBS asociada
   isHomologated?: boolean;
   homologatedWithSku?: string;
   homologatedWithName?: string;
@@ -944,6 +966,14 @@ export interface InternalRequisition {
   projectId: string;
   projectCode: string;
   projectName: string;
+  itemCode?: string; // ITEM contractual vinculado (ej. ITEM 01)
+  costMatrixItemId?: string; // Rubro específico en la matriz de costos
+  taskId?: string; // Tarea WBS asociada
+  suggestedSupplierId?: string; // Proveedor sugerido (Partner ID)
+  suggestedSupplierName?: string; // Nombre del proveedor sugerido
+  category?: string; // Rubro o categoría financiera de compra
+  justification?: string; // Justificación técnica
+  destinationCity?: string; // Ciudad o lugar de entrega
   submissionDate?: string; // Fecha de envío
   neededDate: string; // Fecha estimada que lo necesitan
   priority: 'normal' | 'urgente' | string;
@@ -969,6 +999,8 @@ export interface BillingMilestone {
   projectId: string;
   projectCode: string;
   projectName: string;
+  clientId?: string;
+  clientNit?: string;
   clientName: string;
   milestoneIndex: number;
   title: string;
@@ -982,8 +1014,11 @@ export interface BillingMilestone {
   invoiceIssued: boolean;
   invoiceNumber?: string;
   invoiceIssuedAt?: string;
+  billingItemId?: string;
   isPaid: boolean;
   paidAt?: string;
+  paymentReference?: string;
+  paymentAmountCOP?: number;
 }
 
 export interface StockMove {
@@ -1122,6 +1157,9 @@ export interface Opportunity {
   title: string;
   clientId: string;
   clientName: string;
+  clientTaxId?: string;
+  clientNit?: string;
+  contactId?: string;
   clientContactPerson?: string;
   clientEmail?: string;
   clientPhone?: string;
@@ -1137,6 +1175,13 @@ export interface Opportunity {
   assignedOwnerId: string;
   assignedOwnerName: string;
   awardedProjectId?: string;
+  paymentMilestones?: {
+    id: string;
+    name: string;
+    percentage: number;
+    amount: number;
+    status?: 'pending' | 'invoiced' | 'paid';
+  }[];
   createdAt: string;
   tags?: string[];
   leadSource?: string;

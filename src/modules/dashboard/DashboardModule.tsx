@@ -21,8 +21,11 @@ import { PastelMetricCard } from '../../components/ui/PastelMetricCard';
 import { DarkActionCard } from '../../components/ui/DarkActionCard';
 import { LightTable } from '../../components/ui/LightTable';
 import { BusinessRulesEngine } from '../../core/rules/businessRules';
+import { getStoredTRM } from '../../core/services/trmService';
+import { DataGuardianBackupsModal } from '../../components/common/DataGuardianBackupsModal';
 
 export const DashboardModule: React.FC = () => {
+  const [isBackupsModalOpen, setIsBackupsModalOpen] = useState(false);
   const {
     currentUser,
     projects,
@@ -31,6 +34,9 @@ export const DashboardModule: React.FC = () => {
     milestones,
     requisitions,
     equipment,
+    employees,
+    partners,
+    users,
     setActiveModule,
     approveTimesheet,
     approvePurchaseOrderGM,
@@ -53,6 +59,35 @@ export const DashboardModule: React.FC = () => {
     projects.reduce((acc, p) => acc + p.cpi, 0) / (projects.length || 1)
   ).toFixed(2);
 
+  const numericCpi = parseFloat(avgCpi);
+  const cpiSavings = !isNaN(numericCpi) && numericCpi > 1
+    ? `+${Math.round((numericCpi - 1) * 100)}% Ahorro`
+    : numericCpi < 1
+    ? `-${Math.round((1 - numericCpi) * 100)}% Desviación`
+    : 'Presupuestado';
+
+  const firstCountdown = countdownMilestones[0];
+  const firstCountdownRemaining = firstCountdown
+    ? BusinessRulesEngine.calculateInvoiceCountdown(
+        firstCountdown.acceptanceActSigned,
+        firstCountdown.invoiceDeadlineTimestamp ? firstCountdown.invoiceDeadlineTimestamp - 48 * 3600 * 1000 : undefined
+      )
+    : null;
+
+  // Compuertas de Calidad con datos reales
+  const totalStaffCount = (employees && employees.length > 0) ? employees.length : users.length;
+  const validStaffCount = (employees && employees.length > 0)
+    ? employees.filter((e) => e.heightCertStatus !== 'vencido' && e.medicalExamStatus !== 'vencido').length
+    : users.length;
+
+  const totalEquipCount = equipment.length;
+  const validEquipCount = equipment.filter(
+    (e) => e.isCalibrated && (!e.calibrationExpiry || new Date(e.calibrationExpiry).getTime() > Date.now())
+  ).length;
+
+  const totalPartnersCount = partners.length;
+  const approvedPartnersCount = partners.filter((p) => p.type === 'supplier' || p.type === 'both').length;
+
   // Acción principal destacada para la Tarjeta Oscura (CTA) según el rol
   const getContextualCTA = () => {
     switch (currentUser.role) {
@@ -71,7 +106,7 @@ export const DashboardModule: React.FC = () => {
             : 'Revisión Estratégica STC',
           subtitle: pendingGmPOs.length > 0
             ? `La orden ${pendingGmPOs[0].orderNumber} (${pendingGmPOs[0].supplierName}) por USD $${pendingGmPOs[0].totalAmountUSD.toLocaleString()} requiere tu Visto Bueno.`
-            : 'Todos los proyectos operan dentro de los márgenes previstos (SPI promedio 1.06).',
+            : `Todos los proyectos operan dentro de los márgenes previstos (SPI promedio ${avgSpi}).`,
           buttonText: pendingGmPOs.length > 0 ? 'Revisar y Autorizar Compra' : 'Ver Panel de Proyectos',
           action: () => setActiveModule(pendingGmPOs.length > 0 ? 'procurement' : 'projects'),
           tag: 'Dirección General',
@@ -81,9 +116,9 @@ export const DashboardModule: React.FC = () => {
           title: countdownMilestones.length > 0
             ? 'Facturación Oportuna: Cuenta 48h Activa'
             : 'Flujo de Caja y Cartera',
-          subtitle: countdownMilestones.length > 0
-            ? `El Hito "${countdownMilestones[0].title}" tiene el acta firmada por el cliente. Emite la factura antes del límite.`
-            : 'No hay actas vencidas pendientes de facturación en el sistema.',
+          subtitle: firstCountdown
+            ? `El Hito "${firstCountdown.title}" tiene el acta firmada por el cliente. Quedan ${firstCountdownRemaining?.hoursRemaining || 0}h para facturar.`
+            : 'No hay actas pendientes de facturación en el sistema.',
           buttonText: countdownMilestones.length > 0 ? 'Ver Cuenta Regresiva' : 'Revisar Hitos',
           action: () => setActiveModule('billing'),
           tag: 'Procedimiento 2.4',
@@ -128,9 +163,20 @@ export const DashboardModule: React.FC = () => {
         </div>
 
         {/* Chip de Única Fuente de Verdad */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold self-start sm:self-auto">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Única Fuente de Verdad Conectada</span>
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Única Fuente de Verdad Conectada</span>
+          </div>
+
+          <button
+            onClick={() => setIsBackupsModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            title="Ver instantáneas de respaldo y puntos de control (Regla 14)"
+          >
+            <ShieldCheck size={14} className="text-emerald-400" />
+            <span>Guardián de Datos</span>
+          </button>
         </div>
       </div>
 
@@ -141,10 +187,10 @@ export const DashboardModule: React.FC = () => {
           color="blue"
           label="Proyectos Activos"
           value={activeProjects.length}
-          subtitle="STC en Medellín, Bogotá, Manizales y Bolivia"
+          subtitle={activeProjects.length > 0 ? `${activeProjects.length} proyecto(s) en ejecución activa` : 'Sin proyectos activos en ejecución'}
           icon={<FolderKanban size={17} className="text-[#00668F]" />}
           badgeText={`SPI ${avgSpi}`}
-          trendData={[40, 50, 48, 55, 62, 60, 68, 72, 75]}
+          trendData={projects.length > 0 ? [40, 50, 48, 55, 62, 60, 68, 72, 75] : [0, 0, 0]}
           onClick={() => setActiveModule('projects')}
         />
 
@@ -153,10 +199,10 @@ export const DashboardModule: React.FC = () => {
           color="purple"
           label="Eficiencia de Costos"
           value={`CPI ${avgCpi}`}
-          subtitle="Generando $1.09 de valor por $1 gastado"
+          subtitle={projects.length > 0 ? `Generando $${avgCpi} de valor por $1 gastado` : 'Sin registros de costos'}
           icon={<TrendingUp size={17} className="text-purple-600" />}
-          badgeText="+9% Ahorro"
-          trendData={[30, 35, 45, 40, 50, 60, 65, 70, 78]}
+          badgeText={projects.length > 0 ? cpiSavings : 'N/D'}
+          trendData={projects.length > 0 ? [30, 35, 45, 40, 50, 60, 65, 70, 78] : [0, 0, 0]}
           onClick={() => setActiveModule('projects')}
         />
 
@@ -165,10 +211,10 @@ export const DashboardModule: React.FC = () => {
           color="green"
           label="Horas por Validar"
           value={`${pendingTimesheets.length} Pend.`}
-          subtitle="Reportes de técnicos de campo listos"
+          subtitle={pendingTimesheets.length > 0 ? `${pendingTimesheets.length} reporte(s) de campo por aprobar` : 'Todas las horas al día'}
           icon={<Clock size={17} className="text-emerald-600" />}
-          badgeText="Al Día"
-          trendData={[20, 25, 22, 28, 35, 30, 40, 42, 45]}
+          badgeText={pendingTimesheets.length > 0 ? 'Pendiente' : 'Al Día'}
+          trendData={timesheets.length > 0 ? [20, 25, 22, 28, 35, 30, 40, 42, 45] : [0, 0, 0]}
           onClick={() => setActiveModule('timesheet')}
         />
 
@@ -176,16 +222,16 @@ export const DashboardModule: React.FC = () => {
         <PastelMetricCard
           color="amber"
           label="Regla 48h Facturación"
-          value={countdownMilestones.length > 0 ? '1 Activa' : '0 Vencidas'}
+          value={countdownMilestones.length > 0 ? `${countdownMilestones.length} Activa(s)` : '0 Pendientes'}
           subtitle={
-            countdownMilestones.length > 0
-              ? 'Quedan 30h para facturar Hito 2'
+            firstCountdown
+              ? `Quedan ${firstCountdownRemaining?.hoursRemaining || 0}h para facturar ${firstCountdown.title}`
               : 'Cumplimiento normativo 100%'
           }
           icon={<FileText size={17} className="text-[#F39200]" />}
-          badgeText={countdownMilestones.length > 0 ? '30h Restantes' : 'Excelente'}
+          badgeText={firstCountdown ? `${firstCountdownRemaining?.hoursRemaining || 0}h Restantes` : 'Al Día'}
           badgePositive={countdownMilestones.length === 0}
-          trendData={[50, 55, 60, 65, 70, 75, 80, 85, 90]}
+          trendData={milestones.length > 0 ? [50, 55, 60, 65, 70, 75, 80, 85, 90] : [0, 0, 0]}
           onClick={() => setActiveModule('billing')}
         />
       </div>
@@ -270,6 +316,59 @@ export const DashboardModule: React.FC = () => {
                 ),
               },
               {
+                key: 'realMargin',
+                header: 'Margen Real',
+                align: 'center',
+                render: (p) => {
+                  const hasCosts = (p.actualCostAC || 0) > 0 || Boolean((p as any).costMatrix && (p as any).costMatrix.length > 0);
+                  const isUSD = p.currency === 'USD';
+                  const trm = p.trmApplied || getStoredTRM();
+
+                  let contractNormalized = p.contractAmount || p.budgetPV || 0;
+                  let plannedNormalized = p.budgetPV || 0;
+                  let actualCostNormalized = p.actualCostAC || 0;
+
+                  if (isUSD) {
+                    // Si el contrato está en USD, llevar costos a USD si fueron registrados en COP
+                    if (plannedNormalized > 1000000 && trm > 0) {
+                      plannedNormalized = Math.round(plannedNormalized / trm);
+                    }
+                    if (actualCostNormalized > 1000000 && trm > 0) {
+                      actualCostNormalized = Math.round(actualCostNormalized / trm);
+                    }
+                  } else {
+                    // Si el contrato está en COP, llevar valores a COP si fueron registrados en USD
+                    if (contractNormalized > 0 && contractNormalized < 100000 && trm > 0) {
+                      contractNormalized = Math.round(contractNormalized * trm);
+                    }
+                    if (plannedNormalized > 0 && plannedNormalized < 100000 && trm > 0) {
+                      plannedNormalized = Math.round(plannedNormalized * trm);
+                    }
+                  }
+
+                  if (!hasCosts || contractNormalized <= 0) {
+                    return (
+                      <span className="text-[11px] text-gray-400 font-medium" title="Sin costos registrados">
+                        N/D
+                      </span>
+                    );
+                  }
+
+                  const eac = Math.max(actualCostNormalized, plannedNormalized);
+                  const marginPct = Math.round(((contractNormalized - eac) / contractNormalized) * 100);
+
+                  return (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                        marginPct >= 20 ? 'bg-emerald-50 text-emerald-700' : marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
+                      }`}
+                    >
+                      {marginPct}%
+                    </span>
+                  );
+                },
+              },
+              {
                 key: 'status',
                 header: 'Estado',
                 align: 'right',
@@ -313,21 +412,33 @@ export const DashboardModule: React.FC = () => {
             <div className="space-y-1.5 text-xs">
               <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">
                 <span className="text-slate-600 font-medium">Compuerta de Seguridad y Salud (SST) Personal</span>
-                <span className="font-bold text-emerald-600">10 / 11 Vigentes</span>
+                <span className={`font-bold ${totalStaffCount === 0 ? 'text-slate-400' : validStaffCount === totalStaffCount ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {totalStaffCount > 0 ? `${validStaffCount} / ${totalStaffCount} Vigentes` : '0 / 0 Registrados'}
+                </span>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">
                 <span className="text-slate-600 font-medium">Calibración Equipos END</span>
-                <span className="font-bold text-emerald-600">3 / 4 Calibrados</span>
+                <span className={`font-bold ${totalEquipCount === 0 ? 'text-slate-400' : validEquipCount === totalEquipCount ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {totalEquipCount > 0 ? `${validEquipCount} / ${totalEquipCount} Calibrados` : '0 / 0 Registrados'}
+                </span>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">
                 <span className="text-slate-600 font-medium">Proveedores Homologados</span>
-                <span className="font-bold text-emerald-600">4 / 5 Aprobados</span>
+                <span className={`font-bold ${totalPartnersCount === 0 ? 'text-slate-400' : approvedPartnersCount === totalPartnersCount ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {totalPartnersCount > 0 ? `${approvedPartnersCount} / ${totalPartnersCount} Aprobados` : '0 / 0 Registrados'}
+                </span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+    
+      {/* Modal de Respaldos Continuos del Guardián de Datos (Regla 14) */}
+      <DataGuardianBackupsModal
+        isOpen={isBackupsModalOpen}
+        onClose={() => setIsBackupsModalOpen(false)}
+      />
     </div>
   );
 };

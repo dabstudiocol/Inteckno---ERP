@@ -14,12 +14,34 @@ import { InternalRequisition } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import { CreateRequisitionModal } from '../procurement/components/CreateRequisitionModal';
 import { RequisitionDetailModal } from '../procurement/components/RequisitionDetailModal';
+import { DocumentFlowBar } from '../../components/common/DocumentFlowBar';
 
 export const RequisitionsModule: React.FC = () => {
   const { requisitions, setActiveModule } = useErp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [initialModalData, setInitialModalData] = useState<{
+    projectId?: string;
+    category?: string;
+    itemConcept?: string;
+  }>({});
+
+  React.useEffect(() => {
+    const handleCreateFromProject = (e: any) => {
+      if (e.detail) {
+        setInitialModalData({
+          projectId: e.detail.project?.id,
+          category: e.detail.initialCategory,
+          itemConcept: e.detail.initialItemConcept,
+        });
+        setIsModalOpen(true);
+      }
+    };
+    window.addEventListener('inteckno:create-solped-for-project', handleCreateFromProject);
+    return () => window.removeEventListener('inteckno:create-solped-for-project', handleCreateFromProject);
+  }, []);
+
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -220,7 +242,13 @@ export const RequisitionsModule: React.FC = () => {
       {/* Modal Universal de Peticiones de Compra (Proyectos & Insumos de Oficina) */}
       <CreateRequisitionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setInitialModalData({});
+        }}
+        initialProjectId={initialModalData.projectId}
+        initialCategory={initialModalData.category}
+        initialItemConcept={initialModalData.itemConcept}
       />
     </div>
   );
