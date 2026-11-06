@@ -20,10 +20,11 @@ import {
   ExternalLink,
   Package,
 } from 'lucide-react';
-import { useErp } from '../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../core/storage/erpStore';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 
 
 interface OperacionesProps {
@@ -66,9 +67,6 @@ interface BenchTestRecord {
   testDate: string;
 }
 
-const STORAGE_KEY_OTS = 'itk_operaciones_ots';
-const STORAGE_KEY_MANUF = 'itk_operaciones_manuf';
-const STORAGE_KEY_TESTS = 'itk_operaciones_bench_tests';
 
 export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   initialSubTab = 'mantenimiento',
@@ -102,6 +100,9 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
 
   const [activeTab, setActiveTab] = useState<'mantenimiento' | 'reparacion' | 'manufactura' | 'taller' | 'plm'>(currentTab);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [workOrderToDelete, setWorkOrderToDelete] = useState<any | null>(null);
+  const [manufOrderToDelete, setManufOrderToDelete] = useState<any | null>(null);
+  const [benchTestToDelete, setBenchTestToDelete] = useState<any | null>(null);
 
   // Catálogos dinámicos editables por Inteckno
   const catalogComponents = useModuleCatalog('mantenimiento', 'criticalComponents');
@@ -150,7 +151,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const availableOtProjectItems = React.useMemo(() => {
     const proj = projects.find((p) => p.id === otProject);
     if (!proj) return [];
-    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    const items = ensureProjectItems(proj);
     const formatted = items.map((it: any) => ({
       id: it.code,
       name: `${it.code} — ${it.name}`,
@@ -207,7 +208,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
     if (manufProjectId === 'STOCK-ITK') return [];
     const proj = projects.find((p) => p.id === manufProjectId);
     if (!proj) return [];
-    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    const items = ensureProjectItems(proj);
     return items.map((it: any) => ({
       id: it.code,
       name: `${it.code} — ${it.name}`,
@@ -257,7 +258,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const availableTestProjectItems = useMemo(() => {
     const proj = projects.find((p) => p.id === testProjectId);
     if (!proj) return [];
-    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    const items = ensureProjectItems(proj);
     return items.map((it: any) => ({
       id: it.code,
       name: `${it.code} — ${it.name}`,
@@ -496,11 +497,38 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                           justification: `Repuestos y consumibles para Orden Técnica ${ot.code} (${ot.component} - ${ot.projectCode}).`,
                         });
                       }}
-                      className="w-full py-1.5 px-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#00668F] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#00668F] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       title="Solicitar repuestos o materiales a Compras (SOLPED) para esta OT"
                     >
                       <Package size={13} />
-                      <span>Pedir Repuestos (SOLPED)</span>
+                      <span>Pedir Repuestos</span>
+                    </button>
+
+                    {ot.status !== 'completada' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextStatus: Record<string, any> = {
+                            diagnostico: 'en_reparacion',
+                            en_reparacion: 'pruebas_banco',
+                            pruebas_banco: 'completada',
+                          };
+                          updateWorkOrder(ot.id, { status: nextStatus[ot.status] || 'completada' });
+                        }}
+                        className="py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-colors cursor-pointer"
+                        title="Avanzar estado operativo"
+                      >
+                        Avanzar →
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setWorkOrderToDelete(ot)}
+                      className="p-1.5 rounded-xl text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                      title="Eliminar Orden de Trabajo"
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -575,21 +603,51 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                       )}
                     </p>
                   </div>
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded uppercase">
-                      Fase: {mo.stage.replace('_', ' ')}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigateWithContext('inventario', 'view_product', { query: mo.partName });
-                        notify?.('info', 'Traspaso a Inventario', `La pieza ${mo.partName} está lista para recepción en Bodega.`);
-                      }}
-                      className="text-xs font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>Ingresar a Stock</span>
-                      <ArrowRight size={12} />
-                    </button>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded uppercase">
+                        {mo.stage.replace('_', ' ')}
+                      </span>
+                      {mo.stage !== 'listo_almacen' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextStage: Record<string, any> = {
+                              corte: 'torno_cnc',
+                              torno_cnc: 'fresado',
+                              fresado: 'tratamiento_termico',
+                              tratamiento_termico: 'listo_almacen',
+                            };
+                            updateManufacturingOrder(mo.id, { stage: nextStage[mo.stage] || 'listo_almacen' });
+                          }}
+                          className="text-[10px] font-bold text-sky-700 hover:text-sky-900 bg-sky-100 hover:bg-sky-200 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                          title="Avanzar etapa de mecanizado"
+                        >
+                          Avanzar →
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigateWithContext('inventario', 'view_product', { query: mo.partName });
+                          notify?.('info', 'Traspaso a Inventario', `La pieza ${mo.partName} está lista para recepción en Bodega.`);
+                        }}
+                        className="text-xs font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Ingresar a Stock</span>
+                        <ArrowRight size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setManufOrderToDelete(mo)}
+                        className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Eliminar Orden de Fabricación"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -671,9 +729,18 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                       <strong className="text-slate-900 font-mono text-sm">{t.requiredForceKN} kN</strong>
                     </div>
                   </div>
-                  <div className="text-[11px] text-slate-500 flex justify-between pt-1 border-t border-slate-100">
-                    <span>Ensayo: {t.testDate}</span>
-                    <span>Técnico: <strong>{t.technician}</strong></span>
+                  <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100">
+                    <div>
+                      <span>Ensayo: {t.testDate}</span> • <span>Técnico: <strong>{t.technician}</strong></span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBenchTestToDelete(t)}
+                      className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Eliminar Ensayo de Banco"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1149,6 +1216,57 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {workOrderToDelete && (
+        <ConfirmDeleteModal
+          isOpen={!!workOrderToDelete}
+          title="Eliminar Orden de Trabajo (OT)"
+          itemName={`OT ${workOrderToDelete.code} (${workOrderToDelete.component})`}
+          description="Esta acción eliminará el registro de mantenimiento u orden técnica del sistema de forma permanente."
+          requireConfirmWord={true}
+          confirmWord="BORRAR"
+          onConfirm={() => {
+            deleteWorkOrder(workOrderToDelete.id);
+            setWorkOrderToDelete(null);
+            notify?.('info', 'OT Eliminada', `La orden técnica ${workOrderToDelete.code} fue eliminada correctamente.`);
+          }}
+          onClose={() => setWorkOrderToDelete(null)}
+        />
+      )}
+
+      {manufOrderToDelete && (
+        <ConfirmDeleteModal
+          isOpen={!!manufOrderToDelete}
+          title="Eliminar Orden de Fabricación Mecanizada"
+          itemName={`Orden ${manufOrderToDelete.code} (${manufOrderToDelete.partName})`}
+          description="Esta acción removerá la orden de mecanizado y producción interna de piezas."
+          requireConfirmWord={true}
+          confirmWord="BORRAR"
+          onConfirm={() => {
+            deleteManufacturingOrder(manufOrderToDelete.id);
+            setManufOrderToDelete(null);
+            notify?.('info', 'Fabricación Eliminada', `La orden de fabricación ${manufOrderToDelete.code} fue eliminada.`);
+          }}
+          onClose={() => setManufOrderToDelete(null)}
+        />
+      )}
+
+      {benchTestToDelete && (
+        <ConfirmDeleteModal
+          isOpen={!!benchTestToDelete}
+          title="Eliminar Ensayo de Banco Hidráulico"
+          itemName={`Ensayo para pinza ${benchTestToDelete.gripSerial}`}
+          description="Esta acción removerá el certificado de prueba de fuerza de apriete registrado."
+          requireConfirmWord={true}
+          confirmWord="BORRAR"
+          onConfirm={() => {
+            deleteBenchTest(benchTestToDelete.id);
+            setBenchTestToDelete(null);
+            notify?.('info', 'Ensayo Eliminado', `El ensayo de banco fue eliminado.`);
+          }}
+          onClose={() => setBenchTestToDelete(null)}
+        />
       )}
 
       <UniversalModuleConfigModal

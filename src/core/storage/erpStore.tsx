@@ -1329,6 +1329,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         benchTests: state.benchTests,
       }, currentUserId);
 
+      syncModuleToCloud('hr', {
+        employees: state.employees,
+        novelties: state.novelties || [],
+        sstInspections: state.sstInspections || [],
+        jobPositions: state.jobPositions || [],
+        candidates: state.candidates || [],
+      }, currentUserId);
+
       syncModuleToCloud('commercial', {
         opportunities: state.opportunities,
         contacts: state.contacts,
@@ -3153,6 +3161,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (po.status === 'received') return { success: false, error: 'La orden ya ha sido recibida previamente' };
 
       setState((prev) => {
+        const newProductsToAdd: Product[] = [];
         const updatedProducts = prev.products.map((prod) => {
           const poItem = po.items.find((it) => it.productId === prod.id || it.sku === prod.sku);
           if (poItem) {
@@ -3165,6 +3174,32 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             };
           }
           return prod;
+        });
+
+        // Crear productos no existentes que hayan sido comprados y recibidos
+        po.items.forEach((it) => {
+          const existsInProducts = prev.products.some((p) => p.id === it.productId || p.sku === it.sku);
+          const alreadyAdded = newProductsToAdd.some((p) => p.id === it.productId || p.sku === it.sku);
+          if (!existsInProducts && !alreadyAdded && it.sku) {
+            const qty = Number(it.qty) || 1;
+            newProductsToAdd.push({
+              id: it.productId || `PRD-${Date.now()}-${it.sku}`,
+              sku: it.sku,
+              name: it.name || it.sku,
+              category: 'Repuestos & Fabricación STC',
+              unit: (it as any).unit || 'unid',
+              costPriceCOP: it.unitPriceCOP || 0,
+              costPriceUSD: it.unitPriceUSD || 0,
+              realStock: qty,
+              reservedStock: 0,
+              availableStock: qty,
+              minStock: 1,
+              isCriticalSpare: false,
+              isHomologatedITK: true,
+              locationName: 'Almacén Central Medellín (Sede Poblado)',
+              shelf: 'A-01',
+            });
+          }
         });
 
         let updatedProjects = prev.projects;
@@ -3251,7 +3286,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           ...prev,
-          products: updatedProducts,
+          products: [...updatedProducts, ...newProductsToAdd],
           purchaseOrders: prev.purchaseOrders.map((p) =>
             p.id === poId ? { ...p, status: 'received', deliveryStatus: 'entregado', physicalReceiptDone: true, technicalQualityInspectionDone: true } : p
           ),
@@ -3265,25 +3300,27 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Huella Digital Inmutable y Sincronización M365 Excel Online
       for (const poItem of po.items) {
         const prod = state.products.find((p) => p.id === poItem.productId || p.sku === poItem.sku);
-        if (prod) {
-          const qty = Number(poItem.qty) || 0;
-          const newStock = prod.realStock + qty;
-          recordInventoryAuditLog({
-            productId: prod.id,
-            productSku: prod.sku,
-            productName: prod.name,
-            userId: state.currentUser?.id || 'USR-001',
-            userName: state.currentUser?.name || 'Recepción Bodega ITK',
-            userEmail: state.currentUser?.email || 'almacen@inteckno.com',
-            source: 'erp_web',
-            previousStock: prod.realStock,
-            newStock,
-            delta: qty,
-            reason: `Ingreso por Orden de Compra ${po.orderNumber} (Proveedor: ${po.supplierName})`,
-            projectCode: po.projectCode,
-          });
-          syncProductChangeToExcelOnline(prod.sku, newStock).catch(() => {});
-        }
+        const qty = Number(poItem.qty) || 0;
+        const prevStock = prod?.realStock || 0;
+        const newStock = prevStock + qty;
+        const prodId = prod?.id || poItem.productId || `PRD-${poItem.sku}`;
+        const prodName = prod?.name || poItem.name || poItem.sku;
+
+        recordInventoryAuditLog({
+          productId: prodId,
+          productSku: poItem.sku,
+          productName: prodName,
+          userId: state.currentUser?.id || 'USR-001',
+          userName: state.currentUser?.name || 'Recepción Bodega ITK',
+          userEmail: state.currentUser?.email || 'almacen@inteckno.com',
+          source: 'erp_web',
+          previousStock: prevStock,
+          newStock,
+          delta: qty,
+          reason: `Ingreso por Orden de Compra ${po.orderNumber} (Proveedor: ${po.supplierName})`,
+          projectCode: po.projectCode,
+        });
+        syncProductChangeToExcelOnline(poItem.sku, newStock).catch(() => {});
       }
 
       // Sincronizar automáticamente con la hoja 'Entrada' de Excel Online
@@ -3331,7 +3368,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       itemReceipts.forEach((r) => receiptMap.set(r.sku, r.receivedQty));
 
       setState((prev) => {
-        // Actualizar stock
+        const newProductsToAdd: Product[] = [];
+        // Actualizar stock de existentes
         const updatedProducts = prev.products.map((prod) => {
           const deltaReceived = receiptMap.get(prod.sku) || 0;
           if (deltaReceived > 0) {
@@ -3343,6 +3381,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             };
           }
           return prod;
+        });
+
+        // Crear productos no existentes que hayan sido recibidos
+        itemReceipts.forEach((r) => {
+          if (r.receivedQty <= 0) return;
+          const it = po.items.find((pItem) => pItem.sku === r.sku);
+          const existsInProducts = prev.products.some((p) => p.sku === r.sku || (it && p.id === it.productId));
+          const alreadyAdded = newProductsToAdd.some((p) => p.sku === r.sku);
+          if (!existsInProducts && !alreadyAdded && r.sku && it) {
+            newProductsToAdd.push({
+              id: it.productId || `PRD-${Date.now()}-${r.sku}`,
+              sku: r.sku,
+              name: it.name || r.sku,
+              category: 'Repuestos & Fabricación STC',
+              unit: (it as any).unit || 'unid',
+              costPriceCOP: it.unitPriceCOP || 0,
+              costPriceUSD: it.unitPriceUSD || 0,
+              realStock: r.receivedQty,
+              reservedStock: 0,
+              availableStock: r.receivedQty,
+              minStock: 1,
+              isCriticalSpare: false,
+              isHomologatedITK: true,
+              locationName: 'Almacén Central Medellín (Sede Poblado)',
+              shelf: 'A-01',
+            });
+          }
         });
 
         // Actualizar items de la orden de compra
@@ -3438,7 +3503,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           ...prev,
-          products: updatedProducts,
+          products: [...updatedProducts, ...newProductsToAdd],
           purchaseOrders: prev.purchaseOrders.map((p) =>
             p.id === poId
               ? {
@@ -3462,24 +3527,26 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       for (const receipt of itemReceipts) {
         if (receipt.receivedQty <= 0) continue;
         const prod = state.products.find((p) => p.sku === receipt.sku);
-        if (prod) {
-          const newStock = prod.realStock + receipt.receivedQty;
-          recordInventoryAuditLog({
-            productId: prod.id,
-            productSku: prod.sku,
-            productName: prod.name,
-            userId: state.currentUser?.id || 'USR-001',
-            userName: state.currentUser?.name || 'Recepción Bodega ITK',
-            userEmail: state.currentUser?.email || 'almacen@inteckno.com',
-            source: 'erp_web',
-            previousStock: prod.realStock,
-            newStock,
-            delta: receipt.receivedQty,
-            reason: `Recepción Parcial (${receipt.receivedQty}) OC ${po.orderNumber}`,
-            projectCode: po.projectCode,
-          });
-          syncProductChangeToExcelOnline(prod.sku, newStock).catch(() => {});
-        }
+        const prodName = prod?.name || po.items.find((it) => it.sku === receipt.sku)?.name || receipt.sku;
+        const prodId = prod?.id || `PRD-${receipt.sku}`;
+        const prevStock = prod?.realStock || 0;
+        const newStock = prevStock + receipt.receivedQty;
+
+        recordInventoryAuditLog({
+          productId: prodId,
+          productSku: receipt.sku,
+          productName: prodName,
+          userId: state.currentUser?.id || 'USR-001',
+          userName: state.currentUser?.name || 'Recepción Bodega ITK',
+          userEmail: state.currentUser?.email || 'almacen@inteckno.com',
+          source: 'erp_web',
+          previousStock: prevStock,
+          newStock,
+          delta: receipt.receivedQty,
+          reason: `Recepción Parcial (${receipt.receivedQty}) OC ${po.orderNumber}`,
+          projectCode: po.projectCode,
+        });
+        syncProductChangeToExcelOnline(receipt.sku, newStock).catch(() => {});
       }
 
       notify('success', 'Despacho Parcial Registrado', `${po.orderNumber}: Stock actualizado con éxito.`);

@@ -16,9 +16,10 @@ import {
   InventoryWriteOffRequest,
   InventoryWriteOffReason,
 } from '../../../types';
-import { useErp } from '../../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../../core/storage/erpStore';
 import { formatCOP } from '../../../core/services/trmService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { UniversalModuleConfigModal } from '../../../components/common/UniversalModuleConfigModal';
 
 interface InventoryWriteOffModalProps {
   isOpen: boolean;
@@ -41,8 +42,10 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
   const [destinacion, setDestinacion] = useState<'BAJA_DEFINITIVA' | 'REASIGNAR_ESLINGAS_IZAJE'>('BAJA_DEFINITIVA');
   const [cantidad, setCantidad] = useState<number>(tramo?.longitudMetros || 1);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(() => projects[0]?.id || '');
+  const [selectedItemCode, setSelectedItemCode] = useState<string>('');
   const [descripcion, setDescripcion] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
 
   // Auto-selección rápida de Centro de Costos si está vacío
   React.useEffect(() => {
@@ -51,14 +54,29 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
     }
   }, [projects, selectedProjectId]);
 
+  // Encontrar proyecto seleccionado
+  const selectedProj = projects.find((p) => p.id === selectedProjectId);
+  const projectCode = selectedProj?.code || selectedProj?.id || 'CENTRO_COSTOS_GENERAL';
+
+  const availableProjectItems = React.useMemo(() => {
+    if (!selectedProj) return [];
+    return ensureProjectItems(selectedProj).map((it) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+  }, [selectedProj]);
+
+  React.useEffect(() => {
+    if (availableProjectItems.length > 0 && !selectedItemCode) {
+      setSelectedItemCode(availableProjectItems[0].code);
+    }
+  }, [availableProjectItems, selectedItemCode]);
+
   if (!isOpen || !product) return null;
 
   const unitCost = product.costPriceCOP || 0;
   const valorTotalCOP = cantidad * unitCost;
-
-  // Encontrar proyecto seleccionado
-  const selectedProj = projects.find((p) => p.id === selectedProjectId);
-  const projectCode = selectedProj?.code || selectedProj?.id || 'CENTRO_COSTOS_GENERAL';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +109,7 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
         unidad: tramo ? 'metros' : product.unit,
         valorEstimadoCOP: valorTotalCOP,
         motivo,
-        descripcionDetallada: `[DESTINO: ${destinacion === 'REASIGNAR_ESLINGAS_IZAJE' ? 'REASIGNACIÓN PARA ESLINGAS / ESTROBOS DE IZAJE EN MONTAJE DE TELEFÉRICOS' : 'BAJA DEFINITIVA / CHATARRA'}] ${descripcion.trim()}`,
+        descripcionDetallada: `[DESTINO: ${destinacion === 'REASIGNAR_ESLINGAS_IZAJE' ? 'REASIGNACIÓN PARA ESLINGAS / ESTROBOS DE IZAJE EN MONTAJE DE TELEFÉRICOS' : 'BAJA DEFINITIVA / CHATARRA'}] ${selectedItemCode ? `[ÍTEM: ${selectedItemCode}] ` : ''}${descripcion.trim()}`,
         centroCostosProyectoId: selectedProj?.id,
         centroCostosProyectoCodigo: projectCode,
         estado: 'PENDIENTE_APROBACION_GERENCIA',
@@ -142,9 +160,7 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('inteckno:open-module-config', { detail: { moduleId: 'almacen' } }));
-              }}
+              onClick={() => setIsConfigModalOpen(true)}
               title="Configurar Opciones y Catálogos de Almacén"
               className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-rose-200 hover:text-white transition-colors cursor-pointer"
             >
@@ -236,7 +252,8 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
                 type="number"
                 min="0.01"
                 step="any"
-                value={cantidad}
+                value={cantidad || ''}
+                placeholder="0"
                 onChange={(e) => setCantidad(parseFloat(e.target.value) || 0)}
                 className="w-full p-2.5 border border-gray-300 rounded-xl font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#00668F]"
                 required
@@ -278,6 +295,25 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
               Código de imputación contable: <strong>{projectCode}</strong>
             </span>
           </div>
+
+          {/* Ítem Contractual / Carpeta del Proyecto */}
+          {selectedProj && availableProjectItems.length > 0 && (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Ítem Contractual / Carpeta de Imputación *
+              </label>
+              <CreatableSelect
+                value={selectedItemCode ? (availableProjectItems.find((i) => i.code === selectedItemCode)?.name || selectedItemCode) : ''}
+                onChange={(val) => {
+                  const match = availableProjectItems.find((i) => i.id === val || i.name === val || i.code === val);
+                  setSelectedItemCode(match ? match.code : val);
+                }}
+                options={availableProjectItems}
+                placeholder="Seleccionar Ítem del proyecto (ej: ITEM 01)..."
+                inputClassName="bg-white border-gray-300"
+              />
+            </div>
+          )}
 
           {/* Impacto Económico */}
           <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl flex items-center justify-between">
@@ -329,6 +365,13 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
         </form>
 
       </div>
+
+      <UniversalModuleConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        moduleId="almacen"
+        moduleTitle="Catálogos y Opciones de Almacén"
+      />
     </div>
   );
 };

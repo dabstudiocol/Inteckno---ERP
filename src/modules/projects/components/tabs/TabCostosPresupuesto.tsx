@@ -61,7 +61,7 @@ import {
 } from 'recharts';
 import { Project } from '../../../../types';
 import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
-import { useErp } from '../../../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../../../core/storage/erpStore';
 import { formatCOP, formatUSD, getStoredTRM } from '../../../../core/services/trmService';
 import { getLaborRates } from '../../../../core/services/moduleConfigService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
@@ -332,7 +332,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   // Carpetas / ITEMS del proyecto
   const [projectItems, setProjectItems] = useState<ProjectItemFolder[]>(() => {
-    return (project as any).projectItems || [];
+    return ensureProjectItems(project);
   });
 
   // Registros de facturación del proyecto
@@ -411,8 +411,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     if ((project as any)?.costMatrix !== undefined) {
       setCostItems((project as any).costMatrix || []);
     }
-    if ((project as any)?.projectItems !== undefined) {
-      setProjectItems((project as any).projectItems || []);
+    if ((project as any)?.projectItems !== undefined || (project as any)?.offerBudget !== undefined) {
+      setProjectItems(ensureProjectItems(project));
     }
     if ((project as any)?.billingItems !== undefined) {
       setBillingItems((project as any).billingItems || []);

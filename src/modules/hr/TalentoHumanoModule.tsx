@@ -30,7 +30,7 @@ import {
   Sparkles,
   Building2,
 } from 'lucide-react';
-import { useErp } from '../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../core/storage/erpStore';
 import { EmployeeRecord, PayrollNovelty, PayrollNoveltyType } from '../../types';
 import { AiDocumentUploader } from '../../components/ui/AiDocumentUploader';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
@@ -139,7 +139,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
   const availableInspProjectItems = useMemo(() => {
     const proj = projects.find((p) => p.id === inspProjectId);
     if (!proj) return [];
-    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    const items = ensureProjectItems(proj);
     return items.map((it: any) => ({
       id: it.code,
       name: `${it.code} — ${it.name}`,

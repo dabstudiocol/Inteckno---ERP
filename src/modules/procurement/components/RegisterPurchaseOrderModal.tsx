@@ -19,7 +19,7 @@ import { PurchaseOrder, Partner, Product, Project, PurchaseOrderItem, InternalRe
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
-import { useErp } from '../../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../../core/storage/erpStore';
 
 interface PoItemRow {
   id: string;
@@ -92,6 +92,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   const [paymentDueDate, setPaymentDueDate] = useState('');
   const [costCategory, setCostCategory] = useState<string>('');
   const [selectedCostItemId, setSelectedCostItemId] = useState<string>('');
+  const [selectedItemCode, setSelectedItemCode] = useState<string>('');
   const [costType, setCostType] = useState<'directo' | 'indirecto'>('directo');
   const [isFastTrackEmergency, setIsFastTrackEmergency] = useState(false);
 
@@ -109,6 +110,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       if (req.requesterName) setRequesterName(req.requesterName);
       if (req.projectId) setSelectedProjectId(req.projectId);
       if (req.costMatrixItemId) setSelectedCostItemId(req.costMatrixItemId);
+      if (req.itemCode) setSelectedItemCode(req.itemCode);
       if (req.category) setCostCategory(req.category);
 
       // Proveedor sugerido
@@ -174,6 +176,49 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
   const selectedSupplier = partners.find((p) => p.id === selectedSupplierId);
+
+  // Opciones de Ítems Contractuales y Rubros Presupuestales (Regla 11 & Adjudicación Granular)
+  const availableProjectItemOptions = React.useMemo(() => {
+    if (!selectedProject) return [];
+    const projectItems = ensureProjectItems(selectedProject);
+    const matrixItems = selectedProject.costMatrix || [];
+
+    const list: { id: string; name: string; code: string }[] = [];
+
+    projectItems.forEach((it) => {
+      list.push({
+        id: it.code,
+        code: it.code,
+        name: `${it.code} — ${it.name}${it.budgetPlanned ? ` (Ppto: ${formatCOP(it.budgetPlanned)})` : ''}`,
+      });
+    });
+
+    matrixItems.forEach((cm) => {
+      if (!list.some((l) => l.id === cm.id || (cm.itemCode && l.code === cm.itemCode))) {
+        list.push({
+          id: cm.id,
+          code: cm.itemCode || '',
+          name: `${cm.itemCode ? `[${cm.itemCode}] ` : ''}${cm.concept} (${cm.category})`,
+        });
+      }
+    });
+
+    if (list.length === 0) {
+      return supplierCategoriesOptions.length > 0
+        ? supplierCategoriesOptions.map((cat) => ({ id: cat.name, name: cat.name, code: '' }))
+        : [
+            { id: 'Repuestos & Fabricación STC', name: 'Repuestos & Fabricación STC', code: '' },
+            { id: 'Consumibles & EPP', name: 'Consumibles & EPP', code: '' },
+            { id: 'Viáticos & Movilidad', name: 'Viáticos & Movilidad', code: '' },
+            { id: 'Inspección Cables (MRT)', name: 'Inspección Cables (MRT)', code: '' },
+            { id: 'Ensayos NDT / END', name: 'Ensayos NDT / END', code: '' },
+            { id: 'Mano de Obra ITK', name: 'Mano de Obra ITK', code: '' },
+            { id: 'Subcontratos & Grúas', name: 'Subcontratos & Grúas', code: '' },
+          ];
+    }
+
+    return list;
+  }, [selectedProject, supplierCategoriesOptions]);
 
   // Cálculos de Totales
   const totalAmountCOP = items.reduce(
@@ -356,7 +401,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
         subtotalUSD: it.unitPriceUSD * it.qty,
         subtotalCOP: it.unitPriceCOP * it.qty,
         historicalPriceCOP: it.historicalPriceCOP,
-        itemCode: it.itemCode || origReqItem?.itemCode || req?.itemCode,
+        itemCode: it.itemCode || origReqItem?.itemCode || selectedItemCode || req?.itemCode,
         costMatrixItemId: it.costMatrixItemId || origReqItem?.costMatrixItemId || selectedCostItemId || undefined,
       };
     });
@@ -397,7 +442,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       costCategory,
       costMatrixItemId: selectedCostItemId || undefined,
       costType,
-      itemCode: (() => {
+      itemCode: selectedItemCode || (() => {
         if (selectedCostItemId) {
           const found = selectedProject?.costMatrix?.find((cm) => cm.id === selectedCostItemId);
           if (found?.itemCode) return found.itemCode;
@@ -700,37 +745,19 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
             <div>
               <label className="block text-slate-700 font-semibold mb-1">
-                ITEM Contractual / Rubro del Proyecto
-                {selectedProject?.costMatrix && selectedProject.costMatrix.length > 0 && (
+                Ítem Contractual / Carpeta Presupuestal *
+                {selectedProject && (
                   <span className="ml-1 text-[10px] text-emerald-600 font-normal">
-                    ({selectedProject.costMatrix.length} rubros presupuestados)
+                    ({availableProjectItemOptions.length} opciones disponibles)
                   </span>
                 )}
               </label>
               <CreatableSelect
-                options={
-                  selectedProject?.costMatrix && selectedProject.costMatrix.length > 0
-                    ? selectedProject.costMatrix.map((cm) => ({
-                        id: cm.id,
-                        name: `${cm.itemCode ? `[${cm.itemCode}] ` : ''}${cm.concept} (${cm.category})`,
-                        code: cm.itemCode || cm.category,
-                      }))
-                    : supplierCategoriesOptions.length > 0
-                    ? supplierCategoriesOptions.map((cat) => ({ id: cat.name, name: cat.name }))
-                    : [
-                        { id: 'Repuestos & Fabricación STC', name: 'Repuestos & Fabricación STC' },
-                        { id: 'Consumibles & EPP', name: 'Consumibles & EPP' },
-                        { id: 'Viáticos & Movilidad', name: 'Viáticos & Movilidad' },
-                        { id: 'Inspección Cables (MRT)', name: 'Inspección Cables (MRT)' },
-                        { id: 'Ensayos NDT / END', name: 'Ensayos NDT / END' },
-                        { id: 'Mano de Obra ITK', name: 'Mano de Obra ITK' },
-                        { id: 'Mano de Obra Externa', name: 'Mano de Obra Externa' },
-                        { id: 'Subcontratos & Grúas', name: 'Subcontratos & Grúas' },
-                        { id: 'Imprevistos de Obra', name: 'Imprevistos de Obra' },
-                      ]
-                }
+                options={availableProjectItemOptions}
                 value={
-                  selectedCostItemId
+                  selectedItemCode
+                    ? (availableProjectItemOptions.find((o) => o.code === selectedItemCode || o.id === selectedItemCode)?.name || selectedItemCode)
+                    : selectedCostItemId
                     ? (() => {
                         const found = selectedProject?.costMatrix?.find((cm) => cm.id === selectedCostItemId);
                         return found ? `${found.itemCode ? `[${found.itemCode}] ` : ''}${found.concept}` : selectedCostItemId;
@@ -738,17 +765,26 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
                     : costCategory
                 }
                 onChange={(val) => {
-                  const foundItem = selectedProject?.costMatrix?.find((cm) => cm.id === val || cm.concept === val);
+                  const foundItem = availableProjectItemOptions.find((o) => o.id === val || o.name === val || o.code === val);
                   if (foundItem) {
+                    setSelectedItemCode(foundItem.code || '');
                     setSelectedCostItemId(foundItem.id);
-                    setCostCategory(foundItem.concept || foundItem.category);
+                    setCostCategory(foundItem.name);
                   } else {
-                    setSelectedCostItemId('');
-                    setCostCategory(val);
+                    const foundMatrix = selectedProject?.costMatrix?.find((cm) => cm.id === val || cm.concept === val);
+                    if (foundMatrix) {
+                      setSelectedItemCode(foundMatrix.itemCode || '');
+                      setSelectedCostItemId(foundMatrix.id);
+                      setCostCategory(foundMatrix.concept || foundMatrix.category);
+                    } else {
+                      setSelectedItemCode('');
+                      setSelectedCostItemId('');
+                      setCostCategory(val);
+                    }
                   }
                 }}
                 allowCustomText={true}
-                placeholder="Seleccionar ITEM o rubro presupuestal..."
+                placeholder="Seleccionar Ítem contractual (ej: ITEM 01) o rubro..."
               />
             </div>
 

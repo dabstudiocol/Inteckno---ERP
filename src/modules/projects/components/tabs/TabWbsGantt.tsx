@@ -20,7 +20,7 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import { Project, WBSTask, DependencyType } from '../../../../types';
-import { useErp } from '../../../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../../core/services/moduleConfigService';
 import { generateWBSWithLuciana } from '../../../../core/services/lucianaService';
 import { UniversalModuleConfigModal } from '../../../../components/common/UniversalModuleConfigModal';
@@ -233,26 +233,25 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
     const list: { id: string; name: string }[] = [];
     const addedCodes = new Set<string>();
 
-    if (project.projectItems && project.projectItems.length > 0) {
-      project.projectItems.forEach((pi: any) => {
-        if (pi.code && !addedCodes.has(pi.code)) {
-          addedCodes.add(pi.code);
-          list.push({ id: pi.code, name: `${pi.code} — ${pi.name || 'Ítem Contractual'}` });
-        }
-      });
-    }
+    const ensured = ensureProjectItems(project);
+    ensured.forEach((pi: any) => {
+      if (pi.code && !addedCodes.has(pi.code)) {
+        addedCodes.add(pi.code);
+        list.push({ id: pi.code, name: `${pi.code} — ${pi.name || 'Ítem Contractual'}` });
+      }
+    });
 
     if (project.costMatrix && project.costMatrix.length > 0) {
       project.costMatrix.forEach((cm: any) => {
         if (cm.itemCode && !addedCodes.has(cm.itemCode)) {
           addedCodes.add(cm.itemCode);
-          list.push({ id: cm.itemCode, name: `${cm.itemCode} — ${cm.description || cm.category}` });
+          list.push({ id: cm.itemCode, name: `${cm.itemCode} — ${cm.concept || cm.description || cm.category}` });
         }
       });
     }
 
     return list;
-  }, [project.projectItems, project.costMatrix]);
+  }, [project]);
 
   // Formulario de Actividad WBS con Avance y Fechas Vinculadas
   const [taskForm, setTaskForm] = useState({

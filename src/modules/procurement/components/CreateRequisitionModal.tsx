@@ -198,6 +198,8 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
       return;
     }
 
+    const isProj = reqType === 'project';
+
     const formattedItems = validItems.map((it) => {
       const matchProd = products.find(
         (p) => p.sku.toLowerCase() === it.sku.toLowerCase() || p.name.toLowerCase() === it.name.toLowerCase()
@@ -216,7 +218,6 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
       };
     });
 
-    const isProj = reqType === 'project';
     const effectivePriority = priority || (urgencyOptions[0]?.name || 'Normal (Atención en Ventana Regular)');
     const effectiveReqType = requisitionType || (requisitionTypeOptions[0]?.name || 'Repuesto Crítico STC');
 
