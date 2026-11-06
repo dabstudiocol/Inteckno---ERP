@@ -20,6 +20,8 @@ interface CreateRequisitionModalProps {
   initialProjectId?: string;
   initialCategory?: string;
   initialItemConcept?: string;
+  initialItemCode?: string;
+  initialJustification?: string;
 }
 
 interface RequisitionItemDraft {
@@ -38,6 +40,8 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   initialProjectId,
   initialCategory,
   initialItemConcept,
+  initialItemCode,
+  initialJustification,
 }) => {
   const { projects, products, currentUser, createRequisition, notify } = useErp();
 
@@ -86,6 +90,12 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
         setReqType('project');
         setSelectedProjectId(initialProjectId);
       }
+      if (initialItemCode) {
+        setSelectedItemCode(initialItemCode);
+      }
+      if (initialJustification) {
+        setJustification(initialJustification);
+      }
       if (initialItemConcept) {
         setItems([
           {
@@ -98,7 +108,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
         ]);
       }
     }
-  }, [isOpen, initialProjectId, initialItemConcept]);
+  }, [isOpen, initialProjectId, initialItemConcept, initialItemCode, initialJustification]);
 
 
   // Sincronizar selección inicial de catálogos dinámicos

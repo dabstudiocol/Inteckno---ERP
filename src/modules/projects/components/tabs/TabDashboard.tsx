@@ -361,8 +361,8 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
             <span className="text-[11px] text-slate-500">de {formatCOP(budgetPV)} (Presupuesto Planificado)</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-            <span>CPI: <strong className={cpi >= 1 ? 'text-emerald-700' : 'text-red-700'}>{cpi}</strong></span>
-            <span>Margen EAC: <strong className={fin.projectedMarginPct !== null && fin.projectedMarginPct >= 0 ? 'text-emerald-700' : 'text-slate-600'}>{fin.projectedMarginPct !== null ? `${fin.projectedMarginPct}%` : 'N/D (Sin costos)'}</strong></span>
+            <span>CPI: <strong className={actualCostAC > 0 && cpi >= 1 ? 'text-emerald-700' : actualCostAC > 0 ? 'text-red-700' : 'text-slate-500'}>{actualCostAC > 0 ? cpi : 'N/D'}</strong></span>
+            <span>Margen EAC: <strong className={fin.projectedMarginPct !== null && fin.projectedMarginPct >= 0 ? 'text-emerald-700' : 'text-slate-600'}>{fin.projectedMarginPct !== null ? `${fin.projectedMarginPct}%` : 'N/D'}</strong></span>
           </div>
         </div>
 

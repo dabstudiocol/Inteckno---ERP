@@ -18,6 +18,7 @@ import {
   User,
   Trash2,
   ExternalLink,
+  Package,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
@@ -480,6 +481,28 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                       {ot.status.replace('_', ' ')}
                     </span>
                   </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigateWithContext('requisiciones', 'create_req_from_ot', {
+                          otId: ot.id,
+                          otCode: ot.code,
+                          projectId: ot.projectId,
+                          projectCode: ot.projectCode,
+                          itemCode: ot.itemCode,
+                          component: ot.component,
+                          justification: `Repuestos y consumibles para Orden Técnica ${ot.code} (${ot.component} - ${ot.projectCode}).`,
+                        });
+                      }}
+                      className="w-full py-1.5 px-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#00668F] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      title="Solicitar repuestos o materiales a Compras (SOLPED) para esta OT"
+                    >
+                      <Package size={13} />
+                      <span>Pedir Repuestos (SOLPED)</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -559,7 +582,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        setActiveModule('inventario');
+                        navigateWithContext('inventario', 'view_product', { query: mo.partName });
                         notify?.('info', 'Traspaso a Inventario', `La pieza ${mo.partName} está lista para recepción en Bodega.`);
                       }}
                       className="text-xs font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"

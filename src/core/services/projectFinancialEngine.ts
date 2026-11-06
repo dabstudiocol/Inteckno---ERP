@@ -120,7 +120,7 @@ export function calculateProjectFinancials(
   const eac = Math.max(actualCostAC, plannedCostPV);
   const projectedProfitCOP = contractValue > 0 ? contractValue - eac : 0;
   
-  const hasRegisteredCosts = actualCostAC > 0 || plannedCostPV > 0;
+  const hasRegisteredCosts = actualCostAC > 0;
   
   let projectedMarginPct: number | null = null;
   if (contractValue > 0 && hasRegisteredCosts) {

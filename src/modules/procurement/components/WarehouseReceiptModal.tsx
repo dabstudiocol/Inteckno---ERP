@@ -19,6 +19,7 @@ interface WarehouseReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   purchaseOrders?: PurchaseOrder[];
+  initialPoId?: string;
   onApplyReceipt?: (orderId: string, itemReceipts: { sku: string; receivedQty: number; notes?: string }[]) => { success: boolean; error?: string };
 }
 
@@ -34,6 +35,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
   isOpen,
   onClose,
   purchaseOrders: propPOs,
+  initialPoId,
   onApplyReceipt,
 }) => {
   const erpStore = useErp();
@@ -51,7 +53,13 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
     (po) => po && po.status !== 'rejected' && po.status !== 'draft'
   );
 
-  const [selectedPOId, setSelectedPOId] = useState<string>(pendingPOs[0]?.id || '');
+  const [selectedPOId, setSelectedPOId] = useState<string>(initialPoId || pendingPOs[0]?.id || '');
+
+  useEffect(() => {
+    if (initialPoId && safePOs.some((p) => p.id === initialPoId)) {
+      setSelectedPOId(initialPoId);
+    }
+  }, [initialPoId, safePOs]);
   const selectedPO = safePOs.find((p) => p.id === selectedPOId) || pendingPOs[0] || null;
 
   // Estado de cada ítem en la recepción

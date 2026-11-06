@@ -49,6 +49,8 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
     createMilestone,
     notify,
     navigateWithContext,
+    navigationContext,
+    clearNavigationContext,
   } = useErp();
   const currentTrm = getStoredTRM();
   const [activeTab, setActiveTab] = useState<BillingSubTab>(initialView === 'acts' ? 'acts' : 'milestones');
@@ -60,6 +62,29 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
       setActiveTab('milestones');
     }
   }, [initialView]);
+
+  // Autopista Determinista de Navegación Inter-Módulo (Regla 16)
+  React.useEffect(() => {
+    if (navigationContext && (navigationContext.targetModule === 'contabilidad' || navigationContext.targetModule === 'facturacion' || navigationContext.targetModule === 'billing')) {
+      if (navigationContext.action === 'create_milestone') {
+        setActiveTab('milestones');
+        if (navigationContext.data?.projectId) {
+          setMsProjectId(navigationContext.data.projectId);
+        }
+        if (navigationContext.data?.clientNit) {
+          setMsClientNit(navigationContext.data.clientNit);
+        }
+        setIsNewMilestoneModalOpen(true);
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_acts') {
+        setActiveTab('acts');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_invoices' || navigationContext.action === 'view_milestones') {
+        setActiveTab('milestones');
+        clearNavigationContext();
+      }
+    }
+  }, [navigationContext, clearNavigationContext]);
 
   // Estados para Radicación de Nuevo Hito Contractual
   const [isNewMilestoneModalOpen, setIsNewMilestoneModalOpen] = useState(false);

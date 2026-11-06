@@ -43,7 +43,7 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
   onClose,
   onUpdatePo,
 }) => {
-  const { notify, navigateWithContext } = useErp();
+  const { notify, navigateWithContext, approvePurchaseOrderGM } = useErp();
   const [activeTab, setActiveTab] = useState<'items' | 'receipts' | 'finances' | 'logistics'>('items');
 
   // Estado local para enmienda
@@ -219,14 +219,31 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
             </p>
           </div>
 
-          <button
-            onClick={onClose}
-            type="button"
-            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer shrink-0"
-            title="Cerrar Panel"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {!po.gmApproved && (
+              <button
+                type="button"
+                onClick={() => {
+                  approvePurchaseOrderGM(po.id);
+                  onUpdatePo({ gmApproved: true, status: 'approved' });
+                  notify('success', 'Visto Bueno Concedido', `La orden ${po.orderNumber} fue autorizada por Gerencia.`);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5"
+                title="Autorizar orden de compra con visto bueno de Gerencia General"
+              >
+                <ShieldCheck size={14} />
+                <span>Visto Bueno GM</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              type="button"
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer shrink-0"
+              title="Cerrar Panel"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* ALERTA CAMBIARIA TRM (SI APLICA) */}
@@ -468,6 +485,34 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
                   <div className="text-xl font-black text-rose-800 mt-1">{nonConformingQty} unid</div>
                   <div className="text-[10px] text-rose-600">Rechazadas por golpe o medida</div>
                 </div>
+              </div>
+
+              {/* Acción de Recepción en Almacén (Autopista Almacén) */}
+              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <div className="font-bold text-emerald-900 flex items-center gap-1.5 text-sm">
+                    <Package size={16} className="text-emerald-700" />
+                    <span>Recepción de Mercancía en Almacén</span>
+                  </div>
+                  <p className="text-emerald-700 text-[11px] mt-0.5">
+                    {po.status === 'received'
+                      ? 'La totalidad de los ítems de esta orden fueron recibidos en bodega física.'
+                      : `Pendientes por ingresar: ${Math.max(0, totalOrderedQty - totalReceivedQty)} unid. Realiza el conteo y verificación de remisión.`}
+                  </p>
+                </div>
+                {po.status !== 'received' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigateWithContext('inventario', 'open_po_receipt', { poId: po.id, orderNumber: po.orderNumber });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
+                  >
+                    <Package size={14} />
+                    <span>Recibir en Almacén</span>
+                  </button>
+                )}
               </div>
 
               {/* Registro de No Conformidad */}

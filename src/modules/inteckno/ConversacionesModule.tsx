@@ -316,6 +316,8 @@ export const ConversacionesModule: React.FC = () => {
     updateProject,
     createRequisition,
     notify,
+    navigationContext,
+    clearNavigationContext,
   } = useErp();
 
   // Solo visible para usuarios con acceso a TODOS los módulos (Administración TI y Gerencia General / Administrativa)
@@ -337,6 +339,24 @@ export const ConversacionesModule: React.FC = () => {
       setMobileChatView('chat');
     }
   }, [activeChatChannelId]);
+
+  // Autopista Determinista de Navegación Inter-Módulo (Regla 16)
+  useEffect(() => {
+    if (navigationContext && (navigationContext.targetModule === 'conversaciones' || navigationContext.targetModule === 'chat' || navigationContext.targetModule === 'mensajes')) {
+      if (navigationContext.action === 'open_channel' && navigationContext.data?.channelId) {
+        setActiveGroupId(navigationContext.data.channelId);
+        setMobileChatView('chat');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'open_direct' && navigationContext.data?.targetUserId) {
+        const directGroupId = getOrCreateDirectChat(navigationContext.data.targetUserId);
+        if (directGroupId) {
+          setActiveGroupId(directGroupId);
+          setMobileChatView('chat');
+        }
+        clearNavigationContext();
+      }
+    }
+  }, [navigationContext, clearNavigationContext, currentUser?.id, getOrCreateDirectChat]);
 
   // Marcar automáticamente como leídos los mensajes del chat en visualización
   useEffect(() => {

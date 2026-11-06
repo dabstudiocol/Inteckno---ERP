@@ -25,16 +25,20 @@ export const RequisitionsModule: React.FC = () => {
     projectId?: string;
     category?: string;
     itemConcept?: string;
+    itemCode?: string;
+    justification?: string;
   }>({});
 
   React.useEffect(() => {
     if (navigationContext && navigationContext.targetModule === 'requisiciones') {
-      if (navigationContext.action === 'create_solped') {
+      if (navigationContext.action === 'create_solped' || navigationContext.action === 'create_req_from_ot') {
         const proj = navigationContext.data?.project;
         setInitialModalData({
           projectId: proj?.id || navigationContext.data?.projectId,
           category: navigationContext.data?.category,
           itemConcept: navigationContext.data?.itemConcept,
+          itemCode: navigationContext.data?.itemCode,
+          justification: navigationContext.data?.justification || navigationContext.data?.description,
         });
         setIsModalOpen(true);
         clearNavigationContext();
@@ -269,6 +273,8 @@ export const RequisitionsModule: React.FC = () => {
         initialProjectId={initialModalData.projectId}
         initialCategory={initialModalData.category}
         initialItemConcept={initialModalData.itemConcept}
+        initialItemCode={initialModalData.itemCode}
+        initialJustification={initialModalData.justification}
       />
     </div>
   );

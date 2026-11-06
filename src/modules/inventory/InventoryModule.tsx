@@ -118,9 +118,12 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     activeModuleId,
     setActiveModule,
     navigateWithContext,
+    navigationContext,
+    clearNavigationContext,
   } = useErp();
 
   const [isWarehouseReceiptModalOpen, setIsWarehouseReceiptModalOpen] = useState(false);
+  const [preselectedPoIdForReceipt, setPreselectedPoIdForReceipt] = useState<string>('');
   const [isClearInventoryModalOpen, setIsClearInventoryModalOpen] = useState(false);
   const [isExcelUploadModalOpen, setIsExcelUploadModalOpen] = useState(false);
   const [isWriteOffModalOpen, setIsWriteOffModalOpen] = useState(false);
@@ -140,6 +143,35 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       setActiveTab('unified');
     }
   }, [initialTab, activeModuleId]);
+
+  // Autopista Determinista de Navegación Inter-Módulo (Regla 16)
+  React.useEffect(() => {
+    if (navigationContext && (navigationContext.targetModule === 'inventario' || navigationContext.targetModule === 'almacen' || navigationContext.targetModule === 'bodega')) {
+      if (navigationContext.action === 'open_po_receipt') {
+        setActiveTab('unified');
+        if (navigationContext.data?.poId) {
+          setPreselectedPoIdForReceipt(navigationContext.data.poId);
+        }
+        setIsWarehouseReceiptModalOpen(true);
+        clearNavigationContext();
+      } else if (navigationContext.action === 'create_dispatch') {
+        setActiveTab('dispatch');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'create_return') {
+        setActiveTab('return');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'barcode') {
+        setActiveTab('barcode');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_product') {
+        setActiveTab('unified');
+        if (navigationContext.data?.sku || navigationContext.data?.query) {
+          setSearchQuery(navigationContext.data.sku || navigationContext.data.query);
+        }
+        clearNavigationContext();
+      }
+    }
+  }, [navigationContext, clearNavigationContext]);
 
   // Escuchar evento para abrir recepción de mercancía desde notificaciones
   React.useEffect(() => {
@@ -3884,7 +3916,11 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       {/* MODAL: INGRESO AL ALMACÉN / RECEPCIÓN FÍSICA DE MERCANCÍA (ALMACENISTA) */}
       <WarehouseReceiptModal
         isOpen={isWarehouseReceiptModalOpen}
-        onClose={() => setIsWarehouseReceiptModalOpen(false)}
+        onClose={() => {
+          setIsWarehouseReceiptModalOpen(false);
+          setPreselectedPoIdForReceipt('');
+        }}
+        initialPoId={preselectedPoIdForReceipt}
         purchaseOrders={purchaseOrders}
         onApplyReceipt={(orderId, itemReceipts) => {
           return receivePurchaseOrderPartial(orderId, itemReceipts);

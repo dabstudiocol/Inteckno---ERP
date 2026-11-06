@@ -293,29 +293,42 @@ export const DashboardModule: React.FC = () => {
                 key: 'spi',
                 header: 'SPI (Tiempo)',
                 align: 'center',
-                render: (p) => (
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                      p.spi >= 1 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                    }`}
-                  >
-                    {p.spi} {p.spi >= 1 ? '↑' : '↓'}
-                  </span>
-                ),
+                render: (p) => {
+                  const fin = calculateProjectFinancials(p, (p as any).wbsTasks || []);
+                  return (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                        fin.spi >= 1 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                      }`}
+                    >
+                      {fin.spi} {fin.spi >= 1 ? '↑' : '↓'}
+                    </span>
+                  );
+                },
               },
               {
                 key: 'cpi',
                 header: 'CPI (Costo)',
                 align: 'center',
-                render: (p) => (
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                      p.cpi >= 1 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {p.cpi}
-                  </span>
-                ),
+                render: (p) => {
+                  const fin = calculateProjectFinancials(p, (p as any).wbsTasks || []);
+                  if (fin.actualCostAC === 0) {
+                    return (
+                      <span className="text-[11px] text-gray-400 font-medium" title="Sin costos reales ejecutados">
+                        N/D
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                        fin.cpi >= 1 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                      }`}
+                    >
+                      {fin.cpi}
+                    </span>
+                  );
+                },
               },
               {
                 key: 'realMargin',
