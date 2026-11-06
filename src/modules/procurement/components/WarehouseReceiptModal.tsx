@@ -173,7 +173,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
       const state = itemsState[it.sku];
       if (!state) continue;
       if ((state.status === 'partial' || state.status === 'error') && !state.notes.trim()) {
-        alert(`Debes especificar la novedad u observación para el ítem "${it.name}" (Referencia: ${it.sku})`);
+        erpStore.notify('warning', 'Novedad requerida', `Debes especificar la novedad u observación para el ítem "${it.name}" (Referencia: ${it.sku})`);
         return;
       }
     }
@@ -181,9 +181,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
     // Blindaje Poka-Yoke: Foto obligatoria de la pieza y remisión firmada
     const isCriticalOrMajor = selectedPO.qualityCertificateRequired || (selectedPO.totalAmountCOP || 0) > 2000000;
     if (isCriticalOrMajor && (!receiptPhotoAttached || !signedRemissionAttached)) {
-      alert(
-        'Blindaje Poka-Yoke Anti-Error Humano:\nPara repuestos críticos de teleférico o compras superiores a $2.000.000 COP, es OBLIGATORIO confirmar la fotografía física de la pieza recibida y la remisión física debidamente firmada.'
-      );
+      erpStore.notify('urgent', 'Blindaje Poka-Yoke', 'Para repuestos críticos de teleférico o compras superiores a $2.000.000 COP, es OBLIGATORIO confirmar la fotografía física de la pieza y la remisión física firmada.');
       return;
     }
 

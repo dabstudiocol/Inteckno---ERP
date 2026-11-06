@@ -48,7 +48,7 @@ import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { TabPettyCash } from './components/TabPettyCash';
 
 export const ExpensesModule: React.FC = () => {
-  const { expenses, projects, users, employees, partners, currentUser, submitExpense, approveExpense, deleteExpense } = useErp();
+  const { expenses, projects, users, employees, partners, currentUser, submitExpense, approveExpense, deleteExpense, notify } = useErp();
 
   // Pestaña Activa: Comprobantes Generales vs Caja Menor
   const [activeTab, setActiveTab] = useState<'comprobantes' | 'caja_menor'>('comprobantes');
@@ -221,7 +221,7 @@ export const ExpensesModule: React.FC = () => {
   // Manejador cuando el usuario selecciona un archivo
   const handleFileSelected = (file: File) => {
     if (!file || !file.type.startsWith('image/')) {
-      alert('Por favor selecciona una imagen válida (JPG, PNG o WebP).');
+      notify('warning', 'Formato no válido', 'Por favor selecciona una imagen válida (JPG, PNG o WebP).');
       return;
     }
 
@@ -238,7 +238,7 @@ export const ExpensesModule: React.FC = () => {
   // Ejecutar el análisis con IA (Google Gemini Vision)
   const handleRunAiAnalysis = async () => {
     if (!uploadedFile && !receiptImage) {
-      alert('Primero debes subir o tomar una foto de la factura.');
+      notify('warning', 'Comprobante requerido', 'Primero debes subir o tomar una foto de la factura.');
       return;
     }
 
@@ -377,12 +377,12 @@ export const ExpensesModule: React.FC = () => {
     e.preventDefault();
 
     if (!supplierName) {
-      alert('Por favor ingresa el nombre de la empresa, negocio o establecimiento.');
+      notify('warning', 'Proveedor requerido', 'Por favor ingresa el nombre del establecimiento comercial.');
       return;
     }
 
     if (amount <= 0) {
-      alert('El monto total de la factura debe ser mayor a cero.');
+      notify('warning', 'Importe inválido', 'El monto total de la factura debe ser mayor a cero.');
       return;
     }
 

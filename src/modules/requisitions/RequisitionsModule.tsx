@@ -196,7 +196,7 @@ export const RequisitionsModule: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveModule('procurement');
+                        setActiveModule('compras');
                       }}
                       className="text-xs text-[#00668F] font-bold hover:underline flex items-center gap-1 ml-auto cursor-pointer"
                     >
@@ -209,7 +209,7 @@ export const RequisitionsModule: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveModule('procurement');
+                      setActiveModule('compras');
                       setTimeout(() => {
                         window.dispatchEvent(
                           new CustomEvent('inteckno:create-po-from-requisition', { detail: req })

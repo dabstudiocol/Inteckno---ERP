@@ -132,12 +132,6 @@ const MainContent: React.FC = () => {
           subtitle: 'Historial de propuestas técnico-económicas y conversión a proyectos',
           component: <CrmModule activeTab="ventas" />,
         };
-      case 'whatsapp':
-        return {
-          title: 'WhatsApp Comercial',
-          subtitle: 'Canal de mensajería directa y solicitudes de auxilio técnico STC',
-          component: <CrmModule activeTab="whatsapp" />,
-        };
 
       // 3. INGENIERÍA Y OPERACIONES EN CAMPO
       case 'proyectos':

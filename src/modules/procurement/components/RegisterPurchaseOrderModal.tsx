@@ -59,7 +59,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
   initialRequisitionId,
   onCreatePo,
 }) => {
-  const { currentUser, users, employees } = useErp();
+  const { currentUser, users, employees, notify } = useErp();
   const staffNames = React.useMemo(() => {
     const names = new Set<string>();
     (users || []).forEach((u) => { if (u.name) names.add(u.name); });
@@ -292,7 +292,7 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
     // Blindaje 1: Amarre Obligatorio a Centro de Costos
     if (!selectedProjectId) {
-      alert('Error de Contención: Es obligatorio seleccionar el Proyecto / Centro de Costos.');
+      notify('urgent', 'Contención Presupuestal', 'Es obligatorio seleccionar el Proyecto / Centro de Costos.');
       return;
     }
 
@@ -302,18 +302,14 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
         (po) => po.originRequisitionId === originReqId
       );
       if (existingPoForReq) {
-        alert(
-          `Bloqueo Poka-Yoke: Ya existe la orden ${existingPoForReq.orderNumber} vinculada a la requisición seleccionada. No se permiten órdenes duplicadas.`
-        );
+        notify('urgent', 'Orden Duplicada Bloqueada', `Ya existe la orden ${existingPoForReq.orderNumber} vinculada a la requisición seleccionada.`);
         return;
       }
     }
 
     // Blindaje 3: Tope Presupuestal en Vivo (>100% exige aprobación)
     if (isBudgetOverdrawn && !gmOverrideGranted) {
-      alert(
-        `Bloqueo Presupuestal Poka-Yoke: La compra de ${formatCOP(totalAmountCOP)} supera el 100% del presupuesto del proyecto (${selectedProject?.code}). Saldo disponible: ${formatCOP(availableBudget)}. Se requiere activar y justificar la Excepción de Gerencia.`
-      );
+      notify('urgent', 'Tope Presupuestal', `La compra de ${formatCOP(totalAmountCOP)} supera el presupuesto del proyecto (${selectedProject?.code}). Se requiere Excepción de Gerencia.`);
       return;
     }
 

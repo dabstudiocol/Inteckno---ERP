@@ -361,7 +361,7 @@ function printQuotationPdf(opp: Opportunity, quote: OpportunityQuotation) {
 }
 
 interface CrmModuleProps {
-  activeTab?: 'pipeline' | 'contactos' | 'ventas' | 'whatsapp';
+  activeTab?: 'pipeline' | 'contactos' | 'ventas';
 }
 
 export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }) => {
@@ -385,14 +385,14 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
   } = useErp();
 
   // Si se pasa activeTab por prop o se deduce del activeModuleId del ERP
-  const derivedTab = propActiveTab || (activeModuleId === 'contactos' ? 'contactos' : activeModuleId === 'ventas' ? 'ventas' : activeModuleId === 'whatsapp' ? 'whatsapp' : 'pipeline');
-  const [internalTab, setInternalTab] = useState<'pipeline' | 'contactos' | 'ventas' | 'whatsapp'>(derivedTab);
+  const derivedTab = propActiveTab || (activeModuleId === 'contactos' ? 'contactos' : activeModuleId === 'ventas' ? 'ventas' : 'pipeline');
+  const [internalTab, setInternalTab] = useState<'pipeline' | 'contactos' | 'ventas'>(derivedTab);
 
   // Mantener sincronizado cuando cambie activeModuleId o propActiveTab
   React.useEffect(() => {
     if (propActiveTab) {
       setInternalTab(propActiveTab);
-    } else if (activeModuleId === 'contactos' || activeModuleId === 'ventas' || activeModuleId === 'whatsapp' || activeModuleId === 'crm') {
+    } else if (activeModuleId === 'contactos' || activeModuleId === 'ventas' || activeModuleId === 'crm') {
       setInternalTab(activeModuleId === 'crm' ? 'pipeline' : activeModuleId);
     }
   }, [propActiveTab, activeModuleId]);
@@ -1670,43 +1670,6 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* PESTAÑA 4: WHATSAPP COMERCIAL */}
-      {activeTab === 'whatsapp' && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 max-w-2xl mx-auto">
-          <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
-            <div className="w-10 h-10 rounded-full shrink-0 aspect-square bg-emerald-500 text-white flex items-center justify-center font-bold shadow-2xs">
-              <MessageCircle size={20} />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-gray-900">Canal de Contacto Directo WhatsApp Business</h3>
-              <p className="text-xs text-gray-500">Integración con operadores de cable y solicitudes de auxilio técnico STC</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/60 text-xs">
-              <div className="flex justify-between font-bold text-emerald-900">
-                <span>Ing. Carlos Mendoza (Metro de Medellín)</span>
-                <span className="text-[10px] text-emerald-700 font-normal">Ayer 16:45</span>
-              </div>
-              <p className="mt-1 text-gray-700">
-                "Buenas tardes Alejandro, requerimos cotización formal para el reemplazo de mordazas en la Línea K durante la parada técnica de noviembre."
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-gray-200 text-xs">
-              <div className="flex justify-between font-bold text-gray-800">
-                <span>Dra. Ximena Morales (Cablebús CDMX)</span>
-                <span className="text-[10px] text-gray-400 font-normal">Hace 2 días</span>
-              </div>
-              <p className="mt-1 text-gray-600">
-                "Recibida la ficha técnica de la magnetografía. La mesa técnica de SEMOVI está revisando los pliegos."
-              </p>
-            </div>
           </div>
         </div>
       )}

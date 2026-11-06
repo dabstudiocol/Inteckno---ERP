@@ -21,6 +21,7 @@ import {
   Scale,
 } from 'lucide-react';
 import { PurchaseOrder, Partner, Project } from '../../../types';
+import { useErp } from '../../../core/storage/erpStore';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
@@ -41,6 +42,7 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
   onClose,
   onUpdatePo,
 }) => {
+  const { notify } = useErp();
   const [activeTab, setActiveTab] = useState<'items' | 'receipts' | 'finances' | 'logistics'>('items');
 
   // Estado local para enmienda
@@ -119,7 +121,7 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
 
   const handleAuthorizeThreeWayMatch = () => {
     if (!isMatchOk) {
-      alert('No se cumplen los requisitos del Cruce de 3 Vías: Se requiere factura fiscal válida, material recibido conforme y certificado técnico adjunto.');
+      notify('urgent', 'Cruce de 3 Vías', 'No se cumplen los requisitos: Se requiere factura fiscal, material recibido y certificado técnico.');
       return;
     }
 

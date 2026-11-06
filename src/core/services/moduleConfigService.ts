@@ -1256,7 +1256,6 @@ export const MODULE_ALIASES: Record<string, string> = {
   // CRM & Comercial
   contactos: 'crm',
   ventas: 'crm',
-  whatsapp: 'crm',
   commercial: 'crm',
   // Talento Humano & Personal
   vacaciones: 'empleados',

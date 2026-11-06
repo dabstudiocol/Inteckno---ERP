@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Partner, Project } from '../../../types';
+import { useErp } from '../../../core/storage/erpStore';
 import { formatCOP, formatUSD } from '../../../core/services/trmService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
@@ -48,6 +49,7 @@ export const QuoteComparisonModal: React.FC<Props> = ({
   currentTrm,
   onAwardQuote,
 }) => {
+  const { notify } = useErp();
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [needDescription, setNeedDescription] = useState('');
 
@@ -81,7 +83,7 @@ export const QuoteComparisonModal: React.FC<Props> = ({
 
   const handleAward = (candidate: VendorQuoteCandidate) => {
     if (!selectedProjectId) {
-      alert('Debes seleccionar el Proyecto o Centro de Costos antes de adjudicar la cotización.');
+      notify('warning', 'Proyecto Requerido', 'Debes seleccionar el Proyecto o Centro de Costos antes de adjudicar la cotización.');
       return;
     }
     if (!candidate.technicalCompliance) {

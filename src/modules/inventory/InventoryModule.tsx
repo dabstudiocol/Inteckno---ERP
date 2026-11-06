@@ -60,6 +60,7 @@ import { BomExtractorModal } from './components/BomExtractorModal';
 import { NameplateVisionModal } from './components/NameplateVisionModal';
 import { InventoryForensicsTab } from './components/InventoryForensicsTab';
 import { ProductDetailModal } from './components/ProductDetailModal';
+import { OpticalBarcodeScannerTab } from './components/OpticalBarcodeScannerTab';
 import { InventoryWriteOffModal } from './components/InventoryWriteOffModal';
 import { InventoryWriteOffsTab } from './components/InventoryWriteOffsTab';
 import { WarehouseReceiptModal } from '../procurement/components/WarehouseReceiptModal';
@@ -3057,128 +3058,61 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       )}
 
       {/* ==================================================================== */}
-      {/* PESTAÑA 7: LECTOR ÓPTICO DE CÓDIGO DE BARRAS                           */}
+      {/* PESTAÑA 7: LECTOR ÓPTICO DE CÓDIGO DE BARRAS & CÁMARA STC               */}
       {/* ==================================================================== */}
       {activeTab === 'barcode' && (
-        <div className="bg-white rounded-xl p-3.5 sm:p-5 space-y-3.5">
-          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Barcode size={22} className="text-[#00668F]" />
-                <span>Lector Óptico de Código de Barras (Hardware USB & Simulación)</span>
-              </h3>
-              <p className="text-xs text-gray-500">
-                Compatible con pistolas lectoras USB/Bluetooth. Presiona Enter tras el escaneo para buscar automáticamente.
-              </p>
-            </div>
-          </div>
-
-          {/* Input de Lectura Óptica */}
-          <div className="max-w-xl mx-auto space-y-4">
-            <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-100 flex items-center gap-3">
-              <ScanLine size={24} className="text-[#00668F] animate-pulse" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Escanea aquí con la pistola de código de barras o escribe el SKU..."
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleBarcodeScan(barcodeInput);
-                  }
-                }}
-                className="w-full text-xs font-mono font-bold p-3 rounded-xl border border-gray-300 bg-white focus:outline-hidden focus:border-[#00668F]"
-              />
-              <button
-                type="button"
-                onClick={() => handleBarcodeScan(barcodeInput)}
-                className="px-4 py-3 rounded-xl bg-[#00668F] text-white text-xs font-bold hover:bg-[#005073] cursor-pointer shrink-0"
-              >
-                Buscar
-              </button>
-            </div>
-
-            {/* Botones de Prueba Rápida con Códigos Reales del Inventario */}
-            {products.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="text-xs font-bold text-gray-500">Artículos recientes del inventario para escaneo rápido:</span>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {products.slice(0, 5).map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        setBarcodeInput(p.sku);
-                        handleBarcodeScan(p.sku);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-mono text-xs cursor-pointer"
-                    >
-                      {p.sku}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Mensaje de Escaneo */}
-            {scanMessage && (
-              <div className="p-3 rounded-xl bg-slate-50 border border-gray-200 text-xs font-bold text-gray-800 text-center">
-                {scanMessage}
-              </div>
-            )}
-
-            {/* Ficha del Artículo Encontrado */}
-            {scannedResult && (
-              <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-md space-y-3 animate-in zoom-in-95 duration-150">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                  <span className="font-mono font-bold text-xs text-[#00668F]">
-                    {(scannedResult as any).sku || (scannedResult as any).code}
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    Registrado
-                  </span>
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-sm text-gray-900">{scannedResult.name}</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Ubicación: {(scannedResult as any).locationName || 'Bodega Principal'}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-100">
-                  <span className="text-gray-500">
-                    Stock Disponible: <strong>{(scannedResult as any).availableStock || 1}</strong>
-                  </span>
-                  <button
-                    onClick={() => {
-                      setDispatchItems([
-                        {
-                          id: `scan-${Date.now()}`,
-                          productId: scannedResult.id,
-                          sku: (scannedResult as any).sku || (scannedResult as any).code,
-                          name: scannedResult.name,
-                          unit: (scannedResult as any).unit || 'unid',
-                          category: (scannedResult as any).category || 'Equipos',
-                          qtyDispatched: 1,
-                          unitCostUSD: (scannedResult as any).costPriceUSD || 0,
-                          unitCostCOP: (scannedResult as any).costPriceCOP || 0,
-                          suggestedUnitCostCOP: (scannedResult as any).costPriceCOP || 0,
-                          approvedCostCOP: (scannedResult as any).costPriceCOP || 0,
-                        },
-                      ]);
-                      setActiveTab('dispatch');
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 cursor-pointer flex items-center gap-1.5 text-xs shadow-xs"
-                  >
-                    <Plus size={14} />
-                    <span>Cargar a Remisión de Salida</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <OpticalBarcodeScannerTab
+          products={products}
+          equipment={equipment}
+          projects={projects}
+          remissions={remissions}
+          notify={notify}
+          onDispatchItem={(product, qty, projectId) => {
+            if (projectId) setDispatchProjectId(projectId);
+            setDispatchItems((prev) => {
+              const existing = prev.find((it) => it.productId === product.id);
+              if (existing) {
+                return prev.map((it) =>
+                  it.productId === product.id
+                    ? { ...it, qtyDispatched: it.qtyDispatched + qty }
+                    : it
+                );
+              }
+              return [
+                ...prev,
+                {
+                  id: `scan-${Date.now()}`,
+                  productId: product.id,
+                  sku: product.sku,
+                  name: product.name,
+                  unit: product.unit || 'unid',
+                  category: product.category || 'Equipos',
+                  qtyDispatched: qty,
+                  unitCostUSD: product.costPriceUSD || 0,
+                  unitCostCOP: product.costPriceCOP || 0,
+                  suggestedUnitCostCOP: product.costPriceCOP || 0,
+                  approvedCostCOP: product.costPriceCOP || 0,
+                },
+              ];
+            });
+            setActiveTab('dispatch');
+          }}
+          onQuickStockEntry={(product, addedQty, targetWarehouse, reason) => {
+            const newStock = product.realStock + addedQty;
+            updateProductStockDirect(product.id, newStock, `${reason} [${targetWarehouse}]`);
+            syncInventoryToCloud(
+              products.map((p) =>
+                p.id === product.id
+                  ? { ...p, realStock: newStock, availableStock: Math.max(0, newStock - p.reservedStock) }
+                  : p
+              )
+            ).catch(console.warn);
+          }}
+          onPrintLabel={(product) => {
+            setSelectedProductForQr(product);
+            setIsQrModalOpen(true);
+          }}
+        />
       )}
 
       {/* ==================================================================== */}

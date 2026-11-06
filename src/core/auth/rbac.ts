@@ -72,7 +72,6 @@ export const ALL_AREAS: { [key in AreaId]: AreaInfo } = {
       { id: 'crm', label: 'Gestión de Clientes (CRM)', description: 'Prospección de oportunidades y licitaciones STC' },
       { id: 'contactos', label: 'Contactos', description: 'Directorio de operadores, clientes y aliados' },
       { id: 'ventas', label: 'Ventas', description: 'Cotizaciones, propuestas y órdenes comerciales' },
-      { id: 'whatsapp', label: 'WhatsApp', description: 'Comunicaciones directas con clientes' },
     ],
   },
   operaciones: {
@@ -160,7 +159,6 @@ export const MODULE_ICONS: { [moduleId: string]: any } = {
   crm: Briefcase,
   contactos: Users,
   ventas: TrendingUp,
-  whatsapp: MessageCircle,
 
   // Operaciones
   proyectos: FolderKanban,
@@ -424,7 +422,6 @@ export const SYSTEM_HUBS: SystemHub[] = [
       { id: 'crm', label: 'Pipeline Oportunidades', shortLabel: 'Pipeline', description: 'Licitaciones y embudo comercial STC', icon: Briefcase },
       { id: 'contactos', label: 'Directorio Contactos', shortLabel: 'Contactos', description: 'Operadores, clientes y aliados', icon: Users },
       { id: 'ventas', label: 'Cotizaciones & Ventas', shortLabel: 'Cotizaciones', description: 'Propuestas comerciales y conversión', icon: TrendingUp },
-      { id: 'whatsapp', label: 'WhatsApp Comercial', shortLabel: 'WhatsApp', description: 'Comunicación directa con clientes', icon: MessageCircle },
     ],
   },
   {

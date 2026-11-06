@@ -42,7 +42,7 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
   onApproveExpense,
   onDeleteExpense,
 }) => {
-  const { users, employees } = useErp();
+  const { users, employees, notify } = useErp();
   const staffOptions = useMemo(() => {
     const map = new Map<string, string>();
     users.forEach((u) => map.set(u.name, `${u.name} (${u.roleLabel || 'Personal ITK'})`));
@@ -150,7 +150,7 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
   const handleSaveMovement = (e: React.FormEvent) => {
     e.preventDefault();
     if (!description || amount <= 0) {
-      alert('Por favor ingresa una descripción válida y un importe mayor a cero.');
+      notify('warning', 'Campos obligatorios', 'Por favor ingresa una descripción válida y un importe mayor a cero.');
       return;
     }
 

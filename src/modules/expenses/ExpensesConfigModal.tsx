@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useErp } from '../../core/storage/erpStore';
 import {
   X,
   Building,
@@ -39,6 +40,7 @@ export const ExpensesConfigModal: React.FC<Props> = ({
   config: initialConfig,
   onConfigUpdated,
 }) => {
+  const { notify } = useErp();
   const [activeTab, setActiveTab] = useState<'offices' | 'payments' | 'categories' | 'ai'>('offices');
   const [config, setConfig] = useState<ExpensesModuleConfig>(initialConfig);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -92,7 +94,7 @@ export const ExpensesConfigModal: React.FC<Props> = ({
 
   const handleDeleteOffice = (id: string) => {
     if (config.offices.length <= 1) {
-      alert('Debe existir al menos una sede configurada.');
+      notify('warning', 'Configuración', 'Debe existir al menos una sede configurada.');
       return;
     }
     const updatedOffices = config.offices.filter((off) => off.id !== id);
@@ -135,7 +137,7 @@ export const ExpensesConfigModal: React.FC<Props> = ({
 
   const handleDeletePayment = (id: string) => {
     if (config.paymentMethods.length <= 1) {
-      alert('Debe existir al menos un método de pago configurado.');
+      notify('warning', 'Configuración', 'Debe existir al menos un método de pago configurado.');
       return;
     }
     const updatedPayments = config.paymentMethods.filter((p) => p.id !== id);
@@ -186,7 +188,7 @@ export const ExpensesConfigModal: React.FC<Props> = ({
 
   const handleDeleteCategory = (id: string) => {
     if (config.categories.length <= 1) {
-      alert('Debe existir al menos una categoría contable configurada.');
+      notify('warning', 'Configuración', 'Debe existir al menos una categoría contable configurada.');
       return;
     }
     const updatedCategories = config.categories.filter((c) => c.id !== id);

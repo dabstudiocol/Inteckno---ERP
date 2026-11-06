@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useErp } from '../../core/storage/erpStore';
 import {
   Layers,
   Sparkles,
@@ -39,6 +40,7 @@ export const TemplateManagerModal: React.FC<Props> = ({
   activeProjectName,
   currentUserName,
 }) => {
+  const { notify } = useErp();
   const [templates, setTemplates] = useState<IntecknoWBSTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [mode, setMode] = useState<'view' | 'edit'>('view');
@@ -116,7 +118,7 @@ export const TemplateManagerModal: React.FC<Props> = ({
 
   const handleDelete = (tpl: IntecknoWBSTemplate) => {
     if (tpl.isOfficial && !tpl.isCustom) {
-      alert('Las plantillas maestras oficiales de Inteckno están blindadas. Si deseas modificarla, utiliza el botón "Duplicar" para crear una versión adaptada.');
+      notify('warning', 'Plantilla Blindada', 'Las plantillas maestras oficiales de Inteckno están blindadas. Utiliza el botón Duplicar para crear una versión adaptada.');
       return;
     }
     if (confirm(`¿Eliminar la plantilla personalizada "${tpl.title}"?`)) {

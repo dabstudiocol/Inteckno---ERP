@@ -39,7 +39,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   initialCategory,
   initialItemConcept,
 }) => {
-  const { projects, products, currentUser, createRequisition } = useErp();
+  const { projects, products, currentUser, createRequisition, notify } = useErp();
 
   // Catálogos dinámicos configurables por el usuario para el módulo de requisiciones
   const requisitionTypeOptions = useModuleCatalog('requisitions', 'requisitionTypes');
@@ -157,7 +157,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
     // Validar ítems
     const validItems = items.filter((it) => it.name.trim().length > 0);
     if (validItems.length === 0) {
-      alert('Debes ingresar al menos un ítem o producto en la petición.');
+      notify('warning', 'Validación', 'Debes ingresar al menos un ítem o producto en la petición.');
       return;
     }
 

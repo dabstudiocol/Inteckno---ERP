@@ -184,6 +184,7 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
     documents,
     addDocument,
     updateProjectStatus,
+    notify,
   } = useErp();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -227,13 +228,13 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
               : m
           )
         );
-        alert('¡Tu cuenta corporativa de Microsoft 365 quedó conectada y la reunión se sincronizó en Teams y Outlook!');
+        notify('success', 'Microsoft 365', '¡Tu cuenta corporativa quedó conectada y la reunión se sincronizó en Teams y Outlook!');
       } else {
-        alert(result.message || 'Se conectó la cuenta, pero ocurrió un aviso al sincronizar.');
+        notify('warning', 'Microsoft 365', result.message || 'Se conectó la cuenta, pero ocurrió un aviso al sincronizar.');
       }
     } catch (err: any) {
       console.warn('Error conectando M365 desde chat:', err);
-      alert(err.message || 'No se pudo completar el inicio de sesión con Microsoft.');
+      notify('urgent', 'Error Microsoft 365', err.message || 'No se pudo completar el inicio de sesión con Microsoft.');
     } finally {
       setIsConnectingM365(false);
     }
@@ -421,7 +422,7 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
       }, 1000);
     } catch (err) {
       console.error('Error al acceder al micrófono:', err);
-      alert('No fue posible acceder al micrófono. Por favor habilita los permisos de audio en tu navegador.');
+      notify('urgent', 'Micrófono Requerido', 'No fue posible acceder al micrófono. Por favor habilita los permisos en tu navegador.');
     }
   };
 
