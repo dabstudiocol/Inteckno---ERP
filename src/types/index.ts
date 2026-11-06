@@ -1033,6 +1033,11 @@ export interface BillingMilestone {
   paidAt?: string;
   paymentReference?: string;
   paymentAmountCOP?: number;
+  bankAccount?: string;
+  paymentVoucher?: string;
+  taxDeductionsCOP?: number;
+  netPaidAmountCOP?: number;
+  paymentNotes?: string;
 }
 
 export interface StockMove {

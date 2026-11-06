@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FolderKanban,
   Clock,
@@ -15,13 +15,18 @@ import {
   Sparkles,
   Calendar,
   AlertTriangle,
+  Coins,
+  DollarSign,
+  PieChart,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { PastelMetricCard } from '../../components/ui/PastelMetricCard';
 import { DarkActionCard } from '../../components/ui/DarkActionCard';
 import { LightTable } from '../../components/ui/LightTable';
 import { BusinessRulesEngine } from '../../core/rules/businessRules';
-import { getStoredTRM } from '../../core/services/trmService';
+import { getStoredTRM, formatCOP, formatUSD } from '../../core/services/trmService';
 import { calculateProjectFinancials } from '../../core/services/projectFinancialEngine';
 import { DataGuardianBackupsModal } from '../../components/common/DataGuardianBackupsModal';
 
@@ -38,12 +43,67 @@ export const DashboardModule: React.FC = () => {
     employees,
     partners,
     users,
+    expenses = [],
     setActiveModule,
     approveTimesheet,
     approvePurchaseOrderGM,
     signMilestoneAct,
     navigateWithContext,
   } = useErp();
+
+  // =========================================================================
+  // MOTOR FINANCIERO: EBITDA CORPORATIVO Y CASCADA DE RENTABILIDAD OPERACIONAL
+  // =========================================================================
+  const trm = getStoredTRM() || 4150.0;
+
+  // 1. Ingresos Operacionales (Hitos con Factura Emitida + Contratos en Curso Devengados)
+  const totalInvoicedRevenueCOP = useMemo(() => {
+    return (milestones || [])
+      .filter((m) => m.invoiceIssued)
+      .reduce((acc, m) => acc + (Number(m.amountCOP) || 0), 0);
+  }, [milestones]);
+
+  const totalContractRevenueCOP = useMemo(() => {
+    return (projects || []).reduce((acc, p) => acc + (Number(p.contractAmount) || Number(p.budgetPV) || 0), 0);
+  }, [projects]);
+
+  const effectiveRevenueCOP = totalInvoicedRevenueCOP > 0 ? totalInvoicedRevenueCOP : totalContractRevenueCOP;
+
+  // 2. Costo de Ventas (COGS - Costos Directos de Obra Ejecutados)
+  const totalDirectCostsCOP = useMemo(() => {
+    return (projects || []).reduce((acc, p) => {
+      const directs = ((p as any).costMatrix?.directCosts || (p as any).directCosts || []) as any[];
+      return acc + directs.reduce((sum, d) => sum + (Number(d.executedAmount || d.amountCOP || d.subtotal || d.total) || 0), 0);
+    }, 0);
+  }, [projects]);
+
+  // 3. Utilidad Bruta Operacional (Gross Profit)
+  const grossProfitCOP = effectiveRevenueCOP - totalDirectCostsCOP;
+  const grossMarginPercent = effectiveRevenueCOP > 0 ? (grossProfitCOP / effectiveRevenueCOP) * 100 : 0;
+
+  // 4. Gastos Operacionales (OPEX - Indirectos + Gastos Administrativos / Oficina)
+  const totalIndirectCostsCOP = useMemo(() => {
+    return (projects || []).reduce((acc, p) => {
+      const indirects = ((p as any).costMatrix?.indirectCosts || (p as any).indirectCosts || []) as any[];
+      return acc + indirects.reduce((sum, i) => sum + (Number(i.executedAmount || i.amountCOP || i.subtotal || i.total) || 0), 0);
+    }, 0);
+  }, [projects]);
+
+  const totalAdminExpensesCOP = useMemo(() => {
+    return (expenses || [])
+      .filter((e) => e.status === 'approved' && (!e.projectId || e.imputationType === 'oficina'))
+      .reduce((acc, e) => {
+        const amt = Number(e.amount) || 0;
+        return acc + (e.currency === 'USD' ? amt * trm : amt);
+      }, 0);
+  }, [expenses, trm]);
+
+  const totalOperatingExpensesCOP = totalIndirectCostsCOP + totalAdminExpensesCOP;
+
+  // 5. EBITDA Consolidado (Utilidad Operacional Antes de Impuestos, Depreciaciones y Amortizaciones)
+  const ebitdaCOP = grossProfitCOP - totalOperatingExpensesCOP;
+  const ebitdaMarginPercent = effectiveRevenueCOP > 0 ? (ebitdaCOP / effectiveRevenueCOP) * 100 : 0;
+  const ebitdaUSD = Math.round(ebitdaCOP / trm);
 
   // Métricas calculadas en tiempo real
   const activeProjects = projects.filter((p) => p.status === 'active');
@@ -179,6 +239,100 @@ export const DashboardModule: React.FC = () => {
             <ShieldCheck size={14} className="text-emerald-400" />
             <span>Guardián de Datos</span>
           </button>
+        </div>
+      </div>
+
+      {/* SECCIÓN EJECUTIVA: EBITDA CORPORATIVO Y CASCADA DE RENTABILIDAD */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-[#003B5C] text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-700/60 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700/80">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 rounded-xl bg-white/10 text-emerald-400 backdrop-blur-xs">
+              <Coins size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-extrabold tracking-tight">EBITDA & Desempeño Operacional</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Margen {ebitdaMarginPercent.toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-xs text-slate-300">
+                Utilidad Operacional antes de impuestos, depreciaciones y amortizaciones consolidada en tiempo real.
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <span className="text-[11px] text-slate-400 block font-medium">TRM Aplicada: {formatCOP(trm)}</span>
+            <span className="text-xs text-emerald-400 font-bold">1 USD = ${trm.toLocaleString('es-CO')} COP</span>
+          </div>
+        </div>
+
+        {/* Rejilla de Métricas EBITDA */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
+            <span className="text-[11px] font-semibold text-slate-300 block">EBITDA Consolidado</span>
+            <div className="text-lg sm:text-xl font-extrabold text-white">{formatCOP(ebitdaCOP)}</div>
+            <div className="text-[11px] text-emerald-400 font-semibold">{formatUSD(ebitdaUSD)}</div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
+            <span className="text-[11px] font-semibold text-slate-300 block">Ingresos Operacionales</span>
+            <div className="text-lg sm:text-xl font-extrabold text-sky-300">{formatCOP(effectiveRevenueCOP)}</div>
+            <div className="text-[11px] text-slate-400">
+              {totalInvoicedRevenueCOP > 0 ? 'Facturación expedida DIAN' : 'Base contractual proyectos'}
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
+            <span className="text-[11px] font-semibold text-slate-300 block">Costos Directos (COGS)</span>
+            <div className="text-lg sm:text-xl font-extrabold text-rose-300">{formatCOP(totalDirectCostsCOP)}</div>
+            <div className="text-[11px] text-slate-400">Materiales + M.O. Ley 2101 + Equipos</div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
+            <span className="text-[11px] font-semibold text-slate-300 block">Utilidad Bruta (Margen {grossMarginPercent.toFixed(1)}%)</span>
+            <div className="text-lg sm:text-xl font-extrabold text-amber-300">{formatCOP(grossProfitCOP)}</div>
+            <div className="text-[11px] text-slate-400">OPEX: -{formatCOP(totalOperatingExpensesCOP)}</div>
+          </div>
+        </div>
+
+        {/* Cascada de Margen Operacional (Waterfall Bridge) */}
+        <div className="p-3 rounded-xl bg-black/20 border border-white/5 space-y-2">
+          <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+            Cascada Financiera de Margen (Waterfall Bridge)
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+            <div className="p-2 rounded-lg bg-sky-950/60 border border-sky-800/40">
+              <span className="text-[10px] text-sky-300 font-semibold block">1. Ingresos</span>
+              <span className="font-bold text-white text-[11px]">{formatCOP(effectiveRevenueCOP)}</span>
+              <span className="text-[9px] text-sky-400 block mt-0.5">100.0%</span>
+            </div>
+            <div className="p-2 rounded-lg bg-rose-950/60 border border-rose-800/40">
+              <span className="text-[10px] text-rose-300 font-semibold block">2. (-) COGS Directo</span>
+              <span className="font-bold text-rose-200 text-[11px]">-{formatCOP(totalDirectCostsCOP)}</span>
+              <span className="text-[9px] text-rose-400 block mt-0.5">
+                {effectiveRevenueCOP > 0 ? `-${((totalDirectCostsCOP / effectiveRevenueCOP) * 100).toFixed(1)}%` : '0%'}
+              </span>
+            </div>
+            <div className="p-2 rounded-lg bg-amber-950/60 border border-amber-800/40">
+              <span className="text-[10px] text-amber-300 font-semibold block">3. (=) Utilidad Bruta</span>
+              <span className="font-bold text-amber-200 text-[11px]">{formatCOP(grossProfitCOP)}</span>
+              <span className="text-[9px] text-amber-400 block mt-0.5">{grossMarginPercent.toFixed(1)}%</span>
+            </div>
+            <div className="p-2 rounded-lg bg-purple-950/60 border border-purple-800/40">
+              <span className="text-[10px] text-purple-300 font-semibold block">4. (-) Gastos OPEX</span>
+              <span className="font-bold text-purple-200 text-[11px]">-{formatCOP(totalOperatingExpensesCOP)}</span>
+              <span className="text-[9px] text-purple-400 block mt-0.5">
+                {effectiveRevenueCOP > 0 ? `-${((totalOperatingExpensesCOP / effectiveRevenueCOP) * 100).toFixed(1)}%` : '0%'}
+              </span>
+            </div>
+            <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 col-span-2 sm:col-span-1">
+              <span className="text-[10px] text-emerald-300 font-semibold block">5. (=) EBITDA</span>
+              <span className="font-bold text-emerald-200 text-[11px]">{formatCOP(ebitdaCOP)}</span>
+              <span className="text-[9px] text-emerald-400 block mt-0.5 font-bold">{ebitdaMarginPercent.toFixed(1)}%</span>
+            </div>
+          </div>
         </div>
       </div>
 

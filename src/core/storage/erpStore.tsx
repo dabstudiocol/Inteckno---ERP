@@ -458,6 +458,7 @@ export interface ErpContextType extends ErpState {
   createEmployee: (emp: Omit<EmployeeRecord, 'id'>) => void;
   updateEmployee: (id: string, data: Partial<EmployeeRecord>) => void;
   deleteEmployee: (id: string) => void;
+  seedEmployeesFromUsers: () => void;
   requestPayrollNovelty: (novelty: Omit<PayrollNovelty, 'id' | 'status' | 'requestedAt'>) => { success: boolean; id?: string };
   approvePayrollNovelty: (id: string, approverName: string) => void;
   rejectPayrollNovelty: (id: string, approverName: string, reason?: string) => void;
@@ -1236,7 +1237,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ddrs: Array.isArray(data.ddrs) ? data.ddrs : prev.ddrs,
         remissions: Array.isArray(data.remissions) ? data.remissions : prev.remissions,
         maintenancePlans: Array.isArray(data.maintenancePlans) ? data.maintenancePlans : prev.maintenancePlans,
-        employees: Array.isArray(data.employees) && data.employees.length > 0 ? data.employees : prev.employees,
         workOrders: Array.isArray(data.workOrders) ? data.workOrders : prev.workOrders,
         manufacturingOrders: Array.isArray(data.manufacturingOrders) ? data.manufacturingOrders : prev.manufacturingOrders,
         benchTests: Array.isArray(data.benchTests) ? data.benchTests : prev.benchTests,
@@ -1324,7 +1324,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ddrs: state.ddrs,
         remissions: state.remissions,
         maintenancePlans: state.maintenancePlans,
-        employees: state.employees,
         workOrders: state.workOrders,
         manufacturingOrders: state.manufacturingOrders,
         benchTests: state.benchTests,
@@ -2315,10 +2314,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteEmployee = useCallback(
     (id: string) => {
-      setState((prev) => ({
-        ...prev,
-        employees: prev.employees.filter((e) => e.id !== id),
-      }));
+      setState((prev) => {
+        const nextEmployees = prev.employees.filter((e) => e.id !== id);
+        syncModuleToCloud('hr', {
+          employees: nextEmployees,
+          novelties: prev.novelties || [],
+          sstInspections: prev.sstInspections || [],
+          jobPositions: prev.jobPositions || [],
+          candidates: prev.candidates || [],
+        }, prev.currentUser?.id).catch(console.warn);
+        return {
+          ...prev,
+          employees: nextEmployees,
+        };
+      });
       notify('info', 'Empleado Eliminado', 'El registro de talento humano ha sido retirado.');
     },
     [notify]
@@ -4516,6 +4525,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             })
           : prev.projects;
 
+        syncModuleToCloud('projects', {
+          projects: updatedProjects,
+          milestones: updatedMilestones,
+        }, prev.currentUser?.id).catch(console.warn);
+
         return {
           ...prev,
           milestones: updatedMilestones,
@@ -4599,6 +4613,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               return p;
             })
           : prev.projects;
+
+        syncModuleToCloud('projects', {
+          projects: updatedProjects,
+          milestones: updatedMilestones,
+        }, prev.currentUser?.id).catch(console.warn);
 
         return {
           ...prev,
@@ -5659,10 +5678,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notify]);
 
   const updateEmployee = useCallback((id: string, data: Partial<EmployeeRecord>) => {
-    setState((prev) => ({
-      ...prev,
-      employees: prev.employees.map((e) => (e.id === id ? { ...e, ...data } : e)),
-    }));
+    setState((prev) => {
+      const nextEmployees = prev.employees.map((e) => (e.id === id ? { ...e, ...data } : e));
+      syncModuleToCloud('hr', {
+        employees: nextEmployees,
+        novelties: prev.novelties || [],
+        sstInspections: prev.sstInspections || [],
+        jobPositions: prev.jobPositions || [],
+        candidates: prev.candidates || [],
+      }, prev.currentUser?.id).catch(console.warn);
+      return {
+        ...prev,
+        employees: nextEmployees,
+      };
+    });
     notify('success', 'Empleado Actualizado', 'Registro de talento humano y SST guardado.');
   }, [notify]);
 
@@ -5672,14 +5701,42 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...empData,
         id: `EMP-${Date.now()}`,
       };
-      setState((prev) => ({
-        ...prev,
-        employees: [newEmp, ...prev.employees],
-      }));
+      setState((prev) => {
+        const nextEmployees = [newEmp, ...prev.employees];
+        syncModuleToCloud('hr', {
+          employees: nextEmployees,
+          novelties: prev.novelties || [],
+          sstInspections: prev.sstInspections || [],
+          jobPositions: prev.jobPositions || [],
+          candidates: prev.candidates || [],
+        }, prev.currentUser?.id).catch(console.warn);
+        return {
+          ...prev,
+          employees: nextEmployees,
+        };
+      });
       notify('success', 'Empleado Registrado', `${newEmp.name} agregado al sistema de Talento Humano.`);
     },
     [notify]
   );
+
+  const seedEmployeesFromUsers = useCallback(() => {
+    setState((prev) => {
+      const initialFromUsers = buildInitialEmployeesFromUsers(prev.users && prev.users.length > 0 ? prev.users : SEED_USERS);
+      syncModuleToCloud('hr', {
+        employees: initialFromUsers,
+        novelties: prev.novelties || [],
+        sstInspections: prev.sstInspections || [],
+        jobPositions: prev.jobPositions || [],
+        candidates: prev.candidates || [],
+      }, prev.currentUser?.id).catch(console.warn);
+      return {
+        ...prev,
+        employees: initialFromUsers,
+      };
+    });
+    notify('success', 'Directorio de Personal Inicializado', 'Se han importado los colaboradores base desde el equipo corporativo.');
+  }, [notify]);
 
   const requestPayrollNovelty = useCallback(
     (noveltyData: Omit<PayrollNovelty, 'id' | 'status' | 'requestedAt'>): { success: boolean; id?: string } => {
@@ -6501,6 +6558,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteArticle,
         createEmployee,
         updateEmployee,
+        seedEmployeesFromUsers,
         requestPayrollNovelty,
         approvePayrollNovelty,
         rejectPayrollNovelty,

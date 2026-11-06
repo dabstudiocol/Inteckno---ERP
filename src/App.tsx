@@ -289,7 +289,7 @@ const MainContent: React.FC = () => {
       case 'kpis':
       case 'indicadores':
         return {
-          title: 'Tableros de Control & KPIs',
+          title: 'Tableros de Control & EBITDA',
           subtitle: 'EBITDA, rentabilidad de proyectos y métricas de desempeño',
           component: <DashboardModule />,
         };

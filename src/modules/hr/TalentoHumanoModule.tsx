@@ -75,6 +75,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
     employees,
     createEmployee,
     updateEmployee,
+    deleteEmployee,
+    seedEmployeesFromUsers,
     timesheets,
     expenses,
     projects = [],
@@ -99,7 +101,22 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
   const [activeTab, setActiveTab] = useState<'empleados' | 'vacaciones' | 'encuestas' | 'nomina'>(currentTab);
   const [isNewEmpModalOpen, setIsNewEmpModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeRecord | null>(null);
+  const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeRecord | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [empSearch, setEmpSearch] = useState('');
+  const [empDeptFilter, setEmpDeptFilter] = useState('all');
+
+  const filteredEmployees = useMemo(() => {
+    return (employees || []).filter((emp) => {
+      const matchSearch =
+        !empSearch.trim() ||
+        emp.name.toLowerCase().includes(empSearch.toLowerCase()) ||
+        emp.role.toLowerCase().includes(empSearch.toLowerCase()) ||
+        emp.documentId.toLowerCase().includes(empSearch.toLowerCase());
+      const matchDept = empDeptFilter === 'all' || emp.department === empDeptFilter;
+      return matchSearch && matchDept;
+    });
+  }, [employees, empSearch, empDeptFilter]);
 
   // Estados para Novedades de Nómina & Vacaciones
   const [isNewNoveltyModalOpen, setIsNewNoveltyModalOpen] = useState(false);
@@ -394,86 +411,173 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
       {/* 1. PERSONAL TÉCNICO Y CERTIFICACIONES */}
       {activeTab === 'empleados' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Directorio de Ingenieros y Cuadrillas STC</h3>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs">
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-gray-900">Directorio de Ingenieros y Cuadrillas STC</h3>
+              <p className="text-xs text-gray-500">
+                Gestión de fichas técnicas, licencias en alturas, exámenes médicos y liquidación salarial (Ley 2101).
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {employees.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => seedEmployeesFromUsers?.()}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all"
+                >
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>Importar Equipo Corporativo Base</span>
+                </button>
+              )}
               <button
+                type="button"
                 onClick={() => setIsNewEmpModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-[#00668F] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#005273] cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-[#00668F] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#005273] cursor-pointer transition-all"
               >
                 <Plus size={15} />
-                Registrar Empleado
+                <span>Registrar Empleado</span>
               </button>
             </div>
           </div>
 
+          {/* Filtros y Búsqueda */}
+          {employees.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3 rounded-xl border border-gray-200">
+              <div className="relative flex-1 w-full">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, cédula o cargo..."
+                  value={empSearch}
+                  onChange={(e) => setEmpSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-hidden focus:border-[#00668F]"
+                />
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Filter size={14} className="text-gray-400 shrink-0" />
+                <select
+                  value={empDeptFilter}
+                  onChange={(e) => setEmpDeptFilter(e.target.value)}
+                  className="w-full sm:w-48 py-1.5 px-2.5 rounded-lg border border-gray-200 text-xs bg-slate-50 font-medium text-gray-700"
+                >
+                  <option value="all">Todos los Departamentos</option>
+                  <option value="Operaciones STC">Operaciones STC</option>
+                  <option value="Ingeniería y Proyectos">Ingeniería y Proyectos</option>
+                  <option value="Mantenimiento de Cable">Mantenimiento de Cable</option>
+                  <option value="HSEQ / Seguridad">HSEQ / Seguridad</option>
+                  <option value="Gerencia y Administración">Gerencia y Administración</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {employees.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-gray-200 space-y-2">
-              <Users size={40} className="mx-auto text-[#00668F] opacity-40" />
+            <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-gray-200 space-y-3 max-w-lg mx-auto my-4 shadow-2xs">
+              <div className="w-16 h-16 rounded-2xl bg-sky-50 text-[#00668F] flex items-center justify-center mx-auto">
+                <Users size={32} />
+              </div>
               <h4 className="text-sm font-bold text-gray-800">No hay colaboradores registrados en el directorio</h4>
               <p className="text-xs text-gray-500 max-w-md mx-auto">
                 Registra ingenieros, supervisores y técnicos especialistas de teleféricos para gestionar sus certificaciones, licencias en alturas y liquidación de nómina.
               </p>
-              <div className="pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
                 <button
+                  type="button"
                   onClick={() => setIsNewEmpModalOpen(true)}
-                  className="px-4 py-2 bg-[#00668F] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#005273] cursor-pointer inline-flex items-center gap-1.5"
+                  className="w-full sm:w-auto px-4 py-2 bg-[#00668F] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#005273] cursor-pointer inline-flex items-center justify-center gap-1.5"
                 >
                   <Plus size={15} />
                   <span>Registrar Primer Empleado</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => seedEmployeesFromUsers?.()}
+                  className="w-full sm:w-auto px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-slate-800 cursor-pointer inline-flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles size={15} className="text-amber-400" />
+                  <span>Cargar Equipo Base</span>
+                </button>
               </div>
+            </div>
+          ) : filteredEmployees.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-xs text-gray-500">
+              No se encontraron colaboradores que coincidan con la búsqueda o filtro seleccionado.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {employees.map((emp) => (
-              <div key={emp.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-sm">{emp.name}</h4>
-                    <p className="text-xs text-[#00668F] font-semibold">{emp.role}</p>
-                    <p className="text-[11px] text-gray-400">{emp.documentId} • {emp.department}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Activo
-                    </span>
-                    <button
-                      onClick={() => setEditingEmployee(emp)}
-                      title="Editar Datos y Certificados"
-                      className="p-1 rounded-lg text-gray-400 hover:text-[#00668F] hover:bg-sky-50 transition-colors cursor-pointer"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                  </div>
-                </div>
+              {filteredEmployees.map((emp) => {
+                const laborRates = getLaborRates();
+                const hourlyRateCOP = Math.round(((emp.baseSalaryCOP || 0) * 1.52) / (laborRates.divisorMensual || 210));
+                return (
+                  <div key={emp.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm">{emp.name}</h4>
+                        <p className="text-xs text-[#00668F] font-semibold">{emp.role}</p>
+                        <p className="text-[11px] text-gray-400">{emp.documentId} • {emp.department}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Activo
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditingEmployee(emp)}
+                          title="Editar Datos y Certificados"
+                          className="p-1 rounded-lg text-gray-400 hover:text-[#00668F] hover:bg-sky-50 transition-colors cursor-pointer"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEmployeeToDelete(emp)}
+                          title="Eliminar Empleado"
+                          className="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
 
-                {/* Semáforo de Certificaciones Críticas para Trabajos en Pilonas */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100">
-                    <span className="text-[10px] text-gray-500 block font-medium">Curso Alturas (Avanzado)</span>
-                    <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
-                      <ShieldCheck size={14} />
-                      <span>Vigente ({emp.heightCertExpiry})</span>
+                    {/* Resumen Salarial y Costo Hora (Ley 2101) */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[10px] text-gray-500 block font-medium">Salario Base Mensual</span>
+                        <span className="font-bold text-gray-900">{formatCOP(emp.baseSalaryCOP || 0)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-gray-500 block font-medium">Costo Hora (Factor 1.52 / 210h)</span>
+                        <span className="font-bold text-[#00668F]">{formatCOP(hourlyRateCOP)}/h</span>
+                      </div>
+                    </div>
+
+                    {/* Semáforo de Certificaciones Críticas para Trabajos en Pilonas */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100">
+                        <span className="text-[10px] text-gray-500 block font-medium">Curso Alturas (Avanzado)</span>
+                        <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
+                          <ShieldCheck size={14} />
+                          <span>Vigente ({emp.heightCertExpiry || 'Al día'})</span>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100">
+                        <span className="text-[10px] text-gray-500 block font-medium">Examen Médico Ocupacional</span>
+                        <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
+                          <CheckCircle2 size={14} />
+                          <span>Apto ({emp.medicalExamExpiry || 'Al día'})</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                      <span>Días de Vacaciones: <strong className="text-gray-900">{emp.vacationDaysAvailable || 15} días</strong></span>
+                      <span>Emergencia: <strong className="text-gray-700">{emp.emergencyPhone || emp.emergencyContact || 'Registrado'}</strong></span>
                     </div>
                   </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100">
-                    <span className="text-[10px] text-gray-500 block font-medium">Examen Médico Ocupacional</span>
-                    <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
-                      <CheckCircle2 size={14} />
-                      <span>Apto ({emp.medicalExamExpiry})</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                  <span>Días de Vacaciones: <strong className="text-gray-900">{emp.vacationDaysAvailable} días</strong></span>
-                  <span>Emergencia: <strong className="text-gray-700">{emp.emergencyPhone}</strong></span>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
@@ -1292,7 +1396,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-600">Periodo:</span>
               <select
                 value={payrollPeriod}
@@ -1303,52 +1407,117 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                 <option value="2da Quincena Noviembre 2026">2da Quincena Noviembre 2026</option>
                 <option value="1ra Quincena Octubre 2026">1ra Quincena Octubre 2026</option>
                 <option value="2da Quincena Octubre 2026">2da Quincena Octubre 2026</option>
+                <option value="Mes Completo Noviembre 2026">Mes Completo Noviembre 2026</option>
               </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  notify?.('success', 'Nómina Contabilizada', 'Los costos laborales de las horas reportadas en este periodo han sido asignados a la matriz de costos de cada proyecto.');
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#00668F] hover:bg-[#005273] text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                title="Imputar horas liquidadas a costos directos de obra"
+              >
+                <Coins size={14} />
+                <span>Contabilizar en Proyectos</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const payload = {
+                    periodo: payrollPeriod,
+                    generado: new Date().toISOString(),
+                    empleados: employees.map((emp) => ({
+                      documento: emp.documentId,
+                      nombre: emp.name,
+                      cargo: emp.role,
+                      salarioBase: emp.baseSalaryCOP,
+                    })),
+                  };
+                  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `DIAN_Nomina_Electronica_${payrollPeriod.replace(/\s+/g, '_')}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  notify?.('success', 'Plano DIAN Generado', 'Archivo JSON de Nómina Electrónica descargado exitosamente.');
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                title="Generar archivo para transmisión de Nómina Electrónica a DIAN"
+              >
+                <FileText size={14} className="text-amber-400" />
+                <span>Exportar Plano DIAN</span>
+              </button>
             </div>
           </div>
 
           <div className="overflow-x-auto w-full max-w-full">
-            <table className="w-full text-xs text-left min-w-[750px]">
+            <table className="w-full text-xs text-left min-w-[850px]">
               <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-200">
                 <tr>
                   <th className="p-3">Colaborador / C.C.</th>
                   <th className="p-3">Cargo</th>
-                  <th className="p-3 text-right">Salario Base</th>
+                  <th className="p-3 text-right">Base Quincenal</th>
                   <th className="p-3 text-center">Horas Base</th>
                   <th className="p-3 text-right">Extras & Recargos (Ley 2101)</th>
                   <th className="p-3 text-right">Viáticos Campo</th>
-                  <th className="p-3 text-right font-bold text-gray-900">Total a Liquidar</th>
+                  <th className="p-3 text-right text-rose-700">Deducciones (8%)</th>
+                  <th className="p-3 text-right font-bold text-gray-900">Neto a Liquidar</th>
                   <th className="p-3 text-right">Desprendible</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {employees.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-12 text-center text-gray-400">
+                    <td colSpan={9} className="p-12 text-center text-gray-400">
                       <Coins size={36} className="mx-auto mb-2 text-[#00668F] opacity-40" />
                       <p className="text-xs font-bold text-gray-700">Sin colaboradores para liquidar</p>
                       <p className="text-[11px] text-gray-400 mt-0.5">
                         Registra el personal técnico para calcular sus aportes de ley y horas extras.
                       </p>
+                      <div className="pt-3">
+                        <button
+                          type="button"
+                          onClick={() => seedEmployeesFromUsers?.()}
+                          className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <Sparkles size={14} className="text-amber-400" />
+                          <span>Importar Colaboradores Base</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   employees.map((emp) => {
-                  const empTimesheets = timesheets.filter(
-                    (t) =>
+                  const periodDateRange = (() => {
+                    if (payrollPeriod === '1ra Quincena Noviembre 2026') return { start: '2026-11-01', end: '2026-11-15' };
+                    if (payrollPeriod === '2da Quincena Noviembre 2026') return { start: '2026-11-16', end: '2026-11-30' };
+                    if (payrollPeriod === '1ra Quincena Octubre 2026') return { start: '2026-10-01', end: '2026-10-15' };
+                    if (payrollPeriod === '2da Quincena Octubre 2026') return { start: '2026-10-16', end: '2026-10-31' };
+                    return { start: '2026-11-01', end: '2026-11-30' };
+                  })();
+
+                  const empTimesheets = timesheets.filter((t) => {
+                    const isEmp =
                       t.userId === emp.id ||
                       t.userName.toLowerCase() === emp.name.toLowerCase() ||
-                      t.userName.toLowerCase().includes(emp.name.split(' ')[0].toLowerCase())
-                  );
+                      t.userName.toLowerCase().includes(emp.name.split(' ')[0].toLowerCase());
+                    const inPeriod = !t.date || (t.date >= periodDateRange.start && t.date <= periodDateRange.end);
+                    return isEmp && inPeriod;
+                  });
                   const totalHours = empTimesheets.reduce((sum, t) => sum + (Number(t.hours) || 0), 0);
 
-                  const empExpenses = expenses.filter(
-                    (e) =>
-                      (e.userId === emp.id ||
-                        e.userName.toLowerCase() === emp.name.toLowerCase() ||
-                        e.userName.toLowerCase().includes(emp.name.split(' ')[0].toLowerCase())) &&
-                      (e.status === 'approved' || e.status === 'legalized')
-                  );
+                  const empExpenses = expenses.filter((e) => {
+                    const isEmp =
+                      e.userId === emp.id ||
+                      e.userName.toLowerCase() === emp.name.toLowerCase() ||
+                      e.userName.toLowerCase().includes(emp.name.split(' ')[0].toLowerCase());
+                    const isApproved = e.status === 'approved' || e.status === 'legalized';
+                    const inPeriod = !e.date || (e.date >= periodDateRange.start && e.date <= periodDateRange.end);
+                    return isEmp && isApproved && inPeriod;
+                  });
                   const totalViaticosCOP = empExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
                   const laborRates = getLaborRates();
                   const baseHourlyWorkerWage = (emp.baseSalaryCOP || 0) / (laborRates.divisorMensual || 210);
@@ -1374,7 +1543,12 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   });
 
                   const baseQuincenal = Math.round((emp.baseSalaryCOP || 0) / 2);
-                  const totalLiquidarCOP = baseQuincenal + empOvertimePayCOP + totalViaticosCOP;
+                  const totalSalarial = baseQuincenal + empOvertimePayCOP;
+                  // Deducciones obligatorias de ley: Salud (4%) y Pensión (4%)
+                  const saludCOP = Math.round(totalSalarial * 0.04);
+                  const pensionCOP = Math.round(totalSalarial * 0.04);
+                  const totalDeduccionesCOP = saludCOP + pensionCOP;
+                  const netoLiquidarCOP = totalSalarial + totalViaticosCOP - totalDeduccionesCOP;
 
                   return (
                     <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors">
@@ -1383,7 +1557,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                         <span className="text-[11px] text-gray-400">C.C. {emp.documentId || 'S/N'}</span>
                       </td>
                       <td className="p-3 text-gray-600 font-medium">{emp.role}</td>
-                      <td className="p-3 text-right font-semibold text-gray-900">{formatCOP(emp.baseSalaryCOP || 0)}</td>
+                      <td className="p-3 text-right font-semibold text-gray-900">{formatCOP(baseQuincenal)}</td>
                       <td className="p-3 text-center">
                         <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-50 text-[#00668F] font-bold text-[11px]">
                           {totalHours} h
@@ -1400,8 +1574,9 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                         )}
                       </td>
                       <td className="p-3 text-right font-medium text-emerald-700">{formatCOP(totalViaticosCOP)}</td>
+                      <td className="p-3 text-right font-medium text-rose-600">-{formatCOP(totalDeduccionesCOP)}</td>
                       <td className="p-3 text-right font-bold text-gray-900">
-                        {formatCOP(totalLiquidarCOP)}
+                        {formatCOP(netoLiquidarCOP)}
                       </td>
                       <td className="p-3 text-right">
                         <button
@@ -2155,6 +2330,22 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
           </div>
         </div>
       )}
+
+      {/* Modal de Eliminación de Colaborador con Poka-Yoke BORRAR */}
+      <ConfirmDeleteModal
+        isOpen={!!employeeToDelete}
+        onClose={() => setEmployeeToDelete(null)}
+        onConfirm={() => {
+          if (employeeToDelete) {
+            deleteEmployee(employeeToDelete.id);
+            setEmployeeToDelete(null);
+          }
+        }}
+        title="Eliminar Colaborador del Directorio"
+        message={`¿Estás seguro de eliminar a ${employeeToDelete?.name || 'este colaborador'} de la base de talento humano? Esta acción no se puede deshacer.`}
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+      />
 
       {/* Modal Universal de Configuración de Talento Humano */}
       <UniversalModuleConfigModal

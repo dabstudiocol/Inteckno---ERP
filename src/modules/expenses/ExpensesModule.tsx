@@ -243,8 +243,11 @@ export const ExpensesModule: React.FC = () => {
 
   // Manejador cuando el usuario selecciona un archivo
   const handleFileSelected = (file: File) => {
-    if (!file || !file.type.startsWith('image/')) {
-      notify('warning', 'Formato no válido', 'Por favor selecciona una imagen válida (JPG, PNG o WebP).');
+    const isImage = file && file.type.startsWith('image/');
+    const isPdf = file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
+
+    if (!file || (!isImage && !isPdf)) {
+      notify('warning', 'Formato no válido', 'Por favor selecciona una factura electrónica en PDF o una foto legible (JPG, PNG).');
       return;
     }
 
@@ -761,7 +764,7 @@ export const ExpensesModule: React.FC = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,application/pdf,.pdf"
                   capture="environment"
                   className="hidden"
                   onChange={(e) => {
@@ -773,8 +776,15 @@ export const ExpensesModule: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   {receiptImage ? (
-                    <div className="w-20 h-20 rounded-xl overflow-hidden shadow-2xs bg-white shrink-0">
-                      <img src={receiptImage} alt="Comprobante" className="w-full h-full object-cover" />
+                    <div className="w-20 h-20 rounded-xl overflow-hidden shadow-2xs bg-white shrink-0 flex items-center justify-center border border-gray-200">
+                      {uploadedFile?.type === 'application/pdf' || uploadedFile?.name.toLowerCase().endsWith('.pdf') ? (
+                        <div className="flex flex-col items-center justify-center text-rose-600 p-1 text-center">
+                          <FileText size={26} />
+                          <span className="text-[9px] font-bold text-gray-700 mt-0.5 truncate max-w-[70px]">PDF Factura</span>
+                        </div>
+                      ) : (
+                        <img src={receiptImage} alt="Comprobante" className="w-full h-full object-cover" />
+                      )}
                     </div>
                   ) : (
                     <div className="w-16 h-16 rounded-2xl bg-white shadow-2xs flex items-center justify-center text-[#00668F] shrink-0">

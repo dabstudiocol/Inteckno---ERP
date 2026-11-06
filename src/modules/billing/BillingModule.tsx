@@ -36,7 +36,7 @@ interface BillingModuleProps {
   initialView?: 'invoices' | 'acts';
 }
 
-type BillingSubTab = 'milestones' | 'acts' | 'zero_digitation' | 'support_docs' | 'fev_radian' | 'payroll';
+type BillingSubTab = 'milestones' | 'acts' | 'cartera' | 'zero_digitation' | 'support_docs' | 'fev_radian' | 'payroll';
 
 export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => {
   const { 
@@ -54,6 +54,62 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
   } = useErp();
   const currentTrm = getStoredTRM();
   const [activeTab, setActiveTab] = useState<BillingSubTab>(initialView === 'acts' ? 'acts' : 'milestones');
+
+  const carteraInvoices = React.useMemo(() => {
+    const todayTime = new Date().getTime();
+    return (milestones || [])
+      .filter((m) => m.invoiceIssued)
+      .map((m) => {
+        const dueDateObj = m.dueDate ? new Date(m.dueDate) : new Date();
+        const diffDays = Math.floor((todayTime - dueDateObj.getTime()) / (1000 * 3600 * 24));
+        const daysOverdue = Math.max(0, diffDays);
+        return {
+          ...m,
+          daysOverdue,
+        };
+      });
+  }, [milestones]);
+
+  const carteraMetrics = React.useMemo(() => {
+    let totalPendingCOP = 0;
+    let pendingCount = 0;
+    let currentCOP = 0;
+    let currentCount = 0;
+    let overdue30COP = 0;
+    let overdue30Count = 0;
+    let overdue60COP = 0;
+    let overdue60Count = 0;
+
+    carteraInvoices.forEach((inv) => {
+      if (!inv.isPaid) {
+        const amt = inv.amountCOP || 0;
+        totalPendingCOP += amt;
+        pendingCount += 1;
+
+        if (inv.daysOverdue <= 30) {
+          currentCOP += amt;
+          currentCount += 1;
+        } else if (inv.daysOverdue <= 60) {
+          overdue30COP += amt;
+          overdue30Count += 1;
+        } else {
+          overdue60COP += amt;
+          overdue60Count += 1;
+        }
+      }
+    });
+
+    return {
+      totalPendingCOP,
+      pendingCount,
+      currentCOP,
+      currentCount,
+      overdue30COP,
+      overdue30Count,
+      overdue60COP,
+      overdue60Count,
+    };
+  }, [carteraInvoices]);
 
   React.useEffect(() => {
     if (initialView === 'acts') {
@@ -78,6 +134,9 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
         clearNavigationContext();
       } else if (navigationContext.action === 'view_acts') {
         setActiveTab('acts');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_cartera' || navigationContext.action === 'aging') {
+        setActiveTab('cartera');
         clearNavigationContext();
       } else if (navigationContext.action === 'view_invoices' || navigationContext.action === 'view_milestones') {
         setActiveTab('milestones');
@@ -259,6 +318,24 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
             {milestones.filter(m => !m.acceptanceActSigned).length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">
                 {milestones.filter(m => !m.acceptanceActSigned).length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('cartera')}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center shrink-0 ${
+              activeTab === 'cartera'
+                ? 'bg-[#00668F] text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <DollarSign size={14} className="shrink-0 text-emerald-600" />
+            <span className="truncate">Cartera & Recaudos</span>
+            {milestones.filter((m) => m.invoiceIssued && !m.isPaid).length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-rose-200 text-rose-900 text-[10px] font-bold">
+                {milestones.filter((m) => m.invoiceIssued && !m.isPaid).length}
               </span>
             )}
           </button>
@@ -625,6 +702,157 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PESTAÑA: CARTERA & CUENTAS POR COBRAR (AGING & RECAUDOS) */}
+      {activeTab === 'cartera' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-slate-900 text-white text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-white/10 text-emerald-400">
+                <DollarSign size={24} />
+              </div>
+              <div>
+                <strong className="block text-sm font-bold text-white">Gestión de Cartera & Aging de Cuentas por Cobrar:</strong>
+                <span className="text-slate-300">
+                  Control estricto de vencimiento de facturas de hitos contractuales, cálculo de días de mora y registro de comprobantes de recaudo.
+                </span>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="text-[11px] text-slate-400 block font-medium">DSO Promedio Estimado</span>
+              <span className="text-sm font-extrabold text-emerald-400">30 a 45 días</span>
+            </div>
+          </div>
+
+          {/* Tarjetas de Aging (0-30d, 31-60d, 61-90d, >90d) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-2xs space-y-1">
+              <span className="text-[11px] font-bold text-gray-500 uppercase">Total Cartera Pendiente</span>
+              <div className="text-lg font-black text-gray-900">{formatCOP(carteraMetrics.totalPendingCOP)}</div>
+              <span className="text-[10px] text-gray-400">{carteraMetrics.pendingCount} factura(s) por recaudar</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-emerald-200 shadow-2xs space-y-1">
+              <span className="text-[11px] font-bold text-emerald-700 uppercase">Corriente (0 - 30 Días)</span>
+              <div className="text-lg font-black text-emerald-800">{formatCOP(carteraMetrics.currentCOP)}</div>
+              <span className="text-[10px] text-emerald-600 font-semibold">{carteraMetrics.currentCount} factura(s) al día</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-amber-200 shadow-2xs space-y-1">
+              <span className="text-[11px] font-bold text-amber-700 uppercase">Vencida (31 - 60 Días)</span>
+              <div className="text-lg font-black text-amber-800">{formatCOP(carteraMetrics.overdue30COP)}</div>
+              <span className="text-[10px] text-amber-600 font-semibold">{carteraMetrics.overdue30Count} factura(s) en gestión</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-rose-200 shadow-2xs space-y-1">
+              <span className="text-[11px] font-bold text-rose-700 uppercase">Morosa (&gt; 60 Días)</span>
+              <div className="text-lg font-black text-rose-800">{formatCOP(carteraMetrics.overdue60COP)}</div>
+              <span className="text-[10px] text-rose-600 font-semibold">{carteraMetrics.overdue60Count} factura(s) crítica(s)</span>
+            </div>
+          </div>
+
+          {/* Tabla de Facturas en Cartera */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs p-4 space-y-3">
+            <h4 className="text-sm font-bold text-gray-900">Detalle de Facturas Expedidas & Estado de Recaudo</h4>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-xs text-left min-w-[800px]">
+                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-200">
+                  <tr>
+                    <th className="p-3">Factura / Hito</th>
+                    <th className="p-3">Cliente / Proyecto</th>
+                    <th className="p-3 text-center">Fecha Emisión</th>
+                    <th className="p-3 text-center">Vencimiento</th>
+                    <th className="p-3 text-center">Días Mora</th>
+                    <th className="p-3 text-right">Valor Factura</th>
+                    <th className="p-3 text-center">Estado</th>
+                    <th className="p-3 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {carteraInvoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-10 text-center text-gray-400">
+                        <DollarSign size={32} className="mx-auto mb-2 text-emerald-600 opacity-40" />
+                        <p className="text-xs font-bold text-gray-700">Sin facturas en cartera</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          Las facturas expedidas a partir de hitos de entrega aparecerán aquí para control de recaudo.
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    carteraInvoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3">
+                          <span className="font-bold text-gray-900 block">{inv.invoiceNumber || `FAC-HITO-${inv.milestoneIndex}`}</span>
+                          <span className="text-[11px] text-gray-400">{inv.title}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="font-semibold text-gray-800 block">{inv.clientName || 'Cliente'}</span>
+                          <span className="text-[11px] text-[#00668F] font-medium">{inv.projectCode} • {inv.projectName}</span>
+                        </td>
+                        <td className="p-3 text-center text-gray-600">
+                          {inv.invoiceIssuedAt?.split('T')[0] || inv.dueDate || 'Reciente'}
+                        </td>
+                        <td className="p-3 text-center text-gray-600">
+                          {inv.dueDate || '30 días'}
+                        </td>
+                        <td className="p-3 text-center">
+                          {inv.isPaid ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                              Al Día (Pagada)
+                            </span>
+                          ) : inv.daysOverdue > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold">
+                              {inv.daysOverdue} d mora
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 text-[10px] font-bold">
+                              Vigente
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right font-bold text-gray-900">
+                          {formatCOP(inv.amountCOP || 0)}
+                        </td>
+                        <td className="p-3 text-center">
+                          {inv.isPaid ? (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                              Recaudada
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold">
+                              Pendiente
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">
+                          {inv.isPaid ? (
+                            <div className="text-[10px] text-gray-500">
+                              <span className="block font-semibold text-emerald-700">Ref: {inv.paymentReference || 'Consignación'}</span>
+                              <span>{inv.paidAt?.split('T')[0]}</span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPaymentModalMilestone(inv);
+                                setPaymentRef('');
+                                setPaymentAmountCOP(inv.amountCOP || 0);
+                                setPaymentDate(new Date().toISOString().split('T')[0]);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <CheckCircle2 size={13} />
+                              <span>Registrar Recaudo</span>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
