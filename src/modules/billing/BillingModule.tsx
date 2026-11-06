@@ -157,7 +157,11 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
       return;
     }
 
-    signMilestoneAct(actSigningMilestone.id);
+    signMilestoneAct(actSigningMilestone.id, {
+      signerName: actSignerName.trim(),
+      signerId: actSignerId.trim(),
+      signerRole: actSignerRole.trim(),
+    });
     setActSigningMilestone(null);
     setActAgreed(false);
     setActSignerName('');

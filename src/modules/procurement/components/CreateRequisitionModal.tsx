@@ -53,7 +53,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedItemCode, setSelectedItemCode] = useState<string>('');
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   const availableProjectItems = useMemo(() => {
     if (!selectedProject) return [];

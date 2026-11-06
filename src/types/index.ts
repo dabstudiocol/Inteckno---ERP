@@ -1021,6 +1021,9 @@ export interface BillingMilestone {
   dueDate: string;
   acceptanceActSigned: boolean;
   acceptanceActSignedAt?: string;
+  acceptanceActSignerName?: string;
+  acceptanceActSignerId?: string;
+  acceptanceActSignerRole?: string;
   invoiceDeadlineTimestamp?: number; // Exactamente +48h desde que se firma el acta
   invoiceIssued: boolean;
   invoiceNumber?: string;

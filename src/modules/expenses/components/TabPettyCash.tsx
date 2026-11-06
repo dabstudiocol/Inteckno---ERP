@@ -43,6 +43,7 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
   onDeleteExpense,
 }) => {
   const { users, employees, notify } = useErp();
+  const [movementToDelete, setMovementToDelete] = useState<ExpenseEntry | null>(null);
   const staffOptions = useMemo(() => {
     const map = new Map<string, string>();
     users.forEach((u) => map.set(u.name, `${u.name} (${u.roleLabel || 'Personal ITK'})`));
@@ -86,10 +87,14 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
     let feCount = 0;
 
     pettyCashEntries.forEach((e) => {
+      if (e.status === 'rejected') return;
       if (e.movementType === 'deposito') {
         dep += Number(e.depositedAmount || e.amount || 0);
       } else {
-        wit += Number(e.withdrawnAmount || e.amount || 0);
+        const amt = Number(e.withdrawnAmount || e.amount || 0);
+        if (e.status === 'approved' || e.status === 'legalized') {
+          wit += amt;
+        }
       }
       if (e.dianDocType === 'DS' || e.invoiceNumber?.startsWith('DS-')) dsCount++;
       if (e.dianDocType === 'FE' || e.invoiceNumber?.startsWith('FE')) feCount++;
@@ -485,7 +490,7 @@ export const TabPettyCash: React.FC<TabPettyCashProps> = ({
                     </button>
                   )}
                   <button
-                    onClick={() => onDeleteExpense(it.id)}
+                    onClick={() => setMovementToDelete(it)}
                     className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     title="Eliminar movimiento"
                   >

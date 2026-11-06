@@ -315,7 +315,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   currentTrm,
   onUpdateProject,
 }) => {
-  const { timesheets, currentUser, createRequisition, setActiveModule, notify } = useErp();
+  const { timesheets, currentUser, createRequisition, setActiveModule, notify, employees = [] } = useErp();
 
   // Permiso de visualización de datos sensibles de ganancia y margen
   const canViewFinancialProfit =
@@ -946,7 +946,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const timesheetList = projectTimesheets.length > 0 ? projectTimesheets : ((project as any)?.timesheetEntries || []);
   const totalTimesheetHours = timesheetList.reduce((acc: number, entry: any) => acc + (Number(entry.hours) || 0), 0);
   const laborRates = getLaborRates();
-  const defaultHourlyRate = Math.round((2800000 * laborRates.factorPrestacional) / laborRates.divisorMensual);
+  const projectLeaderEmployee = employees.find((e) => e.id === project.projectLeaderId || e.name === project.projectLeaderName);
+  const defaultHourlyRate = projectLeaderEmployee?.baseSalaryCOP
+    ? Math.round((projectLeaderEmployee.baseSalaryCOP * laborRates.factorPrestacional) / (laborRates.divisorMensual || 210))
+    : 0;
   const estimatedTimesheetCostCOP = timesheetList.reduce((acc: number, entry: any) => {
     if (entry.totalCostCOP || entry.calculatedCostCOP) {
       return acc + (Number(entry.totalCostCOP || entry.calculatedCostCOP) || 0);
@@ -3101,7 +3104,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     const sumTotal = sumVal + sumIva - sumRet;
 
                     return (
-                      <tfoot>
+                        <tfoot>
                         <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
                           <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
                             Consolidados Totales Costos Directos ({directs.length} rubros)
@@ -3297,7 +3300,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                     const sumTotal = sumVal + sumIva - sumRet;
 
                     return (
-                      <tfoot>
+                        <tfoot>
                         <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900 text-xs">
                           <td colSpan={2} className="py-2.5 px-4 text-center font-bold">
                             Consolidados Totales Costos Indirectos
@@ -4053,7 +4056,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                           const subtotal = cost * qty;
                           const iva = itemForm.ivaAmount || 0;
                           const ret = itemForm.retentionAmount || 0;
-                          const total = subtotal + iva + ret;
+                          const total = subtotal + iva - ret;
                           return formatCOP(total);
                         })()}
                       </span>

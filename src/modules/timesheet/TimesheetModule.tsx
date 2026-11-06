@@ -188,8 +188,9 @@ export const TimesheetModule: React.FC = () => {
     );
   }, [employees, selectedUserId, selectedCollaborator.name]);
 
-  const baseSalaryCOP = collaboratorEmployee?.baseSalaryCOP || 2800000;
-  const baseHourlyRateCOP = Math.round((baseSalaryCOP * laborRates.factorPrestacional) / laborRates.divisorMensual);
+  const baseSalaryCOP = collaboratorEmployee?.baseSalaryCOP || 0;
+  const hasValidSalary = baseSalaryCOP > 0;
+  const baseHourlyRateCOP = hasValidSalary ? Math.round((baseSalaryCOP * laborRates.factorPrestacional) / (laborRates.divisorMensual || 210)) : 0;
 
   // Total de Horas Efectivas
   const totalDetailedHours = hodHours + hedHours + henHours + domHours + heddHours + hendHours;

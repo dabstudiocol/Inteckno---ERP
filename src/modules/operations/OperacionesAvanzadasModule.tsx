@@ -249,9 +249,9 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const [testProjectId, setTestProjectId] = useState(projects[0]?.id || '');
   const [testItemCode, setTestItemCode] = useState<string>('');
   const [testSerial, setTestSerial] = useState('');
-  const [testGripType, setTestGripType] = useState('Pinza Desembragable Doble Resorte');
-  const [testForce, setTestForce] = useState(38);
-  const [testRequired, setTestRequired] = useState(35);
+  const [testGripType, setTestGripType] = useState<string>('');
+  const [testForce, setTestForce] = useState<number>(0);
+  const [testRequired, setTestRequired] = useState<number>(0);
   const [testTechnician, setTestTechnician] = useState('');
 
   const availableTestProjectItems = useMemo(() => {
@@ -1021,6 +1021,129 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                   className="px-4 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white font-bold"
                 >
                   Guardar Certificado de Ensayo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+            {/* Modal Crear Plan de Mantenimiento Preventivo (EN 1709 / EN 12929) */}
+      {isNewPlanModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Wrench size={18} className="text-[#00668F]" />
+                <span>Programar Plan de Mantenimiento Preventivo</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewPlanModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePlan} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Proyecto STC Asociado *</label>
+                  <select
+                    value={planProjectCode}
+                    onChange={(e) => setPlanProjectCode(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                    required
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.code}>{p.code} - {p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Frecuencia de Inspección *</label>
+                  <select
+                    value={planFrequency}
+                    onChange={(e) => setPlanFrequency(e.target.value as any)}
+                    className="w-full p-2 border border-slate-300 rounded-xl font-medium"
+                  >
+                    <option value="Mensual">Mensual (30 días)</option>
+                    <option value="Trimestral">Trimestral (90 días)</option>
+                    <option value="Semestral">Semestral (180 días)</option>
+                    <option value="Anual">Anual (360 días)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Componente Crítico Intervenido *</label>
+                <CreatableSelect
+                  options={[
+                    { id: 'Pinzas Desembragables', name: 'Pinzas Desembragables' },
+                    { id: 'Balancines y Poleas', name: 'Balancines y Tren de Poleas' },
+                    { id: 'Cable Tractor/Portador', name: 'Cable Tractor o Portador' },
+                    { id: 'Volante Motriz/Retorno', name: 'Volante Motriz y de Retorno' },
+                    { id: 'Reductor Principal', name: 'Reductor Principal y Grupo Motriz' },
+                    { id: 'Frenos de Seguridad', name: 'Frenos de Emergencia y Servicio' },
+                    { id: 'Cabinas y Suspensión', name: 'Cabinas y Brazo de Suspensión' },
+                  ]}
+                  value={planComponent}
+                  onChange={(val) => setPlanComponent(val)}
+                  placeholder="Seleccionar o escribir componente..."
+                  allowCustomText={true}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Sistema / Línea de Teleférico *</label>
+                <input
+                  type="text"
+                  required
+                  value={planSystemName}
+                  onChange={(e) => setPlanSystemName(e.target.value)}
+                  placeholder="ej. Metrocable Línea K / Cable Aéreo Manizales"
+                  className="w-full p-2 border border-slate-300 rounded-xl"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Fecha Próximo Vencimiento *</label>
+                  <input
+                    type="date"
+                    required
+                    value={planNextDueDate}
+                    onChange={(e) => setPlanNextDueDate(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-xl font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Técnico Responsable STC</label>
+                  <CreatableSelect
+                    options={users.map((u) => ({ id: u.name, name: u.name }))}
+                    value={planTechnician}
+                    onChange={(val) => setPlanTechnician(val)}
+                    placeholder="Seleccionar técnico..."
+                    allowCustomText={true}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsNewPlanModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white font-bold flex items-center gap-1.5"
+                >
+                  <CheckCircle2 size={14} />
+                  <span>Guardar Plan Preventivo</span>
                 </button>
               </div>
             </form>

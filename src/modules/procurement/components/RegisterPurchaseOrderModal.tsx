@@ -32,6 +32,8 @@ interface PoItemRow {
   unitPriceUSD: number;
   historicalPriceCOP?: number;
   priceConfirmedByPrompt?: boolean;
+  itemCode?: string;
+  costMatrixItemId?: string;
 }
 
 interface Props {
@@ -340,8 +342,8 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
     const supplierId = supplierType === 'registered' ? selectedSupplierId : `PROV-TEMP-${Date.now()}`;
 
     const req = requisitions.find((r) => r.id === originReqId);
-    const formattedItems: PurchaseOrderItem[] = items.map((it, idx) => {
-      const origReqItem = req?.items?.[idx];
+    const formattedItems: PurchaseOrderItem[] = items.map((it) => {
+      const origReqItem = req?.items?.find((ri) => ri.productId === it.productId || ri.productSku === it.sku);
       return {
         productId: it.productId || `PRD-${it.sku}`,
         sku: it.sku,
@@ -354,8 +356,8 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
         subtotalUSD: it.unitPriceUSD * it.qty,
         subtotalCOP: it.unitPriceCOP * it.qty,
         historicalPriceCOP: it.historicalPriceCOP,
-        itemCode: origReqItem?.itemCode || req?.itemCode,
-        costMatrixItemId: origReqItem?.costMatrixItemId || selectedCostItemId || undefined,
+        itemCode: it.itemCode || origReqItem?.itemCode || req?.itemCode,
+        costMatrixItemId: it.costMatrixItemId || origReqItem?.costMatrixItemId || selectedCostItemId || undefined,
       };
     });
 

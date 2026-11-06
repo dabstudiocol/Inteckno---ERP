@@ -37,6 +37,7 @@ import {
 import { useErp } from '../../core/storage/erpStore';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import type {
   User as ErpUser,
   UserRole,
@@ -1211,6 +1212,7 @@ const parseBulletList = (text: string): string[] => {
 
 export const CargosModule: React.FC = () => {
   const { currentUser, users, notify, updateUserProfile, saveJobPosition, saveCandidate } = useErp();
+  const [positionToDelete, setPositionToDelete] = useState<JobPosition | null>(null);
 
   // Control RBAC
   const canManage = AUTHORIZED_MANAGEMENT_ROLES.includes(currentUser?.role);
@@ -1961,7 +1963,7 @@ export const CargosModule: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => handleDeletePosition(job.id || '')}
+                          onClick={() => setPositionToDelete(job)}
                           className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg cursor-pointer"
                           title="Eliminar cargo"
                         >
@@ -2916,6 +2918,22 @@ export const CargosModule: React.FC = () => {
       )}
 
       {/* Modal de Configuración Universal del Módulo */}
+      
+      {positionToDelete && (
+        <ConfirmDeleteModal
+          isOpen={Boolean(positionToDelete)}
+          title={`Eliminar Cargo: ${positionToDelete.title}`}
+          description={`¿Estás seguro de eliminar el cargo ${positionToDelete.code}? Esta acción afectará la estructura de perfiles de Inteckno.`}
+          onClose={() => setPositionToDelete(null)}
+          onConfirm={() => {
+            handleDeletePosition(positionToDelete.id);
+            setPositionToDelete(null);
+          }}
+          requireConfirmWord={true}
+          confirmWord="BORRAR"
+        />
+      )}
+
       <UniversalModuleConfigModal
         isOpen={isConfigModalOpen}
         onClose={() => setIsConfigModalOpen(false)}

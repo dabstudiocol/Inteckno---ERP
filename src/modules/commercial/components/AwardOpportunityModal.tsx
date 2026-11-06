@@ -342,6 +342,14 @@ export const AwardOpportunityModal: React.FC<AwardOpportunityModalProps> = ({
       serviceType: opportunity.cableType,
       templateName: selectedTemplateFamily,
       offerBudget: projectOfferBudget,
+      projectItems: offerItems.map((it, idx) => ({
+        id: `item-${Date.now()}-${idx + 1}`,
+        code: `ITEM ${String(idx + 1).padStart(2, '0')}`,
+        name: it.rubroName,
+        budgetPlanned: Number(it.budgetPlanned) || 0,
+        status: 'activo' as const,
+        createdAt: new Date().toISOString(),
+      })),
       costMatrix: [], // Cero Mock Data: La matriz de costos reales inicia limpia para registrar la ejecución
     };
 

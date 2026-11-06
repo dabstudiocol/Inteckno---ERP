@@ -33,7 +33,8 @@ export function calculateQuoteBreakdown(state: InternationalCalculationState): Q
   const effectiveDutyPct = state.isFtaApplied ? 0 : (state.baseDutyPct || 0);
   const importDutyUSD = Math.round(cifPriceUSD * (effectiveDutyPct / 100));
   const importBrokerAndFormalitiesUSD = state.destinationCustomsBrokerUSD || 0;
-  const destinationTaxesUSD = Math.round(cifPriceUSD * ((state.localTaxesDestPct || 0) / 100));
+  const importTaxBaseUSD = cifPriceUSD + importDutyUSD;
+  const destinationTaxesUSD = Math.round(importTaxBaseUSD * ((state.localTaxesDestPct || 0) / 100));
   const ddpPriceUSD = dapPriceUSD + importDutyUSD + importBrokerAndFormalitiesUSD + destinationTaxesUSD;
 
   // Base de precio según el Incoterm seleccionado por el usuario

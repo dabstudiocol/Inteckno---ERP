@@ -117,7 +117,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   const [quoteCode, setQuoteCode] = useState(initialData?.quoteCode || '');
   const [contractCode, setContractCode] = useState(initialData?.contractCode || '');
   const [currency, setCurrency] = useState<'COP' | 'USD' | 'EUR'>(initialData?.currency || 'COP');
-  const [contractAmount, setContractAmount] = useState<number>(initialData?.contractAmount || initialData?.budgetPV || 0);
+  const [contractAmount, setContractAmount] = useState<number>(initialData?.contractAmount || 0);
   const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(initialData?.advancePaymentPercentage || 0);
   const [retentionGuaranteePercentage, setRetentionGuaranteePercentage] = useState<number>(initialData?.retentionGuaranteePercentage || 0);
   const [paymentTermsDescription, setPaymentTermsDescription] = useState<string>(
@@ -152,7 +152,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   );
   const [componentIntervened, setComponentIntervened] = useState<
     'Balancines' | 'Volantes' | 'Reductores' | 'Mordazas' | 'Pilonas_Torres' | 'Cable_Tractor_Portador' | 'Cabinas_Vehiculos'
-  >((initialData?.dynamicData as any)?.componentIntervened || 'Balancines');
+  >((initialData?.dynamicData as any)?.componentIntervened || '');
 
   // Inspecciones y Mantenimiento Predictivo
   const [applicableStandard, setApplicableStandard] = useState<string>(
@@ -165,7 +165,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   // Consultoría / Proyectos Especiales de Herramientas
   const [studyPhase, setStudyPhase] = useState<
     'Prefactibilidad' | 'Factibilidad' | 'Diseño' | 'Supervisión' | 'Interventoría' | 'Implementación'
-  >((initialData?.dynamicData as any)?.studyPhase || 'Prefactibilidad');
+  >((initialData?.dynamicData as any)?.studyPhase || '');
 
   // Formación Técnica Especializada
   const [trainingTopic, setTrainingTopic] = useState<string>(
@@ -224,7 +224,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
     } else if (selectedCategory === "INSPECCIONES Y MANTENIMIENTO PREDICTIVO") {
       dynamicData = {
         ...dynamicData,
-        applicableStandard: applicableStandard.trim() || 'UNE EN 12927',
+        applicableStandard: applicableStandard.trim(),
         measurementEquipmentName: measurementEquipmentName.trim(),
       };
     } else if (
@@ -277,7 +277,7 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
       startDate,
       endDate: endDate || startDate,
       budgetPV: Number(budgetCOP) || 0,
-      contractAmount: Number(contractAmount) || Number(budgetCOP) || 0,
+      contractAmount: Number(contractAmount) || 0,
       currency,
       quoteCode: quoteCode.trim(),
       contractCode: contractCode.trim(),

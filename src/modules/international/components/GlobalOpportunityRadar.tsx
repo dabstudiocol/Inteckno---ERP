@@ -170,7 +170,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
       clientId: `CLI-${opp.id}`,
       clientName: opp.entity,
       clientContactPerson: opp.contactName || 'Comité de Adquisiciones STC',
-      clientEmail: opp.contactEmail || 'contacto@licitaciones.org',
+      clientEmail: opp.contactEmail || '',
       cableType: 'Teleférico / Sistema por Cable STC',
       country: opp.country,
       estimatedValueUSD: opp.budgetUSD,
@@ -206,11 +206,21 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
       // 2. País
       const matchesCountry = selectedCountry === 'Todos' || opp.country.toLowerCase() === selectedCountry.toLowerCase();
 
-      // 3. Categoría
-      const matchesCategory =
-        selectedCategory === 'Todas' ||
-        opp.category === selectedCategory ||
-        opp.categoryLabel.toLowerCase().includes(selectedCategory.toLowerCase());
+      // 3. Categoría (Normalizada)
+      let matchesCategory = selectedCategory === 'Todas';
+      if (!matchesCategory) {
+        const sel = selectedCategory.toLowerCase();
+        const cat = (opp.category || '').toLowerCase();
+        const lbl = (opp.categoryLabel || '').toLowerCase();
+        matchesCategory =
+          opp.category === selectedCategory ||
+          lbl.includes(sel) ||
+          sel.includes(cat) ||
+          (sel.includes('repuesto') && (cat.includes('repuesto') || lbl.includes('repuesto'))) ||
+          (sel.includes('mantenimiento') && (cat.includes('mantenimiento') || lbl.includes('mantenimiento'))) ||
+          (sel.includes('inspecci') && (cat.includes('inspecci') || lbl.includes('inspecci'))) ||
+          (sel.includes('moderniz') && (cat.includes('moderniz') || lbl.includes('moderniz')));
+      }
 
       // 4. Rango de Presupuesto
       let matchesPrice = true;

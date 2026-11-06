@@ -519,7 +519,7 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
               País
             </label>
             <CreatableSelect
-              value={formData.country || 'Colombia'}
+              value={formData.country || ''}
               onChange={(val) => setFormData({ ...formData, country: val })}
               options={catalogCountries.map((c) => ({ id: c.id, name: c.name, code: c.code }))}
               placeholder="Seleccionar o escribir país..."
@@ -1016,7 +1016,7 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                 <div>
                   <label className="block text-gray-700 font-bold mb-1">Lista de Precios / Moneda</label>
                   <CreatableSelect
-                    value={formData.salesPurchases?.priceListCurrency || 'USD'}
+                    value={formData.salesPurchases?.priceListCurrency || ''}
                     onChange={(val) =>
                       setFormData({
                         ...formData,
@@ -1595,7 +1595,7 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                 <div>
                   <CreatableSelect
                     label="Régimen Fiscal (IVA, No aplica, IC, IVA e IC)"
-                    value={formData.dianBilling?.fiscalRegime || 'IVA'}
+                    value={formData.dianBilling?.fiscalRegime || ''}
                     onChange={(val) =>
                       setFormData({
                         ...formData,

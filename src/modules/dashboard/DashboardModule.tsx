@@ -192,7 +192,7 @@ export const DashboardModule: React.FC = () => {
           subtitle={activeProjects.length > 0 ? `${activeProjects.length} proyecto(s) en ejecución activa` : 'Sin proyectos activos en ejecución'}
           icon={<FolderKanban size={17} className="text-[#00668F]" />}
           badgeText={`SPI ${avgSpi}`}
-          trendData={projects.length > 0 ? [40, 50, 48, 55, 62, 60, 68, 72, 75] : [0, 0, 0]}
+          trendData={projects.length > 0 ? [] : [0, 0, 0]}
           onClick={() => setActiveModule('projects')}
         />
 
@@ -204,7 +204,7 @@ export const DashboardModule: React.FC = () => {
           subtitle={projects.length > 0 ? `Generando $${avgCpi} de valor por $1 gastado` : 'Sin registros de costos'}
           icon={<TrendingUp size={17} className="text-purple-600" />}
           badgeText={projects.length > 0 ? cpiSavings : 'N/D'}
-          trendData={projects.length > 0 ? [30, 35, 45, 40, 50, 60, 65, 70, 78] : [0, 0, 0]}
+          trendData={projects.length > 0 ? [] : [0, 0, 0]}
           onClick={() => setActiveModule('projects')}
         />
 
@@ -216,7 +216,7 @@ export const DashboardModule: React.FC = () => {
           subtitle={pendingTimesheets.length > 0 ? `${pendingTimesheets.length} reporte(s) de campo por aprobar` : 'Todas las horas al día'}
           icon={<Clock size={17} className="text-emerald-600" />}
           badgeText={pendingTimesheets.length > 0 ? 'Pendiente' : 'Al Día'}
-          trendData={timesheets.length > 0 ? [20, 25, 22, 28, 35, 30, 40, 42, 45] : [0, 0, 0]}
+          trendData={timesheets.length > 0 ? [] : [0, 0, 0]}
           onClick={() => setActiveModule('timesheet')}
         />
 
@@ -233,7 +233,7 @@ export const DashboardModule: React.FC = () => {
           icon={<FileText size={17} className="text-[#F39200]" />}
           badgeText={firstCountdown ? `${firstCountdownRemaining?.hoursRemaining || 0}h Restantes` : 'Al Día'}
           badgePositive={countdownMilestones.length === 0}
-          trendData={milestones.length > 0 ? [50, 55, 60, 65, 70, 75, 80, 85, 90] : [0, 0, 0]}
+          trendData={milestones.length > 0 ? [] : [0, 0, 0]}
           onClick={() => setActiveModule('billing')}
         />
       </div>

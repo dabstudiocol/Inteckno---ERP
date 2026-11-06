@@ -348,11 +348,29 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
 
   const handleCreateEmp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!empForm.name || !empForm.documentId) return;
+    if (!empForm.name.trim() || !empForm.documentId.trim() || !empForm.role.trim()) {
+      notify?.('warning', 'Campos Incompletos', 'Nombre, cédula y cargo técnico son obligatorios.');
+      return;
+    }
+    if (!empForm.baseSalaryCOP || empForm.baseSalaryCOP <= 0) {
+      notify?.('warning', 'Salario Base Requerido', 'Debe especificar el salario base mensual para liquidar nómina y costo hora.');
+      return;
+    }
+    const isDuplicate = employees.some((emp) => emp.documentId.trim() === empForm.documentId.trim());
+    if (isDuplicate) {
+      notify?.('urgent', 'Documento Duplicado', `Ya existe un colaborador registrado con la cédula ${empForm.documentId}.`);
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const isHeightValid = empForm.heightCertExpiry ? empForm.heightCertExpiry >= today : false;
+    const isExamValid = empForm.medicalExamExpiry ? empForm.medicalExamExpiry >= today : false;
+
     createEmployee({
       ...empForm,
-      heightCertStatus: 'vigente',
-      medicalExamStatus: 'vigente',
+      hireDate: empForm.hireDate || today,
+      heightCertStatus: isHeightValid ? 'vigente' : 'vencido',
+      medicalExamStatus: isExamValid ? 'vigente' : 'vencido',
       vacationDaysAvailable: 15,
     });
     setIsNewEmpModalOpen(false);
@@ -1866,6 +1884,59 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   placeholder="Seleccionar o escribir departamento..."
                   allowCustomText={true}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Salario Base Mensual (COP) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="0"
+                    value={empForm.baseSalaryCOP || ''}
+                    onChange={(e) => setEmpForm({ ...empForm, baseSalaryCOP: Number(e.target.value) || 0 })}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300 font-semibold focus:border-[#00668F]"
+                  />
+                  {empForm.baseSalaryCOP > 0 && (
+                    <span className="text-[10px] text-gray-500 font-medium mt-0.5 block">
+                      {formatCOP(empForm.baseSalaryCOP)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Fecha de Ingreso *</label>
+                  <input
+                    type="date"
+                    required
+                    value={empForm.hireDate}
+                    onChange={(e) => setEmpForm({ ...empForm, hireDate: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Contacto de Emergencia</label>
+                  <input
+                    type="text"
+                    placeholder="Familiar / Contacto"
+                    value={empForm.emergencyContact}
+                    onChange={(e) => setEmpForm({ ...empForm, emergencyContact: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Teléfono Emergencia</label>
+                  <input
+                    type="tel"
+                    placeholder="+57 300 000 0000"
+                    value={empForm.emergencyPhone}
+                    onChange={(e) => setEmpForm({ ...empForm, emergencyPhone: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">

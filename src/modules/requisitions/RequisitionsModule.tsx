@@ -202,9 +202,9 @@ export const RequisitionsModule: React.FC = () => {
                 }
                 if (req.status === 'approved') {
                   return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-[#00668F] border border-sky-200">
                       <CheckCircle2 size={11} />
-                      Surtido con Stock Local
+                      Aprobada (Lista para Compra)
                     </span>
                   );
                 }

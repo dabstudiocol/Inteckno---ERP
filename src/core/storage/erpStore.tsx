@@ -409,7 +409,7 @@ export interface ErpContextType extends ErpState {
   approveExpense: (id: string) => void;
   deleteExpense: (id: string) => void;
   createMilestone: (milestoneData: Partial<BillingMilestone>) => void;
-  signMilestoneAct: (milestoneId: string) => void;
+  signMilestoneAct: (milestoneId: string, signerData?: { signerName: string; signerId: string; signerRole: string }) => void;
   issueMilestoneInvoice: (milestoneId: string, invoiceNumber: string) => void;
   markMilestonePaid: (milestoneId: string, paymentData?: { paidAt?: string; paymentReference?: string; paymentAmountCOP?: number }) => void;
   deleteMilestone: (milestoneId: string) => void;
@@ -1237,6 +1237,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         remissions: Array.isArray(data.remissions) ? data.remissions : prev.remissions,
         maintenancePlans: Array.isArray(data.maintenancePlans) ? data.maintenancePlans : prev.maintenancePlans,
         employees: Array.isArray(data.employees) && data.employees.length > 0 ? data.employees : prev.employees,
+        workOrders: Array.isArray(data.workOrders) ? data.workOrders : prev.workOrders,
+        manufacturingOrders: Array.isArray(data.manufacturingOrders) ? data.manufacturingOrders : prev.manufacturingOrders,
+        benchTests: Array.isArray(data.benchTests) ? data.benchTests : prev.benchTests,
       }));
     });
 
@@ -1322,6 +1325,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         remissions: state.remissions,
         maintenancePlans: state.maintenancePlans,
         employees: state.employees,
+        workOrders: state.workOrders,
+        manufacturingOrders: state.manufacturingOrders,
+        benchTests: state.benchTests,
       }, currentUserId);
 
       syncModuleToCloud('commercial', {
@@ -2922,12 +2928,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const count = state.purchaseOrders.length + 1;
       const orderNumber = `PO-2026-${String(count).padStart(3, '0')}`;
 
+      const currentTrm = getStoredTRM();
+      const totalUSD = poData.currency === 'USD'
+        ? (poData.totalAmountUSD || 0)
+        : Math.round((poData.totalAmountCOP || 0) / (currentTrm || 4150));
+      const requiresGM = totalUSD > 2000;
+
       const newPo: PurchaseOrder = {
         ...poData,
         id: `PO-${Date.now()}`,
         orderNumber,
-        status: 'ordered',
-        gmApproved: true,
+        status: requiresGM ? 'pending_gm_approval' : 'ordered',
+        gmApproved: !requiresGM,
       };
 
       setState((prev) => {
@@ -3050,7 +3062,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       notify('success', 'Orden de Compra Registrada', `${orderNumber} registrada y lista para seguimiento de entrega.`);
 
-      return { success: true, requiresGMApproval: false };
+      return { success: true, requiresGMApproval: requiresGM };
     },
     [state.purchaseOrders.length, state.currentUser, notify]
   );
@@ -3696,6 +3708,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateProductStockDirect = useCallback(
     (productId: string, newStock: number, reason: string = 'Ajuste de existencias', projectCode?: string, source: InventoryAuditLog['source'] = 'erp_web') => {
       const sanitizedStock = Math.max(0, Number(newStock) || 0);
+      const targetProd = state.products.find((p) => p.id === productId);
+      const previousStock = targetProd?.realStock || 0;
+      const delta = sanitizedStock - previousStock;
 
       setState((prev) => ({
         ...prev,
@@ -3710,8 +3725,26 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return p;
         }),
       }));
+
+      if (targetProd && delta !== 0) {
+        recordInventoryAuditLog({
+          productId: targetProd.id,
+          productSku: targetProd.sku,
+          productName: targetProd.name,
+          userId: state.currentUser?.id || 'USR-001',
+          userName: state.currentUser?.name || 'Almacén ITK (Pistola Láser/Cámara)',
+          userEmail: state.currentUser?.email || 'almacen@inteckno.com',
+          source,
+          previousStock,
+          newStock: sanitizedStock,
+          delta,
+          reason,
+          projectCode,
+        });
+        syncProductChangeToExcelOnline(targetProd.sku, sanitizedStock).catch(() => {});
+      }
     },
-    []
+    [state.products, state.currentUser, recordInventoryAuditLog]
   );
 
   // --------------------------------------------------------------------------
@@ -4382,7 +4415,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const signMilestoneAct = useCallback(
-    (milestoneId: string) => {
+    (milestoneId: string, signerData?: { signerName: string; signerId: string; signerRole: string }) => {
       const milestone = state.milestones.find((m) => m.id === milestoneId);
       setState((prev) => ({
         ...prev,
@@ -4392,6 +4425,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 ...m,
                 acceptanceActSigned: true,
                 acceptanceActSignedAt: new Date().toISOString(),
+                acceptanceActSignerName: signerData?.signerName || 'Interventor Autorizado',
+                acceptanceActSignerId: signerData?.signerId || 'S/N',
+                acceptanceActSignerRole: signerData?.signerRole || 'Interventor de Obra',
                 invoiceDeadlineTimestamp: Date.now() + 48 * 3600 * 1000,
               }
             : m
