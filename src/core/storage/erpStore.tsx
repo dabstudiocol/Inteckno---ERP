@@ -32,8 +32,8 @@ import {
   RemissionItem,
   ChatGroup,
   UserPreferences,
-  InventoryAuditLog,
-} from '../../types';
+  InventoryAuditLog,  WorkOrderOT,  ManufacturingOrder,  BenchTestRecord,  SstInspectionRecord,  InventoryWriteOffRequest,  JobPosition,  JobApplicationCandidate,} from '../../types';
+import { INITIAL_JOB_POSITIONS } from '../../modules/inteckno/CargosModule';
 import {
   SEED_USERS,
   SEED_PROJECTS,
@@ -203,6 +203,13 @@ interface ErpState {
 
   // Huella Digital Inmutable de Inventario (Audit Trail)
   inventoryAuditLogs: InventoryAuditLog[];
+  workOrders: WorkOrderOT[];
+  manufacturingOrders: ManufacturingOrder[];
+  benchTests: BenchTestRecord[];
+  inventoryWriteOffs: InventoryWriteOffRequest[];
+  sstInspections: SstInspectionRecord[];
+  jobPositions: JobPosition[];
+  candidates: JobApplicationCandidate[];
 
   // Nuevas colecciones
   opportunities: Opportunity[];
@@ -253,6 +260,29 @@ export interface ErpContextType extends ErpState {
   triggerChatToast: (toast: Omit<ChatNotificationToast, 'id' | 'timestamp'>) => void;
   dismissChatToast: () => void;
   simulateColleagueMessage: (channelId?: string, text?: string) => void;
+
+  // OPERACIONES AVANZADAS (OT, MANUFACTURA, BANCO DE PRUEBAS)
+  createWorkOrder: (ot: Omit<WorkOrderOT, 'id' | 'createdAt'>) => WorkOrderOT;
+  updateWorkOrder: (id: string, data: Partial<WorkOrderOT>) => void;
+  deleteWorkOrder: (id: string) => void;
+  createManufacturingOrder: (mo: Omit<ManufacturingOrder, 'id' | 'createdAt'>) => ManufacturingOrder;
+  updateManufacturingOrder: (id: string, data: Partial<ManufacturingOrder>) => void;
+  deleteManufacturingOrder: (id: string) => void;
+  createBenchTest: (test: Omit<BenchTestRecord, 'id'>) => BenchTestRecord;
+  deleteBenchTest: (id: string) => void;
+
+  // BAJAS DE INVENTARIO (KARDEX & GERENCIA)
+  createInventoryWriteOff: (solicitud: Omit<InventoryWriteOffRequest, 'id' | 'fechaSolicitud'>) => InventoryWriteOffRequest;
+  approveInventoryWriteOff: (id: string, approverId: string, approverName: string) => void;
+  rejectInventoryWriteOff: (id: string, reason: string) => void;
+
+  // TALENTO HUMANO & SST
+  createSstInspection: (insp: Omit<SstInspectionRecord, 'id' | 'createdAt'>) => SstInspectionRecord;
+  deleteSstInspection: (id: string) => void;
+  saveJobPosition: (pos: JobPosition) => void;
+  deleteJobPosition: (id: string) => void;
+  saveCandidate: (cand: JobApplicationCandidate) => void;
+  updateCandidateStage: (id: string, stage: JobApplicationCandidate['stage']) => void;
 
   // CRM & COMERCIAL
   createOpportunity: (opp: Omit<Opportunity, 'id' | 'code' | 'createdAt'>) => Opportunity;
@@ -447,6 +477,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       maintenancePlans: [],
       remissions: [],
       inventoryAuditLogs: [],
+      workOrders: [],
+      manufacturingOrders: [],
+      benchTests: [],
+      inventoryWriteOffs: [],
+      sstInspections: [],
+      jobPositions: INITIAL_JOB_POSITIONS,
+      candidates: [],
     };
 
     try {
@@ -746,6 +783,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.procurement.equipment)) { next.equipment = cloudData.procurement.equipment; hasChanges = true; }
           if (Array.isArray(cloudData.procurement.partners)) { next.partners = cloudData.procurement.partners; hasChanges = true; }
           if (Array.isArray(cloudData.procurement.inventoryAuditLogs)) { next.inventoryAuditLogs = cloudData.procurement.inventoryAuditLogs; hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.inventoryWriteOffs)) { next.inventoryWriteOffs = cloudData.procurement.inventoryWriteOffs; hasChanges = true; }
         }
 
         // Products / Inventory
@@ -773,12 +811,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.operations.maintenancePlans)) { next.maintenancePlans = cloudData.operations.maintenancePlans; hasChanges = true; }
           if (Array.isArray(cloudData.operations.employees)) { next.employees = cloudData.operations.employees; hasChanges = true; }
           if (Array.isArray(cloudData.operations.novelties)) { next.novelties = cloudData.operations.novelties; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.workOrders)) { next.workOrders = cloudData.operations.workOrders; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.manufacturingOrders)) { next.manufacturingOrders = cloudData.operations.manufacturingOrders; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.benchTests)) { next.benchTests = cloudData.operations.benchTests; hasChanges = true; }
         }
 
         // HR (Talento Humano & SST)
         if (cloudData.hr) {
           if (Array.isArray(cloudData.hr.employees)) { next.employees = cloudData.hr.employees; hasChanges = true; }
           if (Array.isArray(cloudData.hr.novelties)) { next.novelties = cloudData.hr.novelties; hasChanges = true; }
+          if (Array.isArray(cloudData.hr.sstInspections)) { next.sstInspections = cloudData.hr.sstInspections; hasChanges = true; }
+          if (Array.isArray(cloudData.hr.jobPositions) && cloudData.hr.jobPositions.length > 0) { next.jobPositions = cloudData.hr.jobPositions; hasChanges = true; }
+          if (Array.isArray(cloudData.hr.candidates)) { next.candidates = cloudData.hr.candidates; hasChanges = true; }
         }
 
         // Commercial
@@ -1070,6 +1114,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         equipment: Array.isArray(data.equipment) ? data.equipment : prev.equipment,
         partners: Array.isArray(data.partners) ? data.partners : prev.partners,
         inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
+        inventoryWriteOffs: Array.isArray(data.inventoryWriteOffs) ? data.inventoryWriteOffs : prev.inventoryWriteOffs,
       }));
     });
 
@@ -1094,6 +1139,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           inventoryAuditLogs: [...toAdd, ...prev.inventoryAuditLogs],
         };
       });
+    });
+
+    // 5.2 Suscribirse a Talento Humano & SST en Cloud Firestore
+    const unsubHr = subscribeToCloudModule('hr', (data) => {
+      if (!isMounted || !data) return;
+      isRemoteUpdateRef.current = true;
+      setState((prev) => ({
+        ...prev,
+        employees: Array.isArray(data.employees) ? data.employees : prev.employees,
+        novelties: Array.isArray(data.novelties) ? data.novelties : prev.novelties,
+        sstInspections: Array.isArray(data.sstInspections) ? data.sstInspections : prev.sstInspections,
+        jobPositions: Array.isArray(data.jobPositions) && data.jobPositions.length > 0 ? data.jobPositions : prev.jobPositions,
+        candidates: Array.isArray(data.candidates) ? data.candidates : prev.candidates,
+      }));
     });
 
     // 6. Suscribirse a Operaciones en Campo (Horas, Gastos, DDRs, Remisiones) en tiempo real
@@ -1145,6 +1204,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubProcurement) unsubProcurement();
       if (unsubInventory) unsubInventory();
       if (unsubKardex) unsubKardex();
+      if (unsubHr) unsubHr();
       if (unsubOperations) unsubOperations();
       if (unsubCommercial) unsubCommercial();
       if (unsubProductivity) unsubProductivity();
@@ -5630,6 +5690,208 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [state.maintenancePlans, state.currentUser, notify]
   );
 
+  
+  // OPERACIONES AVANZADAS: WORK ORDERS, MANUFACTURA Y BANCO DE PRUEBAS
+  const createWorkOrder = useCallback((otData: Omit<WorkOrderOT, 'id' | 'createdAt'>): WorkOrderOT => {
+    const newOt: WorkOrderOT = {
+      ...otData,
+      id: `OT-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setState((prev) => ({
+      ...prev,
+      workOrders: [newOt, ...prev.workOrders],
+    }));
+    return newOt;
+  }, []);
+
+  const updateWorkOrder = useCallback((id: string, data: Partial<WorkOrderOT>) => {
+    setState((prev) => ({
+      ...prev,
+      workOrders: prev.workOrders.map((ot) => (ot.id === id ? { ...ot, ...data } : ot)),
+    }));
+  }, []);
+
+  const deleteWorkOrder = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      workOrders: prev.workOrders.filter((ot) => ot.id !== id),
+    }));
+  }, []);
+
+  const createManufacturingOrder = useCallback((moData: Omit<ManufacturingOrder, 'id' | 'createdAt'>): ManufacturingOrder => {
+    const newMo: ManufacturingOrder = {
+      ...moData,
+      id: `MO-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setState((prev) => ({
+      ...prev,
+      manufacturingOrders: [newMo, ...prev.manufacturingOrders],
+    }));
+    return newMo;
+  }, []);
+
+  const updateManufacturingOrder = useCallback((id: string, data: Partial<ManufacturingOrder>) => {
+    setState((prev) => ({
+      ...prev,
+      manufacturingOrders: prev.manufacturingOrders.map((mo) => (mo.id === id ? { ...mo, ...data } : mo)),
+    }));
+  }, []);
+
+  const deleteManufacturingOrder = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      manufacturingOrders: prev.manufacturingOrders.filter((mo) => mo.id !== id),
+    }));
+  }, []);
+
+  const createBenchTest = useCallback((testData: Omit<BenchTestRecord, 'id'>): BenchTestRecord => {
+    const newTest: BenchTestRecord = {
+      ...testData,
+      id: `TEST-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+    };
+    setState((prev) => ({
+      ...prev,
+      benchTests: [newTest, ...prev.benchTests],
+    }));
+    return newTest;
+  }, []);
+
+  const deleteBenchTest = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      benchTests: prev.benchTests.filter((t) => t.id !== id),
+    }));
+  }, []);
+
+  // BAJAS DE INVENTARIO (KARDEX & GERENCIA)
+  const createInventoryWriteOff = useCallback((solicitud: Omit<InventoryWriteOffRequest, 'id' | 'fechaSolicitud'>): InventoryWriteOffRequest => {
+    const newReq: InventoryWriteOffRequest = {
+      ...solicitud,
+      id: `WO-${Date.now()}`,
+      fechaSolicitud: new Date().toISOString(),
+    };
+    setState((prev) => ({
+      ...prev,
+      inventoryWriteOffs: [newReq, ...prev.inventoryWriteOffs],
+    }));
+    return newReq;
+  }, []);
+
+  const approveInventoryWriteOff = useCallback((id: string, approverId: string, approverName: string) => {
+    setState((prev) => {
+      const target = prev.inventoryWriteOffs.find((w) => w.id === id);
+      if (!target) return prev;
+      const updatedWriteOffs = prev.inventoryWriteOffs.map((w) =>
+        w.id === id
+          ? {
+              ...w,
+              estado: 'APROBADO_GERENCIA' as const,
+              aprobadoPorId: approverId,
+              aprobadoPorNombre: approverName,
+              fechaAprobacion: new Date().toISOString().split('T')[0],
+            }
+          : w
+      );
+      const updatedProducts = prev.products.map((p) => {
+        if (p.id === target.productId) {
+          const nextAvail = Math.max(0, (p.availableStock || 0) - target.cantidad);
+          const nextReal = Math.max(0, (p.realStock || 0) - target.cantidad);
+          return {
+            ...p,
+            availableStock: nextAvail,
+            realStock: nextReal,
+          };
+        }
+        return p;
+      });
+      return {
+        ...prev,
+        inventoryWriteOffs: updatedWriteOffs,
+        products: updatedProducts,
+      };
+    });
+  }, []);
+
+  const rejectInventoryWriteOff = useCallback((id: string, reason: string) => {
+    setState((prev) => ({
+      ...prev,
+      inventoryWriteOffs: prev.inventoryWriteOffs.map((w) =>
+        w.id === id
+          ? {
+              ...w,
+              estado: 'RECHAZADO_GERENCIA' as const,
+              motivoRechazo: reason,
+            }
+          : w
+      ),
+    }));
+  }, []);
+
+  // TALENTO HUMANO, SST, CARGOS & CANDIDATOS
+  const createSstInspection = useCallback((insp: Omit<SstInspectionRecord, 'id' | 'createdAt'>): SstInspectionRecord => {
+    const newInsp: SstInspectionRecord = {
+      ...insp,
+      id: `SST-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setState((prev) => ({
+      ...prev,
+      sstInspections: [newInsp, ...prev.sstInspections],
+    }));
+    return newInsp;
+  }, []);
+
+  const deleteSstInspection = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      sstInspections: prev.sstInspections.filter((i) => i.id !== id),
+    }));
+  }, []);
+
+  const saveJobPosition = useCallback((pos: JobPosition) => {
+    setState((prev) => {
+      const exists = prev.jobPositions.some((p) => p.id === pos.id || p.code === pos.code);
+      const updated = exists
+        ? prev.jobPositions.map((p) => (p.id === pos.id || p.code === pos.code ? pos : p))
+        : [...prev.jobPositions, pos];
+      return {
+        ...prev,
+        jobPositions: updated,
+      };
+    });
+  }, []);
+
+  const deleteJobPosition = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      jobPositions: prev.jobPositions.filter((p) => p.id !== id),
+    }));
+  }, []);
+
+  const saveCandidate = useCallback((cand: JobApplicationCandidate) => {
+    setState((prev) => {
+      const exists = prev.candidates.some((c) => c.id === cand.id);
+      const updated = exists
+        ? prev.candidates.map((c) => (c.id === cand.id ? cand : c))
+        : [cand, ...prev.candidates];
+      return {
+        ...prev,
+        candidates: updated,
+      };
+    });
+  }, []);
+
+  const updateCandidateStage = useCallback((id: string, stage: JobApplicationCandidate['stage']) => {
+    setState((prev) => ({
+      ...prev,
+      candidates: prev.candidates.map((c) =>
+        c.id === id ? { ...c, stage } : c
+      ),
+    }));
+  }, []);
+
   const completeMaintenance = useCallback(
     (id: string) => {
       setState((prev) => ({
@@ -6106,6 +6368,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deletePayrollNovelty,
         createMaintenancePlan,
         completeMaintenance,
+        createWorkOrder,
+        updateWorkOrder,
+        deleteWorkOrder,
+        createManufacturingOrder,
+        updateManufacturingOrder,
+        deleteManufacturingOrder,
+        createBenchTest,
+        deleteBenchTest,
+        createInventoryWriteOff,
+        approveInventoryWriteOff,
+        rejectInventoryWriteOff,
+        createSstInspection,
+        deleteSstInspection,
+        saveJobPosition,
+        deleteJobPosition,
+        saveCandidate,
+        updateCandidateStage,
+
         canUndo,
         canRedo,
         getLastUndoAction,

@@ -72,7 +72,27 @@ const STORAGE_KEY_TESTS = 'itk_operaciones_bench_tests';
 export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   initialSubTab = 'mantenimiento',
 }) => {
-  const { maintenancePlans, completeMaintenance, createMaintenancePlan, activeModuleId, projects, users, setActiveModule, notify } = useErp();
+  const {
+    maintenancePlans,
+    completeMaintenance,
+    createMaintenancePlan,
+    activeModuleId,
+    projects,
+    users,
+    setActiveModule,
+    notify,
+    workOrders,
+    manufacturingOrders,
+    benchTests,
+    createWorkOrder,
+    updateWorkOrder,
+    deleteWorkOrder,
+    createManufacturingOrder,
+    updateManufacturingOrder,
+    deleteManufacturingOrder,
+    createBenchTest,
+    deleteBenchTest,
+  } = useErp();
   
   const currentTab = (activeModuleId === 'reparacion' || activeModuleId === 'manufactura' || activeModuleId === 'taller' || activeModuleId === 'plm' || activeModuleId === 'mantenimiento')
     ? (activeModuleId as 'mantenimiento' | 'reparacion' | 'manufactura' | 'taller' | 'plm')
@@ -86,59 +106,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const catalogFrequencies = useModuleCatalog('mantenimiento', 'frequencies');
   const catalogOtPriorities = useModuleCatalog('mantenimiento', 'otPriorities');
 
-  // Estado persistente: Órdenes de Trabajo (OT)
-  const [workOrders, setWorkOrders] = useState<WorkOrderOT[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_OTS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Estado persistente: Lotes de Manufactura
-  const [manufacturingOrders, setManufacturingOrders] = useState<ManufacturingOrder[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_MANUF);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Estado persistente: Ensayos de Banco Hidráulico
-  const [benchTests, setBenchTests] = useState<BenchTestRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_TESTS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_OTS, JSON.stringify(workOrders));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [workOrders]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_MANUF, JSON.stringify(manufacturingOrders));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [manufacturingOrders]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(benchTests));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [benchTests]);
+  // Órdenes de Trabajo (OT), Lotes CNC y Ensayos de Banco sincronizados en tiempo real vía Google Cloud Firestore
 
   React.useEffect(() => {
     if (initialSubTab) {
@@ -183,8 +151,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const handleCreateOt = (e: React.FormEvent) => {
     e.preventDefault();
     const prj = projects.find((p) => p.id === otProject) || projects[0];
-    const newOt: WorkOrderOT = {
-      id: `OT-${Date.now()}`,
+    const newOt = createWorkOrder({
       code: `OT-${new Date().getFullYear()}-${String(workOrders.length + 1).padStart(3, '0')}`,
       projectId: prj?.id || '',
       projectCode: prj?.code || 'STC-GENERAL',
@@ -193,9 +160,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
       technician: otTechnician || 'Técnico Especialista STC',
       description: otDescription || 'Intervención electromecánica programada.',
       status: 'diagnostico',
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    setWorkOrders([newOt, ...workOrders]);
+    });
     setIsOtModalOpen(false);
     setOtDescription('');
     notify?.('success', 'Orden de Trabajo Creada', `Se registró la ${newOt.code} para el componente ${otComponent}.`);
@@ -211,17 +176,14 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const handleCreateManuf = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manufPartName.trim()) return;
-    const newOrder: ManufacturingOrder = {
-      id: `MANUF-${Date.now()}`,
+    const newOrder = createManufacturingOrder({
       code: `OF-${new Date().getFullYear()}-${String(manufacturingOrders.length + 1).padStart(3, '0')}`,
       partName: manufPartName,
       material: manufMaterial,
       quantity: Math.max(1, Number(manufQty) || 1),
       projectCode: manufProject,
       stage: 'corte',
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    setManufacturingOrders([newOrder, ...manufacturingOrders]);
+    });
     setIsManufModalOpen(false);
     setManufPartName('');
     notify?.('success', 'Orden de Fabricación Creada', `Se programó el maquinado de ${newOrder.partName}.`);
@@ -239,8 +201,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
     e.preventDefault();
     if (!testSerial.trim()) return;
     const verdict = Number(testForce) >= Number(testRequired) ? 'conforme' : 'no_conforme';
-    const newTest: BenchTestRecord = {
-      id: `TEST-${Date.now()}`,
+    const newTest = createBenchTest({
       testCode: `ENS-${new Date().getFullYear()}-${String(benchTests.length + 1).padStart(3, '0')}`,
       gripSerial: testSerial.trim(),
       gripType: testGripType,
@@ -249,8 +210,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
       verdict,
       technician: testTechnician || 'Ingeniero de Ensayos STC',
       testDate: new Date().toISOString().split('T')[0],
-    };
-    setBenchTests([newTest, ...benchTests]);
+    });
     setIsTestModalOpen(false);
     setTestSerial('');
     notify?.(

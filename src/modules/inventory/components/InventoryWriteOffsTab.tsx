@@ -21,72 +21,33 @@ interface InventoryWriteOffsTabProps {
 }
 
 export const InventoryWriteOffsTab: React.FC<InventoryWriteOffsTabProps> = ({ onOpenNewWriteOff }) => {
-  const { currentUser, notify, products, updateProductStockDirect, recordInventoryAuditLog } = useErp();
-  const [writeOffs, setWriteOffs] = useState<InventoryWriteOffRequest[]>([]);
+  const { currentUser, notify, products, inventoryWriteOffs, approveInventoryWriteOff, rejectInventoryWriteOff, recordInventoryAuditLog } = useErp();
+  const writeOffs = inventoryWriteOffs || [];
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const loadWriteOffs = () => {
-    try {
-      const raw = localStorage.getItem('inteckno_inventory_write_offs');
-      if (raw) {
-        setWriteOffs(JSON.parse(raw));
-      } else {
-        setWriteOffs([]);
-      }
-    } catch (e) {
-      console.error('Error cargando bajas:', e);
-    }
-  };
-
-  useEffect(() => {
-    loadWriteOffs();
-    const handleUpdate = () => loadWriteOffs();
-    window.addEventListener('inteckno:inventory-write-off-created', handleUpdate);
-    return () => window.removeEventListener('inteckno:inventory-write-off-created', handleUpdate);
-  }, []);
-
   const handleApprove = (solicitud: InventoryWriteOffRequest) => {
     try {
-      const updatedList = writeOffs.map((item) => {
-        if (item.id === solicitud.id) {
-          return {
-            ...item,
-            estado: 'APROBADO_GERENCIA' as const,
-            aprobadoPorId: currentUser?.id || 'gerencia_general',
-            aprobadoPorNombre: currentUser?.name || 'Gerencia General Inteckno',
-            fechaAprobacion: new Date().toISOString().split('T')[0],
-          };
-        }
-        return item;
-      });
+      approveInventoryWriteOff(solicitud.id, currentUser?.id || 'gerencia_general', currentUser?.name || 'Gerencia General Inteckno');
 
-      localStorage.setItem('inteckno_inventory_write_offs', JSON.stringify(updatedList));
-      setWriteOffs(updatedList);
-
-      // Descontar del stock real del producto
+      // Registrar auditoría de Kardex si aplica
       const targetProd = products.find((p) => p.id === solicitud.productId);
-      if (targetProd) {
+      if (targetProd && recordInventoryAuditLog) {
         const currentAvail = targetProd.availableStock || 0;
-        const newStock = Math.max(0, currentAvail - solicitud.cantidad);
-        updateProductStockDirect(targetProd.id, newStock);
-
-        if (recordInventoryAuditLog) {
-          recordInventoryAuditLog({
-            productId: targetProd.id,
-            productSku: targetProd.sku,
-            productName: targetProd.name,
-            userId: currentUser?.id || 'usr_gerente',
-            userName: currentUser?.name || 'Gerencia General',
-            userEmail: currentUser?.email || 'gerencia@inteckno.com.co',
-            source: 'erp_web',
-            previousStock: currentAvail,
-            newStock,
-            delta: -solicitud.cantidad,
-            reason: `Baja Aprobada (${solicitud.codigoSolicitud}): ${solicitud.motivo} - Proyecto ${solicitud.centroCostosProyectoCodigo}`,
-            projectCode: solicitud.centroCostosProyectoCodigo,
-          });
-        }
+        recordInventoryAuditLog({
+          productId: targetProd.id,
+          productSku: targetProd.sku,
+          productName: targetProd.name,
+          userId: currentUser?.id || 'usr_gerente',
+          userName: currentUser?.name || 'Gerencia General',
+          userEmail: currentUser?.email || 'gerencia@inteckno.com.co',
+          source: 'erp_web',
+          previousStock: currentAvail,
+          newStock: Math.max(0, currentAvail - solicitud.cantidad),
+          delta: -solicitud.cantidad,
+          reason: `Baja Aprobada (${solicitud.codigoSolicitud}): ${solicitud.motivo} - Proyecto ${solicitud.centroCostosProyectoCodigo}`,
+          projectCode: solicitud.centroCostosProyectoCodigo,
+        });
       }
 
       notify?.('success', 'Baja Aprobada', `Solicitud ${solicitud.codigoSolicitud} APROBADA con éxito. Stock descontado del inventario.`);
@@ -101,22 +62,7 @@ export const InventoryWriteOffsTab: React.FC<InventoryWriteOffsTabProps> = ({ on
     if (!razon) return;
 
     try {
-      const updatedList = writeOffs.map((item) => {
-        if (item.id === solicitud.id) {
-          return {
-            ...item,
-            estado: 'RECHAZADO_GERENCIA' as const,
-            motivoRechazo: razon,
-            aprobadoPorId: currentUser?.id || 'gerencia_general',
-            aprobadoPorNombre: currentUser?.name || 'Gerencia General Inteckno',
-            fechaAprobacion: new Date().toISOString().split('T')[0],
-          };
-        }
-        return item;
-      });
-
-      localStorage.setItem('inteckno_inventory_write_offs', JSON.stringify(updatedList));
-      setWriteOffs(updatedList);
+      rejectInventoryWriteOff(solicitud.id, razon);
       notify?.('info', 'Baja Rechazada', `Solicitud ${solicitud.codigoSolicitud} RECHAZADA. El stock no fue modificado.`);
     } catch (err) {
       console.error('Error rechazando baja:', err);

@@ -86,6 +86,9 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
     deletePayrollNovelty,
     currentUser,
     notify,
+    sstInspections: storeSstInspections,
+    createSstInspection,
+    deleteSstInspection,
   } = useErp();
 
   const currentTab = (activeModuleId === 'vacaciones' || activeModuleId === 'encuestas' || activeModuleId === 'nomina' || activeModuleId === 'empleados')
@@ -105,15 +108,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
   const [noveltyTypeFilter, setNoveltyTypeFilter] = useState<string>('all');
   const [noveltyStatusFilter, setNoveltyStatusFilter] = useState<string>('all');
 
-  // Estados para SST e Inspecciones Pre-Operacionales
-  const [sstInspections, setSstInspections] = useState<SstInspectionRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_SST);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Estados para SST e Inspecciones Pre-Operacionales (Sincronizadas con Cloud Firestore)
+  const sstInspections = storeSstInspections || [];
 
   const [isNewInspectionModalOpen, setIsNewInspectionModalOpen] = useState(false);
   const [inspectionToDelete, setInspectionToDelete] = useState<SstInspectionRecord | null>(null);
@@ -139,14 +135,6 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
   // Estados para Nómina y Desprendibles (Colillas)
   const [selectedPayrollEmp, setSelectedPayrollEmp] = useState<EmployeeRecord | null>(null);
   const [payrollPeriod, setPayrollPeriod] = useState('1ra Quincena Noviembre 2026');
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_SST, JSON.stringify(sstInspections));
-    } catch (e) {
-      console.warn('Error saving SST inspections', e);
-    }
-  }, [sstInspections]);
 
   // Selección automática de proyecto/técnico si no están seleccionados
   useEffect(() => {
@@ -185,7 +173,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
       createdAt: new Date().toISOString(),
     };
 
-    setSstInspections([newRecord, ...sstInspections]);
+    createSstInspection(newRecord);
     setIsNewInspectionModalOpen(false);
     setInspObservations('');
     notify?.(
@@ -1466,7 +1454,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
           confirmWord="BORRAR"
           requireConfirmWord={true}
           onConfirm={() => {
-            setSstInspections(sstInspections.filter((i) => i.id !== inspectionToDelete.id));
+            deleteSstInspection(inspectionToDelete.id);
             setInspectionToDelete(null);
             notify?.('info', 'Inspección Eliminada', 'El registro de seguridad ha sido removido.');
           }}

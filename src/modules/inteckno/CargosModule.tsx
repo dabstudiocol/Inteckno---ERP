@@ -1210,7 +1210,7 @@ const parseBulletList = (text: string): string[] => {
 };
 
 export const CargosModule: React.FC = () => {
-  const { currentUser, users, notify, updateUserProfile } = useErp();
+  const { currentUser, users, notify, updateUserProfile, saveJobPosition, saveCandidate } = useErp();
 
   // Control RBAC
   const canManage = AUTHORIZED_MANAGEMENT_ROLES.includes(currentUser?.role);
@@ -1424,18 +1424,24 @@ export const CargosModule: React.FC = () => {
     }
   };
 
-  // Persistir cambios
+  // Persistir cambios tanto en caché local como en Google Cloud Firestore vía erpStore
   useEffect(() => {
     try {
       localStorage.setItem('itk_job_positions', JSON.stringify(jobPositions));
+      if (jobPositions.length > 0) {
+        jobPositions.forEach((pos) => saveJobPosition(pos));
+      }
     } catch {}
-  }, [jobPositions]);
+  }, [jobPositions, saveJobPosition]);
 
   useEffect(() => {
     try {
       localStorage.setItem('itk_candidates', JSON.stringify(candidates));
+      if (candidates.length > 0) {
+        candidates.forEach((c) => saveCandidate(c));
+      }
     } catch {}
-  }, [candidates]);
+  }, [candidates, saveCandidate]);
 
   // Generar Oferta Laboral con LUC-IA-NA
   const handleOpenOfferModal = async (job: JobPosition) => {

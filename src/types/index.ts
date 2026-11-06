@@ -1833,4 +1833,64 @@ export interface DianPayrollDocument {
 
 export * from './InventorySchema';
 
+export interface WorkOrderOT {
+  id: string;
+  code: string;
+  projectId: string;
+  projectCode: string;
+  component: string;
+  priority: 'baja' | 'media' | 'alta' | 'urgente';
+  technician: string;
+  description: string;
+  status: 'diagnostico' | 'en_reparacion' | 'pruebas_banco' | 'completada';
+  createdAt: string;
+}
+
+export interface ManufacturingOrder {
+  id: string;
+  code: string;
+  partName: string;
+  material: string;
+  quantity: number;
+  projectCode: string;
+  stage: 'corte' | 'torno_cnc' | 'fresado' | 'tratamiento_termico' | 'listo_almacen';
+  createdAt: string;
+}
+
+export interface BenchTestRecord {
+  id: string;
+  testCode: string;
+  gripSerial: string;
+  gripType: string;
+  clampingForceKN: number;
+  requiredForceKN: number;
+  verdict: 'conforme' | 'no_conforme';
+  technician: string;
+  testDate: string;
+}
+
+export interface SstInspectionRecord {
+  id: string;
+  code: string;
+  date: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  technicianId: string;
+  technicianName: string;
+  inspectorName: string;
+  windSpeedKmh: number;
+  checks: {
+    arnes: boolean;
+    eslinga: boolean;
+    casco: boolean;
+    lineaVida: boolean;
+    radio: boolean;
+    clima: boolean;
+  };
+  verdict: 'aprobado' | 'rechazado';
+  observations?: string;
+  createdAt: string;
+}
+
 

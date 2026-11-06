@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import {
   Barcode,
   Camera,
@@ -89,6 +90,8 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
   const animFrameIdRef = useRef<number | null>(null);
   const lastScannedCodeRef = useRef<string>('');
   const lastScanTimestampRef = useRef<number>(0);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const scannerControlsRef = useRef<IScannerControls | null>(null);
 
   // Verificar soporte de BarcodeDetector de la API Web W3C
   useEffect(() => {
@@ -128,6 +131,15 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
   }, []);
 
   const stopCamera = () => {
+    if (scannerControlsRef.current) {
+      try {
+        scannerControlsRef.current.stop();
+      } catch (e) {
+        // Ignorar si ya estaba detenido
+      }
+      scannerControlsRef.current = null;
+    }
+    codeReaderRef.current = null;
     if (animFrameIdRef.current) {
       cancelAnimationFrame(animFrameIdRef.current);
       animFrameIdRef.current = null;
@@ -135,6 +147,9 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
     setIsTorchOn(false);
@@ -147,7 +162,7 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Tu navegador no permite acceso a cámaras de video.');
+        throw new Error('Tu navegador o dispositivo no permite acceso a cámaras de video.');
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -178,37 +193,17 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
         }
       }
 
-      // Iniciar ciclo de detección con BarcodeDetector si está disponible
-      if ('BarcodeDetector' in window) {
-        const barcodeDetector = new (window as any).BarcodeDetector({
-          formats: [
-            'code_128',
-            'code_39',
-            'code_93',
-            'ean_13',
-            'ean_8',
-            'qr_code',
-            'upc_a',
-            'upc_e',
-            'data_matrix',
-            'itf',
-          ],
-        });
-
-        const scanLoop = async () => {
-          if (!videoRef.current || videoRef.current.readyState < 2) {
-            animFrameIdRef.current = requestAnimationFrame(scanLoop);
-            return;
-          }
-
-          const now = Date.now();
-          // Throttle: procesar cada 150 ms para no recalentar CPU
-          if (now - lastScanTimestampRef.current > 150) {
-            try {
-              const barcodes = await barcodeDetector.detect(videoRef.current);
-              if (barcodes && barcodes.length > 0) {
-                const detected = barcodes[0].rawValue;
-                // Evitar escaneos repetidos continuos del mismo código en menos de 2 segundos
+      // Motor de Decodificación Óptica Universal Industrial (ZXing 1D / 2D / QR)
+      if (videoRef.current) {
+        try {
+          const reader = new BrowserMultiFormatReader();
+          codeReaderRef.current = reader;
+          const controls = await reader.decodeFromVideoElement(
+            videoRef.current,
+            (result) => {
+              if (result) {
+                const detected = result.getText();
+                const now = Date.now();
                 if (detected && (detected !== lastScannedCodeRef.current || now - lastScanTimestampRef.current > 2000)) {
                   lastScannedCodeRef.current = detected;
                   lastScanTimestampRef.current = now;
@@ -216,15 +211,12 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
                   handleLookupCode(detected);
                 }
               }
-            } catch {
-              // Frame dropped o error momentáneo de decodificación
             }
-          }
-
-          animFrameIdRef.current = requestAnimationFrame(scanLoop);
-        };
-
-        animFrameIdRef.current = requestAnimationFrame(scanLoop);
+          );
+          scannerControlsRef.current = controls;
+        } catch (zxErr) {
+          console.warn('[ZXing Scanner] Inicialización del lector:', zxErr);
+        }
       }
     } catch (err: any) {
       console.warn('Error al iniciar cámara:', err);
@@ -407,12 +399,15 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
       <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
               <Barcode className="text-[#00668F]" size={22} />
               <span>Estación Óptica de Código de Barras & QR STC</span>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Lector Universal Activo
+              </span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Escaneo en tiempo real por cámara óptica, pistola láser USB/Bluetooth o búsqueda directa de referencias.
+              Escaneo en tiempo real por cámara óptica universal (ZXing 1D/2D + QR), pistola láser USB/Bluetooth o búsqueda directa de referencias.
             </p>
           </div>
 

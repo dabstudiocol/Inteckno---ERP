@@ -35,7 +35,7 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
   tramo,
   onSuccess,
 }) => {
-  const { projects, currentUser, notify } = useErp();
+  const { projects, currentUser, notify, createInventoryWriteOff } = useErp();
 
   const [motivo, setMotivo] = useState<InventoryWriteOffReason>('RETAZO_INUTILIZABLE');
   const [destinacion, setDestinacion] = useState<'BAJA_DEFINITIVA' | 'REASIGNAR_ESLINGAS_IZAJE'>('BAJA_DEFINITIVA');
@@ -97,15 +97,8 @@ export const InventoryWriteOffModal: React.FC<InventoryWriteOffModalProps> = ({
         estado: 'PENDIENTE_APROBACION_GERENCIA',
       };
 
-      // Guardar en localStorage / sincronizar con ERP store
-      const storageKey = 'inteckno_inventory_write_offs';
-      const existingRaw = localStorage.getItem(storageKey);
-      const writeOffsList: InventoryWriteOffRequest[] = existingRaw ? JSON.parse(existingRaw) : [];
-      writeOffsList.unshift(nuevaSolicitud);
-      localStorage.setItem(storageKey, JSON.stringify(writeOffsList));
-
-      // Despachar evento para sincronización reactiva en tiempo real
-      window.dispatchEvent(new CustomEvent('inteckno:inventory-write-off-created', { detail: nuevaSolicitud }));
+      // Sincronización automática y persistencia Cloud-First en Google Cloud Firestore
+      createInventoryWriteOff(nuevaSolicitud);
 
       notify?.(
         'success',

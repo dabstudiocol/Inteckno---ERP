@@ -11,6 +11,8 @@
     "deploy:all": "tsc -b && vite build && npx firebase-tools deploy"
   },
   "dependencies": {
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "clsx": "^2.1.1",
     "firebase": "^12.19.0",
     "lucide-react": "^1.47.0",
