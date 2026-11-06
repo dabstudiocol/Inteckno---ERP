@@ -1,6 +1,42 @@
+
+export function ensureProjectItems(p: Project): any[] {
+  const existing = ((p.projectItems || (p as any).items || []) as any[]);
+  if (existing.length > 0) {
+    return existing.map((it: any, idx: number) => ({
+      id: it.id || `item-${p.id}-${idx + 1}`,
+      code: it.code || `ITEM ${String(idx + 1).padStart(2, '0')}`,
+      name: it.name || `Alcance Contractual ${idx + 1}`,
+      budgetPlanned: Number(it.budgetPlanned || 0),
+      status: it.status || 'activo',
+      createdAt: it.createdAt || new Date().toISOString(),
+    }));
+  }
+  const matrixItemCodes = Array.from(new Set(((p.costMatrix || []) as any[]).map((c: any) => c.itemCode).filter(Boolean)));
+  if (matrixItemCodes.length > 0) {
+    return matrixItemCodes.map((code: any, idx: number) => ({
+      id: `item-${p.id}-${idx + 1}`,
+      code: String(code),
+      name: `Ítem Contractual ${code}`,
+      budgetPlanned: 0,
+      status: 'activo' as const,
+      createdAt: new Date().toISOString(),
+    }));
+  }
+  return [
+    {
+      id: `item-${p.id}-1`,
+      code: 'ITEM 01',
+      name: p.name || 'Alcance Contractual Principal',
+      budgetPlanned: Number(p.budgetPV || 0),
+      status: 'activo' as const,
+      createdAt: new Date().toISOString(),
+    }
+  ];
+}
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getStoredTRM } from '../services/trmService';
 import { getProjectTaxRate } from '../services/taxService';
+import { getLaborRates } from '../services/moduleConfigService';
 import {
   User,
   Project,
@@ -769,7 +805,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 merged.push(lp);
               }
             });
-            next.projects = merged;
+            next.projects = merged.map((p: Project) => ({ ...p, projectItems: ensureProjectItems(p) }));
             hasChanges = true;
           }
           if (Array.isArray(cloudData.projects.tasks)) { next.tasks = cloudData.projects.tasks; hasChanges = true; }
@@ -1096,7 +1132,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           ...prev,
-          projects: mergedProjects,
+          projects: mergedProjects.map((p: Project) => ({ ...p, projectItems: ensureProjectItems(p) })),
           tasks: Array.isArray(data.tasks) ? data.tasks : prev.tasks,
           milestones: Array.isArray(data.milestones) ? data.milestones : prev.milestones,
         };
@@ -2355,6 +2391,27 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         contractCode: (customData as any)?.contractCode || '',
         costMatrix: [], // Cero Mock Data y Precio != Costo: La matriz de costos reales inicia limpia para reflejar la ejecución de obra
         offerBudget: (customData as any)?.offerBudget,
+        projectItems: customData?.projectItems || (
+          ((opp.quotations?.[0]?.items || (opp as any).items || []) as any[]).length > 0
+            ? (((opp.quotations?.[0]?.items || (opp as any).items || []) as any[]).map((it: any, idx: number) => ({
+                id: `item-${Date.now()}-${idx + 1}`,
+                code: it.code || `ITEM ${String(idx + 1).padStart(2, '0')}`,
+                name: it.name || it.description || `Alcance Contractual ${idx + 1}`,
+                budgetPlanned: Number(it.totalPrice || it.budgetPlanned || it.unitPrice || 0),
+                status: 'activo' as const,
+                createdAt: new Date().toISOString(),
+              })))
+            : [
+                {
+                  id: `item-${Date.now()}-1`,
+                  code: 'ITEM 01',
+                  name: customData?.name || opp.title,
+                  budgetPlanned: Number(customData?.budgetPV || (opp.estimatedValueUSD * (getStoredTRM() || 4150.00)) || 0),
+                  status: 'activo' as const,
+                  createdAt: new Date().toISOString(),
+                }
+              ]
+        ),
       };
 
       // Crear Hitos de Facturación a partir de los hitos comerciales pactados o hito inicial contractual
@@ -2529,6 +2586,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cpi: 1.0,
         cv: 0,
       };
+      newProject.projectItems = ensureProjectItems(newProject);
       if (state.currentUser) {
         undoRedoService.recordAction({
           userId: state.currentUser.id,
@@ -2691,22 +2749,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         // Cálculo dinámico de tarifa hora según salario base real (240h laborales mensuales)
         // Costo hora empleador: salario base x factor prestacional (Ley 2101/2021: 42 h/sem = 210 h/mes)
-        const LABOR_BURDEN_FACTOR = 1.52;
-        const MONTHLY_LEGAL_HOURS = 210;
+        const laborRates = getLaborRates();
+        const LABOR_BURDEN_FACTOR = laborRates.factorPrestacional;
+        const MONTHLY_LEGAL_HOURS = laborRates.divisorMensual;
         const projectTrmForCost = getStoredTRM() || 4150.00;
-        let hourlyRateCOP = 0; // Sin salario registrado en RRHH no se inventa tarifa; técnica estándar de respaldo
-        if (employeeRecord?.baseSalaryCOP && employeeRecord.baseSalaryCOP > 0) {
-          hourlyRateCOP = Math.round((employeeRecord.baseSalaryCOP * LABOR_BURDEN_FACTOR) / MONTHLY_LEGAL_HOURS);
-        } else if (userRecord?.jobPosition?.salaryRange && typeof userRecord.jobPosition.salaryRange === 'object') {
-          const midSalary = (userRecord.jobPosition.salaryRange.min + userRecord.jobPosition.salaryRange.max) / 2;
-          if (midSalary > 0) {
-            hourlyRateCOP = Math.round((midSalary * LABOR_BURDEN_FACTOR) / MONTHLY_LEGAL_HOURS);
+        let hourlyRateCOP = targetTs.hourlyRateCOP || 0;
+        if (!hourlyRateCOP) {
+          if (employeeRecord?.baseSalaryCOP && employeeRecord.baseSalaryCOP > 0) {
+            hourlyRateCOP = Math.round((employeeRecord.baseSalaryCOP * LABOR_BURDEN_FACTOR) / MONTHLY_LEGAL_HOURS);
+          } else if (userRecord?.jobPosition?.salaryRange && typeof userRecord.jobPosition.salaryRange === 'object') {
+            const midSalary = (userRecord.jobPosition.salaryRange.min + userRecord.jobPosition.salaryRange.max) / 2;
+            if (midSalary > 0) {
+              hourlyRateCOP = Math.round((midSalary * LABOR_BURDEN_FACTOR) / MONTHLY_LEGAL_HOURS);
+            }
           }
         }
 
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === targetTs.projectId || prj.code === targetTs.projectCode) {
-            const laborCOP = (targetTs.hours || 0) * hourlyRateCOP;
+            const laborCOP = targetTs.totalCostCOP || ((targetTs.hours || 0) * hourlyRateCOP);
             const newAC = (prj.actualCostAC || 0) + laborCOP;
             const newCV = (prj.earnedValueEV || 0) - newAC;
             const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;

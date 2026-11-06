@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   TrendingUp,
   DollarSign,
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { Project, WBSTask } from '../../../../types';
 import { formatCOP, formatUSD } from '../../../../core/services/trmService';
+import { calculateProjectFinancials } from '../../../../core/services/projectFinancialEngine';
 import { useErp } from '../../../../core/storage/erpStore';
 
 export interface DailyOperationalReport {
@@ -68,29 +69,16 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
   const inProgressTasks = tasks.filter((t) => t.status === 'in_progress').length;
 
-  // Avance físico ponderado por horas
-  const totalPlannedHours = tasks.reduce((sum, t) => sum + (t.plannedHours || 0), 0) || 100;
-  const earnedHours = tasks.reduce((sum, t) => sum + ((t.plannedHours || 0) * (t.progressPct || 0)) / 100, 0);
-  const physicalProgressPct = Math.round((earnedHours / totalPlannedHours) * 100);
-
-  // Estimación de avance esperado según fecha
-  const startMs = new Date(project.startDate).getTime();
-  const endMs = new Date(project.endDate).getTime();
-  const nowMs = Date.now();
-  let expectedProgressPct = 50;
-  if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
-    expectedProgressPct = Math.min(100, Math.max(0, Math.round(((nowMs - startMs) / (endMs - startMs)) * 100)));
-  }
-
-  // Costos EVM
-  const budgetPV = project.budgetPV || 0;
-  const actualCostAC = project.actualCostAC || 0;
-  const earnedValueEV = project.earnedValueEV || (budgetPV * physicalProgressPct) / 100;
-
-  // Índices SPI y CPI
-  const spi = expectedProgressPct > 0 ? Number(((physicalProgressPct / expectedProgressPct) || 1).toFixed(2)) : 1.0;
-  const cpi = actualCostAC > 0 ? Number(((earnedValueEV / actualCostAC) || 1).toFixed(2)) : 1.0;
-  const costVariance = earnedValueEV - actualCostAC;
+  // Cálculos EVM y Financieros Centralizados (Fuente Única de Verdad)
+  const fin = useMemo(() => calculateProjectFinancials(project, tasks), [project, tasks]);
+  const physicalProgressPct = fin.physicalProgressPct;
+  const expectedProgressPct = fin.expectedProgressPct;
+  const budgetPV = fin.plannedCostPV;
+  const actualCostAC = fin.actualCostAC;
+  const earnedValueEV = fin.earnedValueEV;
+  const spi = fin.spi;
+  const cpi = fin.cpi;
+  const costVariance = fin.costVarianceCV;
 
   // Estado para Reporte Diario de Obra (DDR)
   const [showDdrForm, setShowDdrForm] = useState(false);
@@ -145,33 +133,24 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
     notify?.('success', 'Reporte Diario Registrado', `Se guardó el diario de obra para la fecha ${ddrDate}.`);
   };
 
-  const handleTriggerSolped = () => {
-    navigateWithContext('requisiciones', 'create_solped', { project });
-    notify?.('info', 'Petición de Materiales', `Creando SOLPED para el proyecto ${project.code}.`);
-  };
-
-  const handleTriggerGasto = () => {
-    navigateWithContext('gastos', 'create_expense', { projectId: project.id, projectCode: project.code });
-    notify?.('info', 'Legalización de Gastos', `Imputando viático al proyecto ${project.code}.`);
-  };
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
-      {/* 1. HUB DE ACCIONES RÁPIDAS DEL PROYECTO (USABILIDAD DIRECTA) */}
+      {/* 1. CABECERA OPERATIVA DEL PROYECTO & DIARIO DE OBRA (DDR) */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3.5 border-b border-slate-700/60">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-300">
-                Centro de Operaciones Activas
+                Tablero Operativo del Proyecto
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-black tracking-tight text-white mt-0.5">
-              Acciones Rápidas del Proyecto: <span className="text-[#38BDF8]">{project.code}</span>
+              {project.code} — <span className="text-[#38BDF8]">{project.name}</span>
             </h2>
             <p className="text-xs text-slate-300">
-              {project.name} • {project.clientName} ({project.location || 'Colombia'})
+              {project.clientName} • {project.location || 'Colombia'} • {lineOfBusiness}
             </p>
           </div>
 
@@ -185,87 +164,6 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
               <span>{showDdrForm ? 'Cerrar Formulario DDR' : '+ Registrar Diario de Obra (DDR)'}</span>
             </button>
           </div>
-        </div>
-
-        {/* Botonera de autopistas y accesos directos */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-3.5">
-          <button
-            type="button"
-            onClick={() => {
-              if (onNavigateTab) {
-                onNavigateTab('horas');
-              } else {
-                navigateWithContext('registro-horas', 'impute_hours', { projectId: project.id });
-              }
-            }}
-            className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/80 text-left transition-all cursor-pointer group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <Clock size={15} />
-            </div>
-            <span className="text-xs font-bold block text-white">Imputar Horas</span>
-            <span className="text-[10px] text-slate-400 block truncate">Registro de HH campo</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTriggerSolped}
-            className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/80 text-left transition-all cursor-pointer group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <ShoppingCart size={15} />
-            </div>
-            <span className="text-xs font-bold block text-white">Pedir Materiales</span>
-            <span className="text-[10px] text-slate-400 block truncate">Crear SOLPED directa</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTriggerGasto}
-            className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/80 text-left transition-all cursor-pointer group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <Receipt size={15} />
-            </div>
-            <span className="text-xs font-bold block text-white">Registrar Gasto</span>
-            <span className="text-[10px] text-slate-400 block truncate">Viático o compra menor</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('wbs') : null}
-            className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/80 text-left transition-all cursor-pointer group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <Layers size={15} />
-            </div>
-            <span className="text-xs font-bold block text-white">Plan y Gantt</span>
-            <span className="text-[10px] text-slate-400 block truncate">WBS y dependencias</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('costos') : null}
-            className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/80 text-left transition-all cursor-pointer group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <DollarSign size={15} />
-            </div>
-            <span className="text-xs font-bold block text-white">Matriz Costos</span>
-            <span className="text-[10px] text-slate-400 block truncate">Presupuesto vs Real</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('hseq') : null}
-            className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/80 text-left transition-all cursor-pointer group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-              <ShieldCheck size={15} />
-            </div>
-            <span className="text-xs font-bold block text-white">Seguridad SST</span>
-            <span className="text-[10px] text-slate-400 block truncate">Permisos de alturas</span>
-          </button>
         </div>
       </div>
 
@@ -464,7 +362,7 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
             <span>CPI: <strong className={cpi >= 1 ? 'text-emerald-700' : 'text-red-700'}>{cpi}</strong></span>
-            <span>{cpi >= 1 ? 'Eficiencia de costo' : 'Sobrecosto'}</span>
+            <span>Margen EAC: <strong className={fin.projectedMarginPct !== null && fin.projectedMarginPct >= 0 ? 'text-emerald-700' : 'text-slate-600'}>{fin.projectedMarginPct !== null ? `${fin.projectedMarginPct}%` : 'N/D (Sin costos)'}</strong></span>
           </div>
         </div>
 

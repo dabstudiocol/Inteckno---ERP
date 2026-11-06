@@ -23,7 +23,7 @@ import { useErp } from '../../core/storage/erpStore';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
-import { DocumentFlowBar } from '../../components/common/DocumentFlowBar';
+
 
 interface OperacionesProps {
   initialSubTab?: 'mantenimiento' | 'reparacion' | 'manufactura' | 'taller' | 'plm';

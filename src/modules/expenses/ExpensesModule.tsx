@@ -156,13 +156,22 @@ export const ExpensesModule: React.FC = () => {
     if (!selectedProject) return [];
     const itemsMap = new Map<string, { id: string; name: string; code: string; costMatrixItemId?: string }>();
     
-    // De los items contractuales
-    ((selectedProject as any).items || []).forEach((it: any) => {
-      itemsMap.set(it.code, {
-        id: it.code,
-        name: `${it.code} — ${it.name}`,
-        code: it.code,
-      });
+    // De los items contractuales del proyecto (projectItems)
+    const contractItems = (((selectedProject as any)?.projectItems || (selectedProject as any)?.items || []) as any[]);
+    contractItems.forEach((it: any) => {
+      if (it.code) {
+        itemsMap.set(it.code, {
+          id: it.code,
+          name: `${it.code} — ${it.name}`,
+          code: it.code,
+        });
+      }
+    });
+
+    itemsMap.set('INDIRECTO', {
+      id: 'INDIRECTO',
+      name: '[ Costo Indirecto / Soporte General ]',
+      code: 'INDIRECTO',
     });
 
     // De los rubros en matriz de costos

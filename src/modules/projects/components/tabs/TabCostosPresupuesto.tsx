@@ -63,6 +63,7 @@ import { Project } from '../../../../types';
 import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudget, ProjectOfferBudgetItem } from '../../../../types/ProjectSchema';
 import { useErp } from '../../../../core/storage/erpStore';
 import { formatCOP, formatUSD, getStoredTRM } from '../../../../core/services/trmService';
+import { getLaborRates } from '../../../../core/services/moduleConfigService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { DetailModal } from '../../../../components/common/DetailModal';
@@ -944,7 +945,15 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const projectTimesheets = timesheets.filter((t) => t.projectId === project.id || t.projectCode === project.code);
   const timesheetList = projectTimesheets.length > 0 ? projectTimesheets : ((project as any)?.timesheetEntries || []);
   const totalTimesheetHours = timesheetList.reduce((acc: number, entry: any) => acc + (Number(entry.hours) || 0), 0);
-  const estimatedTimesheetCostCOP = totalTimesheetHours * 65000; // Tarifa base promedio HH Inteckno
+  const laborRates = getLaborRates();
+  const defaultHourlyRate = Math.round((2800000 * laborRates.factorPrestacional) / laborRates.divisorMensual);
+  const estimatedTimesheetCostCOP = timesheetList.reduce((acc: number, entry: any) => {
+    if (entry.totalCostCOP || entry.calculatedCostCOP) {
+      return acc + (Number(entry.totalCostCOP || entry.calculatedCostCOP) || 0);
+    }
+    const rate = Number(entry.hourlyRateCOP) || defaultHourlyRate;
+    return acc + ((Number(entry.hours) || 0) * rate);
+  }, 0);
 
   // Totales acumulados
   const totalPlanned = costItems.reduce((sum, i) => sum + i.plannedTotal, 0);

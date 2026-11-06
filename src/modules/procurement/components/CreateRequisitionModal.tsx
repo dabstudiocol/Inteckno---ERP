@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   FileText,
   Plus,
@@ -47,6 +47,33 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
 
   const [reqType, setReqType] = useState<'project' | 'general'>('project');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedItemCode, setSelectedItemCode] = useState<string>('');
+
+  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+
+  const availableProjectItems = useMemo(() => {
+    if (!selectedProject) return [];
+    const items = (((selectedProject as any)?.projectItems || (selectedProject as any)?.items || []) as any[]);
+    const formatted = items.map((it: any) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+    return [
+      ...formatted,
+      { id: 'INDIRECTO', name: '[ Insumos Generales de Proyecto ]', code: 'INDIRECTO' },
+    ];
+  }, [selectedProject]);
+
+  useEffect(() => {
+    if (availableProjectItems.length > 0) {
+      if (!availableProjectItems.some((i) => i.id === selectedItemCode)) {
+        setSelectedItemCode(availableProjectItems[0]?.id || '');
+      }
+    } else {
+      setSelectedItemCode('');
+    }
+  }, [selectedProjectId, availableProjectItems]);
   const [department, setDepartment] = useState<string>('');
   const [requisitionType, setRequisitionType] = useState<string>('');
   const [priority, setPriority] = useState<string>('');
@@ -100,7 +127,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
     },
   ]);
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+
 
   const handleAddItem = () => {
     setItems([
@@ -175,6 +202,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
         unit: it.unit || 'unid',
         inStock,
         availableStock: matchProd?.availableStock || 0,
+        itemCode: isProj ? (selectedItemCode || undefined) : undefined,
       };
     });
 
@@ -189,6 +217,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
       projectId: isProj ? selectedProject?.id : undefined,
       projectCode: isProj ? selectedProject?.code : 'OFICINA-ADMIN',
       projectName: isProj ? selectedProject?.name : `Petición General: ${department}`,
+      itemCode: isProj ? (selectedItemCode || undefined) : undefined,
       neededDate,
       priority: effectivePriority,
       requisitionType: effectiveReqType,
@@ -288,18 +317,34 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
               {/* Selectores Vinculados a los Catálogos Configurables */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 {reqType === 'project' ? (
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Proyecto STC Asociado:</label>
-                    <CreatableSelect
-                      options={projects.map((p) => ({
-                        id: p.id,
-                        name: `${p.code} — ${p.name}`,
-                        code: p.code
-                      }))}
-                      value={selectedProjectId}
-                      onChange={(val) => setSelectedProjectId(val)}
-                      placeholder="Seleccionar o buscar proyecto STC..."
-                    />
+                  <div className="space-y-2">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Proyecto STC Asociado:</label>
+                      <CreatableSelect
+                        options={projects.map((p) => ({
+                          id: p.id,
+                          name: `${p.code} — ${p.name}`,
+                          code: p.code
+                        }))}
+                        value={selectedProjectId}
+                        onChange={(val) => setSelectedProjectId(val)}
+                        placeholder="Seleccionar o buscar proyecto STC..."
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block text-xs">
+                          Ítem Contractual del Proyecto:
+                        </label>
+                        <span className="text-[10px] text-[#00668F] font-bold">Mandatorio Plan 1</span>
+                      </div>
+                      <CreatableSelect
+                        options={availableProjectItems}
+                        value={selectedItemCode}
+                        onChange={(val) => setSelectedItemCode(val)}
+                        placeholder="Seleccionar ítem contractual (ej. ITEM 01)..."
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div>

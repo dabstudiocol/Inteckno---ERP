@@ -497,6 +497,16 @@ export interface TimesheetEntry {
   description: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   rejectionReason?: string;
+  hoursBreakdown?: {
+    hod?: number;
+    hed?: number;
+    rn?: number;
+    hen?: number;
+    dom?: number;
+    hedd?: number;
+    hend?: number;
+  };
+  totalCostCOP?: number;
 }
 
 export type ExpenseCategory =

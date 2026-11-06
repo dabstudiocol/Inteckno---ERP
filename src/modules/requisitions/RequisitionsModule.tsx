@@ -14,7 +14,7 @@ import { InternalRequisition } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import { CreateRequisitionModal } from '../procurement/components/CreateRequisitionModal';
 import { RequisitionDetailModal } from '../procurement/components/RequisitionDetailModal';
-import { DocumentFlowBar } from '../../components/common/DocumentFlowBar';
+
 
 export const RequisitionsModule: React.FC = () => {
   const { requisitions, setActiveModule, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
@@ -105,7 +105,8 @@ export const RequisitionsModule: React.FC = () => {
               header: 'Proyecto STC / Destino',
               render: (req) => (
                 <div>
-                  <button
+                  <div className="flex items-center gap-1.5">
+                    <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -117,6 +118,12 @@ export const RequisitionsModule: React.FC = () => {
                       <span>{req.projectCode}</span>
                       <ArrowRight size={12} />
                     </button>
+                    {req.itemCode && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-sky-100 text-[#00668F] text-[10px] font-bold">
+                        {req.itemCode}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[11px] text-gray-500">{req.projectName}</div>
                   {req.requisitionType && (
                     <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-sky-50 text-[#00668F] border border-sky-200">

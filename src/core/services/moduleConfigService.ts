@@ -201,6 +201,24 @@ export const DEFAULT_MODULE_CONFIGS: Record<string, ModuleConfigGroup> = {
           { id: 'lt-8', name: 'Trabajo y Pruebas en Taller Central', code: 'LAB-TALL', isActive: true },
         ],
       },
+      overtimeRates: {
+        key: 'overtimeRates',
+        title: 'Factores de Recargo Laboral (Ley 2101 / Colombia)',
+        description: 'Multiplicadores y parámetros editables para liquidación horaria de cuadrilla.',
+        hasCode: true,
+        codeLabel: 'Multiplicador / Divisor',
+        items: [
+          { id: 'rate-hod', name: 'Hora Ordinaria Diurna (HOD)', code: '1.00', isActive: true },
+          { id: 'rate-hed', name: 'Hora Extra Diurna (HED)', code: '1.25', isActive: true },
+          { id: 'rate-rn', name: 'Recargo Nocturno Ordinario (RN)', code: '0.35', isActive: true },
+          { id: 'rate-hen', name: 'Hora Extra Nocturna (HEN)', code: '1.75', isActive: true },
+          { id: 'rate-dom', name: 'Hora Ordinaria Dominical / Festiva (DOM)', code: '1.75', isActive: true },
+          { id: 'rate-hedd', name: 'Hora Extra Dominical Diurna (HEDD)', code: '2.00', isActive: true },
+          { id: 'rate-hend', name: 'Hora Extra Dominical Nocturna (HEND)', code: '2.50', isActive: true },
+          { id: 'rate-factor-prestacional', name: 'Factor Prestacional de Carga (Seguridad Social, Cesantías, Prima)', code: '1.52', isActive: true },
+          { id: 'rate-divisor-mensual', name: 'Divisor de Horas Mensuales (Ley 2101 Transición 2026)', code: '210', isActive: true },
+        ],
+      },
       shifts: {
         key: 'shifts',
         title: 'Turnos y Modalidades de Jornada',
@@ -1565,3 +1583,56 @@ export function useModuleCatalog(moduleId: string, catalogKey: string): CatalogI
   return items;
 }
 
+
+export interface LaborRatesConfig {
+  hod: number;
+  hed: number;
+  rn: number;
+  hen: number;
+  dom: number;
+  hedd: number;
+  hend: number;
+  factorPrestacional: number;
+  divisorMensual: number;
+}
+
+export function getLaborRates(): LaborRatesConfig {
+  const defaults: LaborRatesConfig = {
+    hod: 1.0,
+    hed: 1.25,
+    rn: 0.35,
+    hen: 1.75,
+    dom: 1.75,
+    hedd: 2.0,
+    hend: 2.5,
+    factorPrestacional: 1.52,
+    divisorMensual: 210,
+  };
+
+  try {
+    const config = getModuleCatalogs('registro-horas');
+    const catalog = config?.catalogs?.['overtimeRates'];
+    if (!catalog || !catalog.items) return defaults;
+
+    const findRate = (id: string, fallback: number) => {
+      const it = catalog.items.find((i) => i.id === id || i.code?.includes(id));
+      if (!it || !it.code) return fallback;
+      const parsed = parseFloat(it.code);
+      return isNaN(parsed) ? fallback : parsed;
+    };
+
+    return {
+      hod: findRate('rate-hod', 1.0),
+      hed: findRate('rate-hed', 1.25),
+      rn: findRate('rate-rn', 0.35),
+      hen: findRate('rate-hen', 1.75),
+      dom: findRate('rate-dom', 1.75),
+      hedd: findRate('rate-hedd', 2.0),
+      hend: findRate('rate-hend', 2.5),
+      factorPrestacional: findRate('rate-factor-prestacional', 1.52),
+      divisorMensual: findRate('rate-divisor-mensual', 210),
+    };
+  } catch (err) {
+    return defaults;
+  }
+}

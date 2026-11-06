@@ -22,6 +22,7 @@ import { DarkActionCard } from '../../components/ui/DarkActionCard';
 import { LightTable } from '../../components/ui/LightTable';
 import { BusinessRulesEngine } from '../../core/rules/businessRules';
 import { getStoredTRM } from '../../core/services/trmService';
+import { calculateProjectFinancials } from '../../core/services/projectFinancialEngine';
 import { DataGuardianBackupsModal } from '../../components/common/DataGuardianBackupsModal';
 
 export const DashboardModule: React.FC = () => {
@@ -320,33 +321,8 @@ export const DashboardModule: React.FC = () => {
                 header: 'Margen Real',
                 align: 'center',
                 render: (p) => {
-                  const hasCosts = (p.actualCostAC || 0) > 0 || Boolean((p as any).costMatrix && (p as any).costMatrix.length > 0);
-                  const isUSD = p.currency === 'USD';
-                  const trm = p.trmApplied || getStoredTRM();
-
-                  let contractNormalized = p.contractAmount || p.budgetPV || 0;
-                  let plannedNormalized = p.budgetPV || 0;
-                  let actualCostNormalized = p.actualCostAC || 0;
-
-                  if (isUSD) {
-                    // Si el contrato está en USD, llevar costos a USD si fueron registrados en COP
-                    if (plannedNormalized > 1000000 && trm > 0) {
-                      plannedNormalized = Math.round(plannedNormalized / trm);
-                    }
-                    if (actualCostNormalized > 1000000 && trm > 0) {
-                      actualCostNormalized = Math.round(actualCostNormalized / trm);
-                    }
-                  } else {
-                    // Si el contrato está en COP, llevar valores a COP si fueron registrados en USD
-                    if (contractNormalized > 0 && contractNormalized < 100000 && trm > 0) {
-                      contractNormalized = Math.round(contractNormalized * trm);
-                    }
-                    if (plannedNormalized > 0 && plannedNormalized < 100000 && trm > 0) {
-                      plannedNormalized = Math.round(plannedNormalized * trm);
-                    }
-                  }
-
-                  if (!hasCosts || contractNormalized <= 0) {
+                  const fin = calculateProjectFinancials(p, (p as any).wbsTasks || []);
+                  if (fin.projectedMarginPct === null || fin.contractValue <= 0) {
                     return (
                       <span className="text-[11px] text-gray-400 font-medium" title="Sin costos registrados">
                         N/D
@@ -354,8 +330,7 @@ export const DashboardModule: React.FC = () => {
                     );
                   }
 
-                  const eac = Math.max(actualCostNormalized, plannedNormalized);
-                  const marginPct = Math.round(((contractNormalized - eac) / contractNormalized) * 100);
+                  const marginPct = Math.round(fin.projectedMarginPct);
 
                   return (
                     <span
