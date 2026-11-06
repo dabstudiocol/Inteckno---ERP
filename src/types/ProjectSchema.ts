@@ -309,7 +309,8 @@ export interface ProjectChangeOrder {
 
 export interface CostMatrixItem {
   id: string;
-  // ITEM contractual u operativo al que pertenece el rubro (ej. "ITEM 11", "ITEM 08", "AD-25")
+  // ITEM contractual u operativo al que pertenece el rubro (ej. "ITEM 11", "ITEM 01", "AD-25")
+  projectItemId?: string; // Clave foránea inmutable hacia ProjectItemFolder (ej. ITEM-1793374163278)
   itemCode?: string;
   itemName?: string; // Nombre descriptivo del ITEM (ej. "Mantenimiento de fijaciones mecánicas")
   category: 
@@ -348,7 +349,8 @@ export interface CostMatrixItem {
   observations?: string; // Observaciones de obra / notas
   splitPercentage?: number; // % Asignado a este proyecto (ej. 50% si se comparte con otro)
   splitWithProjectCode?: string; // Proyecto con el que se comparte (ej. P25-21)
-  receiptPhotos?: string[]; // URLs o Data URLs de fotos de la factura / recibo / comprobante
+  receiptPhotoFileId?: string; // ID de objeto en Storage para evitar binarios Base64 pesados (ej: DOC-9923)
+  receiptPhotos?: string[]; // URLs públicas/firmadas del comprobante (nunca Data URLs Base64 pesadas)
 }
 
 // Facturación asociada a un ITEM (Hojas de Facturación Inteckno)
@@ -421,10 +423,16 @@ export interface STCFullProject {
   id: string;
   code: string;
   name: string;
+  clientId?: string; // ID único foráneo de cliente en CRM/Partners (ej. CLI-88231)
   clientName: string;
   clientNit?: string;
-  categoryId: string;
+  categoryId: string; // Código alfanumérico corto indexable (ej. CAT-001)
   serviceId: string;
+  serviceTypeId?: string; // ID foráneo del servicio técnico (ej. SRV-005)
+  supervisorId?: string; // ID foráneo del supervisor asignado (ej. USR-07)
+  supervisorName?: string;
+  paymentTermId?: string; // ID foráneo de reglas financieras (ej. PT-CR-SAT)
+  paymentTermsDescription?: string;
   lineOfBusiness?: STCLineOfBusiness;
   serviceType?: string;
   location: string;

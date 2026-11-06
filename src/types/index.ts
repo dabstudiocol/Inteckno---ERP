@@ -161,6 +161,7 @@ export interface VerifiedSkill {
 
 export interface EmployeeCertification {
   id: string;
+  certificationId?: string; // ID relacional del catálogo maestro (ej: CERT-ALT-4272)
   name: string;
   issuer: string;
   issueDate: string;
@@ -222,6 +223,7 @@ export interface User {
   roleLabel: string;
   position?: string;
   department: string;
+  departmentId?: string; // ID relacional del departamento organizacional (ej. DEP-01, DEP-03)
   avatar: string;
   avatarColor: string;
   phone: string;
@@ -373,6 +375,7 @@ export interface Project {
   quoteCode?: string; // Código de Cotización Comercial ITK-AAAAMM-XXX
   contractCode?: string; // Código de Contrato / Orden de Compra Cliente
   clientCountry?: string; // País de Ejecución de la Obra / Servicio
+  serviceTypeId?: string; // ID foráneo del servicio técnico especializado (ej: SRV-005)
   contractAddendums?: {
     id: string;
     code: string; // ej. AD-ITEM 01, OTRO SI 01
@@ -383,7 +386,8 @@ export interface Project {
   }[];
   advancePaymentAmount?: number; // Valor de anticipo pactado
   advancePaymentPercentage?: number; // % de anticipo
-  paymentTermsDescription?: string; // Condiciones de pago textuales
+  paymentTermId?: string; // ID foráneo del término de pago del motor financiero (ej: PT-CR-SAT)
+  paymentTermsDescription?: string; // Condiciones de pago textuales (resueltas)
   retentionGuaranteePercentage?: number; // Retención de garantía (ej. 5% - 10%)
   billingMethod?: 'fixed_price' | 'time_and_materials';
   paymentMilestones?: {
@@ -616,7 +620,9 @@ export interface Product {
   minStock: number;
   isCriticalSpare: boolean; // Alerta de stock y certificado obligatorio
   isHomologatedITK: boolean; // Suministros homologados Inteckno
+  locationId?: string; // ID relacional de sede física (ej: LOC-CENTRAL)
   locationName: string;
+  shelfId?: string; // ID relacional de estante / coordenada (ej: SHLF-03D, SHLF-PATIO)
   shelf: string;
   observations?: string;
   m365ExcelRowId?: string;
@@ -1194,6 +1200,7 @@ export interface Opportunity {
   clientEmail?: string;
   clientPhone?: string;
   cableType: string;
+  stcSystemId?: string; // ID foráneo de compatibilidad técnica STC
   country: string;
   estimatedValueUSD: number;
   currency?: 'COP' | 'USD' | 'EUR';
@@ -1253,6 +1260,7 @@ export interface CRMContact {
   role: string;
   email: string;
   phone: string;
+  stcSystemId?: string; // ID foráneo del catálogo maestro de sistemas teleféricos (ej: STC-MGD-10)
   stcSystem: string;
   country: string;
   notes: string;

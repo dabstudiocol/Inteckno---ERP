@@ -1814,3 +1814,84 @@ export function resolveCompetencyLabel(idOrName: string): { id: string; name: st
   }
   return { id: trimmed, name: trimmed };
 }
+
+// ============================================================================
+// CATÁLOGOS MAESTROS RELACIONALES POR ID (AUDITORÍAS 2, 3 Y 4)
+// ============================================================================
+
+export const STANDARD_SERVICES_CATALOG = [
+  { id: 'SRV-001', code: 'SRV-001', name: 'Inspección Magneto-inductiva (MRT) de Cables (EN 12927)', categoryId: 'CAT-004' },
+  { id: 'SRV-002', code: 'SRV-002', name: 'Regulación y Ensayos No Destructivos (NDT) de Mordazas', categoryId: 'CAT-001' },
+  { id: 'SRV-003', code: 'SRV-003', name: 'Alineación Láser de Poleas y Balancines', categoryId: 'CAT-001' },
+  { id: 'SRV-004', code: 'SRV-004', name: 'Empalme y Tensionamiento de Cable Portador-Tractor', categoryId: 'CAT-001' },
+  { id: 'SRV-005', code: 'SRV-005', name: 'Recorte de Cables tractores y Mantenimiento Mayor', categoryId: 'CAT-001' },
+  { id: 'SRV-006', code: 'SRV-006', name: 'Mantenimiento Integral de Reductores Principales', categoryId: 'CAT-001' },
+  { id: 'SRV-007', code: 'SRV-007', name: 'Montaje Electromecánico Completo de Teleférico', categoryId: 'CAT-002' },
+  { id: 'SRV-008', code: 'SRV-008', name: 'Modernización y Automatización de Lazos de Seguridad STC', categoryId: 'CAT-003' },
+];
+
+export const STANDARD_CATEGORIES_CATALOG = [
+  { id: 'CAT-001', code: 'CAT-001', name: 'Mantenimiento Electromecánico STC' },
+  { id: 'CAT-002', code: 'CAT-002', name: 'Implementación y Montaje' },
+  { id: 'CAT-003', code: 'CAT-003', name: 'Proyectos Especiales' },
+  { id: 'CAT-004', code: 'CAT-004', name: 'Inspecciones y Mantenimiento Predictivo (MRT/END)' },
+  { id: 'CAT-005', code: 'CAT-005', name: 'Consultoría y Diseño de Ingeniería' },
+  { id: 'CAT-006', code: 'CAT-006', name: 'Formación Técnica Especializada' },
+];
+
+export const STANDARD_DEPARTMENTS_CATALOG = [
+  { id: 'DEP-01', code: 'DEP-01', name: 'Dirección General' },
+  { id: 'DEP-02', code: 'DEP-02', name: 'Administración y Finanzas' },
+  { id: 'DEP-03', code: 'DEP-03', name: 'Sistemas y Tecnología' },
+  { id: 'DEP-04', code: 'DEP-04', name: 'Ingeniería y Proyectos' },
+  { id: 'DEP-05', code: 'DEP-05', name: 'Operaciones de Campo' },
+  { id: 'DEP-06', code: 'DEP-06', name: 'SST y Sostenibilidad' },
+  { id: 'DEP-07', code: 'DEP-07', name: 'Gestión Comercial' },
+  { id: 'DEP-08', code: 'DEP-08', name: 'Cadena de Suministro' },
+  { id: 'DEP-09', code: 'DEP-09', name: 'Negocios Internacionales y ERP' },
+];
+
+export const STANDARD_CERTIFICATIONS_CATALOG = [
+  { id: 'CERT-ALT-4272', code: 'CERT-ALT-4272', title: 'Certificación Trabajo Seguro en Alturas (Res. 4272/2021)', validityMonths: 24 },
+  { id: 'CERT-MED-OCUP', code: 'CERT-MED-OCUP', title: 'Examen Médico Ocupacional con Énfasis en Alturas', validityMonths: 12 },
+  { id: 'CERT-MRT-L2', code: 'CERT-MRT-L2', title: 'Inspector Magneto-Inductivo MRT Nivel II (EN 12927)', validityMonths: 36 },
+  { id: 'CERT-NDT-UT2', code: 'CERT-NDT-UT2', title: 'Ensayos No Destructivos Ultrasonido Nivel II (ISO 9712)', validityMonths: 36 },
+  { id: 'CERT-AWS-D11', code: 'CERT-AWS-D11', title: 'Soldador Estructural Calificado AWS D1.1', validityMonths: 24 },
+  { id: 'CERT-RESC-STC', code: 'CERT-RESC-STC', title: 'Rescate Vertical y Evacuación en Línea de Teleférico', validityMonths: 12 },
+];
+
+export const STANDARD_PAYMENT_TERMS_CATALOG = [
+  { id: 'PT-CR-SAT', code: 'PT-CR-SAT', name: 'Contra entrega de informe final aprobado a satisfacción', type: 'MILESTONE_APPROVAL', gracePeriodDays: 5, requiresApprovalDocument: true },
+  { id: 'PT-30D-FF', code: 'PT-30D-FF', name: '30 días fecha de factura radicada', type: 'NET_DAYS', gracePeriodDays: 30, requiresApprovalDocument: false },
+  { id: 'PT-50-50', code: 'PT-50-50', name: '50% Anticipo / 50% Acta de Liquidación Final', type: 'ADVANCE_AND_CLOSE', gracePeriodDays: 0, requiresApprovalDocument: true },
+  { id: 'PT-HITO-48H', code: 'PT-HITO-48H', name: 'Por Hitos Contractuales (Cobro a 48h tras firma de acta)', type: 'MILESTONE_48H', gracePeriodDays: 2, requiresApprovalDocument: true },
+];
+
+export const STANDARD_STC_SYSTEMS_CATALOG = [
+  { id: 'STC-MGD-10', code: 'STC-MGD-10', name: 'Aéreo Monocable Desembragable 10-MGD', category: 'Aéreo', technology: 'Monocable Desembragable', capacityCode: '10-MGD' },
+  { id: 'STC-BGD-15', code: 'STC-BGD-15', name: 'Aéreo Bicable Desembragable 2S / 3S', category: 'Aéreo', technology: 'Bicable Desembragable', capacityCode: '2S-3S' },
+  { id: 'STC-CLF-04', code: 'STC-CLF-04', name: 'Telesilla de Pinza Fija 4 Plazas', category: 'Aéreo', technology: 'Pinza Fija', capacityCode: '4-CLF' },
+  { id: 'STC-FUN-01', code: 'STC-FUN-01', name: 'Funicular Terrestre sobre Rieles con Contrapeso', category: 'Terrestre', technology: 'Funicular Rieles', capacityCode: 'FUN-ITK' },
+  { id: 'STC-CRG-01', code: 'STC-CRG-01', name: 'Teleférico Industrial de Carga y Materiales Pesados', category: 'Carga', technology: 'Carga Vaivén', capacityCode: 'CARGA-STC' },
+];
+
+export const STANDARD_WAREHOUSE_LOCATIONS_CATALOG = [
+  { id: 'LOC-CENTRAL', code: 'LOC-CENTRAL', name: 'Bodega Central Inteckno (Medellín)', address: 'Carrera 48 # 20-34' },
+  { id: 'LOC-TALLER', code: 'LOC-TALLER', name: 'Taller Central & Banco de Ensayos', address: 'Zona Industrial Belén' },
+  { id: 'LOC-OBRA-01', code: 'LOC-OBRA-01', name: 'Frente de Obra en Sitio (Teleférico)', address: 'Estación Motriz en Obra' },
+];
+
+export const STANDARD_SHELVES_CATALOG = [
+  { id: 'SHLF-03D', code: '3.D', locationId: 'LOC-CENTRAL', name: 'Pasillo 3 - Nivel D (Mecánica Ligera)' },
+  { id: 'SHLF-04G', code: '4.G', locationId: 'LOC-CENTRAL', name: 'Pasillo 4 - Nivel G (Herramienta Especializada / Taladros)' },
+  { id: 'SHLF-01A', code: '1.A', locationId: 'LOC-CENTRAL', name: 'Pasillo 1 - Nivel A (Fijaciones y Tornillería)' },
+  { id: 'SHLF-02D', code: '2.D', locationId: 'LOC-CENTRAL', name: 'Pasillo 2 - Nivel D (Repuestos Desembragables)' },
+  { id: 'SHLF-04B', code: '4.B', locationId: 'LOC-CENTRAL', name: 'Pasillo 4 - Nivel B (Químicos y Lubricantes)' },
+  { id: 'SHLF-04C', code: '4.C', locationId: 'LOC-CENTRAL', name: 'Pasillo 4 - Nivel C (Rodamientos y Sellos)' },
+  { id: 'SHLF-04D', code: '4.D', locationId: 'LOC-CENTRAL', name: 'Pasillo 4 - Nivel D (Instrumentación END)' },
+  { id: 'SHLF-08A', code: '8.A', locationId: 'LOC-CENTRAL', name: 'Pasillo 8 - Nivel A (Poleas y Balancines)' },
+  { id: 'SHLF-AP', code: 'A.P', locationId: 'LOC-CENTRAL', name: 'Área de Picking & Alistamiento Rápido' },
+  { id: 'SHLF-TB2', code: 'TB.2', locationId: 'LOC-CENTRAL', name: 'Tolva B - Módulo 2 (Cables y Eslingas)' },
+  { id: 'SHLF-PATIO', code: 'PATIO', locationId: 'LOC-CENTRAL', name: 'Patio de Maniobras y Equipos de Tracción' },
+  { id: 'SHLF-CENTRAL', code: 'CENTRAL', locationId: 'LOC-CENTRAL', name: 'Estante General Bodega Central' },
+];

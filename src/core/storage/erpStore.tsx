@@ -1,8 +1,9 @@
 
 export function ensureProjectItems(p: Project): any[] {
   const existing = ((p.projectItems || (p as any).items || []) as any[]);
+  let items: any[] = [];
   if (existing.length > 0) {
-    return existing.map((it: any, idx: number) => ({
+    items = existing.map((it: any, idx: number) => ({
       id: it.id || `item-${p.id}-${idx + 1}`,
       code: it.code || `ITEM ${String(idx + 1).padStart(2, '0')}`,
       name: it.name || `Alcance Contractual ${idx + 1}`,
@@ -10,28 +11,44 @@ export function ensureProjectItems(p: Project): any[] {
       status: it.status || 'activo',
       createdAt: it.createdAt || new Date().toISOString(),
     }));
-  }
-  const matrixItemCodes = Array.from(new Set(((p.costMatrix || []) as any[]).map((c: any) => c.itemCode).filter(Boolean)));
-  if (matrixItemCodes.length > 0) {
-    return matrixItemCodes.map((code: any, idx: number) => ({
-      id: `item-${p.id}-${idx + 1}`,
-      code: String(code),
-      name: `Ítem Contractual ${code}`,
-      budgetPlanned: 0,
-      status: 'activo' as const,
-      createdAt: new Date().toISOString(),
-    }));
-  }
-  return [
-    {
-      id: `item-${p.id}-1`,
-      code: 'ITEM 01',
-      name: p.name || 'Alcance Contractual Principal',
-      budgetPlanned: Number(p.budgetPV || 0),
-      status: 'activo' as const,
-      createdAt: new Date().toISOString(),
+  } else {
+    const matrixItemCodes = Array.from(new Set(((p.costMatrix || []) as any[]).map((c: any) => c.itemCode).filter(Boolean)));
+    if (matrixItemCodes.length > 0) {
+      items = matrixItemCodes.map((code: any, idx: number) => ({
+        id: `item-${p.id}-${idx + 1}`,
+        code: String(code),
+        name: `Ítem Contractual ${code}`,
+        budgetPlanned: 0,
+        status: 'activo' as const,
+        createdAt: new Date().toISOString(),
+      }));
+    } else {
+      items = [
+        {
+          id: `item-${p.id}-1`,
+          code: 'ITEM 01',
+          name: p.name || 'Alcance Contractual Principal',
+          budgetPlanned: Number(p.budgetPV || 0),
+          status: 'activo' as const,
+          createdAt: new Date().toISOString(),
+        }
+      ];
     }
-  ];
+  }
+
+  // Garantizar que cada fila de costMatrix tenga su projectItemId inmutable enlazado
+  if (Array.isArray(p.costMatrix)) {
+    p.costMatrix.forEach((costRow: any) => {
+      if (!costRow.projectItemId && costRow.itemCode) {
+        const matched = items.find((it) => it.code === costRow.itemCode || it.id === costRow.itemCode);
+        if (matched) {
+          costRow.projectItemId = matched.id;
+        }
+      }
+    });
+  }
+
+  return items;
 }
 
 export function recalculateProjectEvm(p: Project): Project {

@@ -299,6 +299,18 @@ export const ExecuteRelationalIdAuditFixPayload = z.object({
   standardizeSkillCatalogIds: z.boolean().default(true),
 });
 
+export const ExecuteAuditParts234RelationalFixPayload = z.object({
+  linkProjectClientIdAndSupervisorId: z.boolean().default(true),
+  decoupleEmbeddedJobPositionFromUsers: z.boolean().default(true),
+  linkCostMatrixToProjectItemId: z.boolean().default(true),
+  standardizeProjectServiceAndCategoryIds: z.boolean().default(true),
+  standardizeUserDepartmentsWithIds: z.boolean().default(true),
+  standardizeUserCertificationsWithIds: z.boolean().default(true),
+  standardizeWarehouseShelvesAndLocations: z.boolean().default(true),
+  standardizePaymentTermsAndStcSystems: z.boolean().default(true),
+  cleanHeavyBase64FromCostMatrix: z.boolean().default(true),
+});
+
 export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('upsert_opportunity'), payload: UpsertOpportunityPayload }),
   z.object({ action: z.literal('upsert_project'), payload: UpsertProjectPayload }),
@@ -315,6 +327,7 @@ export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('EXECUTE_LEVEL4_AND_5_ARCHITECTURE'), payload: ExecuteLevel4And5ArchitecturePayload }),
   z.object({ action: z.literal('EXECUTE_LEVEL6_7_9_ARCHITECTURE'), payload: ExecuteLevel679ArchitecturePayload }),
   z.object({ action: z.literal('EXECUTE_RELATIONAL_ID_AUDIT_FIX'), payload: ExecuteRelationalIdAuditFixPayload }),
+  z.object({ action: z.literal('EXECUTE_AUDIT_PARTS_2_3_4_FIX'), payload: ExecuteAuditParts234RelationalFixPayload }),
 ]);
 
 export type AiActionRequest = z.infer<typeof AiActionRequestSchema>;
