@@ -103,6 +103,7 @@ const ROLE_OPTIONS: { role: UserRole; label: string; defaultDept: string }[] = [
 export const UserManagementModule: React.FC = () => {
   const {
     users,
+    employees = [],
     currentUser,
     updateUserProfile,
     resetUserPassword,
@@ -148,19 +149,34 @@ export const UserManagementModule: React.FC = () => {
     setOfficialPositions(getStoredJobPositions());
   }, []);
 
-  // Helper para resolver el cargo oficial de un usuario (por jobPosition, jobPositionId o rol)
+  // Helper para resolver el cargo oficial de un usuario (por jobPosition, jobPositionId, rol o cruce con employees)
   const getUserJobPosition = useCallback(
     (u: User): JobPosition | undefined => {
       if (u.jobPosition?.code) return u.jobPosition;
-      if (u.jobPositionId) {
+      const linkedEmployee = (employees || []).find(
+        (emp) => (emp as any).userId === u.id || emp.id === u.id || (u.email && emp.email && emp.email.toLowerCase() === u.email.toLowerCase())
+      );
+      const empJobId = (linkedEmployee as any)?.jobPositionId;
+      const targetJobId = u.jobPositionId || empJobId;
+      if (targetJobId) {
         const found = officialPositions.find(
-          (p) => p.id === u.jobPositionId || p.code?.toUpperCase() === u.jobPositionId?.toUpperCase()
+          (p) => p.id === targetJobId || p.code?.toUpperCase() === targetJobId?.toUpperCase()
         );
         if (found) return found;
       }
-      return officialPositions.find((p) => p.department === u.department && p.title === u.roleLabel);
+      const matched = officialPositions.find((p) => p.department === u.department && p.title === u.roleLabel);
+      if (matched) return matched;
+      if (linkedEmployee) {
+        return {
+          id: empJobId || `POS-${linkedEmployee.id}`,
+          code: empJobId || 'FICHA-ACTIVA',
+          title: linkedEmployee.role || (linkedEmployee as any).position || (linkedEmployee as any).jobPosition || u.roleLabel,
+          department: linkedEmployee.department || u.department,
+        } as JobPosition;
+      }
+      return undefined;
     },
-    [officialPositions]
+    [officialPositions, employees]
   );
 
   // Catálogos dinámicos
@@ -854,7 +870,12 @@ export const UserManagementModule: React.FC = () => {
     if (!u.canWorkHeights) return false;
     return new Date(u.hseqExpiresAt || '2020-01-01').getTime() < Date.now();
   }).length;
-  const withoutJobCount = users.filter((u) => !getUserJobPosition(u)).length;
+  const withoutJobCount = users.filter((u) => {
+    const linkedEmp = (employees || []).find(
+      (emp) => (emp as any).userId === u.id || emp.id === u.id || (u.email && emp.email && emp.email.toLowerCase() === u.email.toLowerCase())
+    );
+    return !getUserJobPosition(u) && !linkedEmp;
+  }).length;
 
   if (!canAccessModule) {
     return (
@@ -1261,9 +1282,13 @@ export const UserManagementModule: React.FC = () => {
                               <div className="text-[11px] text-gray-500">{u.department}</div>
                               {(() => {
                                 const resolvedJob = getUserJobPosition(u);
-                                return resolvedJob?.code ? (
-                                  <span className="inline-block mt-0.5 text-[10px] px-2 py-0.5 bg-sky-50 text-[#00668F] font-mono rounded font-semibold">
-                                    {resolvedJob.code}
+                                const linkedEmployee = (employees || []).find(
+                                  (emp) => (emp as any).userId === u.id || emp.id === u.id || (u.email && emp.email && emp.email.toLowerCase() === u.email.toLowerCase())
+                                );
+                                const codeToShow = resolvedJob?.code || (linkedEmployee as any)?.jobPositionId || (typeof u.jobPosition === 'string' ? u.jobPosition : null);
+                                return codeToShow ? (
+                                  <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono rounded font-semibold">
+                                    <CheckCircle2 size={10} /> {codeToShow}
                                   </span>
                                 ) : (
                                   <span className="inline-block mt-0.5 text-[10px] text-amber-700 italic">
@@ -1451,9 +1476,13 @@ export const UserManagementModule: React.FC = () => {
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {(() => {
                             const resolvedJob = getUserJobPosition(u);
-                            return resolvedJob?.code ? (
-                              <span className="text-[10px] px-2 py-0.5 bg-sky-50 text-[#00668F] font-mono rounded font-bold">
-                                {resolvedJob.code}
+                            const linkedEmployee = (employees || []).find(
+                              (emp) => (emp as any).userId === u.id || emp.id === u.id || (u.email && emp.email && emp.email.toLowerCase() === u.email.toLowerCase())
+                            );
+                            const codeToShow = resolvedJob?.code || (linkedEmployee as any)?.jobPositionId || (typeof u.jobPosition === 'string' ? u.jobPosition : null);
+                            return codeToShow ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono rounded font-bold">
+                                <CheckCircle2 size={10} /> {codeToShow}
                               </span>
                             ) : (
                               <span className="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-800 rounded font-semibold">

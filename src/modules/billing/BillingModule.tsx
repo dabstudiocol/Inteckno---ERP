@@ -669,9 +669,16 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                         </td>
                         <td className="p-3 text-center">
                           {m.acceptanceActSigned ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <CheckCircle2 size={11} /> Acta Firmada
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <CheckCircle2 size={11} /> Acta Firmada
+                              </span>
+                              {(m as any).auditEvidence?.signatureHash && (
+                                <span className="font-mono text-[9px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded" title={(m as any).auditEvidence.signatureHash}>
+                                  SHA-256: {(m as any).auditEvidence.signatureHash.slice(0, 10)}...
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                               <Clock size={11} /> Pendiente de Firma

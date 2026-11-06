@@ -19,6 +19,9 @@ import {
   Trash2,
   ExternalLink,
   Package,
+  Lock,
+  ShieldAlert,
+  Key,
 } from 'lucide-react';
 import { useErp, ensureProjectItems } from '../../core/storage/erpStore';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
@@ -196,6 +199,37 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
     setIsOtModalOpen(false);
     setOtDescription('');
     notify?.('success', 'Orden de Trabajo Creada', `Se registró la ${newOt.code} para el componente ${otComponent}.`);
+  };
+
+  // Estados y Hard Stop de Protocolo LOTO (Nivel 6)
+  const [lotoModalOt, setLotoModalOt] = useState<WorkOrderOT | null>(null);
+  const [lotoStep1, setLotoStep1] = useState(false);
+  const [lotoStep2, setLotoStep2] = useState(false);
+  const [lotoStep3, setLotoStep3] = useState(false);
+  const [lotoStep4, setLotoStep4] = useState(false);
+  const [lotoPadlockTag, setLotoPadlockTag] = useState('');
+  const [lotoTechnicianName, setLotoTechnicianName] = useState('');
+
+  const isLotoComplete = lotoStep1 && lotoStep2 && lotoStep3 && lotoStep4 && lotoPadlockTag.trim().length > 0;
+
+  const handleConfirmLoto = () => {
+    if (!lotoModalOt || !isLotoComplete) return;
+    updateWorkOrder(lotoModalOt.id, {
+      status: 'en_reparacion',
+      lotoEvidence: {
+        verifiedAt: new Date().toISOString(),
+        verifiedBy: lotoTechnicianName || lotoModalOt.technician || 'Técnico Especialista',
+        padlockTag: lotoPadlockTag.trim(),
+        stepsConfirmed: ['CORTE_TENSION', 'BLOQUEO_MECANICO', 'CANDADO_TARJETA', 'ENERGIA_CERO'],
+      },
+    } as any);
+    notify?.('success', 'Protocolo LOTO Verificado', `OT ${lotoModalOt.code} autorizada para reparación. Candado ${lotoPadlockTag} registrado.`);
+    setLotoModalOt(null);
+    setLotoStep1(false);
+    setLotoStep2(false);
+    setLotoStep3(false);
+    setLotoStep4(false);
+    setLotoPadlockTag('');
   };
 
   // Modal Crear Manufactura
@@ -476,13 +510,20 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
                     <span className="text-slate-500 font-medium">Resp: <strong>{ot.technician}</strong></span>
-                    <span className={`font-bold text-[10px] px-2 py-0.5 rounded-md ${
-                      ot.status === 'completada' ? 'bg-emerald-100 text-emerald-800' :
-                      ot.status === 'pruebas_banco' ? 'bg-purple-100 text-purple-800' :
-                      'bg-sky-100 text-sky-800'
-                    }`}>
-                      {ot.status.replace('_', ' ')}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {(ot as any).lotoEvidence && (
+                        <span className="font-bold text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
+                          <Lock size={10} /> LOTO: {(ot as any).lotoEvidence.padlockTag}
+                        </span>
+                      )}
+                      <span className={`font-bold text-[10px] px-2 py-0.5 rounded-md ${
+                        ot.status === 'completada' ? 'bg-emerald-100 text-emerald-800' :
+                        ot.status === 'pruebas_banco' ? 'bg-purple-100 text-purple-800' :
+                        'bg-sky-100 text-sky-800'
+                      }`}>
+                        {ot.status.replace('_', ' ')}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
@@ -510,17 +551,28 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                       <button
                         type="button"
                         onClick={() => {
+                          if (ot.status === 'diagnostico') {
+                            setLotoModalOt(ot);
+                            setLotoTechnicianName(ot.technician || '');
+                            return;
+                          }
                           const nextStatus: Record<string, any> = {
-                            diagnostico: 'en_reparacion',
                             en_reparacion: 'pruebas_banco',
                             pruebas_banco: 'completada',
                           };
                           updateWorkOrder(ot.id, { status: nextStatus[ot.status] || 'completada' });
                         }}
-                        className="py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-colors cursor-pointer"
-                        title="Avanzar estado operativo"
+                        className="py-1.5 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-colors cursor-pointer inline-flex items-center gap-1"
+                        title={ot.status === 'diagnostico' ? 'Completar Checklist LOTO obligatorio para iniciar reparación' : 'Avanzar estado operativo'}
                       >
-                        Avanzar →
+                        {ot.status === 'diagnostico' ? (
+                          <>
+                            <ShieldCheck size={13} className="text-amber-600" />
+                            <span>Validar LOTO →</span>
+                          </>
+                        ) : (
+                          <span>Avanzar →</span>
+                        )}
                       </button>
                     )}
 
@@ -1275,6 +1327,144 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
           }}
           onClose={() => setBenchTestToDelete(null)}
         />
+      )}
+
+      {/* Modal Hard Stop Protocolo LOTO (Nivel 6) */}
+      {lotoModalOt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in duration-150">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                  <ShieldAlert size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Protocolo LOTO Obligatorio</h3>
+                  <p className="text-xs text-slate-500">Lockout / Tagout • Norma RETIE / OSHA 1910.147</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLotoModalOt(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-900 space-y-1">
+              <p className="font-bold">Intervención: {lotoModalOt.code} — {lotoModalOt.component}</p>
+              <p className="text-[11px] text-amber-800">
+                Para autorizar el paso a <strong>En Reparación</strong>, certifique los 4 pasos de desenergización y asigne el candado físico.
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              <label className="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={lotoStep1}
+                  onChange={(e) => setLotoStep1(e.target.checked)}
+                  className="mt-0.5 rounded text-[#00668F] focus:ring-[#00668F]"
+                />
+                <div className="text-xs">
+                  <p className="font-bold text-slate-800">1. Corte de Tensión Principal</p>
+                  <p className="text-slate-500 text-[11px]">Seccionador general en OFF y comprobada ausencia de arco.</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={lotoStep2}
+                  onChange={(e) => setLotoStep2(e.target.checked)}
+                  className="mt-0.5 rounded text-[#00668F] focus:ring-[#00668F]"
+                />
+                <div className="text-xs">
+                  <p className="font-bold text-slate-800">2. Bloqueo Mecánico de Accionamiento</p>
+                  <p className="text-slate-500 text-[11px]">Traba física o perno pasador insertado en volante/polea motriz.</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={lotoStep3}
+                  onChange={(e) => setLotoStep3(e.target.checked)}
+                  className="mt-0.5 rounded text-[#00668F] focus:ring-[#00668F]"
+                />
+                <div className="text-xs">
+                  <p className="font-bold text-slate-800">3. Candado Físico y Tarjeta de Identificación</p>
+                  <p className="text-slate-500 text-[11px]">Master Lock rotulado con datos del técnico y llave retenida.</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={lotoStep4}
+                  onChange={(e) => setLotoStep4(e.target.checked)}
+                  className="mt-0.5 rounded text-[#00668F] focus:ring-[#00668F]"
+                />
+                <div className="text-xs">
+                  <p className="font-bold text-slate-800">4. Verificación de Energía Cero (Voltímetro / Manómetro)</p>
+                  <p className="text-slate-500 text-[11px]">Comprobación con voltímetro calibrado (&lt; 5V AC/DC) y purga neumática.</p>
+                </div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Código de Candado LOTO *
+                </label>
+                <input
+                  type="text"
+                  value={lotoPadlockTag}
+                  onChange={(e) => setLotoPadlockTag(e.target.value)}
+                  placeholder="Ej: LOTO-MK-4402"
+                  className="w-full p-2 border border-slate-300 rounded-xl text-xs font-mono font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Técnico Responsable *
+                </label>
+                <input
+                  type="text"
+                  value={lotoTechnicianName}
+                  onChange={(e) => setLotoTechnicianName(e.target.value)}
+                  placeholder="Nombre completo"
+                  className="w-full p-2 border border-slate-300 rounded-xl text-xs font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setLotoModalOt(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={!isLotoComplete}
+                onClick={handleConfirmLoto}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  isLotoComplete
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Lock size={13} />
+                <span>Validar LOTO e Iniciar Reparación</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <UniversalModuleConfigModal

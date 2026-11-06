@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AiActionRequestSchema = exports.ExecuteLevel4And5ArchitecturePayload = exports.RestructureLevel3GovernancePayload = exports.PurgeMockDataPayload = exports.RecalculateProjectEvmPayload = exports.SyncUsersToEmployeesPayload = exports.SandboxDeletePayload = exports.UpsertRemissionPayload = exports.UpsertProductPayload = exports.RecordTimesheetPayload = exports.UpsertPurchaseOrderPayload = exports.UpsertRequisitionPayload = exports.UpsertProjectPayload = exports.UpsertOpportunityPayload = exports.CostMatrixRowSchema = exports.ProjectItemSchema = exports.SummaryQuerySchema = exports.DataQuerySchema = exports.ModuleNameEnum = void 0;
+exports.AiActionRequestSchema = exports.ExecuteLevel679ArchitecturePayload = exports.ExecuteLevel4And5ArchitecturePayload = exports.RestructureLevel3GovernancePayload = exports.PurgeMockDataPayload = exports.RecalculateProjectEvmPayload = exports.SyncUsersToEmployeesPayload = exports.SandboxDeletePayload = exports.UpsertRemissionPayload = exports.UpsertProductPayload = exports.RecordTimesheetPayload = exports.UpsertPurchaseOrderPayload = exports.UpsertRequisitionPayload = exports.UpsertProjectPayload = exports.UpsertOpportunityPayload = exports.CostMatrixRowSchema = exports.ProjectItemSchema = exports.SummaryQuerySchema = exports.DataQuerySchema = exports.ModuleNameEnum = void 0;
 const zod_1 = require("zod");
 /**
  * Validated Module Keys & Sub-Entities in Inteckno ERP
@@ -257,6 +257,16 @@ exports.ExecuteLevel4And5ArchitecturePayload = zod_1.z.object({
     defaultAdvancePct: zod_1.z.number().min(0).max(50).default(10),
     defaultRetentionGuaranteePct: zod_1.z.number().min(0).max(30).default(5),
 });
+exports.ExecuteLevel679ArchitecturePayload = zod_1.z.object({
+    postDavidHurtadoHoursToProject: zod_1.z.boolean().default(true),
+    projectId: zod_1.z.string().default('PRJ-1793367181536'),
+    itemCode: zod_1.z.string().default('ITEM PRUEBA 1'),
+    hours: zod_1.z.number().default(10),
+    hourlyRateCOP: zod_1.z.number().default(27505),
+    enforceLotoProtocolInWorkOrders: zod_1.z.boolean().default(true),
+    enableCryptographicMilestoneSignatures: zod_1.z.boolean().default(true),
+    configureGeofencesAndMakerChecker: zod_1.z.boolean().default(true),
+});
 exports.AiActionRequestSchema = zod_1.z.discriminatedUnion('action', [
     zod_1.z.object({ action: zod_1.z.literal('upsert_opportunity'), payload: exports.UpsertOpportunityPayload }),
     zod_1.z.object({ action: zod_1.z.literal('upsert_project'), payload: exports.UpsertProjectPayload }),
@@ -271,5 +281,6 @@ exports.AiActionRequestSchema = zod_1.z.discriminatedUnion('action', [
     zod_1.z.object({ action: zod_1.z.literal('PURGE_MOCK_DATA'), payload: exports.PurgeMockDataPayload }),
     zod_1.z.object({ action: zod_1.z.literal('RESTRUCTURE_LEVEL3_GOVERNANCE'), payload: exports.RestructureLevel3GovernancePayload }),
     zod_1.z.object({ action: zod_1.z.literal('EXECUTE_LEVEL4_AND_5_ARCHITECTURE'), payload: exports.ExecuteLevel4And5ArchitecturePayload }),
+    zod_1.z.object({ action: zod_1.z.literal('EXECUTE_LEVEL6_7_9_ARCHITECTURE'), payload: exports.ExecuteLevel679ArchitecturePayload }),
 ]);
 //# sourceMappingURL=aiSchemas.js.map

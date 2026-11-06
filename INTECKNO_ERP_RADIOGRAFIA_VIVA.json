@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T16:45:22.875Z",
+  "generatedAt": "2026-11-06T17:35:46.751Z",
   "status": {
     "status": "ok",
     "version": "1.0.0-ai-gateway",
@@ -11,7 +11,7 @@
       "write_prod_safe",
       "pii"
     ],
-    "timestamp": "2026-11-06T16:45:36.958Z",
+    "timestamp": "2026-11-06T17:36:00.925Z",
     "counts": {
       "projects": 1,
       "tasks": 0,
@@ -178,7 +178,7 @@
   "diagnostics": {
     "healthy": true,
     "totalIssues": 1,
-    "checkedAt": "2026-11-06T16:45:37.617Z",
+    "checkedAt": "2026-11-06T17:36:01.890Z",
     "findings": [
       {
         "severity": "warning",
@@ -195,7 +195,7 @@
     "kpis": {
       "projectsCount": 1,
       "totalContractCOP": 100000000,
-      "totalActualCostCOP": 3700000,
+      "totalActualCostCOP": 3975050,
       "totalCommittedPOCOP": 0,
       "openRequisitionsCount": 1,
       "activeOpportunitiesCount": 0,
@@ -210,10 +210,10 @@
         "country": "Colombia",
         "taxRate": 0.19,
         "contractCOP": 100000000,
-        "eacCOP": 3700000,
-        "actualCostCOP": 3700000,
+        "eacCOP": 3975050,
+        "actualCostCOP": 3975050,
         "committedPOCOP": 0,
-        "marginPct": 96.3,
+        "marginPct": 96.02,
         "itemsCount": 2
       }
     ]
@@ -245,7 +245,7 @@
         },
         "budgetPV": 100000000,
         "contractAmount": 100000000,
-        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "updatedAt": "2026-11-06T17:35:48.039Z",
         "contractCode": "CONTRATO PRUEBA",
         "offerBudget": {
           "items": [
@@ -340,6 +340,30 @@
             "hasIva": false,
             "id": "COST-1793374221664",
             "unit": "Horas"
+          },
+          {
+            "id": "cost-ts-TS-2026-DH01",
+            "itemCode": "ITEM PRUEBA 1",
+            "itemName": "DESCRIPTIVO PRUEBA",
+            "category": "mano_obra_itk",
+            "costType": "directo",
+            "concept": "Mano de Obra ITK - David Hurtado (10h @ $27.505/h - Supervisión en Obra ITEM PRUEBA 1)",
+            "unit": "Horas",
+            "plannedQuantity": 10,
+            "plannedUnitCost": 27505,
+            "plannedTotal": 275050,
+            "actualQuantity": 10,
+            "actualUnitCost": 27505,
+            "actualTotal": 275050,
+            "variance": 0,
+            "spendingNature": "PRESUPUESTO",
+            "date": "2026-11-06",
+            "observations": "Horas de nómina contabilizadas bajo Ley 2101 (factor 1.52 patronal / 210h divisor legal). Visto bueno supervisor Dairo Morales.",
+            "invoiceNumber": "NOMI-2026-11-01",
+            "hasIva": false,
+            "ivaAmount": 0,
+            "retentionAmount": 0,
+            "splitPercentage": 100
           }
         ],
         "spi": 1,
@@ -365,9 +389,9 @@
         "retentionGuaranteePercentage": 5,
         "startDate": "2026-10-30",
         "supervisorName": "Gustavo Alberto Mejía Tobón",
-        "actualCostAC": 3700000,
-        "computedEAC": 3700000,
-        "computedMarginPct": 96.3,
+        "actualCostAC": 3975050,
+        "computedEAC": 3975050,
+        "computedMarginPct": 96.02,
         "country": "CO",
         "financialSummary": {
           "subtotal": 3700000,
@@ -393,6 +417,7 @@
           "status": "active_escrow",
           "updatedAt": "2026-11-06T16:45:29.303Z"
         },
+        "lastUpdated": "2026-11-06T17:35:48.039Z",
         "computedTaxRate": 0.19
       }
     ]
@@ -1451,1132 +1476,1132 @@
     "nextCursor": null,
     "items": [
       {
-        "id": "USR-02",
-        "userId": "USR-02",
-        "name": "Alejandro Hoyos Correa",
-        "fullName": "Alejandro Hoyos Correa",
-        "documentId": "CC-1011111111",
-        "role": "Coordinador Comercial",
-        "position": "Coordinador Comercial",
-        "department": "Gestión Comercial",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Bello, Antioquia",
-        "email": "ahoyos@inteckno.com",
-        "phone": "+57 320 888 9900",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-12-31",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Carlos Hoyos (Padre)",
-        "emergencyPhone": "+57 320 333 4411",
         "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
         "jobPositionId": "POS-COM-01",
+        "email": "ahoyos@inteckno.com",
+        "factorPrestacional": 1.52,
         "jobPosition": "Coordinador Comercial y Licitaciones LATAM",
+        "phone": "+57 320 888 9900",
+        "baseSalaryCOP": 3700000,
+        "role": "Coordinador Comercial",
+        "userId": "USR-02",
+        "medicalExamStatus": "vigente",
+        "heightCertStatus": "vigente",
+        "monthlyCompanyCostCOP": 5776000,
+        "position": "Coordinador Comercial",
+        "emergencyPhone": "+57 320 333 4411",
+        "name": "Alejandro Hoyos Correa",
         "competencyIds": [
           "COMP-COM-001",
           "COMP-COM-002",
           "COMP-ENG-001"
         ],
-        "computedHourlyCostCOP": 27505,
-        "computedMonthlyCompanyCostCOP": 5776000
+        "hireDate": "2024-01-15",
+        "department": "Gestión Comercial",
+        "documentId": "CC-1011111111",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "emergencyContact": "Carlos Hoyos (Padre)",
+        "vacationDaysAvailable": 15,
+        "monthlyBaseSalary": 3800000,
+        "city": "Bello, Antioquia",
+        "hourlyRateCOP": 27505,
+        "canWorkHeights": false,
+        "fullName": "Alejandro Hoyos Correa",
+        "medicalExamExpiry": "2027-12-31",
+        "heightCertExpiry": "2027-12-31",
+        "id": "USR-02",
+        "computedHourlyCostCOP": 26781,
+        "computedMonthlyCompanyCostCOP": 5624000
       },
       {
-        "id": "USR-04",
-        "userId": "USR-04",
-        "name": "Clemencia García Moncada",
-        "fullName": "Clemencia García Moncada",
-        "documentId": "CC-1022222222",
-        "role": "Gerente Administrativa",
-        "position": "Gerente Administrativa",
-        "department": "Administración y Finanzas",
         "hireDate": "2024-01-15",
-        "baseSalaryCOP": 6500000,
-        "monthlyBaseSalary": 6500000,
-        "monthlyCompanyCostCOP": 9880000,
-        "hourlyRateCOP": 47048,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "cgarcia@inteckno.com",
-        "phone": "+57 310 987 6543",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-12-31",
+        "userId": "USR-04",
         "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Javier García (Hermano)",
-        "emergencyPhone": "+57 310 111 2233",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-GA-01",
-        "jobPosition": "Gerente Administrativa y Financiera",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-FIN-001",
           "COMP-MGT-001"
         ],
+        "monthlyBaseSalary": 6500000,
+        "role": "Gerente Administrativa",
+        "department": "Administración y Finanzas",
+        "documentId": "CC-1022222222",
+        "phone": "+57 310 987 6543",
+        "hourlyRateCOP": 47048,
+        "medicalExamExpiry": "2027-12-31",
+        "fullName": "Clemencia García Moncada",
+        "email": "cgarcia@inteckno.com",
+        "monthlyCompanyCostCOP": 9880000,
+        "canWorkHeights": false,
+        "isActive": true,
+        "name": "Clemencia García Moncada",
+        "medicalExamStatus": "vigente",
+        "jobPositionId": "POS-GA-01",
+        "jobPosition": "Gerente Administrativa y Financiera",
+        "vacationDaysAvailable": 15,
+        "heightCertExpiry": "2027-12-31",
+        "city": "Medellín, Antioquia",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "baseSalaryCOP": 6500000,
+        "emergencyPhone": "+57 310 111 2233",
+        "factorPrestacional": 1.52,
+        "emergencyContact": "Javier García (Hermano)",
+        "position": "Gerente Administrativa",
+        "id": "USR-04",
         "computedHourlyCostCOP": 47048,
         "computedMonthlyCompanyCostCOP": 9880000
       },
       {
-        "id": "USR-05",
-        "userId": "USR-05",
-        "name": "Dairo Antonio Morales Fuenmayor",
-        "fullName": "Dairo Antonio Morales Fuenmayor",
-        "documentId": "CC-1033333333",
-        "role": "Supervisor Técnico de Campo",
-        "position": "Supervisor Técnico de Campo",
-        "department": "Operaciones de Campo",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3100000,
-        "monthlyBaseSalary": 3100000,
-        "monthlyCompanyCostCOP": 4712000,
-        "hourlyRateCOP": 22438,
-        "factorPrestacional": 1.52,
-        "city": "Itagüí, Antioquia",
-        "email": "dmorales@inteckno.com",
-        "phone": "+57 312 333 4455",
-        "canWorkHeights": true,
-        "heightCertExpiry": "2027-08-20",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-08-20",
-        "medicalExamStatus": "vigente",
         "vacationDaysAvailable": 15,
-        "emergencyContact": "Mariana Morales (Cónyuge)",
-        "emergencyPhone": "+57 312 444 8822",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "heightCertExpiry": "2027-08-20",
         "jobPositionId": "POS-SUP-01",
+        "position": "Supervisor Técnico de Campo",
+        "canWorkHeights": true,
+        "baseSalaryCOP": 3100000,
+        "medicalExamExpiry": "2027-08-20",
+        "role": "Supervisor Técnico de Campo",
+        "userId": "USR-05",
+        "emergencyContact": "Mariana Morales (Cónyuge)",
+        "isActive": true,
+        "monthlyBaseSalary": 3100000,
         "jobPosition": "Supervisor Técnico de Campo STC",
+        "emergencyPhone": "+57 312 444 8822",
+        "fullName": "Dairo Antonio Morales Fuenmayor",
         "competencyIds": [
           "COMP-NDT-001",
           "COMP-TEC-001",
           "COMP-ENG-001",
           "COMP-HSEQ-001"
         ],
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "factorPrestacional": 1.52,
+        "heightCertStatus": "vigente",
+        "id": "USR-05",
+        "monthlyCompanyCostCOP": 4712000,
+        "city": "Itagüí, Antioquia",
+        "email": "dmorales@inteckno.com",
+        "hourlyRateCOP": 22438,
+        "documentId": "CC-1033333333",
+        "name": "Dairo Antonio Morales Fuenmayor",
+        "department": "Operaciones de Campo",
+        "phone": "+57 312 333 4455",
+        "hireDate": "2024-01-15",
+        "medicalExamStatus": "vigente",
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
       {
-        "id": "USR-07",
-        "userId": "USR-07",
-        "name": "Gustavo Alberto Mejía Tobón",
-        "fullName": "Gustavo Alberto Mejía Tobón",
-        "documentId": "CC-1044444444",
-        "role": "Gerente General",
-        "position": "Gerente General",
-        "department": "Dirección General",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 6500000,
-        "monthlyBaseSalary": 6500000,
-        "monthlyCompanyCostCOP": 9880000,
-        "hourlyRateCOP": 47048,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "gmejia@inteckno.com",
-        "phone": "+57 300 456 7890",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-12-31",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Familia Mejía",
-        "emergencyPhone": "+57 300 123 4567",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-GG-01",
-        "jobPosition": "Gerente General",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-FIN-001",
           "COMP-MGT-001"
         ],
+        "userId": "USR-07",
+        "heightCertExpiry": "2027-12-31",
+        "monthlyBaseSalary": 6500000,
+        "monthlyCompanyCostCOP": 9880000,
+        "city": "Medellín, Antioquia",
+        "hireDate": "2024-01-15",
+        "name": "Gustavo Alberto Mejía Tobón",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "emergencyPhone": "+57 300 123 4567",
+        "jobPosition": "Gerente General",
+        "factorPrestacional": 1.52,
+        "fullName": "Gustavo Alberto Mejía Tobón",
+        "hourlyRateCOP": 47048,
+        "medicalExamExpiry": "2027-12-31",
+        "emergencyContact": "Familia Mejía",
+        "role": "Gerente General",
+        "jobPositionId": "POS-GG-01",
+        "phone": "+57 300 456 7890",
+        "canWorkHeights": false,
+        "medicalExamStatus": "vigente",
+        "heightCertStatus": "vigente",
+        "baseSalaryCOP": 6500000,
+        "isActive": true,
+        "documentId": "CC-1044444444",
+        "department": "Dirección General",
+        "email": "gmejia@inteckno.com",
+        "id": "USR-07",
+        "position": "Gerente General",
+        "vacationDaysAvailable": 15,
         "computedHourlyCostCOP": 47048,
         "computedMonthlyCompanyCostCOP": 9880000
       },
       {
-        "id": "USR-12",
-        "userId": "USR-12",
-        "name": "Kelly Johana Rojas Torres",
-        "fullName": "Kelly Johana Rojas Torres",
-        "documentId": "CC-1055555555",
-        "role": "Coordinadora HSEQ / SST",
-        "position": "Coordinadora HSEQ / SST",
-        "department": "SST y Sostenibilidad",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 2500000,
-        "monthlyBaseSalary": 2500000,
-        "monthlyCompanyCostCOP": 3800000,
-        "hourlyRateCOP": 18095,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "krojas@inteckno.com",
-        "phone": "+57 311 777 8899",
-        "canWorkHeights": false,
         "heightCertExpiry": "2027-12-31",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Andrés Rojas (Hermano)",
-        "emergencyPhone": "+57 311 222 3388",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-HSEQ-01",
-        "jobPosition": "Coordinador HSEQ y Seguridad Industrial",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-HSEQ-002",
           "COMP-HSEQ-001"
         ],
+        "isActive": true,
+        "canWorkHeights": false,
+        "role": "Coordinadora HSEQ / SST",
+        "jobPosition": "Coordinador HSEQ y Seguridad Industrial",
+        "medicalExamStatus": "vigente",
+        "hourlyRateCOP": 18095,
+        "userId": "USR-12",
+        "department": "SST y Sostenibilidad",
+        "documentId": "CC-1055555555",
+        "emergencyContact": "Andrés Rojas (Hermano)",
+        "vacationDaysAvailable": 15,
+        "position": "Coordinadora HSEQ / SST",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "hireDate": "2024-01-15",
+        "jobPositionId": "POS-HSEQ-01",
+        "city": "Medellín, Antioquia",
+        "medicalExamExpiry": "2027-12-31",
+        "factorPrestacional": 1.52,
+        "baseSalaryCOP": 2500000,
+        "emergencyPhone": "+57 311 222 3388",
+        "monthlyCompanyCostCOP": 3800000,
+        "heightCertStatus": "vigente",
+        "name": "Kelly Johana Rojas Torres",
+        "monthlyBaseSalary": 2500000,
+        "phone": "+57 311 777 8899",
+        "fullName": "Kelly Johana Rojas Torres",
+        "id": "USR-12",
+        "email": "krojas@inteckno.com",
         "computedHourlyCostCOP": 18095,
         "computedMonthlyCompanyCostCOP": 3800000
       },
       {
-        "id": "USR-16",
-        "userId": "USR-16",
-        "name": "Sebastián Ruiz Agudelo",
-        "fullName": "Sebastián Ruiz Agudelo",
-        "documentId": "CC-1066666666",
-        "role": "Líder de Proyectos",
-        "position": "Líder de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 4800000,
-        "monthlyBaseSalary": 4800000,
-        "monthlyCompanyCostCOP": 7296000,
-        "hourlyRateCOP": 34743,
         "factorPrestacional": 1.52,
-        "city": "Sabaneta, Antioquia",
-        "email": "sruiz@inteckno.com",
-        "phone": "+57 314 555 6677",
-        "canWorkHeights": true,
-        "heightCertExpiry": "2027-05-15",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-05-15",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Paola Ruiz",
-        "emergencyPhone": "+57 314 222 7788",
-        "isActive": true,
+        "userId": "USR-16",
+        "hireDate": "2024-01-15",
         "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-LP-01",
-        "jobPosition": "Líder de Proyectos STC",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-002"
         ],
+        "emergencyContact": "Paola Ruiz",
+        "monthlyBaseSalary": 4800000,
+        "role": "Líder de Proyectos",
+        "fullName": "Sebastián Ruiz Agudelo",
+        "heightCertExpiry": "2027-05-15",
+        "emergencyPhone": "+57 314 222 7788",
+        "id": "USR-16",
+        "vacationDaysAvailable": 15,
+        "hourlyRateCOP": 34743,
+        "medicalExamExpiry": "2027-05-15",
+        "jobPosition": "Líder de Proyectos STC",
+        "phone": "+57 314 555 6677",
+        "baseSalaryCOP": 4800000,
+        "documentId": "CC-1066666666",
+        "isActive": true,
+        "monthlyCompanyCostCOP": 7296000,
+        "medicalExamStatus": "vigente",
+        "department": "Ingeniería y Proyectos",
+        "email": "sruiz@inteckno.com",
+        "jobPositionId": "POS-LP-01",
+        "position": "Líder de Proyectos",
+        "city": "Sabaneta, Antioquia",
+        "name": "Sebastián Ruiz Agudelo",
+        "heightCertStatus": "vigente",
+        "canWorkHeights": true,
         "computedHourlyCostCOP": 34743,
         "computedMonthlyCompanyCostCOP": 7296000
       },
       {
-        "id": "USR-17",
         "userId": "USR-17",
-        "name": "Sebastián Vélez Yépez",
-        "fullName": "Sebastián Vélez Yépez",
-        "documentId": "CC-1077777777",
-        "role": "Comprador Técnico",
-        "position": "Comprador Técnico",
-        "department": "Cadena de Suministro",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "svelez@inteckno.com",
-        "phone": "+57 318 444 1122",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-12-31",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
         "vacationDaysAvailable": 15,
-        "emergencyContact": "Diana Vélez (Hermana)",
-        "emergencyPhone": "+57 318 999 5566",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-PUR-01",
-        "jobPosition": "Coordinador de Compras y Abastecimiento",
+        "fullName": "Sebastián Vélez Yépez",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-LOG-001",
           "COMP-FIN-001"
         ],
+        "medicalExamStatus": "vigente",
+        "heightCertExpiry": "2027-12-31",
+        "emergencyContact": "Diana Vélez (Hermana)",
+        "emergencyPhone": "+57 318 999 5566",
+        "hourlyRateCOP": 27505,
+        "role": "Comprador Técnico",
+        "hireDate": "2024-01-15",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "heightCertStatus": "vigente",
+        "phone": "+57 318 444 1122",
+        "baseSalaryCOP": 3800000,
+        "position": "Comprador Técnico",
+        "id": "USR-17",
+        "email": "svelez@inteckno.com",
+        "jobPositionId": "POS-PUR-01",
+        "monthlyBaseSalary": 3800000,
+        "factorPrestacional": 1.52,
+        "name": "Sebastián Vélez Yépez",
+        "monthlyCompanyCostCOP": 5776000,
+        "canWorkHeights": false,
+        "department": "Cadena de Suministro",
+        "city": "Medellín, Antioquia",
+        "medicalExamExpiry": "2027-12-31",
+        "jobPosition": "Coordinador de Compras y Abastecimiento",
+        "documentId": "CC-1077777777",
+        "isActive": true,
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-18",
-        "userId": "USR-18",
-        "name": "Wilson Albeiro Alzate Correa",
-        "fullName": "Wilson Albeiro Alzate Correa",
-        "documentId": "CC-1088888888",
         "role": "Coordinador de Proyectos",
-        "position": "Coordinador de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 4800000,
-        "monthlyBaseSalary": 4800000,
-        "monthlyCompanyCostCOP": 7296000,
-        "hourlyRateCOP": 34743,
-        "factorPrestacional": 1.52,
-        "city": "Envigado, Antioquia",
-        "email": "walzate@inteckno.com",
-        "phone": "+57 315 222 3344",
-        "canWorkHeights": true,
-        "heightCertExpiry": "2027-06-30",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-06-30",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
         "emergencyContact": "Claudia Correa (Cónyuge)",
-        "emergencyPhone": "+57 315 888 9911",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-LP-01",
+        "email": "walzate@inteckno.com",
+        "id": "USR-18",
+        "fullName": "Wilson Albeiro Alzate Correa",
         "jobPosition": "Líder de Proyectos STC",
+        "phone": "+57 315 222 3344",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-002",
           "COMP-NDT-001"
         ],
+        "vacationDaysAvailable": 15,
+        "hireDate": "2024-01-15",
+        "userId": "USR-18",
+        "canWorkHeights": true,
+        "medicalExamStatus": "vigente",
+        "hourlyRateCOP": 34743,
+        "heightCertExpiry": "2027-06-30",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "monthlyCompanyCostCOP": 7296000,
+        "city": "Envigado, Antioquia",
+        "baseSalaryCOP": 4800000,
+        "position": "Coordinador de Proyectos",
+        "name": "Wilson Albeiro Alzate Correa",
+        "jobPositionId": "POS-LP-01",
+        "medicalExamExpiry": "2027-06-30",
+        "isActive": true,
+        "heightCertStatus": "vigente",
+        "department": "Ingeniería y Proyectos",
+        "emergencyPhone": "+57 315 888 9911",
+        "documentId": "CC-1088888888",
+        "factorPrestacional": 1.52,
+        "monthlyBaseSalary": 4800000,
         "computedHourlyCostCOP": 34743,
         "computedMonthlyCompanyCostCOP": 7296000
       },
       {
-        "id": "USR-19",
-        "userId": "USR-19",
-        "name": "Alejandro Díaz Cadamil",
-        "fullName": "Alejandro Díaz Cadamil",
-        "documentId": "CC-1099999999",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
         "city": "Sabaneta, Antioquia",
-        "email": "adiaz@inteckno.com",
-        "phone": "+57 316 222 3344",
+        "isActive": true,
         "canWorkHeights": false,
-        "heightCertExpiry": "2027-09-30",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-09-30",
-        "medicalExamStatus": "vigente",
         "vacationDaysAvailable": 15,
+        "name": "Alejandro Díaz Cadamil",
+        "position": "Ingeniero de Proyectos",
+        "jobPositionId": "POS-IP",
+        "heightCertStatus": "vigente",
+        "medicalExamStatus": "vigente",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "baseSalaryCOP": 3800000,
+        "department": "Ingeniería y Proyectos",
+        "documentId": "CC-1099999999",
+        "hourlyRateCOP": 27505,
         "emergencyContact": "Elena Cadamil",
         "emergencyPhone": "+57 316 111 5566",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
+        "medicalExamExpiry": "2027-09-30",
+        "role": "Ingeniero de Proyectos",
+        "phone": "+57 316 222 3344",
+        "factorPrestacional": 1.52,
+        "hireDate": "2024-01-15",
+        "email": "adiaz@inteckno.com",
+        "fullName": "Alejandro Díaz Cadamil",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-042"
         ],
+        "monthlyBaseSalary": 3800000,
+        "userId": "USR-19",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "heightCertExpiry": "2027-09-30",
+        "id": "USR-19",
+        "monthlyCompanyCostCOP": 5776000,
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-20",
-        "userId": "USR-20",
-        "name": "Carlos Eduardo Pérez",
-        "fullName": "Carlos Eduardo Pérez",
-        "documentId": "CC-1111111110",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "cperez@inteckno.com",
-        "phone": "+57 315 333 4455",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-10-15",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-10-15",
-        "medicalExamStatus": "vigente",
         "vacationDaysAvailable": 15,
-        "emergencyContact": "Ana Pérez",
-        "emergencyPhone": "+57 315 888 2211",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "baseSalaryCOP": 3800000,
+        "email": "cperez@inteckno.com",
+        "role": "Ingeniero de Proyectos",
+        "monthlyBaseSalary": 3800000,
+        "hireDate": "2024-01-15",
         "jobPositionId": "POS-IP",
+        "userId": "USR-20",
+        "id": "USR-20",
+        "phone": "+57 315 333 4455",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "medicalExamExpiry": "2027-10-15",
         "jobPosition": "Ingeniero de Proyectos STC",
+        "heightCertStatus": "vigente",
+        "emergencyPhone": "+57 315 888 2211",
+        "fullName": "Carlos Eduardo Pérez",
+        "city": "Medellín, Antioquia",
+        "isActive": true,
+        "medicalExamStatus": "vigente",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-TEC-001",
           "COMP-ENG-042"
         ],
+        "documentId": "CC-1111111110",
+        "factorPrestacional": 1.52,
+        "emergencyContact": "Ana Pérez",
+        "name": "Carlos Eduardo Pérez",
+        "department": "Ingeniería y Proyectos",
+        "canWorkHeights": false,
+        "monthlyCompanyCostCOP": 5776000,
+        "heightCertExpiry": "2027-10-15",
+        "hourlyRateCOP": 27505,
+        "position": "Ingeniero de Proyectos",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-21",
-        "userId": "USR-21",
-        "name": "Francisco Javier Giraldo Arcila",
-        "fullName": "Francisco Javier Giraldo Arcila",
         "documentId": "CC-1122222221",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
+        "phone": "+57 314 444 5566",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "canWorkHeights": false,
         "department": "Ingeniería y Proyectos",
+        "name": "Francisco Javier Giraldo Arcila",
+        "email": "fgiraldo@inteckno.com",
+        "city": "Bello, Antioquia",
+        "fullName": "Francisco Javier Giraldo Arcila",
+        "emergencyContact": "Clara Arcila",
+        "vacationDaysAvailable": 15,
+        "jobPositionId": "POS-IP",
         "hireDate": "2024-01-15",
+        "heightCertExpiry": "2027-11-20",
+        "medicalExamStatus": "vigente",
         "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
         "monthlyCompanyCostCOP": 5776000,
         "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Bello, Antioquia",
-        "email": "fgiraldo@inteckno.com",
-        "phone": "+57 314 444 5566",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-11-20",
-        "heightCertStatus": "vigente",
         "medicalExamExpiry": "2027-11-20",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Clara Arcila",
+        "userId": "USR-21",
+        "factorPrestacional": 1.52,
+        "id": "USR-21",
         "emergencyPhone": "+57 314 222 1100",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
+        "position": "Ingeniero de Proyectos",
         "jobPosition": "Ingeniero de Proyectos STC",
+        "role": "Ingeniero de Proyectos",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-042",
           "COMP-ENG-002"
         ],
+        "monthlyBaseSalary": 3800000,
+        "isActive": true,
+        "heightCertStatus": "vigente",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-22",
-        "userId": "USR-22",
-        "name": "Jefferson Galeano Peña",
+        "jobPosition": "Ingeniero de Proyectos STC",
         "fullName": "Jefferson Galeano Peña",
-        "documentId": "CC-1133333332",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
         "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
         "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
+        "emergencyContact": "Gloria Peña",
+        "documentId": "CC-1133333332",
         "hourlyRateCOP": 27505,
         "factorPrestacional": 1.52,
-        "city": "Itagüí, Antioquia",
-        "email": "jgaleano@inteckno.com",
-        "phone": "+57 313 555 6677",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-08-30",
-        "heightCertStatus": "vigente",
+        "userId": "USR-22",
         "medicalExamExpiry": "2027-08-30",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Gloria Peña",
-        "emergencyPhone": "+57 313 777 9922",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
+        "hireDate": "2024-01-15",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-HSEQ-001",
           "COMP-ENG-042"
         ],
+        "vacationDaysAvailable": 15,
+        "emergencyPhone": "+57 313 777 9922",
+        "role": "Ingeniero de Proyectos",
+        "heightCertExpiry": "2027-08-30",
+        "position": "Ingeniero de Proyectos",
+        "medicalExamStatus": "vigente",
+        "monthlyCompanyCostCOP": 5776000,
+        "id": "USR-22",
+        "email": "jgaleano@inteckno.com",
+        "heightCertStatus": "vigente",
+        "canWorkHeights": false,
+        "baseSalaryCOP": 3800000,
+        "name": "Jefferson Galeano Peña",
+        "jobPositionId": "POS-IP",
+        "city": "Itagüí, Antioquia",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "phone": "+57 313 555 6677",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-23",
-        "userId": "USR-23",
-        "name": "José Leonel Hernández Estrada",
-        "fullName": "José Leonel Hernández Estrada",
-        "documentId": "CC-1144444443",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
         "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "jhernandez@inteckno.com",
-        "phone": "+57 312 666 7788",
         "canWorkHeights": false,
-        "heightCertExpiry": "2027-07-10",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-07-10",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Rosa Estrada",
-        "emergencyPhone": "+57 312 999 4433",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
         "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
+        "role": "Ingeniero de Proyectos",
+        "hireDate": "2024-01-15",
+        "emergencyContact": "Rosa Estrada",
+        "medicalExamExpiry": "2027-07-10",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "baseSalaryCOP": 3800000,
+        "fullName": "José Leonel Hernández Estrada",
+        "heightCertExpiry": "2027-07-10",
+        "department": "Ingeniería y Proyectos",
+        "monthlyBaseSalary": 3800000,
+        "documentId": "CC-1144444443",
         "competencyIds": [
           "COMP-TEC-001",
           "COMP-ENG-001",
           "COMP-ENG-042"
         ],
+        "city": "Medellín, Antioquia",
+        "isActive": true,
+        "factorPrestacional": 1.52,
+        "emergencyPhone": "+57 312 999 4433",
+        "name": "José Leonel Hernández Estrada",
+        "userId": "USR-23",
+        "position": "Ingeniero de Proyectos",
+        "hourlyRateCOP": 27505,
+        "vacationDaysAvailable": 15,
+        "phone": "+57 312 666 7788",
+        "medicalExamStatus": "vigente",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "id": "USR-23",
+        "email": "jhernandez@inteckno.com",
+        "heightCertStatus": "vigente",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-24",
-        "userId": "USR-24",
-        "name": "Jonathan Estiven Guzmán",
-        "fullName": "Jonathan Estiven Guzmán",
-        "documentId": "CC-1155555554",
-        "role": "Técnico Especialista STC",
-        "position": "Técnico Especialista STC",
-        "department": "Operaciones de Campo",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3100000,
+        "vacationDaysAvailable": 15,
         "monthlyBaseSalary": 3100000,
-        "monthlyCompanyCostCOP": 4712000,
         "hourlyRateCOP": 22438,
         "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "jguzman@inteckno.com",
-        "phone": "+57 316 999 1122",
-        "canWorkHeights": true,
-        "heightCertExpiry": "2027-04-10",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-04-10",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Martha Guzmán (Madre)",
-        "emergencyPhone": "+57 316 111 4455",
         "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-TEC-03",
-        "jobPosition": "Técnico Especialista Electromecánico STC",
+        "position": "Técnico Especialista STC",
+        "phone": "+57 316 999 1122",
+        "emergencyPhone": "+57 316 111 4455",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-TEC-001",
           "COMP-HSEQ-001",
           "COMP-NDT-001"
         ],
+        "id": "USR-24",
+        "city": "Medellín, Antioquia",
+        "medicalExamExpiry": "2027-04-10",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "name": "Jonathan Estiven Guzmán",
+        "userId": "USR-24",
+        "heightCertStatus": "vigente",
+        "jobPosition": "Técnico Especialista Electromecánico STC",
+        "email": "jguzman@inteckno.com",
+        "medicalExamStatus": "vigente",
+        "emergencyContact": "Martha Guzmán (Madre)",
+        "hireDate": "2024-01-15",
+        "role": "Técnico Especialista STC",
+        "heightCertExpiry": "2027-04-10",
+        "monthlyCompanyCostCOP": 4712000,
+        "fullName": "Jonathan Estiven Guzmán",
+        "jobPositionId": "POS-TEC-03",
+        "canWorkHeights": true,
+        "documentId": "CC-1155555554",
+        "department": "Operaciones de Campo",
+        "baseSalaryCOP": 3100000,
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
       {
-        "id": "USR-25",
-        "userId": "USR-25",
-        "name": "Yohan Daniel Franco Yépez",
-        "fullName": "Yohan Daniel Franco Yépez",
-        "documentId": "CC-1166666665",
-        "role": "Técnico Operativo STC",
-        "position": "Técnico Operativo STC",
-        "department": "Operaciones de Campo",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3100000,
-        "monthlyBaseSalary": 3100000,
-        "monthlyCompanyCostCOP": 4712000,
+        "phone": "+57 319 888 4433",
+        "emergencyContact": "Gloria Yépez (Madre)",
         "hourlyRateCOP": 22438,
         "factorPrestacional": 1.52,
-        "city": "Bello, Antioquia",
         "email": "yfranco@inteckno.com",
-        "phone": "+57 319 888 4433",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2026-09-01",
-        "heightCertStatus": "vencido",
-        "medicalExamExpiry": "2026-09-01",
-        "medicalExamStatus": "vencido",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Gloria Yépez (Madre)",
-        "emergencyPhone": "+57 319 333 7722",
         "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-AT",
-        "jobPosition": "Técnico Operativo de Montaje y Alturas",
+        "userId": "USR-25",
+        "position": "Técnico Operativo STC",
+        "medicalExamStatus": "vencido",
         "competencyIds": [
           "COMP-HSEQ-001",
           "COMP-ENG-001",
           "COMP-TEC-001"
         ],
+        "id": "USR-25",
+        "emergencyPhone": "+57 319 333 7722",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "heightCertExpiry": "2026-09-01",
+        "role": "Técnico Operativo STC",
+        "monthlyCompanyCostCOP": 4712000,
+        "medicalExamExpiry": "2026-09-01",
+        "hireDate": "2024-01-15",
+        "vacationDaysAvailable": 15,
+        "fullName": "Yohan Daniel Franco Yépez",
+        "monthlyBaseSalary": 3100000,
+        "department": "Operaciones de Campo",
+        "name": "Yohan Daniel Franco Yépez",
+        "heightCertStatus": "vencido",
+        "jobPositionId": "POS-AT",
+        "canWorkHeights": false,
+        "documentId": "CC-1166666665",
+        "jobPosition": "Técnico Operativo de Montaje y Alturas",
+        "city": "Bello, Antioquia",
+        "baseSalaryCOP": 3100000,
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
       {
-        "id": "USR-26",
-        "userId": "USR-26",
-        "name": "Juan Pablo Castellanos Cadena",
         "fullName": "Juan Pablo Castellanos Cadena",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "documentId": "CC-1177777776",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
         "city": "Envigado, Antioquia",
-        "email": "jcastellanos@inteckno.com",
+        "department": "Ingeniería y Proyectos",
         "phone": "+57 311 777 8811",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-06-25",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-06-25",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
         "emergencyContact": "Laura Cadena",
         "emergencyPhone": "+57 311 333 6655",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "medicalExamStatus": "vigente",
+        "email": "jcastellanos@inteckno.com",
+        "name": "Juan Pablo Castellanos Cadena",
+        "monthlyCompanyCostCOP": 5776000,
+        "heightCertExpiry": "2027-06-25",
+        "hourlyRateCOP": 27505,
+        "hireDate": "2024-01-15",
+        "factorPrestacional": 1.52,
+        "position": "Ingeniero de Proyectos",
         "jobPositionId": "POS-IP",
+        "canWorkHeights": false,
+        "role": "Ingeniero de Proyectos",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "userId": "USR-26",
+        "id": "USR-26",
         "jobPosition": "Ingeniero de Proyectos STC",
-        "competencyIds": [
-          "COMP-ENG-001",
-          "COMP-ENG-042"
-        ],
+        "isActive": true,
+        "vacationDaysAvailable": 15,
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-06-25",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
+        "role": "Ingeniero de Proyectos",
         "id": "USR-27",
-        "userId": "USR-27",
-        "name": "Rubén Darío Arcos Ordóñez",
-        "fullName": "Rubén Darío Arcos Ordóñez",
-        "documentId": "CC-1188888887",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
         "hourlyRateCOP": 27505,
         "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "rdarcos@inteckno.com",
-        "phone": "+57 310 888 9922",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-05-30",
-        "heightCertStatus": "vigente",
         "medicalExamExpiry": "2027-05-30",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
+        "fullName": "Rubén Darío Arcos Ordóñez",
         "emergencyContact": "Nohora Ordóñez",
-        "emergencyPhone": "+57 310 111 4477",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
+        "documentId": "CC-1188888887",
         "jobPosition": "Ingeniero de Proyectos STC",
+        "phone": "+57 310 888 9922",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-042"
         ],
+        "monthlyCompanyCostCOP": 5776000,
+        "heightCertExpiry": "2027-05-30",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "canWorkHeights": false,
+        "monthlyBaseSalary": 3800000,
+        "email": "rdarcos@inteckno.com",
+        "vacationDaysAvailable": 15,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "city": "Medellín, Antioquia",
+        "name": "Rubén Darío Arcos Ordóñez",
+        "position": "Ingeniero de Proyectos",
+        "isActive": true,
+        "jobPositionId": "POS-IP",
+        "heightCertStatus": "vigente",
+        "medicalExamStatus": "vigente",
+        "emergencyPhone": "+57 310 111 4477",
+        "userId": "USR-27",
+        "baseSalaryCOP": 3800000,
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-28",
-        "userId": "USR-28",
-        "name": "Santiago Arbeláez",
-        "fullName": "Santiago Arbeláez",
-        "documentId": "CC-1199999998",
         "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
         "factorPrestacional": 1.52,
-        "city": "Sabaneta, Antioquia",
-        "email": "sarbelaez@inteckno.com",
-        "phone": "+57 318 999 1133",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-09-12",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-09-12",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Beatriz Arbeláez",
-        "emergencyPhone": "+57 318 555 2211",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
+        "documentId": "CC-1199999998",
+        "position": "Ingeniero de Proyectos",
         "jobPosition": "Ingeniero de Proyectos STC",
+        "heightCertExpiry": "2027-09-12",
+        "medicalExamStatus": "vigente",
+        "department": "Ingeniería y Proyectos",
+        "jobPositionId": "POS-IP",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "phone": "+57 318 999 1133",
+        "emergencyContact": "Beatriz Arbeláez",
+        "isActive": true,
+        "baseSalaryCOP": 3800000,
+        "vacationDaysAvailable": 15,
+        "email": "sarbelaez@inteckno.com",
+        "emergencyPhone": "+57 318 555 2211",
+        "heightCertStatus": "vigente",
+        "hourlyRateCOP": 27505,
+        "city": "Sabaneta, Antioquia",
+        "name": "Santiago Arbeláez",
+        "monthlyCompanyCostCOP": 5776000,
+        "monthlyBaseSalary": 3800000,
+        "fullName": "Santiago Arbeláez",
+        "id": "USR-28",
+        "canWorkHeights": false,
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-HSEQ-001",
           "COMP-ENG-042"
         ],
+        "hireDate": "2024-01-15",
+        "userId": "USR-28",
+        "medicalExamExpiry": "2027-09-12",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-29",
-        "userId": "USR-29",
-        "name": "Nencer Camilo Solano Mora",
-        "fullName": "Nencer Camilo Solano Mora",
-        "documentId": "CC-1211111109",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "isActive": true,
         "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
+        "heightCertStatus": "vigente",
+        "jobPositionId": "POS-IP",
+        "name": "Nencer Camilo Solano Mora",
         "factorPrestacional": 1.52,
         "city": "Bello, Antioquia",
-        "email": "nsolano@inteckno.com",
-        "phone": "+57 317 111 2244",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-10-05",
-        "heightCertStatus": "vigente",
+        "department": "Ingeniería y Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "baseSalaryCOP": 3800000,
         "medicalExamExpiry": "2027-10-05",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
+        "monthlyCompanyCostCOP": 5776000,
+        "documentId": "CC-1211111109",
+        "canWorkHeights": false,
+        "hireDate": "2024-01-15",
+        "hourlyRateCOP": 27505,
         "emergencyContact": "Luz Mora",
+        "vacationDaysAvailable": 15,
+        "medicalExamStatus": "vigente",
+        "id": "USR-29",
+        "userId": "USR-29",
         "emergencyPhone": "+57 317 444 8833",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
+        "phone": "+57 317 111 2244",
         "competencyIds": [
           "COMP-NDT-001",
           "COMP-ENG-001",
           "COMP-ENG-042"
         ],
+        "email": "nsolano@inteckno.com",
+        "fullName": "Nencer Camilo Solano Mora",
+        "heightCertExpiry": "2027-10-05",
+        "role": "Ingeniero de Proyectos",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-30",
-        "userId": "USR-30",
-        "name": "Hernando Gelves",
-        "fullName": "Hernando Gelves",
-        "documentId": "CC-1222222220",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "hgelves@inteckno.com",
+        "jobPositionId": "POS-IP",
         "phone": "+57 316 222 3355",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-08-20",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-08-20",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
         "emergencyContact": "Marta Gelves",
-        "emergencyPhone": "+57 316 777 1199",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
-        "competencyIds": [
-          "COMP-ENG-001",
-          "COMP-ENG-042"
-        ],
-        "computedHourlyCostCOP": 27505,
-        "computedMonthlyCompanyCostCOP": 5776000
-      },
-      {
-        "id": "USR-31",
-        "userId": "USR-31",
-        "name": "Javier Andrés Ocampo",
-        "fullName": "Javier Andrés Ocampo",
-        "documentId": "CC-1233333331",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Itagüí, Antioquia",
-        "email": "jocampo@inteckno.com",
-        "phone": "+57 315 333 4466",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-11-15",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-11-15",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Andrés Ocampo",
-        "emergencyPhone": "+57 315 999 3322",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
-        "competencyIds": [
-          "COMP-ENG-001",
-          "COMP-ENG-042"
-        ],
-        "computedHourlyCostCOP": 27505,
-        "computedMonthlyCompanyCostCOP": 5776000
-      },
-      {
-        "id": "USR-32",
-        "userId": "USR-32",
-        "name": "Gabriel Jair Chatelain Naranjo",
-        "fullName": "Gabriel Jair Chatelain Naranjo",
-        "documentId": "CC-1244444442",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
+        "name": "Hernando Gelves",
+        "email": "hgelves@inteckno.com",
         "city": "Medellín, Antioquia",
-        "email": "gchatelain@inteckno.com",
-        "phone": "+57 314 444 5577",
+        "baseSalaryCOP": 3800000,
         "canWorkHeights": false,
-        "heightCertExpiry": "2027-07-28",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-07-28",
+        "fullName": "Hernando Gelves",
+        "monthlyCompanyCostCOP": 5776000,
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "hireDate": "2024-01-15",
+        "heightCertExpiry": "2027-08-20",
         "medicalExamStatus": "vigente",
         "vacationDaysAvailable": 15,
-        "emergencyContact": "Silvia Naranjo",
-        "emergencyPhone": "+57 314 111 8844",
-        "isActive": true,
+        "factorPrestacional": 1.52,
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "emergencyPhone": "+57 316 777 1199",
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "userId": "USR-30",
+        "position": "Ingeniero de Proyectos",
+        "medicalExamExpiry": "2027-08-20",
+        "role": "Ingeniero de Proyectos",
+        "documentId": "CC-1222222220",
+        "heightCertStatus": "vigente",
+        "hourlyRateCOP": 27505,
+        "isActive": true,
+        "department": "Ingeniería y Proyectos",
+        "id": "USR-30",
+        "monthlyBaseSalary": 3800000,
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "baseSalaryCOP": 3800000,
+        "name": "Javier Andrés Ocampo",
+        "heightCertExpiry": "2027-11-15",
+        "canWorkHeights": false,
+        "userId": "USR-31",
         "jobPositionId": "POS-IP",
+        "position": "Ingeniero de Proyectos",
+        "city": "Itagüí, Antioquia",
         "jobPosition": "Ingeniero de Proyectos STC",
+        "medicalExamStatus": "vigente",
+        "email": "jocampo@inteckno.com",
+        "isActive": true,
+        "monthlyCompanyCostCOP": 5776000,
+        "phone": "+57 315 333 4466",
+        "emergencyContact": "Andrés Ocampo",
+        "medicalExamExpiry": "2027-11-15",
+        "vacationDaysAvailable": 15,
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "fullName": "Javier Andrés Ocampo",
+        "role": "Ingeniero de Proyectos",
+        "heightCertStatus": "vigente",
+        "department": "Ingeniería y Proyectos",
+        "emergencyPhone": "+57 315 999 3322",
+        "documentId": "CC-1233333331",
+        "id": "USR-31",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "monthlyBaseSalary": 3800000,
+        "hireDate": "2024-01-15",
+        "factorPrestacional": 1.52,
+        "hourlyRateCOP": 27505,
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "medicalExamStatus": "vigente",
+        "jobPositionId": "POS-IP",
+        "email": "gchatelain@inteckno.com",
+        "heightCertStatus": "vigente",
+        "fullName": "Gabriel Jair Chatelain Naranjo",
+        "baseSalaryCOP": 3800000,
+        "canWorkHeights": false,
+        "phone": "+57 314 444 5577",
+        "documentId": "CC-1244444442",
+        "hireDate": "2024-01-15",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "city": "Medellín, Antioquia",
+        "userId": "USR-32",
+        "factorPrestacional": 1.52,
+        "department": "Ingeniería y Proyectos",
+        "vacationDaysAvailable": 15,
+        "name": "Gabriel Jair Chatelain Naranjo",
+        "emergencyPhone": "+57 314 111 8844",
+        "monthlyBaseSalary": 3800000,
         "competencyIds": [
           "COMP-TEC-001",
           "COMP-ENG-001",
           "COMP-HSEQ-001",
           "COMP-ENG-042"
         ],
+        "heightCertExpiry": "2027-07-28",
+        "monthlyCompanyCostCOP": 5776000,
+        "position": "Ingeniero de Proyectos",
+        "emergencyContact": "Silvia Naranjo",
+        "isActive": true,
+        "id": "USR-32",
+        "role": "Ingeniero de Proyectos",
+        "hourlyRateCOP": 27505,
+        "medicalExamExpiry": "2027-07-28",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-33",
-        "userId": "USR-33",
         "name": "Guendy Vanessa Mancego Villegas",
-        "fullName": "Guendy Vanessa Mancego Villegas",
-        "documentId": "CC-1255555553",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
+        "jobPosition": "Ingeniero de Proyectos STC",
         "baseSalaryCOP": 3800000,
+        "hireDate": "2024-01-15",
+        "jobPositionId": "POS-IP",
+        "city": "Medellín, Antioquia",
+        "medicalExamStatus": "vigente",
+        "heightCertExpiry": "2027-10-30",
+        "factorPrestacional": 1.52,
+        "email": "gmancego@inteckno.com",
+        "canWorkHeights": false,
+        "emergencyContact": "Carmen Villegas",
+        "phone": "+57 313 555 6688",
+        "documentId": "CC-1255555553",
+        "vacationDaysAvailable": 15,
+        "userId": "USR-33",
+        "department": "Ingeniería y Proyectos",
+        "fullName": "Guendy Vanessa Mancego Villegas",
+        "heightCertStatus": "vigente",
+        "isActive": true,
+        "role": "Ingeniero de Proyectos",
         "monthlyBaseSalary": 3800000,
         "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "gmancego@inteckno.com",
-        "phone": "+57 313 555 6688",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-10-30",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-10-30",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Carmen Villegas",
-        "emergencyPhone": "+57 313 888 3311",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-002",
           "COMP-ENG-042"
         ],
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "id": "USR-33",
+        "emergencyPhone": "+57 313 888 3311",
+        "medicalExamExpiry": "2027-10-30",
+        "hourlyRateCOP": 27505,
+        "position": "Ingeniero de Proyectos",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-34",
-        "userId": "USR-34",
-        "name": "Mauricio Llanos Loaiza",
-        "fullName": "Mauricio Llanos Loaiza",
-        "documentId": "CC-1266666664",
-        "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "La Estrella, Antioquia",
-        "email": "mllanos@inteckno.com",
-        "phone": "+57 312 666 7799",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-09-18",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-09-18",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Gloria Loaiza",
-        "emergencyPhone": "+57 312 222 5588",
-        "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
+        "emergencyContact": "Gloria Loaiza",
+        "documentId": "CC-1266666664",
+        "department": "Ingeniería y Proyectos",
+        "fullName": "Mauricio Llanos Loaiza",
+        "monthlyBaseSalary": 3800000,
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-042"
         ],
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "phone": "+57 312 666 7799",
+        "name": "Mauricio Llanos Loaiza",
+        "id": "USR-34",
+        "factorPrestacional": 1.52,
+        "vacationDaysAvailable": 15,
+        "heightCertExpiry": "2027-09-18",
+        "emergencyPhone": "+57 312 222 5588",
+        "email": "mllanos@inteckno.com",
+        "medicalExamExpiry": "2027-09-18",
+        "hourlyRateCOP": 27505,
+        "city": "La Estrella, Antioquia",
+        "hireDate": "2024-01-15",
+        "position": "Ingeniero de Proyectos",
+        "baseSalaryCOP": 3800000,
+        "medicalExamStatus": "vigente",
+        "monthlyCompanyCostCOP": 5776000,
+        "jobPositionId": "POS-IP",
+        "heightCertStatus": "vigente",
+        "canWorkHeights": false,
+        "role": "Ingeniero de Proyectos",
+        "userId": "USR-34",
+        "isActive": true,
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-35",
+        "vacationDaysAvailable": 15,
+        "medicalExamStatus": "vigente",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "isActive": true,
+        "jobPosition": "Ingeniero de Proyectos STC",
         "userId": "USR-35",
-        "name": "Glorymanelys Martínez Santos",
-        "fullName": "Glorymanelys Martínez Santos",
+        "heightCertStatus": "vigente",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP",
+        "department": "Ingeniería y Proyectos",
         "documentId": "CC-1277777775",
         "role": "Ingeniero de Proyectos",
-        "position": "Ingeniero de Proyectos",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
-        "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
         "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "gmartinez@inteckno.com",
-        "phone": "+57 311 777 8822",
-        "canWorkHeights": false,
+        "baseSalaryCOP": 3800000,
+        "position": "Ingeniero de Proyectos",
+        "monthlyBaseSalary": 3800000,
         "heightCertExpiry": "2027-11-05",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-11-05",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Rafael Martínez",
-        "emergencyPhone": "+57 311 555 4499",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-IP",
-        "jobPosition": "Ingeniero de Proyectos STC",
+        "hourlyRateCOP": 27505,
+        "hireDate": "2024-01-15",
+        "monthlyCompanyCostCOP": 5776000,
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-042"
         ],
+        "medicalExamExpiry": "2027-11-05",
+        "city": "Medellín, Antioquia",
+        "id": "USR-35",
+        "email": "gmartinez@inteckno.com",
+        "emergencyContact": "Rafael Martínez",
+        "name": "Glorymanelys Martínez Santos",
+        "phone": "+57 311 777 8822",
+        "fullName": "Glorymanelys Martínez Santos",
+        "emergencyPhone": "+57 311 555 4499",
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
       {
-        "id": "USR-36",
-        "userId": "USR-36",
-        "name": "Sebastián Duque Sánchez",
-        "fullName": "Sebastián Duque Sánchez",
         "documentId": "CC-1288888886",
-        "role": "Ingeniero Mecánico Especialista",
-        "position": "Ingeniero Mecánico Especialista",
-        "department": "Ingeniería y Proyectos",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 4800000,
-        "monthlyBaseSalary": 4800000,
-        "monthlyCompanyCostCOP": 7296000,
-        "hourlyRateCOP": 34743,
-        "factorPrestacional": 1.52,
         "city": "Medellín, Antioquia",
-        "email": "sduque@inteckno.com",
-        "phone": "+57 310 888 9933",
-        "canWorkHeights": true,
-        "heightCertExpiry": "2027-12-31",
+        "department": "Ingeniería y Proyectos",
+        "monthlyBaseSalary": 4800000,
         "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Margarita Sánchez",
-        "emergencyPhone": "+57 310 333 7711",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-LI-01",
-        "jobPosition": "Líder de Ingeniería y Diseño",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-NDT-001",
           "COMP-ENG-042"
         ],
+        "name": "Sebastián Duque Sánchez",
+        "emergencyPhone": "+57 310 333 7711",
+        "isActive": true,
+        "monthlyCompanyCostCOP": 7296000,
+        "position": "Ingeniero Mecánico Especialista",
+        "medicalExamExpiry": "2027-12-31",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "factorPrestacional": 1.52,
+        "hourlyRateCOP": 34743,
+        "vacationDaysAvailable": 15,
+        "userId": "USR-36",
+        "canWorkHeights": true,
+        "jobPosition": "Líder de Ingeniería y Diseño",
+        "medicalExamStatus": "vigente",
+        "role": "Ingeniero Mecánico Especialista",
+        "phone": "+57 310 888 9933",
+        "baseSalaryCOP": 4800000,
+        "heightCertExpiry": "2027-12-31",
+        "hireDate": "2024-01-15",
+        "email": "sduque@inteckno.com",
+        "jobPositionId": "POS-LI-01",
+        "emergencyContact": "Margarita Sánchez",
+        "id": "USR-36",
+        "fullName": "Sebastián Duque Sánchez",
         "computedHourlyCostCOP": 34743,
         "computedMonthlyCompanyCostCOP": 7296000
       },
       {
         "id": "USR-39",
-        "userId": "USR-39",
-        "name": "Herson Guerrero Rúa",
-        "fullName": "Herson Guerrero Rúa",
-        "documentId": "CC-1299999997",
-        "role": "Técnico de Campo STC",
-        "position": "Técnico de Campo STC",
         "department": "Operaciones de Campo",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3100000,
-        "monthlyBaseSalary": 3100000,
-        "monthlyCompanyCostCOP": 4712000,
-        "hourlyRateCOP": 22438,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "hguerrero@inteckno.com",
-        "phone": "+57 317 888 2233",
-        "canWorkHeights": true,
-        "heightCertExpiry": "2027-05-22",
-        "heightCertStatus": "vigente",
         "medicalExamExpiry": "2027-05-22",
-        "medicalExamStatus": "vigente",
+        "role": "Técnico de Campo STC",
+        "documentId": "CC-1299999997",
+        "fullName": "Herson Guerrero Rúa",
+        "factorPrestacional": 1.52,
+        "heightCertStatus": "vigente",
+        "hireDate": "2024-01-15",
+        "monthlyBaseSalary": 3100000,
+        "baseSalaryCOP": 3100000,
+        "phone": "+57 317 888 2233",
         "vacationDaysAvailable": 15,
-        "emergencyContact": "Patricia Rúa",
-        "emergencyPhone": "+57 317 333 1144",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "userId": "USR-39",
+        "canWorkHeights": true,
+        "email": "hguerrero@inteckno.com",
         "jobPositionId": "POS-AT",
+        "city": "Medellín, Antioquia",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "emergencyContact": "Patricia Rúa",
+        "monthlyCompanyCostCOP": 4712000,
+        "position": "Técnico de Campo STC",
+        "hourlyRateCOP": 22438,
+        "name": "Herson Guerrero Rúa",
+        "isActive": true,
+        "emergencyPhone": "+57 317 333 1144",
+        "medicalExamStatus": "vigente",
         "jobPosition": "Técnico Operativo de Montaje y Alturas",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-HSEQ-001",
           "COMP-TEC-001"
         ],
+        "heightCertExpiry": "2027-05-22",
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
       {
-        "id": "USR-40",
-        "userId": "USR-40",
-        "name": "David Hurtado Yépez",
-        "fullName": "David Hurtado Yépez",
-        "documentId": "CC-1311111108",
-        "role": "Asistente Negocios Internacionales",
-        "position": "Asistente Negocios Internacionales",
-        "department": "Negocios Internacionales y ERP",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 2500000,
         "monthlyBaseSalary": 2500000,
-        "monthlyCompanyCostCOP": 3800000,
-        "hourlyRateCOP": 18095,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
-        "email": "dhurtado@inteckno.com",
-        "phone": "+57 301 234 5678",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-12-31",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Familia Hurtado",
+        "userId": "USR-40",
+        "fullName": "David Hurtado Yépez",
         "emergencyPhone": "+57 301 888 4422",
-        "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
-        "jobPositionId": "POS-ANI-01",
-        "jobPosition": "Especialista de Negocios Internacionales",
+        "heightCertStatus": "vigente",
+        "hourlyRateCOP": 18095,
+        "name": "David Hurtado Yépez",
+        "hireDate": "2024-01-15",
+        "monthlyCompanyCostCOP": 3800000,
+        "medicalExamExpiry": "2027-12-31",
         "competencyIds": [
           "COMP-ENG-001",
           "COMP-COM-001",
           "COMP-LOG-001"
         ],
+        "city": "Medellín, Antioquia",
+        "medicalExamStatus": "vigente",
+        "heightCertExpiry": "2027-12-31",
+        "jobPosition": "Especialista de Negocios Internacionales",
+        "vacationDaysAvailable": 15,
+        "email": "dhurtado@inteckno.com",
+        "canWorkHeights": false,
+        "phone": "+57 301 234 5678",
+        "position": "Asistente Negocios Internacionales",
+        "documentId": "CC-1311111108",
+        "isActive": true,
+        "id": "USR-40",
+        "factorPrestacional": 1.52,
+        "baseSalaryCOP": 2500000,
+        "department": "Negocios Internacionales y ERP",
+        "role": "Asistente Negocios Internacionales",
+        "emergencyContact": "Familia Hurtado",
+        "jobPositionId": "POS-ANI-01",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
         "computedHourlyCostCOP": 18095,
         "computedMonthlyCompanyCostCOP": 3800000
       },
       {
-        "id": "USR-41",
-        "userId": "USR-41",
-        "name": "Martín Suescún",
-        "fullName": "Martín Suescún",
         "documentId": "CC-1322222219",
-        "role": "Técnico de Campo STC",
-        "position": "Técnico de Campo STC",
         "department": "Operaciones de Campo",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3100000,
-        "monthlyBaseSalary": 3100000,
-        "monthlyCompanyCostCOP": 4712000,
-        "hourlyRateCOP": 22438,
-        "factorPrestacional": 1.52,
-        "city": "Copacabana, Antioquia",
-        "email": "msuescun@inteckno.com",
-        "phone": "+57 318 777 3344",
-        "canWorkHeights": true,
         "heightCertExpiry": "2027-06-18",
-        "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-06-18",
-        "medicalExamStatus": "vigente",
-        "vacationDaysAvailable": 15,
-        "emergencyContact": "Rodrigo Suescún",
+        "monthlyCompanyCostCOP": 4712000,
         "emergencyPhone": "+57 318 999 2211",
         "isActive": true,
-        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "factorPrestacional": 1.52,
+        "position": "Técnico de Campo STC",
+        "phone": "+57 318 777 3344",
         "jobPositionId": "POS-AT",
+        "name": "Martín Suescún",
         "jobPosition": "Técnico Operativo de Montaje y Alturas",
+        "userId": "USR-41",
+        "email": "msuescun@inteckno.com",
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "city": "Copacabana, Antioquia",
+        "baseSalaryCOP": 3100000,
+        "medicalExamStatus": "vigente",
+        "emergencyContact": "Rodrigo Suescún",
+        "hourlyRateCOP": 22438,
+        "id": "USR-41",
+        "canWorkHeights": true,
+        "heightCertStatus": "vigente",
+        "hireDate": "2024-01-15",
+        "medicalExamExpiry": "2027-06-18",
+        "fullName": "Martín Suescún",
+        "vacationDaysAvailable": 15,
         "competencyIds": [
           "COMP-TEC-001",
           "COMP-ENG-001",
           "COMP-HSEQ-001"
         ],
+        "role": "Técnico de Campo STC",
+        "monthlyBaseSalary": 3100000,
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
       {
-        "id": "USR-99",
-        "userId": "USR-99",
-        "name": "David Hurtado Yepes",
-        "fullName": "David Hurtado Yepes",
-        "documentId": "CC-1333333330",
         "role": "Administrador de Sistemas & TI",
-        "position": "Administrador de Sistemas & TI",
-        "department": "Sistemas y Tecnología",
-        "hireDate": "2024-01-15",
-        "baseSalaryCOP": 3800000,
         "monthlyBaseSalary": 3800000,
-        "monthlyCompanyCostCOP": 5776000,
-        "hourlyRateCOP": 27505,
-        "factorPrestacional": 1.52,
-        "city": "Medellín, Antioquia",
+        "fullName": "David Hurtado Yepes",
+        "id": "USR-99",
         "email": "sistemas@inteckno.com",
-        "phone": "+57 3207871541",
-        "canWorkHeights": false,
-        "heightCertExpiry": "2027-12-31",
         "heightCertStatus": "vigente",
-        "medicalExamExpiry": "2027-12-31",
-        "medicalExamStatus": "vigente",
         "vacationDaysAvailable": 15,
-        "emergencyContact": "Luis Fernando Hurtado",
-        "emergencyPhone": "+57 3103735257",
-        "isActive": true,
+        "phone": "+57 3207871541",
+        "medicalExamExpiry": "2027-12-31",
+        "baseSalaryCOP": 3800000,
+        "userId": "USR-99",
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "canWorkHeights": false,
         "jobPositionId": "POS-SIS-01",
+        "hireDate": "2024-01-15",
         "jobPosition": "Administrador de Sistemas y Arquitectura ERP",
+        "medicalExamStatus": "vigente",
+        "city": "Medellín, Antioquia",
+        "position": "Administrador de Sistemas & TI",
+        "heightCertExpiry": "2027-12-31",
+        "name": "David Hurtado Yepes",
+        "hourlyRateCOP": 27505,
+        "department": "Sistemas y Tecnología",
+        "factorPrestacional": 1.52,
+        "emergencyPhone": "+57 3103735257",
+        "documentId": "CC-1333333330",
+        "monthlyCompanyCostCOP": 5776000,
+        "emergencyContact": "Luis Fernando Hurtado",
+        "isActive": true,
         "competencyIds": [
           "COMP-ENG-001"
         ],
@@ -3962,169 +3987,1363 @@
   },
   "jobPositions": {
     "module": "jobPositions",
-    "totalCount": 16,
-    "returnedCount": 16,
+    "totalCount": 43,
+    "returnedCount": 43,
     "nextCursor": null,
     "items": [
       {
-        "id": "POS-GG-01",
-        "code": "POS-GG-01",
-        "title": "Gerente General",
         "department": "Dirección Ejecutiva",
+        "code": "POS-GG-01",
         "requiredCompetencyIds": [
           "COMP-MGT-001",
           "COMP-ENG-001"
-        ]
+        ],
+        "title": "Gerente General",
+        "id": "POS-GG-01"
       },
       {
-        "id": "POS-GA-01",
         "code": "POS-GA-01",
         "title": "Gerente Administrativa y Financiera",
-        "department": "Administración y Finanzas",
+        "id": "POS-GA-01",
         "requiredCompetencyIds": [
           "COMP-FIN-001",
           "COMP-MGT-001"
-        ]
+        ],
+        "department": "Administración y Finanzas"
       },
       {
-        "id": "POS-GP-01",
-        "code": "POS-GP-01",
-        "title": "Gerente de Proyectos STC",
         "department": "Ingeniería y Proyectos",
         "requiredCompetencyIds": [
           "COMP-ENG-001",
           "COMP-MGT-001"
-        ]
+        ],
+        "title": "Gerente de Proyectos STC",
+        "id": "POS-GP-01",
+        "code": "POS-GP-01"
       },
       {
-        "id": "POS-LP-01",
         "code": "POS-LP-01",
-        "title": "Líder de Proyectos STC",
         "department": "Ingeniería y Proyectos",
         "requiredCompetencyIds": [
           "COMP-ENG-001",
           "COMP-ENG-002"
-        ]
+        ],
+        "title": "Líder de Proyectos STC",
+        "id": "POS-LP-01"
       },
       {
+        "title": "Líder de Ingeniería y Diseño",
         "id": "POS-LI-01",
         "code": "POS-LI-01",
-        "title": "Líder de Ingeniería y Diseño",
-        "department": "Ingeniería STC",
         "requiredCompetencyIds": [
           "COMP-ENG-001",
           "COMP-NDT-001",
           "COMP-ENG-042"
-        ]
+        ],
+        "department": "Ingeniería STC"
       },
       {
         "id": "POS-IP",
-        "code": "POS-IP",
-        "title": "Ingeniero de Proyectos STC",
-        "department": "Ingeniería y Proyectos",
-        "requiredCompetencyIds": [
-          "COMP-ENG-001",
-          "COMP-ENG-042"
-        ]
+        "code": "ITK-CAR-IP",
+        "title": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Operaciones",
+        "purpose": "Ejecutar y supervisar directamente las actividades de ingeniería, montaje, comisionamiento y pruebas de campo en sistemas de transporte por cable, garantizando el cumplimiento de cronogramas, protocolos técnicos y normas de seguridad.",
+        "responsibilities": [
+          "Supervisar en campo el montaje, alineación y calibración de componentes electromecánicos STC.",
+          "Elaborar reportes diarios de avance (DDR) y reportes fotográficos de obra en el ERP Inteckno.",
+          "Controlar la ejecución de las actividades del WBS y el consumo de horas-hombre y recursos.",
+          "Verificar el cumplimiento de tolerancias, pares de apriete y protocolos de pruebas.",
+          "Coordinar con el supervisor técnico la distribución diaria de cuadrillas y tareas."
+        ],
+        "academicRequirements": [
+          "Profesional en Ingeniería Mecánica, Eléctrica, Electromecánica, Mecatrónica o Civil.",
+          "Matrícula Profesional COPNIA vigente y curso de trabajo en alturas (Avanzado/Coordinador)."
+        ],
+        "experienceRequired": "Mínimo 1 a 2 años en proyectos de ingeniería de campo, montajes industriales o infraestructura.",
+        "technicalSkills": [
+          "Interpretación de planos mecánicos, estructurales e hidráulicos",
+          "Manejo de instrumentos de medición de precisión (relojes comparadores, niveles ópticos)",
+          "Protocolos de aseguramiento y control de calidad (QA/QC)",
+          "Gestión de actividades WBS en ERP Inteckno"
+        ],
+        "softSkills": [
+          "Proactividad y alta capacidad de resolución en campo",
+          "Comunicación asertiva con cuadrillas y supervisores",
+          "Compromiso irrestricto con la seguridad operativa",
+          "Orientación a resultados y cumplimiento de hitos"
+        ],
+        "workConditions": [
+          "Trabajo en campo en estaciones y pilonas de teleférico en diversos municipios del país.",
+          "Ascenso a alturas superiores a 1.50 metros.",
+          "Disponibilidad para turnos rotativos y nocturnos durante paradas programadas."
+        ],
+        "salaryRange": {
+          "min": 3500000,
+          "max": 5500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-15",
+        "updatedAt": "2026-10-01"
       },
       {
-        "id": "POS-SUP-01",
-        "code": "POS-SUP-01",
         "title": "Supervisor Técnico de Campo STC",
+        "id": "POS-SUP-01",
         "department": "Operaciones de Campo",
         "requiredCompetencyIds": [
           "COMP-TEC-001",
           "COMP-HSEQ-001",
           "COMP-NDT-001"
-        ]
+        ],
+        "code": "POS-SUP-01"
       },
       {
-        "id": "POS-TEC-03",
         "code": "POS-TEC-03",
-        "title": "Técnico Especialista Electromecánico STC",
-        "department": "Operaciones de Campo",
         "requiredCompetencyIds": [
           "COMP-TEC-001",
           "COMP-HSEQ-001",
           "COMP-NDT-001"
-        ]
+        ],
+        "department": "Operaciones de Campo",
+        "id": "POS-TEC-03",
+        "title": "Técnico Especialista Electromecánico STC"
       },
       {
         "id": "POS-AT",
-        "code": "POS-AT",
-        "title": "Técnico Operativo de Montaje y Alturas",
+        "code": "ITK-CAR-AT",
+        "title": "Auxiliar Técnico STC",
         "department": "Operaciones de Campo",
-        "requiredCompetencyIds": [
-          "COMP-TEC-001",
-          "COMP-HSEQ-001"
-        ]
+        "purpose": "Brindar soporte operativo directo en campo a los técnicos y supervisores en maniobras mecánicas, preparación de herramientas, señalización, limpieza técnica y transporte de materiales en los frentes de trabajo de teleférico.",
+        "responsibilities": [
+          "Alistar, trasladar y custodiar herramientas, torquímetros y equipos en los puntos de trabajo.",
+          "Apoyar en tareas de limpieza, desengrase y orden y aseo en estaciones y cabinas de teleférico.",
+          "Asistir a los técnicos en el pase de herramientas y materiales durante trabajos en pilonas.",
+          "Delimitar y señalizar las zonas de trabajo para proteger a usuarios y transeúntes.",
+          "Participar activamente en las charlas de 5 minutos y cumplir todas las instrucciones de seguridad."
+        ],
+        "academicRequirements": [
+          "Bachiller Técnico o Formación Técnica básica en áreas industriales o mecánicas.",
+          "Certificado de Trabajo Seguro en Alturas vigente."
+        ],
+        "experienceRequired": "Mínimo 6 meses a 1 año en labores operativas, construcción o talleres mecánicos.",
+        "technicalSkills": [
+          "Manejo de herramientas manuales básicas",
+          "Normas fundamentales de seguridad industrial",
+          "Técnicas básicas de izaje y manejo seguro de cargas manuales"
+        ],
+        "softSkills": [
+          "Disposición proactiva para el aprendizaje",
+          "Puntualidad, disciplina y responsabilidad",
+          "Espíritu de servicio y compañerismo"
+        ],
+        "workConditions": [
+          "Trabajo físico en campo a la intemperie.",
+          "Uso permanente de Elementos de Protección Personal (EPP)."
+        ],
+        "salaryRange": {
+          "min": 1800000,
+          "max": 2600000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-25",
+        "updatedAt": "2026-10-01"
       },
       {
         "id": "POS-COM-01",
         "code": "POS-COM-01",
-        "title": "Coordinador Comercial y Licitaciones LATAM",
-        "department": "Comercial y Licitaciones",
         "requiredCompetencyIds": [
           "COMP-COM-001",
           "COMP-COM-002"
-        ]
+        ],
+        "department": "Comercial y Licitaciones",
+        "title": "Coordinador Comercial y Licitaciones LATAM"
       },
       {
-        "id": "POS-PUR-01",
         "code": "POS-PUR-01",
-        "title": "Coordinador de Compras y Abastecimiento",
         "department": "Compras y Logística",
         "requiredCompetencyIds": [
           "COMP-LOG-001",
           "COMP-FIN-001"
-        ]
+        ],
+        "title": "Coordinador de Compras y Abastecimiento",
+        "id": "POS-PUR-01"
       },
       {
-        "id": "POS-HSEQ-01",
-        "code": "POS-HSEQ-01",
         "title": "Coordinador HSEQ y Seguridad Industrial",
         "department": "HSEQ",
+        "id": "POS-HSEQ-01",
         "requiredCompetencyIds": [
           "COMP-HSEQ-001",
           "COMP-HSEQ-002"
-        ]
+        ],
+        "code": "POS-HSEQ-01"
       },
       {
-        "id": "POS-ALM-01",
-        "code": "POS-ALM-01",
         "title": "Almacenista y Control Metrológico",
+        "id": "POS-ALM-01",
         "department": "Almacén e Inventarios",
+        "code": "POS-ALM-01",
         "requiredCompetencyIds": [
           "COMP-LOG-001"
         ]
       },
       {
         "id": "POS-ANI-01",
-        "code": "POS-ANI-01",
         "title": "Especialista de Negocios Internacionales",
-        "department": "Comercio Exterior",
         "requiredCompetencyIds": [
           "COMP-COM-001",
           "COMP-LOG-001"
-        ]
+        ],
+        "department": "Comercio Exterior",
+        "code": "POS-ANI-01"
       },
       {
-        "id": "POS-CNT-01",
         "code": "POS-CNT-01",
-        "title": "Contador Público y Tributario",
         "department": "Finanzas",
+        "title": "Contador Público y Tributario",
         "requiredCompetencyIds": [
           "COMP-FIN-001"
-        ]
+        ],
+        "id": "POS-CNT-01"
       },
       {
         "id": "POS-SIS-01",
-        "code": "POS-SIS-01",
         "title": "Administrador de Sistemas y Arquitectura ERP",
+        "code": "POS-SIS-01",
         "department": "Tecnología",
         "requiredCompetencyIds": [
           "COMP-ENG-001"
         ]
+      },
+      {
+        "id": "POS-01",
+        "code": "ITK-CAR-01",
+        "title": "Líder de Proyectos & Coordinador de Ingeniería STC",
+        "department": "Ingeniería y Operaciones",
+        "purpose": "Planificar, dirigir y garantizar la ejecución técnica y financiera de contratos de transporte por cable (Línea K, TransMiCable, etc.), velando por la integridad estructural, seguridad de usuarios y rentabilidad bajo normas EN 1709 y EN 12927.",
+        "responsibilities": [
+          "Gestionar la Estructura de Desglose del Trabajo (EDT/WBS) y el control de hitos operacionales.",
+          "Liderar cuadrillas de campo durante montajes, empalmes de cables y pruebas dinámicas de teleféricos.",
+          "Supervisar el análisis de defectoscopía electromagnética (MRT) y la emisión de dictámenes técnicos oficiales.",
+          "Coordinar comités de obra con las interventorías de empresas operadoras de transporte masivo.",
+          "Asegurar el cumplimiento irrestricto de las normas HSEQ y protocolos de trabajo en alturas."
+        ],
+        "academicRequirements": [
+          "Ingeniería Mecánica, Electromecánica, Mecatrónica o Civil con Matrícula Profesional COPNIA vigente.",
+          "Deseable especialización en Gerencia de Proyectos (PMP/PMI) o Gestión del Mantenimiento."
+        ],
+        "experienceRequired": "Mínimo 4 años de experiencia liderando proyectos electromecánicos o sistemas de transporte por cable aéreo.",
+        "technicalSkills": [
+          "Cálculo y monitoreo de cables según norma EN 12927 y EN 1709",
+          "Defectoscopía Magnética MRT Nivel II",
+          "Torquímetro hidráulico de alto tonelaje",
+          "Control de costos por Valor Ganado (EVM)"
+        ],
+        "softSkills": [
+          "Liderazgo situacional de cuadrillas",
+          "Comunicación estratégica con clientes",
+          "Toma de decisiones bajo presión",
+          "Resolución estructurada de fallas"
+        ],
+        "workConditions": [
+          "Disponibilidad total para viajar a frentes de obra nacionales e internacionales.",
+          "Aptitud psicofísica certificada para trabajo en alturas > 1.50 metros.",
+          "Disponibilidad para turnos nocturnos rotativos durante ventanas de mantenimiento."
+        ],
+        "salaryRange": {
+          "min": 6500000,
+          "max": 9500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-10",
+        "updatedAt": "2026-10-06"
+      },
+      {
+        "id": "POS-02",
+        "code": "ITK-CAR-02",
+        "title": "Técnico Especialista en Mantenimiento STC & Montaje Electromecánico",
+        "department": "Mantenimiento y Campo",
+        "purpose": "Ejecutar con precisión milimétrica las rutinas de mantenimiento mecánico, inspección de balancines, torque de mordazas desembragables y sustitución de poleas en sistemas de teleférico, garantizando cero paradas no programadas.",
+        "responsibilities": [
+          "Efectuar el torqueado verificado y marcado de pernos de balancines y mordazas con registro fotográfico.",
+          "Inspeccionar visual y dimensionalmente los bandajes de goma de poleas y rodamientos.",
+          "Instalar y operar el sensor electromagnético MRT para inspección no destructiva de cables portadores/tractores.",
+          "Diligenciar los checklists técnicos de campo en tiempo real a través del ERP Inteckno.",
+          "Aplicar bloqueo y etiquetado (LOTO) previo a cualquier intervención en maquinaria o línea viva."
+        ],
+        "academicRequirements": [
+          "Tecnólogo o Técnico Profesional en Mantenimiento Electromecánico o Mecánica Industrial.",
+          "Certificación vigente de Trabajo Seguro en Alturas (Nivel Avanzado o Coordinador)."
+        ],
+        "experienceRequired": "Mínimo 2 años de experiencia práctica en mantenimiento de maquinaria pesada o teleféricos.",
+        "technicalSkills": [
+          "Alineación de poleas de reenvío y balancines STC",
+          "Manejo de torquímetros de hasta 1200 Nm",
+          "Detección de rotura de alambres en cables trenzados",
+          "Protocolo de bloqueo y etiquetado LOTO"
+        ],
+        "softSkills": [
+          "Disciplina técnica y rigurosidad operacional",
+          "Atención meticulosa al detalle mecánico",
+          "Trabajo colaborativo en cuadrilla de campo",
+          "Resiliencia y autocuidado en alturas"
+        ],
+        "workConditions": [
+          "Exposición a la intemperie en pilonas de teleférico (viento, lluvia y altura).",
+          "Manipulación de herramientas especializadas y equipos portátiles.",
+          "Disponibilidad para turnos nocturnos (22:00 a 04:30) en líneas comerciales."
+        ],
+        "salaryRange": {
+          "min": 2800000,
+          "max": 4200000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-12",
+        "updatedAt": "2026-10-06"
+      },
+      {
+        "id": "POS-03",
+        "code": "ITK-CAR-03",
+        "title": "Administrador de Sistemas & Arquitecto Cloud ERP",
+        "department": "Sistemas y Tecnología",
+        "purpose": "Garantizar la disponibilidad 24/7, escalabilidad y ciberseguridad integral de la infraestructura digital de Inteckno S.A.S., administrando el ERP propio en React 19 / Firebase, Microsoft 365 y el cumplimiento ISO 27001 / Habeas Data.",
+        "responsibilities": [
+          "Mantener la arquitectura del ERP Inteckno en la nube de Google Firebase y Vercel.",
+          "Monitorear la sincronización con Microsoft Graph API (To Do, Outlook, Teams) y DIAN.",
+          "Gestionar las copias de seguridad automáticas, cifrado AES-256 y control de accesos RBAC.",
+          "Supervisar el asistente de IA LUC-IA-NA y su conexión con modelos Gemini en tiempo real.",
+          "Auditar periódicamente la seguridad informática y el cumplimiento de la Ley 1581 de 2012."
+        ],
+        "academicRequirements": [
+          "Ingeniería de Sistemas, Telemática, Computación o Software.",
+          "Certificaciones recomendadas en Cloud (Google Cloud / Azure) y Ciberseguridad."
+        ],
+        "experienceRequired": "Mínimo 3 años administrando plataformas web modernas, bases de datos NoSQL y cloud enterprise.",
+        "technicalSkills": [
+          "React 19, TypeScript, Tailwind CSS y Node.js",
+          "Google Cloud Firestore y Firebase Hosting",
+          "Integración RESTful APIs y Microsoft Entra ID",
+          "Seguridad TLS 1.3 y mitigación OWASP Top 10"
+        ],
+        "softSkills": [
+          "Pensamiento analítico estructurado",
+          "Capacidad pedagógica para capacitar usuarios",
+          "Proactividad y respuesta ante incidentes"
+        ],
+        "workConditions": [
+          "Modalidad de trabajo híbrida con base en oficina técnica Medellín.",
+          "Disponibilidad remota ante eventuales contingencias del sistema."
+        ],
+        "salaryRange": {
+          "min": 5500000,
+          "max": 8000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-15",
+        "updatedAt": "2026-08-30"
+      },
+      {
+        "id": "POS-04",
+        "code": "ITK-CAR-04",
+        "title": "Coordinador de Seguridad, Salud en el Trabajo y Ambiente (HSEQ)",
+        "department": "SST y Talento Humano",
+        "purpose": "Liderar el Sistema de Gestión de Seguridad y Salud en el Trabajo (SG-SST), asegurando cero accidentes en obras de transporte por cable, certificación del 100% del personal en alturas y cumplimiento de normatividad colombiana e ISO 45001.",
+        "responsibilities": [
+          "Inspeccionar equipos de protección contra caídas (arneses, líneas de vida, conectores).",
+          "Aprobar permisos de trabajo en alturas y análisis de trabajo seguro (ATS) previo a ascensos.",
+          "Gestionar los exámenes médicos ocupacionales y la matriz legal de riesgos laborales.",
+          "Investigar incidentes y formular lecciones aprendidas para la Wiki corporativa."
+        ],
+        "academicRequirements": [
+          "Profesional o Especialista en Seguridad y Salud en el Trabajo con Licencia SST vigente.",
+          "Certificado de Coordinador de Trabajo en Alturas (Resolución 4272 de 2021)."
+        ],
+        "experienceRequired": "Mínimo 3 años en empresas del sector electromecánico, infraestructura o transporte por cable.",
+        "technicalSkills": [
+          "Resolución 4272 de 2021 (Trabajo seguro en alturas)",
+          "Normas ISO 45001, ISO 9001 e ISO 14001",
+          "Investigación de accidentes con Árbol de Causas"
+        ],
+        "softSkills": [
+          "Firmeza ética y criterio preventivo indeclinable",
+          "Liderazgo pedagógico y empatía en charlas de seguridad"
+        ],
+        "workConditions": [
+          "Recorridos en campo por estaciones, torres y líneas de teleférico.",
+          "Inspección física de ascenso a pilonas con equipo de protección personal."
+        ],
+        "salaryRange": {
+          "min": 4500000,
+          "max": 6800000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-18",
+        "updatedAt": "2026-09-01"
+      },
+      {
+        "id": "POS-05",
+        "code": "ITK-CAR-05",
+        "title": "Inspector Técnico de Ensayos No Destructivos END - MRT",
+        "department": "Calidad y Diagnóstico",
+        "purpose": "Ejecutar las inspecciones magneto-inductivas (MRT) en cables de tracción y portadores de teleféricos bajo norma EN 12927, diagnosticando pérdida de sección metálica (LMA) y rotura localizada de hilos (LF).",
+        "responsibilities": [
+          "Calibrar sensores electromagnéticos antes de cada jornada de inspección en campo.",
+          "Adquirir y procesar las señales magnéticas en el software especializado.",
+          "Elaborar el dictamen técnico de descarte de cables según norma europea EN 12927.",
+          "Registrar las bitácoras y hallazgos en la Wiki técnica del ERP Inteckno."
+        ],
+        "academicRequirements": [
+          "Tecnólogo o Profesional en Electromecánica, Mecánica o Ensayos No Destructivos.",
+          "Certificación Nivel II en Defectoscopía Magnética MRT bajo estándar ASNT / ISO 9712."
+        ],
+        "experienceRequired": "Mínimo 3 años en inspección de cables de acero en minería o teleféricos.",
+        "technicalSkills": [
+          "Norma europea EN 12927 y criterios de descarte",
+          "Defectoscopía electromagnética de cables (MRT)",
+          "Líquidos penetrantes y ultrasonido industrial"
+        ],
+        "softSkills": [
+          "Rigurosidad analítica",
+          "Imparcialidad técnica en dictámenes"
+        ],
+        "workConditions": [
+          "Ascenso a torres y cabinas de teleférico",
+          "Turnos nocturnos"
+        ],
+        "salaryRange": {
+          "min": 3800000,
+          "max": 5500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-02-01",
+        "updatedAt": "2026-10-06"
+      },
+      {
+        "id": "POS-GG",
+        "code": "ITK-CAR-GG",
+        "title": "Gerente General",
+        "department": "Dirección General",
+        "purpose": "Definir la visión estratégica, liderar la expansión corporativa, orientar las decisiones técnicas y financieras de alto nivel en transporte por cable e ingeniería especializada, y representar legalmente a Inteckno S.A.S.",
+        "responsibilities": [
+          "Establecer y supervisar el plan estratégico y objetivos corporativos anuales.",
+          "Aprobar presupuestos maestros, inversiones de capital y contratos de gran envergadura.",
+          "Liderar las relaciones de alto nivel con operadores de transporte masivo, ministerios y aliados internacionales.",
+          "Supervisar la rentabilidad operativa y el cumplimiento del gobierno corporativo.",
+          "Presidir la junta directiva y comités directivos de la organización."
+        ],
+        "academicRequirements": [
+          "Profesional en Ingeniería (Mecánica, Civil, Eléctrica) o Administración de Empresas.",
+          "Posgrado o Maestría (MBA, Gerencia de Proyectos o Dirección Estratégica)."
+        ],
+        "experienceRequired": "Mínimo 10 años en cargos directivos y liderazgo de empresas del sector electromecánico o infraestructura.",
+        "technicalSkills": [
+          "Dirección estratégica corporativa y gobernanza empresarial",
+          "Evaluación financiera y rentabilidad de proyectos de infraestructura",
+          "Normatividad y estándares internacionales de transporte por cable (EN 1709, EN 12927)",
+          "Gestión de licitaciones públicas y asociaciones público-privadas"
+        ],
+        "softSkills": [
+          "Liderazgo visionario e inspirador",
+          "Negociación de alto nivel y diplomacia corporativa",
+          "Pensamiento sistémico y toma de decisiones estratégicas",
+          "Gestión de crisis y alta resiliencia"
+        ],
+        "workConditions": [
+          "Sede corporativa Medellín con disponibilidad para viajes nacionales e internacionales.",
+          "Representación institucional ante gremios y autoridades del sector transporte."
+        ],
+        "salaryRange": {
+          "min": 15000000,
+          "max": 25000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-01",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-IT",
+        "code": "ITK-CAR-IT",
+        "title": "Administrador de Sistemas & Arquitecto Cloud ERP",
+        "department": "Sistemas y Tecnología",
+        "purpose": "Garantizar la disponibilidad 24/7, escalabilidad y ciberseguridad integral de la infraestructura digital de Inteckno S.A.S., administrando el ERP propio en React 19 / Firebase, Microsoft 365 y el cumplimiento ISO 27001 / Habeas Data.",
+        "responsibilities": [
+          "Mantener la arquitectura del ERP Inteckno en la nube de Google Firebase y Vercel.",
+          "Monitorear la sincronización con Microsoft Graph API (To Do, Outlook, Teams) y DIAN.",
+          "Gestionar las copias de seguridad automáticas, cifrado AES-256 y control de accesos RBAC.",
+          "Supervisar el asistente de IA LUC-IA-NA y su conexión con modelos Gemini en tiempo real.",
+          "Auditar periódicamente la seguridad informática y el cumplimiento de la Ley 1581 de 2012."
+        ],
+        "academicRequirements": [
+          "Ingeniería de Sistemas, Telemática, Computación o Software.",
+          "Certificaciones recomendadas en Cloud (Google Cloud / Azure) y Ciberseguridad."
+        ],
+        "experienceRequired": "Mínimo 3 años administrando plataformas web modernas, bases de datos NoSQL y cloud enterprise.",
+        "technicalSkills": [
+          "React 19, TypeScript, Tailwind CSS y Node.js",
+          "Google Cloud Firestore y Firebase Hosting",
+          "Integración RESTful APIs y Microsoft Entra ID",
+          "Seguridad TLS 1.3 y mitigación OWASP Top 10"
+        ],
+        "softSkills": [
+          "Pensamiento analítico estructurado",
+          "Capacidad pedagógica para capacitar usuarios",
+          "Proactividad y respuesta ante incidentes"
+        ],
+        "workConditions": [
+          "Modalidad de trabajo híbrida con base en oficina técnica Medellín.",
+          "Disponibilidad remota ante eventuales contingencias del sistema."
+        ],
+        "salaryRange": {
+          "min": 5500000,
+          "max": 8000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-15",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-GA",
+        "code": "ITK-CAR-GA",
+        "title": "Gerente Administrativa",
+        "department": "Administración y Finanzas",
+        "purpose": "Planificar, dirigir y controlar la gestión financiera, administrativa, contable y de compras de Inteckno S.A.S., asegurando la rentabilidad, optimización de recursos, flujo de caja y cumplimiento legal y tributario.",
+        "responsibilities": [
+          "Supervisar el flujo de caja, tesorería, cartera y facturación electrónica oportuna.",
+          "Liderar el control presupuestal de proyectos STC y aprobación de compras mayores a $2.000 USD.",
+          "Supervisar las áreas de compras, almacén, talento humano y administración general.",
+          "Garantizar el cumplimiento de obligaciones tributarias, cambiarias y laborales con revisoría fiscal.",
+          "Presentar informes financieros mensuales y cierres anuales a Gerencia General."
+        ],
+        "academicRequirements": [
+          "Profesional en Administración de Empresas, Contaduría Pública, Economía o Ingeniería Industrial.",
+          "Especialización en Finanzas Corporativas, Gerencia Financiera o Alta Gerencia."
+        ],
+        "experienceRequired": "Mínimo 5 años liderando áreas administrativas y financieras en empresas de ingeniería o servicios especializados.",
+        "technicalSkills": [
+          "Control presupuestal, flujo de caja y tesorería",
+          "Normas Internacionales de Información Financiera (NIIF)",
+          "Legislación tributaria colombiana y facturación electrónica DIAN",
+          "Negociación con entidades bancarias y proveedores estratégicos"
+        ],
+        "softSkills": [
+          "Liderazgo directivo y trabajo interdisciplinario",
+          "Rigurosidad numérica y financiera",
+          "Capacidad de negociación y visión estratégica",
+          "Integridad ética y transparencia"
+        ],
+        "workConditions": [
+          "Sede principal Medellín con jornada laboral presencial/híbrida."
+        ],
+        "salaryRange": {
+          "min": 8000000,
+          "max": 13000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-05",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-LP",
+        "code": "ITK-CAR-LP",
+        "title": "Líder Técnico & Líder de Proyectos",
+        "department": "Ingeniería y Operaciones",
+        "purpose": "Planificar, dirigir y garantizar la ejecución técnica y financiera de contratos de transporte por cable (Línea K, TransMiCable, etc.), velando por la integridad estructural, seguridad de usuarios y rentabilidad bajo normas EN 1709 y EN 12927.",
+        "responsibilities": [
+          "Gestionar la Estructura de Desglose del Trabajo (EDT/WBS) y el control de hitos operacionales.",
+          "Liderar cuadrillas de campo durante montajes, empalmes de cables y pruebas dinámicas de teleféricos.",
+          "Supervisar el análisis de defectoscopía electromagnética (MRT) y la emisión de dictámenes técnicos oficiales.",
+          "Coordinar comités de obra con las interventorías de empresas operadoras de transporte masivo.",
+          "Asegurar el cumplimiento irrestricto de las normas HSEQ y protocolos de trabajo en alturas."
+        ],
+        "academicRequirements": [
+          "Ingeniería Mecánica, Electromecánica, Mecatrónica o Civil con Matrícula Profesional COPNIA vigente.",
+          "Deseable especialización en Gerencia de Proyectos (PMP/PMI) o Gestión del Mantenimiento."
+        ],
+        "experienceRequired": "Mínimo 4 años de experiencia liderando proyectos electromecánicos o sistemas de transporte por cable aéreo.",
+        "technicalSkills": [
+          "Cálculo y monitoreo de cables según norma EN 12927 y EN 1709",
+          "Defectoscopía Magnética MRT Nivel II",
+          "Torquímetro hidráulico de alto tonelaje",
+          "Control de costos por Valor Ganado (EVM)"
+        ],
+        "softSkills": [
+          "Liderazgo situacional de cuadrillas",
+          "Comunicación estratégica con clientes",
+          "Toma de decisiones bajo presión",
+          "Resolución estructurada de fallas"
+        ],
+        "workConditions": [
+          "Disponibilidad total para viajar a frentes de obra nacionales e internacionales.",
+          "Aptitud psicofísica certificada para trabajo en alturas > 1.50 metros.",
+          "Disponibilidad para turnos nocturnos rotativos durante ventanas de mantenimiento."
+        ],
+        "salaryRange": {
+          "min": 6500000,
+          "max": 9500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-10",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-LI",
+        "code": "ITK-CAR-LI",
+        "title": "Líder de Ingeniería & Especialista Mecánico",
+        "department": "Ingeniería y Operaciones",
+        "purpose": "Liderar el diseño, cálculo mecánico, modelado CAD/CAE y especificaciones técnicas de componentes de teleférico (poleas, ejes, mordazas, estructuras y balancines), garantizando la integridad estructural y constructibilidad de las soluciones.",
+        "responsibilities": [
+          "Realizar cálculos mecánicos, estructurales y de fatiga bajo normatividad europea EN 1709.",
+          "Elaborar y aprobar planos constructivos y de detalle en herramientas CAD 3D.",
+          "Definir especificaciones técnicas y tolerancias geométricas para maquinado y fabricación.",
+          "Supervisar la fabricación y control de calidad dimensional de repuestos y elementos mecánicos.",
+          "Brindar soporte técnico y concepto de ingeniería ante desviaciones o fallas en campo."
+        ],
+        "academicRequirements": [
+          "Profesional en Ingeniería Mecánica o Electromecánica con Matrícula Profesional COPNIA vigente.",
+          "Deseable posgrado o diplomado en Diseño Mecánico, Simulación Numérica (FEA) o Soldadura."
+        ],
+        "experienceRequired": "Mínimo 3 años en diseño electromecánico, cálculo estructural de maquinaria o teleféricos.",
+        "technicalSkills": [
+          "Software CAD 3D avanzado (SolidWorks, Inventor o similar)",
+          "Análisis de Elementos Finitos (FEA) estático y dinámico",
+          "Tolerancias geométricas y dimensionales (GD&T)",
+          "Selección de materiales, aceros especiales y tratamientos térmicos"
+        ],
+        "softSkills": [
+          "Rigurosidad analítica y precisión",
+          "Capacidad de innovación aplicada",
+          "Pensamiento estructurado",
+          "Trabajo en equipo multidisciplinario"
+        ],
+        "workConditions": [
+          "Oficina técnica de diseño con visitas periódicas a talleres de manufactura y frentes de obra."
+        ],
+        "salaryRange": {
+          "min": 5500000,
+          "max": 8000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-12",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-ST",
+        "code": "ITK-CAR-ST",
+        "title": "Supervisor Técnico de Campo STC",
+        "department": "Operaciones de Campo",
+        "purpose": "Coordinar y supervisar de forma presencial las cuadrillas de técnicos y auxiliares en los frentes de obra de teleféricos, asegurando la correcta ejecución de maniobras mecánicas, cumplimiento de procedimientos de bloqueo LOTO y seguridad operacional.",
+        "responsibilities": [
+          "Asignar y dirigir operativamente las cuadrillas de técnicos y auxiliares en cada estación o pilona.",
+          "Verificar el torqueado de tornillería crítica y aplicación de marcas de testigo visual.",
+          "Coordinar maniobras seguras de izaje con aparejadores y operadores de grúa/winche.",
+          "Garantizar la aplicación de bloqueo y etiquetado (LOTO) antes de ingresar a zonas de riesgo.",
+          "Validar el diligenciamiento de checklists de campo y permisos de trabajo en alturas."
+        ],
+        "academicRequirements": [
+          "Tecnólogo o Técnico Profesional en Mantenimiento Electromecánico, Mecánica Industrial o afines.",
+          "Certificado de Coordinador de Trabajo en Alturas vigente (Resolución 4272 de 2021)."
+        ],
+        "experienceRequired": "Mínimo 3 años de experiencia liderando cuadrillas de mantenimiento electromecánico o montajes de teleféricos.",
+        "technicalSkills": [
+          "Maniobras de aparejos e izajes de cargas pesadas",
+          "Manejo de torquímetros hidráulicos y neumáticos de alta capacidad",
+          "Inspección visual de balancines, poleas y cables",
+          "Protocolos LOTO y procedimientos de rescate en alturas"
+        ],
+        "softSkills": [
+          "Liderazgo operativo en campo",
+          "Autoridad técnica basada en el ejemplo",
+          "Comunicación clara y precisa",
+          "Enfoque preventivo de cero accidentes"
+        ],
+        "workConditions": [
+          "Campo 100% presencial en líneas y estaciones de teleférico.",
+          "Trabajo en alturas en torres y pilonas a la intemperie."
+        ],
+        "salaryRange": {
+          "min": 3500000,
+          "max": 5000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-20",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-TEC",
+        "code": "ITK-CAR-TEC",
+        "title": "Técnico de Campo STC",
+        "department": "Operaciones de Campo",
+        "purpose": "Ejecutar labores técnicas electromecánicas, mantenimientos preventivos y correctivos, desarmes, overhauls de pinzas/cabinas y sustitución de elementos de desgaste en líneas de transporte por cable.",
+        "responsibilities": [
+          "Efectuar torqueado verificado de pernos de balancines, mordazas y anclajes con registro fotográfico.",
+          "Inspeccionar visual y dimensionalmente los bandajes de goma de poleas y rodamientos.",
+          "Apoyar la instalación y desplazamiento de sensores electromagnéticos MRT para inspección de cables.",
+          "Realizar desmonte, limpieza, cambio de casquillos y rearme de pinzas desembragables.",
+          "Diligenciar listas de chequeo técnico en el ERP Inteckno."
+        ],
+        "academicRequirements": [
+          "Técnico o Tecnólogo en Electromecánica, Mecánica Industrial, Mantenimiento o Electricidad.",
+          "Certificado vigente de Trabajo Seguro en Alturas (Nivel Avanzado)."
+        ],
+        "experienceRequired": "Mínimo 1 a 2 años de experiencia práctica en mantenimiento de maquinaria pesada o sistemas de cable aéreo.",
+        "technicalSkills": [
+          "Alineación y reglaje de balancines y poleas STC",
+          "Uso de torquímetros de hasta 1200 Nm y llaves de impacto",
+          "Lubricación técnica y manejo de grasas especiales para cables y rodamientos",
+          "Bloqueo y etiquetado (LOTO)"
+        ],
+        "softSkills": [
+          "Disciplina técnica y atención al detalle mecánico",
+          "Trabajo en equipo y solidaridad operativa",
+          "Resiliencia física y autocuidado en alturas"
+        ],
+        "workConditions": [
+          "Exposición a la intemperie en pilonas de teleférico (viento, sol, lluvia y altura).",
+          "Disponibilidad para turnos nocturnos durante ventanas operativas."
+        ],
+        "salaryRange": {
+          "min": 2500000,
+          "max": 3800000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-22",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-PRA",
+        "code": "ITK-CAR-PRA",
+        "title": "Practicante de Ingeniería & Apoyo Técnico",
+        "department": "Ingeniería y Proyectos",
+        "purpose": "Apoyar los procesos de ingeniería, documentación técnica, elaboración de dossiers de calidad, levantamiento de planos y seguimiento de actividades operativas bajo la mentoría de ingenieros de proyecto.",
+        "responsibilities": [
+          "Apoyar en la consolidación de dossiers de calidad, certificados de materiales y calibraciones.",
+          "Colaborar en el modelado 2D/3D de planos as-built y memorias de cálculo.",
+          "Acompañar a los ingenieros de proyecto en visitas de inspección y registro de avances.",
+          "Actualizar bitácoras y bases de datos técnicas en el ERP Inteckno."
+        ],
+        "academicRequirements": [
+          "Estudiante activo de últimos semestres de Ingeniería Mecánica, Eléctrica, Electromecánica, Mecatrónica, Industrial o Civil.",
+          "Convenio de práctica o contrato de aprendizaje SENA/Universitario."
+        ],
+        "experienceRequired": "No se requiere experiencia laboral previa. Se valoran proyectos formativos y liderazgo académico.",
+        "technicalSkills": [
+          "Software CAD (AutoCAD, SolidWorks)",
+          "Microsoft Excel / Office intermedio",
+          "Lectura de planos y terminología técnica de ingeniería"
+        ],
+        "softSkills": [
+          "Curiosidad técnica y deseo constante de aprender",
+          "Organización y método de trabajo",
+          "Comunicación clara y respetuosa"
+        ],
+        "workConditions": [
+          "Oficina técnica con visitas formativas a frentes de obra bajo supervisión."
+        ],
+        "salaryRange": {
+          "min": 1423500,
+          "max": 1800000,
+          "currency": "COP",
+          "isConfidential": false
+        },
+        "status": "activo",
+        "createdAt": "2026-02-01",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-CC",
+        "code": "ITK-CAR-CC",
+        "title": "Coordinador Comercial",
+        "department": "Gestión Comercial",
+        "purpose": "Liderar la estrategia de ventas, relacionamiento comercial y participación en licitaciones públicas y privadas en el sector de transporte por cable, teleféricos y mantenimiento industrial en Colombia y LATAM.",
+        "responsibilities": [
+          "Prospectar clientes del sector transporte masivo, parques ecológicos y teleféricos urbanos/turísticos.",
+          "Estructurar propuestas técnico-económicas detalladas utilizando el cotizador del ERP Inteckno.",
+          "Liderar la formulación de pliegos y postulaciones en la plataforma estatal SECOP II.",
+          "Realizar seguimiento riguroso al pipeline de ventas en el CRM y coordinar negociaciones comerciales.",
+          "Asegurar el cumplimiento de metas de facturación y margen comercial de la empresa."
+        ],
+        "academicRequirements": [
+          "Profesional en Ingeniería, Negocios Internacionales, Administración de Empresas o Mercadeo.",
+          "Deseable especialización en Gerencia Comercial, Marketing B2B o Licitaciones."
+        ],
+        "experienceRequired": "Mínimo 3 años en ventas técnicas B2B o gestión de licitaciones de ingeniería/infraestructura.",
+        "technicalSkills": [
+          "Plataforma SECOP II y compras públicas colombianas",
+          "Costeo de proyectos electromecánicos y servicios de ingeniería",
+          "Manejo de CRM y cálculo de probabilidad de cierre",
+          "Técnicas de negociación consultiva B2B"
+        ],
+        "softSkills": [
+          "Habilidades persuasivas y excelente oratoria comercial",
+          "Orientación al logro y superación de metas",
+          "Pensamiento estratégico comercial",
+          "Relaciones interpersonales empáticas"
+        ],
+        "workConditions": [
+          "Oficina comercial en Medellín con disponibilidad para viajes nacionales e internacionales."
+        ],
+        "salaryRange": {
+          "min": 4500000,
+          "max": 7000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-08",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-AC",
+        "code": "ITK-CAR-AC",
+        "title": "Asistente de Negocios Internacionales & Comercial",
+        "department": "Negocios Internacionales y ERP",
+        "purpose": "Apoyar la gestión comercial internacional, análisis de importaciones/exportaciones de repuestos y equipos STC bajo Incoterms 2020, cotizaciones multimoneda y optimización de flujos de trabajo en el ERP Inteckno.",
+        "responsibilities": [
+          "Elaborar cotizaciones técnicas y comerciales en USD / COP bajo reglas Incoterms 2020 (FOB, CIF, DAP, DDP).",
+          "Coordinar con agentes aduaneros la liquidación de aranceles, fletes marítimos/aéreos y trámites DIAN.",
+          "Monitorear la TRM oficial diaria e integrar factores económicos en la calculadora de exportación.",
+          "Apoyar la implementación, diseño de procesos BPMN y retroalimentación del ERP Inteckno.",
+          "Atender requerimientos comerciales y solicitudes de clientes internacionales en inglés y español."
+        ],
+        "academicRequirements": [
+          "Profesional o estudiante de últimos semestres en Negocios Internacionales, Comercio Exterior o Ingeniería Industrial."
+        ],
+        "experienceRequired": "Mínimo 1 a 2 años en comercio exterior, logística internacional o soporte comercial técnico.",
+        "technicalSkills": [
+          "Incoterms 2020 y liquidación aduanera de importación/exportación",
+          "Herramientas ERP y modelado de procesos BPMN",
+          "Inglés intermedio a avanzado (B2/C1 profesional)",
+          "Manejo financiero de cotizaciones multimoneda (TRM, arancel, IVA)"
+        ],
+        "softSkills": [
+          "Capacidad analítica estructurada",
+          "Negociación intercultural y proactividad",
+          "Atención meticulosa al detalle en contratos y ofertas",
+          "Agilidad en adopción de tecnologías digitales"
+        ],
+        "workConditions": [
+          "Oficina corporativa Medellín con conexión remota a clientes y proveedores globales."
+        ],
+        "salaryRange": {
+          "min": 2800000,
+          "max": 4200000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-10",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-SST",
+        "code": "ITK-CAR-SST",
+        "title": "Coordinador de Seguridad, Salud en el Trabajo y Ambiente (SST/HSEQ)",
+        "department": "SST y Sostenibilidad",
+        "purpose": "Liderar el Sistema de Gestión de Seguridad y Salud en el Trabajo (SG-SST), asegurando cero accidentes en obras de transporte por cable, certificación del 100% del personal en alturas y cumplimiento de normatividad colombiana e ISO 45001.",
+        "responsibilities": [
+          "Inspeccionar equipos de protección contra caídas (arneses, líneas de vida, conectores, mosquetones).",
+          "Aprobar permisos de trabajo en alturas y análisis de trabajo seguro (ATS) previo a cualquier maniobra.",
+          "Gestionar los exámenes médicos ocupacionales y la matriz legal de riesgos laborales.",
+          "Liderar la investigación de incidentes y formular lecciones aprendidas para la Wiki corporativa.",
+          "Coordinar programas de vigilancia epidemiológica y capacitaciones periódicas de seguridad."
+        ],
+        "academicRequirements": [
+          "Profesional o Especialista en Seguridad y Salud en el Trabajo con Licencia SST vigente.",
+          "Certificado de Coordinador de Trabajo en Alturas (Resolución 4272 de 2021)."
+        ],
+        "experienceRequired": "Mínimo 3 años en empresas del sector electromecánico, infraestructura o transporte por cable.",
+        "technicalSkills": [
+          "Resolución 4272 de 2021 (Norma colombiana de protección contra caídas)",
+          "Normas ISO 45001 (SST), ISO 9001 (Calidad) e ISO 14001 (Medio Ambiente)",
+          "Investigación de accidentes con metodología Árbol de Causas e Ishikawa",
+          "Inspección técnica de equipos de rescate y evacuación en teleféricos"
+        ],
+        "softSkills": [
+          "Firmeza ética y criterio preventivo indeclinable en campo",
+          "Liderazgo pedagógico y empatía en charlas de seguridad",
+          "Comunicación asertiva y resolución de conflictos"
+        ],
+        "workConditions": [
+          "Recorridos en campo por estaciones, torres y líneas de teleférico.",
+          "Inspección física de ascenso a pilonas con equipo de protección personal."
+        ],
+        "salaryRange": {
+          "min": 4500000,
+          "max": 6800000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-18",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-ASST",
+        "code": "ITK-CAR-ASST",
+        "title": "Auxiliar Técnico SST",
+        "department": "SST y Sostenibilidad",
+        "purpose": "Apoyar en campo la verificación de condiciones de seguridad, diligenciamiento de listas de chequeo de EPP, toma de asistencia a charlas de seguridad y monitoreo del cumplimiento de protocolos en las obras de teleférico.",
+        "responsibilities": [
+          "Verificar diariamente el uso completo y correcto de EPP por parte del personal de cuadrilla.",
+          "Diligenciar listas de chequeo preoperacionales de equipos de alturas y herramientas.",
+          "Tomar registro fotográfico y documental de condiciones seguras e inseguras en obra.",
+          "Apoyar la logística de las charlas de seguridad de 5 minutos y registro de firmas.",
+          "Monitorear la vigencia del botiquín de primeros auxilios y equipos de respuesta a emergencias."
+        ],
+        "academicRequirements": [
+          "Técnico o Tecnólogo en Seguridad y Salud en el Trabajo con Licencia SST vigente.",
+          "Certificado de Trabajo Seguro en Alturas vigente."
+        ],
+        "experienceRequired": "Mínimo 1 año como auxiliar o vigía SST en empresas electromecánicas, de montajes o construcción.",
+        "technicalSkills": [
+          "Listas de chequeo SST y protocolos de inspección visual de arneses",
+          "Primeros auxilios básicos y control de emergencias",
+          "Manejo del módulo SST en ERP Inteckno"
+        ],
+        "softSkills": [
+          "Sentido de observación detallista",
+          "Firmeza respetuosa para recordar normas de seguridad",
+          "Compromiso con el bienestar de sus compañeros"
+        ],
+        "workConditions": [
+          "Presencia continua en frentes de obra, estaciones y torres de teleférico."
+        ],
+        "salaryRange": {
+          "min": 2200000,
+          "max": 3200000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-20",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-GA-EXT",
+        "code": "ITK-CAR-GA-EXT",
+        "title": "Gestor Ambiental & Sostenibilidad",
+        "department": "SST y Sostenibilidad",
+        "purpose": "Diseñar y supervisar la gestión ambiental de los proyectos de Inteckno, velando por la adecuada disposición de aceites usados, descarte de cables y residuos peligrosos (RESPEL) bajo normatividad ambiental colombiana e ISO 14001.",
+        "responsibilities": [
+          "Elaborar e implementar los Planes de Manejo Ambiental (PMA) para proyectos STC.",
+          "Gestionar certificados y trazabilidad de disposición final de residuos peligrosos (RESPEL) y aceites dieléctricos.",
+          "Realizar auditorías periódicas de cumplimiento ambiental en frentes de trabajo.",
+          "Presentar informes ambientales a autoridades ambientales y clientes cuando aplique."
+        ],
+        "academicRequirements": [
+          "Profesional en Ingeniería Ambiental, Sanitaria, Forestal o afines."
+        ],
+        "experienceRequired": "Mínimo 2 a 3 años en gestión ambiental de proyectos industriales o infraestructura.",
+        "technicalSkills": [
+          "Normatividad ambiental colombiana y gestión integral de RESPEL",
+          "Norma ISO 14001 para sistemas de gestión ambiental",
+          "Planes de contingencia ante derrames de hidrocarburos"
+        ],
+        "softSkills": [
+          "Conciencia ecológica y rigor metodológico",
+          "Capacidad de redacción técnica de informes"
+        ],
+        "workConditions": [
+          "Modalidad híbrida/consultoría con visitas programadas a proyectos."
+        ],
+        "salaryRange": {
+          "min": 3000000,
+          "max": 4800000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-02-10",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-COM",
+        "code": "ITK-CAR-COM",
+        "title": "Comprador Técnico & Cadena de Suministro",
+        "department": "Cadena de Suministro",
+        "purpose": "Gestionar las compras de repuestos especializados para teleférico, materias primas, herramientas de calibración y suministros generales, optimizando costos, tiempos de entrega y homologación de proveedores nacionales e internacionales.",
+        "responsibilities": [
+          "Solicitar, analizar y negociar cotizaciones técnicas con fabricantes nacionales e internacionales (Doppelmayr, Poma, etc.).",
+          "Elaborar cuadros comparativos de compras y gestionar aprobaciones de la Gerencia Administrativa.",
+          "Emitir y hacer seguimiento a las Órdenes de Compra (OC) en el ERP Inteckno hasta la entrega en almacén.",
+          "Homologar y evaluar periódicamente a proveedores y contratistas de servicios.",
+          "Coordinar con logística el ingreso y nacionalización de repuestos críticos."
+        ],
+        "academicRequirements": [
+          "Profesional en Ingeniería Industrial, Administración de Empresas, Comercio Exterior o afines."
+        ],
+        "experienceRequired": "Mínimo 2 años en compras técnicas, abastecimiento o comercio exterior en empresas industriales.",
+        "technicalSkills": [
+          "Negociación de compras técnicas y acuerdos marco",
+          "Gestión de órdenes de compra e inventario en ERP Inteckno",
+          "Incoterms y logística de importación básica"
+        ],
+        "softSkills": [
+          "Habilidades de negociación y ahorro de costos",
+          "Organización, agilidad y seguimiento a entregas",
+          "Integridad y transparencia en contrataciones"
+        ],
+        "workConditions": [
+          "Oficina en sede Medellín con visitas ocasionales a proveedores."
+        ],
+        "salaryRange": {
+          "min": 3200000,
+          "max": 4800000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-14",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-ALM",
+        "code": "ITK-CAR-ALM",
+        "title": "Almacenista & Control de Herramientas STC",
+        "department": "Cadena de Suministro",
+        "purpose": "Administrar la bodega central de Inteckno, custodiando repuestos críticos de teleférico, torquímetros, cables patrón y herramientas especializadas mediante control de inventarios, código de barras y trazabilidad serial.",
+        "responsibilities": [
+          "Recibir, verificar físicamente y registrar en el ERP los insumos, repuestos y herramientas.",
+          "Emitir remisiones de despacho y controlar el reingreso de herramientas y equipos de obra.",
+          "Mantener la custodia, orden y etiquetado con código de barras en las estanterías de bodega.",
+          "Controlar los programas de calibración y mantenimiento de torquímetros, sensores MRT y tecles.",
+          "Ejecutar conteos cíclicos de inventario y reportar discrepancias a la Gerencia Administrativa."
+        ],
+        "academicRequirements": [
+          "Tecnólogo o Técnico en Gestión Logística, Almacén, Mecánica o áreas afines."
+        ],
+        "experienceRequired": "Mínimo 2 años como almacenista en empresas industriales, talleres electromecánicos o maquinaria.",
+        "technicalSkills": [
+          "Control de inventarios y trazabilidad con código de barras en ERP",
+          "Identificación técnica de pernos de alta resistencia, rodamientos y lubricantes",
+          "Manejo seguro de equipos de elevación (transpaleta, apilador)"
+        ],
+        "softSkills": [
+          "Alto sentido de orden, limpieza y disciplina",
+          "Meticulosidad y honestidad comprobada",
+          "Capacidad de organización física del espacio"
+        ],
+        "workConditions": [
+          "Bodega principal de Inteckno en Medellín."
+        ],
+        "salaryRange": {
+          "min": 2200000,
+          "max": 3200000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-16",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-TH",
+        "code": "ITK-CAR-TH",
+        "title": "Coordinador de Talento Humano",
+        "department": "Talento Humano",
+        "purpose": "Liderar la gestión del talento humano en Inteckno S.A.S., administrando los procesos de atracción de personal técnico especializado, contratación, clima laboral, planes de capacitación y bienestar organizacional.",
+        "responsibilities": [
+          "Gestionar los procesos de selección y evaluación de candidatos técnicos con apoyo de IA en el ERP.",
+          "Coordinar la contratación laboral, afiliaciones a seguridad social y archivo de expedientes.",
+          "Supervisar la liquidación oportuna de la nómina y prestaciones sociales con la Gerencia Administrativa.",
+          "Ejecutar programas de bienestar, clima laboral y desarrollo de competencias técnicas.",
+          "Monitorear las evaluaciones de desempeño semestrales y planes de mejora con LUC-IA-NA."
+        ],
+        "academicRequirements": [
+          "Profesional en Psicología, Administración de Empresas, Ingeniería Industrial o Gestión Humana.",
+          "Deseable especialización en Gerencia del Talento Humano o Legislación Laboral."
+        ],
+        "experienceRequired": "Mínimo 3 años liderando Talento Humano en empresas de ingeniería, construcción o servicios técnicos.",
+        "technicalSkills": [
+          "Código Sustantivo del Trabajo (CST) colombiano",
+          "Atracción de talento técnico especializado y entrevistas por competencias",
+          "Liquidación de nómina, PILA y parafiscales",
+          "Evaluación 360° y diagnósticos de clima organizacional"
+        ],
+        "softSkills": [
+          "Empatía, escucha activa y confidencialidad estricta",
+          "Resolución pacífica de controversias laborales",
+          "Capacidad de liderazgo pedagógico"
+        ],
+        "workConditions": [
+          "Sede corporativa Medellín."
+        ],
+        "salaryRange": {
+          "min": 4000000,
+          "max": 6000000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-15",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-ATH",
+        "code": "ITK-CAR-ATH",
+        "title": "Auxiliar de Talento Humano",
+        "department": "Talento Humano",
+        "purpose": "Apoyar las actividades operativas de talento humano, archivo de hojas de vida, control de asistencia, afiliaciones a seguridad social y logística de eventos de bienestar y capacitaciones.",
+        "responsibilities": [
+          "Tramitar afiliaciones a EPS, ARL, Fondos de Pensiones y Caja de Compensación Familiar.",
+          "Mantener actualizadas las carpetas de los colaboradores y el repositorio digital en el ERP.",
+          "Consolidar novedades de nómina (horas extras, viáticos legalizados, incapacidades, licencias).",
+          "Apoyar la logística de capacitaciones, inducciones corporativas y jornadas de bienestar."
+        ],
+        "academicRequirements": [
+          "Técnico o Tecnólogo en Gestión Humana, Asistencia Administrativa o afines."
+        ],
+        "experienceRequired": "Mínimo 1 año en cargos de apoyo a talento humano o nómina.",
+        "technicalSkills": [
+          "Trámites en plataformas de seguridad social (ARL Sura, EPS, AFP)",
+          "Manejo de novedades en ERP módulo Empleados",
+          "Manejo intermedio de herramientas ofimáticas"
+        ],
+        "softSkills": [
+          "Excelente atención y amabilidad con el personal",
+          "Discreción y confidencialidad en el manejo de datos personales",
+          "Organización y proactividad"
+        ],
+        "workConditions": [
+          "Sede corporativa Medellín."
+        ],
+        "salaryRange": {
+          "min": 1800000,
+          "max": 2600000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-20",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-CADM",
+        "code": "ITK-CAR-CADM",
+        "title": "Coordinador Administrativo",
+        "department": "Administración y Finanzas",
+        "purpose": "Coordinar los servicios generales, mantenimiento de sedes físicas, gestión de suministros de oficina, flota vehicular y logística administrativa interna para garantizar la operación fluida de la compañía.",
+        "responsibilities": [
+          "Supervisar el mantenimiento preventivo y locativo de las sedes de la empresa.",
+          "Controlar la asignación, consumo de combustible y mantenimiento de la flota vehicular.",
+          "Gestionar los contratos de servicios públicos, vigilancia, aseo e internet corporativo.",
+          "Supervisar la administración de correspondencia, archivo físico y suministros de oficina."
+        ],
+        "academicRequirements": [
+          "Profesional o Tecnólogo en Administración de Empresas, Gestión Empresarial o afines."
+        ],
+        "experienceRequired": "Mínimo 2 años coordinando operaciones administrativas, flota o servicios generales.",
+        "technicalSkills": [
+          "Gestión de proveedores de servicios generales y contratos de mantenimiento",
+          "Control de costos y presupuestos operativos de sede",
+          "Manejo de pólizas y seguros de vehículos y locaciones"
+        ],
+        "softSkills": [
+          "Orientación al servicio interno y rápida resolución de incidentes",
+          "Habilidad organizativa y de seguimiento",
+          "Capacidad de negociación"
+        ],
+        "workConditions": [
+          "Sede principal Medellín con desplazamientos locales."
+        ],
+        "salaryRange": {
+          "min": 3000000,
+          "max": 4500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-18",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-AADM",
+        "code": "ITK-CAR-AADM",
+        "title": "Auxiliar Administrativo",
+        "department": "Administración y Finanzas",
+        "purpose": "Brindar soporte administrativo integral, recepción y radicación de correspondencia, digitación contable básica, control de viáticos y apoyo en facturación y archivo corporativo.",
+        "responsibilities": [
+          "Radicar y escanear facturas de proveedores, cuentas de cobro y documentos tributarios.",
+          "Verificar soportes de legalización de gastos y viáticos de cuadrillas de campo en el ERP.",
+          "Atender la recepción principal, conmutador telefónico y coordinar envíos de mensajería.",
+          "Mantener el archivo documental centralizado conforme a las directrices de calidad."
+        ],
+        "academicRequirements": [
+          "Técnico o Tecnólogo en Asistencia Administrativa, Secretariado o Gestión Documental."
+        ],
+        "experienceRequired": "Mínimo 1 año en labores de apoyo administrativo u oficina.",
+        "technicalSkills": [
+          "Herramientas Microsoft 365 (Word, Excel, Outlook)",
+          "Digitación y radicación de facturas en ERP Inteckno",
+          "Redacción ejecutiva y gestión de correspondencia"
+        ],
+        "softSkills": [
+          "Excelente trato interpersonal y actitud de servicio",
+          "Orden, puntualidad y responsabilidad",
+          "Discreción con la información administrativa"
+        ],
+        "workConditions": [
+          "Sede corporativa Medellín."
+        ],
+        "salaryRange": {
+          "min": 1800000,
+          "max": 2500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-20",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-COND",
+        "code": "ITK-CAR-COND",
+        "title": "Conductor de Transporte & Logística de Campo",
+        "department": "Operaciones de Campo",
+        "purpose": "Transportar de forma segura, puntual y responsable al personal técnico, herramientas especializadas y equipos a las diferentes estaciones y frentes de obra en el país, velando por el mantenimiento y cuidado del vehículo asignado.",
+        "responsibilities": [
+          "Conducir los vehículos de la compañía cumpliendo estrictamente las normas de tránsito y seguridad vial.",
+          "Efectuar la inspección preoperacional diaria del vehículo (frenos, llantas, fluidos, luces, equipo de carretera).",
+          "Asegurar y estibar correctamente herramientas pesadas, torquímetros y repuestos en el vehículo.",
+          "Llevar la bitácora de kilometraje, combustible, peajes y reportar mantenimientos preventivos necesarios.",
+          "Apoyar en tareas básicas de carga y descarga de materiales en los puntos de obra."
+        ],
+        "academicRequirements": [
+          "Bachiller Académico.",
+          "Licencia de Conducción Categoría C2 o C3 vigente y sin comparendos pendientes."
+        ],
+        "experienceRequired": "Mínimo 3 años de experiencia en conducción intermunicipal o transporte de cuadrillas en carretera.",
+        "technicalSkills": [
+          "Manejo defensivo certificado",
+          "Mecánica básica automotriz",
+          "Normatividad del Código Nacional de Tránsito Terrestre",
+          "Amarre seguro y estiba de carga"
+        ],
+        "softSkills": [
+          "Prudencia al volante y respeto por la vida",
+          "Puntualidad y sentido de responsabilidad",
+          "Actitud colaborativa con el equipo técnico"
+        ],
+        "workConditions": [
+          "Desplazamientos por carreteras del país hacia estaciones y frentes de obra de teleférico.",
+          "Disponibilidad para pernoctar en las zonas de proyecto según cronograma."
+        ],
+        "salaryRange": {
+          "min": 2000000,
+          "max": 2800000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-25",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-CONT",
+        "code": "ITK-CAR-CONT",
+        "title": "Contador Público & Asesor Fiscal Externo",
+        "department": "Administración y Finanzas",
+        "purpose": "Asegurar la correcta aplicación de las Normas Internacionales de Información Financiera (NIIF), liquidación y presentación de declaraciones tributarias ante la DIAN, y dictamen de estados financieros con apego a la ley colombiana.",
+        "responsibilities": [
+          "Revisar y dictaminar los estados financieros mensuales y anuales de Inteckno S.A.S.",
+          "Liquidar impuestos nacionales (Renta, IVA, Retención en la fuente) y territoriales (ICA).",
+          "Asesorar a la Gerencia General y Administrativa en planeación tributaria y operaciones de comercio exterior.",
+          "Atender requerimientos e inspecciones de la DIAN y organismos de control fiscal."
+        ],
+        "academicRequirements": [
+          "Contador Público Titulado con Tarjeta Profesional vigente de la Junta Central de Contadores.",
+          "Especialización en Derecho Tributario, Auditoría Internacional o NIIF."
+        ],
+        "experienceRequired": "Mínimo 5 años en contabilidad corporativa y asesoría fiscal para empresas de ingeniería o servicios.",
+        "technicalSkills": [
+          "NIIF para PYMES y legislación tributaria colombiana actualizada",
+          "Facturación electrónica, nómina electrónica y documentos soporte DIAN",
+          "Auditoría y control interno financiero"
+        ],
+        "softSkills": [
+          "Integridad ética indeclinable",
+          "Rigor analítico y precisión numérica",
+          "Comunicación clara de conceptos financieros complejos"
+        ],
+        "workConditions": [
+          "Modalidad externa / asesoría periódica y comités mensuales de cierre."
+        ],
+        "salaryRange": {
+          "min": 3500000,
+          "max": 5500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "activo",
+        "createdAt": "2026-01-10",
+        "updatedAt": "2026-10-01"
+      },
+      {
+        "id": "POS-END",
+        "code": "ITK-CAR-END",
+        "title": "Inspector Técnico de Ensayos No Destructivos END - MRT",
+        "department": "Calidad y Diagnóstico",
+        "purpose": "Ejecutar las inspecciones magneto-inductivas (MRT) en cables de tracción y portadores de teleféricos bajo norma EN 12927, diagnosticando pérdida de sección metálica (LMA) y rotura localizada de hilos (LF).",
+        "responsibilities": [
+          "Calibrar sensores electromagnéticos antes de cada jornada de inspección en campo.",
+          "Adquirir y procesar las señales magnéticas en el software especializado.",
+          "Elaborar el dictamen técnico de descarte de cables según norma europea EN 12927.",
+          "Registrar las bitácoras y hallazgos en la Wiki técnica del ERP Inteckno."
+        ],
+        "academicRequirements": [
+          "Tecnólogo o Profesional en Electromecánica, Mecánica o Ensayos No Destructivos.",
+          "Certificación Nivel II en Defectoscopía Magnética MRT bajo estándar ASNT / ISO 9712."
+        ],
+        "experienceRequired": "Mínimo 3 años en inspección de cables de acero en minería o teleféricos.",
+        "technicalSkills": [
+          "Norma europea EN 12927 y criterios de descarte",
+          "Defectoscopía electromagnética de cables (MRT)",
+          "Líquidos penetrantes y ultrasonido industrial"
+        ],
+        "softSkills": [
+          "Rigurosidad analítica",
+          "Imparcialidad técnica en dictámenes"
+        ],
+        "workConditions": [
+          "Ascenso a torres y cabinas de teleférico.",
+          "Turnos nocturnos durante paradas técnicas."
+        ],
+        "salaryRange": {
+          "min": 3800000,
+          "max": 5500000,
+          "currency": "COP",
+          "isConfidential": true
+        },
+        "status": "vacante_abierta",
+        "createdAt": "2026-02-01",
+        "updatedAt": "2026-10-01"
       }
     ]
   },
@@ -4599,7 +5818,7 @@
         "category": "Repuestos y Componentes",
         "sku": "0",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4621,7 +5840,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000067",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4643,7 +5862,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000100",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4665,7 +5884,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000108",
         "totalEntradas": 8,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4687,7 +5906,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A000011",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4709,7 +5928,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000110",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4731,7 +5950,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000111",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4753,7 +5972,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000112",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4775,7 +5994,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000113",
         "totalEntradas": 3,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4797,7 +6016,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000114",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4819,7 +6038,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000115",
         "totalEntradas": 2,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4841,7 +6060,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000116",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4863,7 +6082,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000117",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4885,7 +6104,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000118",
         "totalEntradas": 2,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4907,7 +6126,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000119",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4929,7 +6148,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A000012",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4951,7 +6170,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000120",
         "totalEntradas": 126,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4973,7 +6192,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000121",
         "totalEntradas": 10,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -4995,7 +6214,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000122",
         "totalEntradas": 6,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5017,7 +6236,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000123",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5039,7 +6258,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000125",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5061,7 +6280,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000126",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5083,7 +6302,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000127",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5105,7 +6324,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000128",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5127,7 +6346,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000129",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5149,7 +6368,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A000013",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5171,7 +6390,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000130",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5192,7 +6411,6 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000131",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z",
         "loanStatus": "en_prestamo",
         "activeRemissionId": "REM-2026-001",
         "custodianName": "Jhon Alexander Sánchez Ramírez",
@@ -5202,7 +6420,8 @@
         "custodianUserId": "USR-18",
         "realStock": 1,
         "accountingClass": "fixed_asset",
-        "linkedEquipmentId": "EQUIP-101"
+        "linkedEquipmentId": "EQUIP-101",
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5224,7 +6443,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000132",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       },
       {
         "isCriticalSpare": false,
@@ -5246,7 +6465,7 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000133",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T16:16:31.852Z"
+        "_syncedAt": "2026-11-06T16:52:36.717Z"
       }
     ]
   }

@@ -281,6 +281,17 @@ export const ExecuteLevel4And5ArchitecturePayload = z.object({
   defaultRetentionGuaranteePct: z.number().min(0).max(30).default(5),
 });
 
+export const ExecuteLevel679ArchitecturePayload = z.object({
+  postDavidHurtadoHoursToProject: z.boolean().default(true),
+  projectId: z.string().default('PRJ-1793367181536'),
+  itemCode: z.string().default('ITEM PRUEBA 1'),
+  hours: z.number().default(10),
+  hourlyRateCOP: z.number().default(27505),
+  enforceLotoProtocolInWorkOrders: z.boolean().default(true),
+  enableCryptographicMilestoneSignatures: z.boolean().default(true),
+  configureGeofencesAndMakerChecker: z.boolean().default(true),
+});
+
 export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('upsert_opportunity'), payload: UpsertOpportunityPayload }),
   z.object({ action: z.literal('upsert_project'), payload: UpsertProjectPayload }),
@@ -295,6 +306,7 @@ export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('PURGE_MOCK_DATA'), payload: PurgeMockDataPayload }),
   z.object({ action: z.literal('RESTRUCTURE_LEVEL3_GOVERNANCE'), payload: RestructureLevel3GovernancePayload }),
   z.object({ action: z.literal('EXECUTE_LEVEL4_AND_5_ARCHITECTURE'), payload: ExecuteLevel4And5ArchitecturePayload }),
+  z.object({ action: z.literal('EXECUTE_LEVEL6_7_9_ARCHITECTURE'), payload: ExecuteLevel679ArchitecturePayload }),
 ]);
 
 export type AiActionRequest = z.infer<typeof AiActionRequestSchema>;
