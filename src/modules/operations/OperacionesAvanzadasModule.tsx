@@ -41,12 +41,20 @@ interface WorkOrderOT {
   code: string;
   projectId: string;
   projectCode: string;
+  itemCode?: string;
   component: string;
   priority: 'baja' | 'media' | 'alta' | 'urgente';
   technician: string;
   description: string;
   status: 'diagnostico' | 'en_reparacion' | 'pruebas_banco' | 'completada';
   createdAt: string;
+  originDdrId?: string;
+  originDdrNumber?: string;
+  originReporterName?: string;
+  originDate?: string;
+  originFinding?: string;
+  generatedRequisitionId?: string;
+  generatedRequisitionNumber?: string;
 }
 
 interface ManufacturingOrder {
@@ -537,6 +545,11 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                           projectCode: ot.projectCode,
                           itemCode: ot.itemCode,
                           component: ot.component,
+                          originDdrId: ot.originDdrId,
+                          originDdrNumber: ot.originDdrNumber,
+                          originDdrReporter: ot.originReporterName,
+                          originDdrDate: ot.originDate,
+                          originLocation: ot.component || 'Pilona / Balancín STC',
                           justification: `Repuestos y consumibles para Orden Técnica ${ot.code} (${ot.component} - ${ot.projectCode}).`,
                         });
                       }}

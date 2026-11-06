@@ -25,6 +25,7 @@ import { BusinessRulesEngine } from '../../core/rules/businessRules';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { DataOriginTooltip } from '../../components/common/DataOriginTooltip';
 
 // Subcomponentes DIAN
 import { DianRutUploaderModal } from './components/DianRutUploaderModal';
@@ -459,7 +460,22 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                   header: 'Hito / Proyecto',
                   render: (m) => (
                     <div>
-                      <div className="font-bold text-xs text-gray-900">{m.title}</div>
+                      <div className="font-bold text-xs text-gray-900 flex items-center gap-1.5">
+                        <span>{m.title}</span>
+                        <DataOriginTooltip
+                          trace={{
+                            sourceModule: 'Proyectos (WBS / tasks) → Productividad (documents)',
+                            sourceEntityId: m.id,
+                            sourceUser: m.acceptanceActSignerName || 'Interventoría & Calidad STC',
+                            sourceTimestamp: m.acceptanceActSignedAt || m.dueDate,
+                            targetModule: `Hito de Facturación • ${m.projectCode}`,
+                            calculationLogic: m.acceptanceActSigned
+                              ? 'Hito desbloqueado porque el 100% de los documentos técnicos (Ensayos, Pruebas de Carga y As-Built) fueron cargados y aprobados por Calidad según EN 1709.'
+                              : 'Requisito de Facturación: Se exige Dossier de Calidad EN 1709 completo con firmas de interventoría antes de habilitar emisión.',
+                            status: m.acceptanceActSigned ? 'verified' : 'pending',
+                          }}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: m.projectId, tab: 'costs' })}

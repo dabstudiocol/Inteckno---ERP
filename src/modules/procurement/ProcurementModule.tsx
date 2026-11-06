@@ -37,6 +37,7 @@ import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { AiDocumentUploader } from '../../components/ui/AiDocumentUploader';
+import { DataOriginTooltip } from '../../components/common/DataOriginTooltip';
 
 // Componentes del Módulo
 import { CreateRequisitionModal } from './components/CreateRequisitionModal';
@@ -798,8 +799,23 @@ export const ProcurementModule: React.FC = () => {
                 header: 'N° Petición / Fecha',
                 render: (req) => (
                   <div>
-                    <div className="font-bold text-xs text-[#003650] font-mono hover:underline cursor-pointer">
-                      {req.reqNumber}
+                    <div className="font-bold text-xs text-[#003650] font-mono flex items-center gap-1.5">
+                      <span className="hover:underline cursor-pointer">{req.reqNumber}</span>
+                      <DataOriginTooltip
+                        trace={{
+                          sourceModule: req.originWorkOrderCode
+                            ? `OT Correctiva ${req.originWorkOrderCode} • Mantenimiento Operativo`
+                            : 'Solicitud Interna de Abastecimiento (SOLPED)',
+                          sourceEntityId: req.originWorkOrderCode ? `${req.originWorkOrderCode} (OT)` : req.id,
+                          sourceUser: req.originDdrReporter || req.requesterName || 'Técnico de Campo STC',
+                          sourceTimestamp: req.originDdrDate || req.createdAt,
+                          targetModule: `Abastecimiento • Requisición ${req.reqNumber}`,
+                          calculationLogic: req.originWorkOrderCode
+                            ? `Requisición generada por OT Correctiva #${req.originWorkOrderCode} → Origen: Falla reportada en DDR por ${req.originDdrReporter || 'USR-24'} el ${req.originDdrDate || req.createdAt} en ${req.originLocation || 'Pilona STC'}`
+                            : `Solicitud directa de repuestos para ${req.projectCode || 'Almacén Central'}`,
+                          status: 'verified',
+                        }}
+                      />
                     </div>
                     <div className="text-[11px] text-slate-400">{req.createdAt}</div>
                   </div>

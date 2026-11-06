@@ -1396,7 +1396,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         articles: state.articles,
         chatGroups: state.chatGroups,
       }, currentUserId);
-    }, 450);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [
@@ -2815,15 +2815,47 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     (ddrData: Omit<DailyProgressReport, 'id' | 'reportNumber' | 'approvedByLeader'>) => {
       const count = state.ddrs.length + 1;
       const reportNumber = `DDR-2026-${String(count).padStart(3, '0')}`;
+      const ddrId = `DDR-${Date.now()}`;
+
+      // Eje 7: Si se detecta anomalía operativa o vibración crítica, generar Orden de Trabajo Correctiva automática
+      let generatedOt: WorkOrderOT | undefined;
+      const hasAnomaly = ddrData.anomalyDetected || ddrData.incidentsReported || (ddrData.incidentNotes && ddrData.incidentNotes.trim().length > 0);
+      if (hasAnomaly) {
+        const otCount = state.workOrders.length + 1;
+        const otCode = `OT-${new Date().getFullYear()}-${String(otCount).padStart(3, '0')}`;
+        generatedOt = {
+          id: `OT-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+          code: otCode,
+          projectId: ddrData.projectId,
+          projectCode: ddrData.projectCode,
+          component: ddrData.anomalyComponent || 'Balancín / Pilona STC',
+          priority: ddrData.anomalySeverity === 'critica' || ddrData.incidentsReported ? 'urgente' : 'alta',
+          technician: 'Ing. Wilson Alzate (USR-18)',
+          description: `[OT Correctiva disparada por DDR ${reportNumber}]: ${ddrData.incidentNotes || ddrData.activitiesDone || 'Anomalía reportada en campo por técnico'}`,
+          status: 'diagnostico',
+          createdAt: new Date().toISOString(),
+          originDdrId: ddrId,
+          originDdrNumber: reportNumber,
+          originReporterName: ddrData.reporterName,
+          originDate: ddrData.date,
+          originFinding: ddrData.incidentNotes || 'Vibración / Anomalía en balancín detectada en inspección',
+        };
+      }
+
       const newDdr: DailyProgressReport = {
         ...ddrData,
-        id: `DDR-${Date.now()}`,
+        id: ddrId,
         reportNumber,
         approvedByLeader: false,
+        anomalyDetected: hasAnomaly,
+        generatedWorkOrderId: generatedOt?.id,
+        generatedWorkOrderCode: generatedOt?.code,
       };
 
       if (ddrData.weather === 'tormenta_electrica') {
         notify('warning', 'Alerta Climatológica STC', 'Labores en alturas suspendidas por tormenta eléctrica.');
+      } else if (generatedOt) {
+        notify('urgent', 'Alerta Operativa en Campo (Eje 7)', `${reportNumber}: Se disparó OT Correctiva ${generatedOt.code} asignada a Ingeniería.`);
       } else {
         notify('success', 'DDR Enviado', `Reporte ${reportNumber} radicado. En espera de visto bueno del Ingeniero.`);
       }
@@ -2831,9 +2863,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState((prev) => ({
         ...prev,
         ddrs: [newDdr, ...prev.ddrs],
+        workOrders: generatedOt ? [generatedOt, ...prev.workOrders] : prev.workOrders,
       }));
     },
-    [state.ddrs.length, notify]
+    [state.ddrs.length, state.workOrders.length, notify]
   );
 
   const approveDDR = useCallback(
@@ -4601,21 +4634,32 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
 
+        const currentUserId = state.currentUser?.id || 'USR-04';
+        const currentUserName = state.currentUser?.name || 'Clemencia García (USR-04)';
         return {
           ...prev,
-          expenses: prev.expenses.map((e) => (e.id === id ? { ...e, status: 'approved' } : e)),
+          expenses: prev.expenses.map((e) => (e.id === id ? { 
+            ...e, 
+            status: 'approved',
+            approvedBy: currentUserId,
+            approvedByName: currentUserName,
+            approvedAt: new Date().toISOString(),
+            costMatrixInjected: true,
+          } : e)),
           projects: updatedProjects,
         };
       });
 
       // Huella Digital: Aprobación Contable de Gasto
+      const approverId = state.currentUser?.id || 'USR-04';
+      const approverName = state.currentUser?.name || 'Clemencia García (USR-04)';
       recordAuditEvent({
         action: 'expense_approved',
         module: 'gastos',
-        performedByUserId: state.currentUser?.id || 'USR-001',
-        performedByName: state.currentUser?.name || 'Administración / Gerencia ITK',
+        performedByUserId: approverId,
+        performedByName: approverName,
         targetEntityId: id,
-        details: `Aprobación y legalización contable de gasto ${id} por ${exp?.currency || 'COP'} $${(exp?.amount || 0).toLocaleString()}.`,
+        details: `Aprobación y legalización contable de gasto ${id} por ${exp?.currency || 'COP'} ${(exp?.amount || 0).toLocaleString()} ejecutada por ${approverName}.`,
         previousValue: 'pending',
         newValue: 'approved',
       }).catch(() => {});
@@ -4667,6 +4711,27 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const signMilestoneAct = useCallback(
     (milestoneId: string, signerData?: { signerName: string; signerId: string; signerRole: string; gps?: { lat: number; lng: number }; signatureHash?: string }) => {
       const milestone = state.milestones.find((m) => m.id === milestoneId);
+      if (!milestone) return;
+
+      // Coreografía Eje 8 (Calidad, Dossiers y Hitos): HARD STOP EN 1709
+      // Si el hito requiere dossier de calidad o verificación técnica EN 1709, validar que existan los documentos técnicos aprobados
+      const projectDocs = state.documents.filter((d) => 
+        (d.projectCode && milestone.projectCode && d.projectCode.toLowerCase() === milestone.projectCode.toLowerCase()) ||
+        (d.category === 'certificados_hseq' || d.category === 'procedimientos' || d.category === 'planos')
+      );
+      const hasDossier = projectDocs.some((d) => 
+        d.category === 'certificados_hseq' || 
+        d.title.toLowerCase().includes('en 1709') || 
+        d.title.toLowerCase().includes('calidad') || 
+        d.title.toLowerCase().includes('dossier') ||
+        d.title.toLowerCase().includes('carga')
+      );
+
+      if (milestone.requiresQualityDossier && !hasDossier) {
+        notify('urgent', 'BLOQUEO HARD STOP: Dossier de Calidad Incompleto', 'No es posible firmar el Acta. Se exige el 100% de documentos técnicos EN 1709 (Ensayos, Pruebas de Carga y As-Built).');
+        return;
+      }
+
       const signedAt = new Date().toISOString();
       const rawPayload = `${milestoneId}:${signerData?.signerId || 'S/N'}:${signedAt}:${signerData?.signerName || 'Interventor'}`;
       // Generación determinista de hash SHA-256 o fallback hexadecimal seguro

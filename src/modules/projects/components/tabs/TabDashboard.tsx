@@ -60,7 +60,7 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
   currentTrm,
   onNavigateTab 
 }) => {
-  const { updateProject, setActiveModule, navigateWithContext, currentUser, notify } = useErp();
+  const { updateProject, setActiveModule, navigateWithContext, currentUser, notify, submitDDR } = useErp();
   const dyn = (project as any).dynamicData || {};
   const lineOfBusiness = project.lineOfBusiness || 'Diagnóstico';
 
@@ -125,6 +125,31 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
     updateProject(project.id, {
       dynamicData: updatedDyn,
       updatedAt: new Date().toISOString(),
+    });
+
+    // Coreografía Eje 7: Registrar en DDRs globales para disparar OT correctiva si hay anomalía
+    const isAnomaly = ddrStatus === 'alerta' || ddrStatus === 'detenido' || Boolean(ddrSafety.trim());
+    const mappedWeather: 'despejado' | 'nublado' | 'lluvia' | 'tormenta_electrica' = 
+      ddrWeather === 'lluvioso' ? 'lluvia' : ddrWeather === 'viento_fuerte' ? 'tormenta_electrica' : ddrWeather;
+
+    submitDDR({
+      projectId: project.id,
+      projectCode: project.code,
+      projectName: project.name,
+      date: ddrDate,
+      reporterId: currentUser.id || 'USR-24',
+      reporterName: currentUser.name || 'Residente de Obra STC',
+      activitiesDone: ddrActivities.trim(),
+      progressDeltaPct: Number(ddrProgressPct) || physicalProgressPct,
+      workHeightsAuthorized: true,
+      teamPresent: [currentUser.name || 'Cuadrilla STC'],
+      equipmentUsed: [ddrComponents.trim() || 'Herramientas STC'],
+      weather: mappedWeather,
+      incidentsReported: isAnomaly,
+      incidentNotes: ddrSafety.trim() || undefined,
+      anomalyDetected: isAnomaly,
+      anomalyComponent: ddrComponents.trim() || 'Componente STC / Pilona',
+      anomalySeverity: ddrStatus === 'detenido' ? 'critica' : isAnomaly ? 'alta' : 'baja',
     });
 
     setShowDdrForm(false);

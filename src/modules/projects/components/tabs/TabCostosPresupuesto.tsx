@@ -3042,12 +3042,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                                       ? 'Bodega Central • Remisión de Salida'
                                       : c.id.startsWith('cost-tool-')
                                       ? 'Control Metrológico / Activos HSEQ'
+                                      : c.id.startsWith('cost-exp-')
+                                      ? 'Operaciones • Legalización de Viáticos y Gastos'
                                       : 'Imputación Directa de Obra',
                                     sourceEntityId: c.id,
                                     sourceUser: c.observations || 'Supervisor Técnico Registrado',
                                     sourceTimestamp: c.date,
                                     targetModule: `Matriz de Costos • Proyecto ${project.code}`,
-                                    calculationLogic: `Valor Imputado: ${formatCOP(valDirecto)} COP (IVA ${projectTaxRate.label})`,
+                                    calculationLogic: c.id.startsWith('cost-exp-')
+                                      ? `Gasto de ${formatCOP(valDirecto)} imputado tras aprobación administrativa (USR-04 Clemencia García)`
+                                      : `Valor Imputado: ${formatCOP(valDirecto)} COP (IVA ${projectTaxRate.label})`,
                                     status: 'verified',
                                   }}
                                 />
@@ -3247,7 +3251,24 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                               {c.date || '—'}
                             </td>
                             <td className="py-2.5 px-4 font-bold text-slate-800">
-                              {c.concept}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span>{c.concept}</span>
+                                <DataOriginTooltip
+                                  trace={{
+                                    sourceModule: c.id.startsWith('cost-exp-')
+                                      ? 'Operaciones • Legalización de Viáticos y Gastos'
+                                      : 'Costos Indirectos del Proyecto',
+                                    sourceEntityId: c.id,
+                                    sourceUser: c.observations || 'Administración ITK (USR-04)',
+                                    sourceTimestamp: c.date,
+                                    targetModule: `Costos Indirectos • Proyecto ${project.code}`,
+                                    calculationLogic: c.id.startsWith('cost-exp-')
+                                      ? `Gasto de ${formatCOP(valIndirecto)} legalizado e imputado por USR-04 (Clemencia García)`
+                                      : `Rubro indirecto de obra: ${formatCOP(valIndirecto)} COP`,
+                                    status: 'verified',
+                                  }}
+                                />
+                              </div>
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono text-slate-700">
                               {formatCOP(valIndirecto)}

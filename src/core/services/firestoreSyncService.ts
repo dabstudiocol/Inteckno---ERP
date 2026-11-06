@@ -329,6 +329,7 @@ export type ErpModuleKey =
   | 'hr';
 
 const lastLocalWriteTimestamps: Record<string, string> = {};
+const lastSyncedModuleHashes: Record<string, string> = {};
 
 /**
  * Sincroniza un módulo completo de datos en Cloud Firestore
@@ -342,9 +343,18 @@ export async function syncModuleToCloud(
   if (!db) return false;
 
   try {
+    // PROTECCION DE COSTO BLAZE (Google Cloud Firestore):
+    // Verificamos si la carga util ha cambiado antes de enviar setDoc a la nube.
+    // Si la data es identica, cancelamos la llamada evitando una operacion de escritura innecesaria ($0 USD).
+    const serialized = JSON.stringify(payload);
+    if (lastSyncedModuleHashes[moduleKey] === serialized) {
+      return true;
+    }
+
     const modRef = doc(db, 'erp_modules', moduleKey);
     const now = new Date().toISOString();
     lastLocalWriteTimestamps[moduleKey] = now;
+    lastSyncedModuleHashes[moduleKey] = serialized;
 
     await setDoc(
       modRef,
@@ -357,13 +367,13 @@ export async function syncModuleToCloud(
     );
     return true;
   } catch (err) {
-    console.warn(`[FirestoreSync] Error sincronizando módulo ${moduleKey}:`, err);
+    console.warn(`[FirestoreSync] Error sincronizando modulo ${moduleKey}:`, err);
     return false;
   }
 }
 
 /**
- * Escucha cambios en tiempo real en un módulo del ERP
+ * Escucha cambios en tiempo real en un modulo del ERP
  */
 export function subscribeToCloudModule(
   moduleKey: ErpModuleKey,

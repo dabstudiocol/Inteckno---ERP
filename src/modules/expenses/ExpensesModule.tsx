@@ -48,6 +48,7 @@ import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { SmartEmployeeSelect } from '../../components/common/SmartEmployeeSelect';
 import { SmartProjectItemSelect } from '../../components/common/SmartProjectItemSelect';
 import { TabPettyCash } from './components/TabPettyCash';
+import { DataOriginTooltip } from '../../components/common/DataOriginTooltip';
 
 export const ExpensesModule: React.FC = () => {
   const { expenses, projects, users, employees, partners, currentUser, submitExpense, approveExpense, deleteExpense, notify, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
@@ -654,8 +655,21 @@ export const ExpensesModule: React.FC = () => {
               align: 'right',
               render: (exp) => (
                 <div className="text-right">
-                  <div className="font-black text-xs text-gray-900">
-                    {exp.currency} ${Number(exp.amount).toLocaleString()}
+                  <div className="font-black text-xs text-gray-900 flex items-center justify-end gap-1">
+                    <span>{exp.currency} ${Number(exp.amount).toLocaleString()}</span>
+                    <DataOriginTooltip
+                      trace={{
+                        sourceModule: `Operaciones • Registro Móvil de Gastos (${exp.categoryLabel || exp.category})`,
+                        sourceEntityId: exp.id,
+                        sourceUser: exp.userName || 'Técnico de Campo (USR-39)',
+                        sourceTimestamp: exp.date,
+                        targetModule: exp.projectId || exp.projectCode ? `Matriz de Costos • ${exp.projectCode || 'Proyecto'}` : 'Gastos de Administración',
+                        calculationLogic: exp.status === 'approved'
+                          ? `Gasto de $${Number(exp.amount).toLocaleString()} (${exp.description || 'Viáticos'}) subido por ${exp.userName || 'USR-39'} → Aprobado por ${exp.approvedByName || 'USR-04'} el ${exp.approvedAt ? new Date(exp.approvedAt).toLocaleDateString() : exp.date}`
+                          : `Gasto pendiente de validación y soporte por Gerencia Administrativa (USR-04 Clemencia García)`,
+                        status: exp.status === 'approved' ? 'verified' : 'pending',
+                      }}
+                    />
                   </div>
                   {exp.taxAmount ? (
                     <div className="text-[10px] text-gray-400">IVA: ${Number(exp.taxAmount).toLocaleString()}</div>

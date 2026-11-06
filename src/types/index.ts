@@ -482,6 +482,12 @@ export interface DailyProgressReport {
   incidentNotes?: string;
   approvedByLeader: boolean;
   approvedAt?: string;
+  // Coreografía Eje 7: Trazabilidad de Fallas en Campo y Mantenimiento
+  anomalyDetected?: boolean;
+  anomalyComponent?: string; // Ej. Pilona 4, Balancín de entrada
+  anomalySeverity?: 'baja' | 'media' | 'alta' | 'critica';
+  generatedWorkOrderId?: string;
+  generatedWorkOrderCode?: string;
 }
 
 export interface TimesheetEntry {
@@ -583,6 +589,11 @@ export interface ExpenseEntry {
   depositedAmount?: number; // Importe depositado si fue recarga
   withdrawnAmount?: number; // Importe retirado
   observations?: string; // ej: P23-24ITEM27, OFICINA, SST
+  // Coreografía Eje 9: Viáticos y Gastos Rápidos
+  approvedBy?: string; // ID del aprobador (ej. USR-04 Clemencia García)
+  approvedByName?: string; // Nombre del aprobador
+  approvedAt?: string; // Timestamp de aprobación contable
+  costMatrixInjected?: boolean; // Refleja si ya impactó la matriz de costos
 }
 
 export interface Partner {
@@ -1038,6 +1049,14 @@ export interface InternalRequisition {
   notes?: string;
   sourceDocumentName?: string;
   createdAt: string;
+  // Coreografía Eje 7: Trazabilidad de Fallas en Campo y Mantenimiento
+  originWorkOrderId?: string;
+  originWorkOrderCode?: string;
+  originDdrId?: string;
+  originDdrNumber?: string;
+  originDdrReporter?: string;
+  originDdrDate?: string;
+  originLocation?: string;
   // Auditoría y Blindaje de Datos (Auditoría Práctica Parte 6: Soft-Delete Obligatorio)
   isDeleted?: boolean;
   deletedAt?: string;
@@ -1077,6 +1096,14 @@ export interface BillingMilestone {
   taxDeductionsCOP?: number;
   netPaidAmountCOP?: number;
   paymentNotes?: string;
+  // Coreografía Eje 8: Calidad, Dossiers y Hitos (Hard Stop EN 1709)
+  requiresQualityDossier?: boolean; // Requiere dossier de calidad EN 1709
+  qualityDossierStatus?: 'completo' | 'incompleto';
+  requiredDocumentCategories?: string[]; // Ej: ['certificados_hseq', 'procedimientos', 'planos']
+  missingDocuments?: string[];
+  qualityApproved?: boolean;
+  qualityApprovedBy?: string;
+  qualityApprovedAt?: string;
 }
 
 export interface StockMove {
@@ -1913,6 +1940,14 @@ export interface WorkOrderOT {
   description: string;
   status: 'diagnostico' | 'en_reparacion' | 'pruebas_banco' | 'completada';
   createdAt: string;
+  // Coreografía Eje 7: Trazabilidad de Fallas en Campo y Mantenimiento
+  originDdrId?: string;
+  originDdrNumber?: string;
+  originReporterName?: string;
+  originDate?: string;
+  originFinding?: string;
+  generatedRequisitionId?: string;
+  generatedRequisitionNumber?: string;
 }
 
 export interface ManufacturingOrder {

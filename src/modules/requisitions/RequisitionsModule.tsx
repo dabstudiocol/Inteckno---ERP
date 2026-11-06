@@ -27,6 +27,13 @@ export const RequisitionsModule: React.FC = () => {
     itemConcept?: string;
     itemCode?: string;
     justification?: string;
+    originWorkOrderId?: string;
+    originWorkOrderCode?: string;
+    originDdrId?: string;
+    originDdrNumber?: string;
+    originDdrReporter?: string;
+    originDdrDate?: string;
+    originLocation?: string;
   }>({});
 
   React.useEffect(() => {
@@ -39,6 +46,13 @@ export const RequisitionsModule: React.FC = () => {
           itemConcept: navigationContext.data?.itemConcept,
           itemCode: navigationContext.data?.itemCode,
           justification: navigationContext.data?.justification || navigationContext.data?.description,
+          originWorkOrderId: navigationContext.data?.otId || navigationContext.data?.originWorkOrderId,
+          originWorkOrderCode: navigationContext.data?.otCode || navigationContext.data?.originWorkOrderCode,
+          originDdrId: navigationContext.data?.originDdrId,
+          originDdrNumber: navigationContext.data?.originDdrNumber,
+          originDdrReporter: navigationContext.data?.originDdrReporter,
+          originDdrDate: navigationContext.data?.originDdrDate,
+          originLocation: navigationContext.data?.originLocation || navigationContext.data?.component,
         });
         setIsModalOpen(true);
         clearNavigationContext();
@@ -266,15 +280,19 @@ export const RequisitionsModule: React.FC = () => {
       {/* Modal Universal de Peticiones de Compra (Proyectos & Insumos de Oficina) */}
       <CreateRequisitionModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setInitialModalData({});
-        }}
+        onClose={() => setIsModalOpen(false)}
         initialProjectId={initialModalData.projectId}
         initialCategory={initialModalData.category}
         initialItemConcept={initialModalData.itemConcept}
         initialItemCode={initialModalData.itemCode}
         initialJustification={initialModalData.justification}
+        originWorkOrderId={initialModalData.originWorkOrderId}
+        originWorkOrderCode={initialModalData.originWorkOrderCode}
+        originDdrId={initialModalData.originDdrId}
+        originDdrNumber={initialModalData.originDdrNumber}
+        originDdrReporter={initialModalData.originDdrReporter}
+        originDdrDate={initialModalData.originDdrDate}
+        originLocation={initialModalData.originLocation}
       />
     </div>
   );
