@@ -1198,6 +1198,16 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
               <span>Nuevo Contacto</span>
             </button>
           )}
+
+          {activeTab === 'ventas' && (
+            <button
+              onClick={() => setIsNewOppModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#00668F] hover:bg-[#005273] text-white text-xs font-semibold shadow-xs transition-transform active:scale-95 cursor-pointer"
+            >
+              <Plus size={15} />
+              <span>Nueva Propuesta Técnico-Económica</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1734,109 +1744,146 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
 
       {/* PESTAÑA 3: COTIZACIONES & VENTAS */}
       {activeTab === 'ventas' && (
-        <div className="bg-white rounded-xl p-3.5 sm:p-5 space-y-3 w-full max-w-full min-w-0 shadow-2xs">
-          <h3 className="text-sm font-bold text-gray-900">Historial de Propuestas Técnico-Económicas</h3>
-          <div className="overflow-x-auto w-full max-w-full">
-            <table className="w-full text-xs text-left min-w-[650px]">
-              <thead className="bg-gray-50 text-gray-500 font-semibold">
-                <tr>
-                  <th className="p-3">Código</th>
-                  <th className="p-3">Proyecto / Licitación</th>
-                  <th className="p-3">Operador</th>
-                  <th className="p-3">Valor Estimado</th>
-                  <th className="p-3">Etapa Comercial</th>
-                  <th className="p-3">Fecha Estimada</th>
-                  <th className="p-3 text-right">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {opportunities.map((opp) => (
-                  <tr key={opp.id} className="hover:bg-slate-50/80">
-                    <td className="p-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery(opp.code);
-                          setInternalTab('pipeline');
-                        }}
-                        className="font-bold text-[#00668F] hover:underline flex items-center gap-1 group text-xs text-left cursor-pointer"
-                        title="Ver Oportunidad en Pipeline Comercial"
-                      >
-                        <span>{opp.code}</span>
-                        <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    </td>
-                    <td className="p-3 font-semibold text-gray-900">{opp.title}</td>
-                    <td className="p-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery(opp.clientName);
-                          setInternalTab('contactos');
-                        }}
-                        className="text-gray-700 hover:text-[#00668F] hover:underline text-xs text-left font-medium cursor-pointer"
-                        title={`Ver Contacto ${opp.clientName} en Directorio`}
-                      >
-                        {opp.clientName}
-                      </button>
-                    </td>
-                    <td className="p-3">
-                      {(() => {
-                        const fin = getOppFinancialBreakdown(opp, currentTrm);
-                        return (
-                          <>
-                            <div className="font-bold text-gray-900">{fin.primary}</div>
-                            <div className="text-[10px] text-gray-400 font-medium">{fin.secondary}</div>
-                          </>
-                        );
-                      })()}
-                    </td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
-                        {opp.stage.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="p-3 text-gray-500">{opp.expectedCloseDate}</td>
-                    <td className="p-3 text-right flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => setEditingOpp(opp)}
-                        className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
-                        title="Editar Propuesta"
-                      >
-                        <Pencil size={11} />
-                        Editar
-                      </button>
-                      {opp.stage !== 'awarded' ? (
-                        <button
-                          onClick={() => setSelectedOppForAward(opp)}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-semibold cursor-pointer"
-                        >
-                          Adjudicar
-                        </button>
-                      ) : (
-                        (() => {
-                          const linkedProject = projects.find((p) => p.opportunityId === opp.id || p.id === opp.awardedProjectId);
-                          return linkedProject ? (
-                            <button
-                              type="button"
-                              onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: linkedProject.id, tab: 'dashboard' })}
-                              className="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                              title={`Ir al Proyecto ${linkedProject.code}`}
-                            >
-                              <span>{linkedProject.code}</span>
-                              <ArrowRight size={10} />
-                            </button>
-                          ) : (
-                            <span className="text-emerald-600 font-bold text-[11px]">Adjudicado</span>
-                          );
-                        })()
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="bg-white rounded-xl p-3.5 sm:p-5 space-y-4 w-full max-w-full min-w-0 shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">Historial de Propuestas Técnico-Económicas</h3>
+              <p className="text-xs text-gray-500">
+                Control de propuestas, cotizaciones ofertadas y conversión directa a Proyectos STC.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsNewOppModalOpen(true)}
+              className="px-3.5 py-2 bg-[#00668F] hover:bg-[#005273] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
+            >
+              <Plus size={15} />
+              <span>Crear Nueva Propuesta</span>
+            </button>
           </div>
+
+          {opportunities.length === 0 ? (
+            <div className="p-12 text-center bg-slate-50/70 rounded-2xl border border-dashed border-gray-200 space-y-3 max-w-lg mx-auto my-4 shadow-2xs">
+              <div className="w-14 h-14 rounded-2xl bg-sky-50 text-[#00668F] flex items-center justify-center mx-auto">
+                <FileText size={28} />
+              </div>
+              <h4 className="text-sm font-bold text-gray-800">No hay propuestas ni cotizaciones registradas</h4>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Registra la primera oferta técnico-económica para clientes u operadores STC (Metro de Medellín, Mi Teleférico, etc.) o arrastra oportunidades desde el Radar Global.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNewOppModalOpen(true)}
+                  className="px-4 py-2 bg-[#00668F] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#005273] cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Plus size={15} />
+                  <span>Crear Primera Cotización</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto w-full max-w-full">
+              <table className="w-full text-xs text-left min-w-[650px]">
+                <thead className="bg-gray-50 text-gray-500 font-semibold">
+                  <tr>
+                    <th className="p-3">Código</th>
+                    <th className="p-3">Proyecto / Licitación</th>
+                    <th className="p-3">Operador</th>
+                    <th className="p-3">Valor Estimado</th>
+                    <th className="p-3">Etapa Comercial</th>
+                    <th className="p-3">Fecha Estimada</th>
+                    <th className="p-3 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {opportunities.map((opp) => (
+                    <tr key={opp.id} className="hover:bg-slate-50/80">
+                      <td className="p-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(opp.code);
+                            setInternalTab('pipeline');
+                          }}
+                          className="font-bold text-[#00668F] hover:underline flex items-center gap-1 group text-xs text-left cursor-pointer"
+                          title="Ver Oportunidad en Pipeline Comercial"
+                        >
+                          <span>{opp.code}</span>
+                          <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      </td>
+                      <td className="p-3 font-semibold text-gray-900">{opp.title}</td>
+                      <td className="p-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(opp.clientName);
+                            setInternalTab('contactos');
+                          }}
+                          className="text-gray-700 hover:text-[#00668F] hover:underline text-xs text-left font-medium cursor-pointer"
+                          title={`Ver Contacto ${opp.clientName} en Directorio`}
+                        >
+                          {opp.clientName}
+                        </button>
+                      </td>
+                      <td className="p-3">
+                        {(() => {
+                          const fin = getOppFinancialBreakdown(opp, currentTrm);
+                          return (
+                            <>
+                              <div className="font-bold text-gray-900">{fin.primary}</div>
+                              <div className="text-[10px] text-gray-400 font-medium">{fin.secondary}</div>
+                            </>
+                          );
+                        })()}
+                      </td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
+                          {opp.stage.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="p-3 text-gray-500">{opp.expectedCloseDate}</td>
+                      <td className="p-3 text-right flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setEditingOpp(opp)}
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                          title="Editar Propuesta"
+                        >
+                          <Pencil size={11} />
+                          Editar
+                        </button>
+                        {opp.stage !== 'awarded' ? (
+                          <button
+                            onClick={() => setSelectedOppForAward(opp)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-semibold cursor-pointer"
+                          >
+                            Adjudicar
+                          </button>
+                        ) : (
+                          (() => {
+                            const linkedProject = projects.find((p) => p.opportunityId === opp.id || p.id === opp.awardedProjectId);
+                            return linkedProject ? (
+                              <button
+                                type="button"
+                                onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: linkedProject.id, tab: 'dashboard' })}
+                                className="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                title={`Ir al Proyecto ${linkedProject.code}`}
+                              >
+                                <span>{linkedProject.code}</span>
+                                <ArrowRight size={10} />
+                              </button>
+                            ) : (
+                              <span className="text-emerald-600 font-bold text-[11px]">Adjudicado</span>
+                            );
+                          })()
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

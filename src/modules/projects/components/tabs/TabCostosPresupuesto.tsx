@@ -64,6 +64,7 @@ import { CostMatrixItem, ProjectItemFolder, ProjectBillingItem, ProjectOfferBudg
 import { useErp, ensureProjectItems } from '../../../../core/storage/erpStore';
 import { formatCOP, formatUSD, getStoredTRM } from '../../../../core/services/trmService';
 import { getLaborRates } from '../../../../core/services/moduleConfigService';
+import { getProjectTaxRate } from '../../../../core/services/taxService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { DetailModal } from '../../../../components/common/DetailModal';
@@ -286,9 +287,6 @@ export function getCategoryMeta(cat: string) {
     notesPlaceholder: 'Observaciones de obra...',
   };
 }
-
-import { getProjectTaxRate } from '../../../../core/services/taxService';
-export { getProjectTaxRate };
 
 export function getItemDisplayName(code?: string, name?: string) {
   if (!code && !name) return 'Sin ITEM asignado';

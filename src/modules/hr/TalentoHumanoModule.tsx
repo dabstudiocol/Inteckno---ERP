@@ -539,17 +539,27 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       </div>
                     </div>
 
-                    {/* Resumen Salarial y Costo Hora (Ley 2101) */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-[10px] text-gray-500 block font-medium">Salario Base Mensual</span>
-                        <span className="font-bold text-gray-900">{formatCOP(emp.baseSalaryCOP || 0)}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-gray-500 block font-medium">Costo Hora (Factor 1.52 / 210h)</span>
-                        <span className="font-bold text-[#00668F]">{formatCOP(hourlyRateCOP)}/h</span>
-                      </div>
-                    </div>
+                    {/* Resumen Salarial y Costo Real Empresa (Ley 2101 / Factor Prestacional 1.52) */}
+                    {(() => {
+                      const baseSal = emp.baseSalaryCOP || 0;
+                      const companyCostCOP = Math.round(baseSal * (laborRates.factorPrestacional || 1.52));
+                      return (
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100 grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-[10px] text-gray-500 block font-medium">Salario Base</span>
+                            <span className="font-bold text-gray-900">{formatCOP(baseSal)}</span>
+                          </div>
+                          <div className="text-center">
+                            <span className="text-[10px] text-emerald-700 block font-bold">Costo Real Empresa (1.52)</span>
+                            <span className="font-extrabold text-emerald-800">{formatCOP(companyCostCOP)}/mes</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-gray-500 block font-medium">Costo Hora (210h)</span>
+                            <span className="font-bold text-[#00668F]">{formatCOP(hourlyRateCOP)}/h</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Semáforo de Certificaciones Críticas para Trabajos en Pilonas */}
                     <div className="grid grid-cols-2 gap-2 text-xs">

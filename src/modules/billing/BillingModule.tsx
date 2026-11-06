@@ -159,7 +159,7 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
   const [actSigningMilestone, setActSigningMilestone] = useState<BillingMilestone | null>(null);
   const [actSignerName, setActSignerName] = useState('');
   const [actSignerId, setActSignerId] = useState('');
-  const [actSignerRole, setActSignerRole] = useState('Interventor de Obra / Supervisor STC');
+  const [actSignerRole, setActSignerRole] = useState('');
   const [actAgreed, setActAgreed] = useState(false);
 
   // Autocalcular COP cuando cambia USD

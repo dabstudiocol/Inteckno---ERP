@@ -121,9 +121,9 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
 
   // Modal Crear Plan de Mantenimiento
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
-  const [planComponent, setPlanComponent] = useState('Pinzas Desembragables');
+  const [planComponent, setPlanComponent] = useState('');
   const [planProjectCode, setPlanProjectCode] = useState(projects[0]?.code || 'STC-GENERAL');
-  const [planSystemName, setPlanSystemName] = useState('Teleférico Monocable Desembragable');
+  const [planSystemName, setPlanSystemName] = useState('');
   const [planFrequency, setPlanFrequency] = useState<'Mensual' | 'Trimestral' | 'Semestral' | 'Anual'>('Semestral');
   const [planNextDueDate, setPlanNextDueDate] = useState(
     new Date(Date.now() + 180 * 24 * 3600 * 1000).toISOString().split('T')[0]
@@ -172,7 +172,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
       setOtItemCode('');
     }
   }, [otProject, availableOtProjectItems]);
-  const [otComponent, setOtComponent] = useState('Pinza Desembragable');
+  const [otComponent, setOtComponent] = useState('');
   const [otPriority, setOtPriority] = useState<'baja' | 'media' | 'alta' | 'urgente'>('media');
   const [otTechnician, setOtTechnician] = useState('');
   const [otDescription, setOtDescription] = useState('');
@@ -199,7 +199,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   // Modal Crear Manufactura
   const [isManufModalOpen, setIsManufModalOpen] = useState(false);
   const [manufPartName, setManufPartName] = useState('');
-  const [manufMaterial, setManufMaterial] = useState('Acero 4140 Tratado');
+  const [manufMaterial, setManufMaterial] = useState('');
   const [manufQty, setManufQty] = useState(1);
   const [manufProjectId, setManufProjectId] = useState(projects[0]?.id || 'STOCK-ITK');
   const [manufItemCode, setManufItemCode] = useState<string>('');

@@ -71,8 +71,11 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
 
   useEffect(() => {
     if (availableProjectItems.length > 0) {
-      if (!availableProjectItems.some((i) => i.id === selectedItemCode)) {
-        setSelectedItemCode(availableProjectItems[0]?.id || '');
+      const match = availableProjectItems.find(
+        (i) => i.id === selectedItemCode || i.code === selectedItemCode || i.name === selectedItemCode
+      );
+      if (!match) {
+        setSelectedItemCode(availableProjectItems[0]?.code || availableProjectItems[0]?.id || '');
       }
     } else {
       setSelectedItemCode('');
@@ -337,8 +340,17 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                           name: `${p.code} — ${p.name}`,
                           code: p.code
                         }))}
-                        value={selectedProjectId}
-                        onChange={(val) => setSelectedProjectId(val)}
+                        value={
+                          selectedProjectId
+                            ? (projects.find((p) => p.id === selectedProjectId || `${p.code} — ${p.name}` === selectedProjectId)
+                                ? `${projects.find((p) => p.id === selectedProjectId || `${p.code} — ${p.name}` === selectedProjectId)?.code} — ${projects.find((p) => p.id === selectedProjectId || `${p.code} — ${p.name}` === selectedProjectId)?.name}`
+                                : selectedProjectId)
+                            : ''
+                        }
+                        onChange={(val) => {
+                          const matchedProj = projects.find((p) => p.id === val || `${p.code} — ${p.name}` === val || p.code === val);
+                          setSelectedProjectId(matchedProj ? matchedProj.id : val);
+                        }}
                         placeholder="Seleccionar o buscar proyecto STC..."
                       />
                     </div>
@@ -351,8 +363,15 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                       </div>
                       <CreatableSelect
                         options={availableProjectItems}
-                        value={selectedItemCode}
-                        onChange={(val) => setSelectedItemCode(val)}
+                        value={
+                          selectedItemCode
+                            ? (availableProjectItems.find((o) => o.code === selectedItemCode || o.id === selectedItemCode || o.name === selectedItemCode)?.name || selectedItemCode)
+                            : ''
+                        }
+                        onChange={(val) => {
+                          const found = availableProjectItems.find((o) => o.id === val || o.name === val || o.code === val);
+                          setSelectedItemCode(found ? found.code : val);
+                        }}
                         placeholder="Seleccionar ítem contractual (ej. ITEM 01)..."
                       />
                     </div>

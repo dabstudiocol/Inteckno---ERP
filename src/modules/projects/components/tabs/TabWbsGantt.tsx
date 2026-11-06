@@ -23,6 +23,7 @@ import { Project, WBSTask, DependencyType } from '../../../../types';
 import { useErp, ensureProjectItems } from '../../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../../core/services/moduleConfigService';
 import { generateWBSWithLuciana } from '../../../../core/services/lucianaService';
+import { formatCOP } from '../../../../core/services/trmService';
 import { UniversalModuleConfigModal } from '../../../../components/common/UniversalModuleConfigModal';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
@@ -87,10 +88,6 @@ const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
-};
-
-const formatCOP = (val: number) => {
-  return `$${Math.round(val || 0).toLocaleString('es-CO')} COP`;
 };
 
 const parseISODateSafe = (dateStr?: string): Date => {

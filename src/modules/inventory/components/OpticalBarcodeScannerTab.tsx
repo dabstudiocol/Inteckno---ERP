@@ -785,7 +785,7 @@ export const OpticalBarcodeScannerTab: React.FC<OpticalBarcodeScannerTabProps> =
                 value={selectedProjectId}
                 onChange={(val) => setSelectedProjectId(val)}
                 placeholder="Seleccionar Proyecto..."
-                isClearable={false}
+                isClearable={true}
               />
             </div>
 

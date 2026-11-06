@@ -72,30 +72,12 @@ import {
 import { INITIAL_JOB_POSITIONS } from '../../modules/inteckno/CargosModule';
 import {
   SEED_USERS,
-  SEED_PROJECTS,
-  SEED_TASKS,
   SEED_PARTNERS,
-  SEED_PRODUCTS,
   SEED_EQUIPMENT,
-  SEED_PURCHASE_ORDERS,
-  SEED_REQUISITIONS,
-  SEED_BILLING_MILESTONES,
-  SEED_TIMESHEETS,
-  SEED_EXPENSES,
-  SEED_DDRS,
-  SEED_OPPORTUNITIES,
   SEED_CONTACTS,
-  SEED_CHAT_MESSAGES,
   SEED_CHAT_GROUPS,
-  SEED_DOCUMENTS,
-  SEED_TODOS,
-  SEED_CALENDAR_EVENTS,
   SEED_ARTICLES,
-  SEED_INTERNATIONAL_LEADS,
-  SEED_EMPLOYEES,
   SEED_MAINTENANCE_PLANS,
-  SEED_REMISSIONS,
-  SEED_INVENTORY_AUDIT_LOGS,
 } from '../../seed/intecknoData';
 import { BusinessRulesEngine } from '../rules/businessRules';
 import { domainEventBus } from '../events/eventBus';
@@ -889,7 +871,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         // HR (Talento Humano & SST)
         if (cloudData.hr) {
-          if (Array.isArray(cloudData.hr.employees)) { next.employees = cloudData.hr.employees; hasChanges = true; }
+          if (Array.isArray(cloudData.hr.employees)) {
+            if (cloudData.hr.employees.length > 0) {
+              next.employees = cloudData.hr.employees;
+            } else if (!next.employees || next.employees.length === 0) {
+              next.employees = buildInitialEmployeesFromUsers(next.users && next.users.length > 0 ? next.users : SEED_USERS);
+            }
+            hasChanges = true;
+          }
           if (Array.isArray(cloudData.hr.novelties)) { next.novelties = cloudData.hr.novelties; hasChanges = true; }
           if (Array.isArray(cloudData.hr.sstInspections)) { next.sstInspections = cloudData.hr.sstInspections; hasChanges = true; }
           if (Array.isArray(cloudData.hr.jobPositions) && cloudData.hr.jobPositions.length > 0) { next.jobPositions = cloudData.hr.jobPositions; hasChanges = true; }

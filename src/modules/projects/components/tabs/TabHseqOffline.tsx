@@ -50,7 +50,6 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
 
   const [permits, setPermits] = useState<HSEQAroPermit[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [permitToDelete, setPermitToDelete] = useState<HSEQAroPermit | null>(null);
@@ -113,18 +112,6 @@ export const TabHseqOffline: React.FC<TabHseqOfflineProps> = ({ project }) => {
       window.removeEventListener('offline', handleOffline);
     };
   }, [project.id]);
-
-  const handleManualSync = async () => {
-    if (!navigator.onLine) {
-      setMsg({ text: 'No hay conexión a internet para sincronizar con Firebase.', type: 'error' });
-      return;
-    }
-    setIsSyncing(true);
-    const count = await syncOfflinePermitsToFirebase(project.id);
-    setIsSyncing(false);
-    setMsg({ text: `Sincronización completada: ${count} permisos respaldados en la nube.`, type: 'success' });
-    loadPermits();
-  };
 
   const handleCreatePermit = async (e: React.FormEvent) => {
     e.preventDefault();
