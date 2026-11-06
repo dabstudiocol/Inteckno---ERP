@@ -1636,3 +1636,181 @@ export function getLaborRates(): LaborRatesConfig {
     return defaults;
   }
 }
+
+/**
+ * Guarda parámetros personalizados de tarifa hora (Factor Prestacional, Divisor Mensual y Multiplicadores de Recargo)
+ * y los sincroniza reactivamente en toda la aplicación y en Firestore.
+ */
+export function saveLaborRatesConfig(partial: Partial<LaborRatesConfig>): LaborRatesConfig {
+  const current = getLaborRates();
+  const next: LaborRatesConfig = {
+    hod: partial.hod !== undefined && partial.hod > 0 ? Number(partial.hod) : current.hod,
+    hed: partial.hed !== undefined && partial.hed >= 0 ? Number(partial.hed) : current.hed,
+    rn: partial.rn !== undefined && partial.rn >= 0 ? Number(partial.rn) : current.rn,
+    hen: partial.hen !== undefined && partial.hen >= 0 ? Number(partial.hen) : current.hen,
+    dom: partial.dom !== undefined && partial.dom >= 0 ? Number(partial.dom) : current.dom,
+    hedd: partial.hedd !== undefined && partial.hedd >= 0 ? Number(partial.hedd) : current.hedd,
+    hend: partial.hend !== undefined && partial.hend >= 0 ? Number(partial.hend) : current.hend,
+    factorPrestacional:
+      partial.factorPrestacional !== undefined && partial.factorPrestacional > 0
+        ? Number(partial.factorPrestacional)
+        : current.factorPrestacional,
+    divisorMensual:
+      partial.divisorMensual !== undefined && partial.divisorMensual > 0
+        ? Number(partial.divisorMensual)
+        : current.divisorMensual,
+  };
+
+  try {
+    const config = getModuleCatalogs('registro-horas');
+    const items: CatalogItem[] = [
+      { id: 'rate-hod', name: 'Hora Ordinaria Diurna (HOD)', code: String(next.hod), isActive: true },
+      { id: 'rate-hed', name: 'Hora Extra Diurna (HED +25%)', code: String(next.hed), isActive: true },
+      { id: 'rate-rn', name: 'Recargo Nocturno Ordinario (RN +35%)', code: String(next.rn), isActive: true },
+      { id: 'rate-hen', name: 'Hora Extra Nocturna (HEN +75%)', code: String(next.hen), isActive: true },
+      { id: 'rate-dom', name: 'Hora Dominical o Festiva (DOM +75%)', code: String(next.dom), isActive: true },
+      { id: 'rate-hedd', name: 'Hora Extra Diurna Dominical/Festiva (HEDD +100%)', code: String(next.hedd), isActive: true },
+      { id: 'rate-hend', name: 'Hora Extra Nocturna Dominical/Festiva (HEND +150%)', code: String(next.hend), isActive: true },
+      {
+        id: 'rate-factor-prestacional',
+        name: 'Factor Prestacional (1.00 = Sin Carga / 1.52 = Con Carga Prestacional)',
+        code: String(next.factorPrestacional),
+        isActive: true,
+      },
+      {
+        id: 'rate-divisor-mensual',
+        name: 'Divisor Horas Mes (Ej. 210h, 220h o 240h)',
+        code: String(next.divisorMensual),
+        isActive: true,
+      },
+    ];
+
+    const updatedGroup: ModuleConfigGroup = {
+      ...config,
+      moduleId: 'registro-horas',
+      catalogs: {
+        ...config.catalogs,
+        overtimeRates: {
+          key: 'overtimeRates',
+          title: 'Multiplicadores y Parámetros de Tarifa Hora (Personalizable)',
+          description: 'Configura si deseas aplicar factor prestacional (ej. 1.00 sin carga o 1.52 con carga), horas mes y recargos.',
+          hasCode: true,
+          codeLabel: 'Factor / Divisor',
+          items,
+        },
+      },
+    };
+    saveModuleCatalogs('registro-horas', updatedGroup);
+  } catch (e) {
+    console.error('Error guardando configuración de tarifas:', e);
+  }
+
+  return next;
+}
+
+/**
+ * Calcula la tarifa hora ordinaria de un colaborador respetando:
+ * 1) Tarifa manual directa (`customHourlyRateCOP`) si fue definida para ese empleado.
+ * 2) Factor prestacional personalizado por empleado (`customFactorPrestacional`) o el factor global (`rates.factorPrestacional`, que puede ser 1.00 sin recargo o 1.52 con carga).
+ * 3) Divisor mensual configurable (`rates.divisorMensual`, ej. 210h, 220h, 240h).
+ */
+export function calculateCustomizableHourlyRate(
+  emp?: {
+    baseSalaryCOP?: number;
+    monthlyBaseSalary?: number;
+    customHourlyRateCOP?: number;
+    customFactorPrestacional?: number;
+  } | null,
+  rates?: LaborRatesConfig
+): number {
+  if (!emp) return 0;
+  if (emp.customHourlyRateCOP && emp.customHourlyRateCOP > 0) {
+    return Math.round(emp.customHourlyRateCOP);
+  }
+  const activeRates = rates || getLaborRates();
+  const baseSalary = Number(emp.baseSalaryCOP || emp.monthlyBaseSalary || 0);
+  if (baseSalary <= 0) return 0;
+  const factor =
+    emp.customFactorPrestacional !== undefined && emp.customFactorPrestacional > 0
+      ? Number(emp.customFactorPrestacional)
+      : activeRates.factorPrestacional || 1.0;
+  const divisor = activeRates.divisorMensual > 0 ? activeRates.divisorMensual : 210;
+  return Math.round((baseSalary * factor) / divisor);
+}
+
+/**
+ * Hook reactivo para leer y actualizar la configuración de Tarifa Hora y Multiplicadores en tiempo real.
+ */
+export function useLaborRates(): [LaborRatesConfig, (partial: Partial<LaborRatesConfig>) => void] {
+  const [rates, setRates] = useState<LaborRatesConfig>(() => getLaborRates());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setRates(getLaborRates());
+    };
+    window.addEventListener('inteckno:module-config-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('inteckno:module-config-updated', handleUpdate);
+    };
+  }, []);
+
+  const updateRates = (partial: Partial<LaborRatesConfig>) => {
+    const updated = saveLaborRatesConfig(partial);
+    setRates(updated);
+  };
+
+  return [rates, updateRates];
+}
+
+export const STANDARD_COMPETENCIES_CATALOG_ITEMS: CatalogItem[] = [
+  { id: 'SKILL-001', name: 'Empalme de Cables', code: 'SKILL-001', isActive: true },
+  { id: 'SKILL-002', name: 'Mantenimiento de Pilonas', code: 'SKILL-002', isActive: true },
+  { id: 'SKILL-003', name: 'Overhaul de Pinzas', code: 'SKILL-003', isActive: true },
+  { id: 'SKILL-004', name: 'Trabajo Seguro en Alturas (Res. 4272/2021)', code: 'SKILL-004', isActive: true },
+  { id: 'SKILL-005', name: 'Inspección Magneto-Inductiva MRT (EN 12927)', code: 'SKILL-005', isActive: true },
+  { id: 'SKILL-006', name: 'Ensayos No Destructivos END / NDT Nivel II', code: 'SKILL-006', isActive: true },
+  { id: 'SKILL-007', name: 'Alineación Láser de Balancines y Poleas', code: 'SKILL-007', isActive: true },
+  { id: 'SKILL-008', name: 'Sistemas Hidráulicos de Frenado y Tensión', code: 'SKILL-008', isActive: true },
+  { id: 'SKILL-009', name: 'Automatización, PLC y Lazos de Seguridad STC', code: 'SKILL-009', isActive: true },
+  { id: 'SKILL-010', name: 'Soldadura Estructural Calificada AWS D1.1', code: 'SKILL-010', isActive: true },
+  { id: 'SKILL-011', name: 'Gestión de Proyectos PMI / Control EVM', code: 'SKILL-011', isActive: true },
+  { id: 'SKILL-012', name: 'Coordinación HSEQ, Rescate Vertical y LOTO', code: 'SKILL-012', isActive: true },
+];
+
+if (DEFAULT_MODULE_CONFIGS['empleados']?.catalogs) {
+  DEFAULT_MODULE_CONFIGS['empleados'].catalogs.competencies = {
+    key: 'competencies',
+    title: 'Catálogo de Competencias y Habilidades Técnicas STC',
+    description: 'Habilidades técnicas estandarizadas por ID (SKILL-001 a SKILL-012) para validación de cuadrillas y asignaciones WBS.',
+    hasCode: true,
+    codeLabel: 'ID Habilidad',
+    items: STANDARD_COMPETENCIES_CATALOG_ITEMS,
+  };
+}
+
+if (DEFAULT_MODULE_CONFIGS['usuarios-ti']?.catalogs) {
+  DEFAULT_MODULE_CONFIGS['usuarios-ti'].catalogs.competencies = {
+    key: 'competencies',
+    title: 'Catálogo de Competencias y Habilidades Técnicas STC',
+    description: 'Habilidades técnicas estandarizadas por ID (SKILL-001 a SKILL-012) para evitar texto libre.',
+    hasCode: true,
+    codeLabel: 'ID Habilidad',
+    items: STANDARD_COMPETENCIES_CATALOG_ITEMS,
+  };
+}
+
+export function resolveCompetencyLabel(idOrName: string): { id: string; name: string } {
+  const catalog = getCatalogItems('empleados', 'competencies');
+  const pool = catalog.length > 0 ? catalog : STANDARD_COMPETENCIES_CATALOG_ITEMS;
+  const trimmed = String(idOrName || '').trim();
+  const match = pool.find(
+    (it) =>
+      it.id.toLowerCase() === trimmed.toLowerCase() ||
+      (it.code && it.code.toLowerCase() === trimmed.toLowerCase()) ||
+      it.name.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (match) {
+    return { id: match.code || match.id, name: match.name };
+  }
+  return { id: trimmed, name: trimmed };
+}

@@ -3639,7 +3639,10 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                   <span className="text-[10px] text-slate-500 block font-medium">Técnico Responsable</span>
                   <span className="font-bold text-slate-900 block truncate mt-0.5">
-                    {selectedRemissionForView.responsibleTechnicianName}
+                    {selectedRemissionForView.responsibleTechnicianName}{' '}
+                    <span className="text-[10px] font-mono text-[#00668F]">
+                      ({selectedRemissionForView.userId || selectedRemissionForView.responsibleTechnicianId})
+                    </span>
                   </span>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -3657,7 +3660,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                   <span className="text-[10px] text-slate-500 block font-medium">Costo Consumido</span>
                   <span className="font-bold font-mono text-[#00668F] block mt-0.5">
-                    ${selectedRemissionForView.totalConsumedValueUSD.toLocaleString()} USD
+                    ${(selectedRemissionForView.totalConsumedValueUSD || 0).toLocaleString()} USD
                   </span>
                 </div>
               </div>

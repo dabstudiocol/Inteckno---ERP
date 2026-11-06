@@ -292,6 +292,13 @@ export const ExecuteLevel679ArchitecturePayload = z.object({
   configureGeofencesAndMakerChecker: z.boolean().default(true),
 });
 
+export const ExecuteRelationalIdAuditFixPayload = z.object({
+  fixLoanProductRelationalIds: z.boolean().default(true),
+  removeOrphanContactsFromActive: z.boolean().default(true),
+  linkAllUsersToEmployeeIds: z.boolean().default(true),
+  standardizeSkillCatalogIds: z.boolean().default(true),
+});
+
 export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('upsert_opportunity'), payload: UpsertOpportunityPayload }),
   z.object({ action: z.literal('upsert_project'), payload: UpsertProjectPayload }),
@@ -307,6 +314,7 @@ export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('RESTRUCTURE_LEVEL3_GOVERNANCE'), payload: RestructureLevel3GovernancePayload }),
   z.object({ action: z.literal('EXECUTE_LEVEL4_AND_5_ARCHITECTURE'), payload: ExecuteLevel4And5ArchitecturePayload }),
   z.object({ action: z.literal('EXECUTE_LEVEL6_7_9_ARCHITECTURE'), payload: ExecuteLevel679ArchitecturePayload }),
+  z.object({ action: z.literal('EXECUTE_RELATIONAL_ID_AUDIT_FIX'), payload: ExecuteRelationalIdAuditFixPayload }),
 ]);
 
 export type AiActionRequest = z.infer<typeof AiActionRequestSchema>;

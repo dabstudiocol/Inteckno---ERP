@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ShieldCheck, AlertTriangle, Lock, X, ChevronDown, UserCheck } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { formatCOP } from '../../core/services/trmService';
-import { getLaborRates } from '../../core/services/moduleConfigService';
+import { useLaborRates, calculateCustomizableHourlyRate } from '../../core/services/moduleConfigService';
 
 export interface SmartEmployeeOption {
   employeeId: string;
@@ -47,8 +47,8 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const laborRates = getLaborRates();
-  const factor = laborRates.factorPrestacional || 1.52;
+  const [laborRates] = useLaborRates();
+  const factor = laborRates.factorPrestacional || 1.0;
   const divisor = laborRates.divisorMensual || 210;
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -56,15 +56,18 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
     const map = new Map<string, SmartEmployeeOption>();
 
     for (const emp of employees) {
-      const matchedUser = users.find((u) => u.id === emp.id || u.email === emp.email || u.name === emp.name);
+      const matchedUser = users.find(
+        (u) => u.id === emp.id || u.id === emp.userId || u.employeeId === emp.id || u.email === emp.email || u.name === emp.name
+      );
       const expiry = emp.heightCertExpiry || matchedUser?.hseqExpiresAt || '2027-12-31';
       const isExpired =
         emp.heightCertStatus === 'vencido' ||
         matchedUser?.hseqStatus === 'expired' ||
         expiry < todayIso;
       const baseSal = Number(emp.baseSalaryCOP || emp.monthlyBaseSalary || 0);
-      const companyCost = Math.round(baseSal * factor);
-      const hourly = baseSal > 0 ? Math.round(companyCost / divisor) : 0;
+      const empFactor = emp.customFactorPrestacional && emp.customFactorPrestacional > 0 ? emp.customFactorPrestacional : factor;
+      const companyCost = Math.round(baseSal * empFactor);
+      const hourly = calculateCustomizableHourlyRate(emp, laborRates);
       const initials = (emp.name || 'IT')
         .split(' ')
         .filter(Boolean)
@@ -73,8 +76,8 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
         .join('');
 
       map.set(emp.id, {
-        employeeId: emp.id,
-        userId: matchedUser?.id || emp.id,
+        employeeId: emp.employeeId || emp.id,
+        userId: matchedUser?.id || emp.userId || emp.id,
         name: emp.name,
         jobTitle: emp.role || emp.position || matchedUser?.roleLabel || 'Especialista STC',
         department: emp.department || matchedUser?.department || 'Operaciones STC',
@@ -90,7 +93,7 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
     }
 
     for (const u of users) {
-      if (u.id === 'user-gustavo-mejia' || map.has(u.id)) continue;
+      if (map.has(u.id) || (u.employeeId && map.has(u.employeeId))) continue;
       const expiry = u.hseqExpiresAt || '2027-12-31';
       const isExpired = u.hseqStatus === 'expired' || expiry < todayIso;
       const roleStr = String(u.role || '').toLowerCase();
@@ -105,7 +108,7 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
       const hourly = Math.round(companyCost / divisor);
 
       map.set(u.id, {
-        employeeId: u.id,
+        employeeId: u.employeeId || `EMP-${u.id}`,
         userId: u.id,
         name: u.name,
         jobTitle: u.roleLabel || u.role,
@@ -122,7 +125,7 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
     }
 
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [employees, users, factor, divisor, todayIso]);
+  }, [employees, users, laborRates, factor, divisor, todayIso]);
 
   const selectedEmployee = useMemo(() => {
     if (!value) return null;

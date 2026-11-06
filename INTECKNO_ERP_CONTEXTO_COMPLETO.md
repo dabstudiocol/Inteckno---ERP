@@ -41,23 +41,27 @@
 
 ---
 
-## 3. Equipo Humano, Fichas de Nómina y Seguridad HSEQ
-- **Total Usuarios:** 31 colaboradores activos en `/users`.
-- **Fichas Vinculadas:** 30 colaboradores en `employees` (cero falsos negativos "Sin Ficha").
+## 3. Equipo Humano, Fichas de Nómina 1:1 y Habilidades Estandarizadas por ID
+- **Total Usuarios:** 31 colaboradores activos en `/users`, todos con su campo `employeeId` explícito (`EMP-USR-02` .. `EMP-USR-99`).
+- **Fichas Vinculadas 1:1:** 31 colaboradores en `employees` (`erp_modules/hr.employees` y colección `/employees`) con `id`, `employeeId` y `userId` (100% paridad: 31 usuarios = 31 fichas de nómina).
 - **Gobernanza de Cargos:** 100% de usuarios asignados a su cargo oficial (`POS-COM-01`, `POS-SIS-01`, `POS-GA-01`, etc.).
-- **Matriz de Competencias O(1):** Normalizadas con 11 códigos transversales (`COMP-ENG-001`, `COMP-NDT-001`, etc.).
+- **Catálogo de Competencias y Habilidades por ID (`SKILL-001` a `SKILL-012`):**
+  - Eliminado el texto libre en habilidades. Todas las competencias apuntan a IDs estandarizados (`SKILL-001` = *Empalme de Cables*, `SKILL-002` = *Mantenimiento de Pilonas*, `SKILL-003` = *Overhaul de Pinzas*, `SKILL-004` = *Trabajo Seguro en Alturas Res. 4272/2021*, etc.).
+  - Colaborador `USR-24` (*Jonathan Guzmán Pineda*): Vinculado con `["SKILL-001", "SKILL-002", "SKILL-003"]`.
 - **Alerta Preventiva HSEQ (Res. 4272/2021):**
   - Colaborador `USR-25` (*Yohan Daniel Franco*): Certificación de Alturas **VENCIDA**.
   - **Regla:** Bloqueo preventivo automático para tareas en torres/pilonas y asignación automática al plan de reentrenamiento `TRN-HSEQ-USR-25`.
-- **Diferenciación Financiera de Nómina:**
-  - *Costo Real Empresa (EVM):* Salario Base $\times 1.52 \div 210$ horas (imputado a matriz de costos).
-  - *Desprendible de Nómina (Pago Neto):* Salario Base menos 8% de ley (4% salud + 4% pensión).
+- **Fórmula de Tarifa Hora 100% Personalizable:**
+  - El usuario puede alternar libremente entre **1.00x (Hora Pura = Salario Base ÷ Horas Mes sin carga prestacional)**, **1.30x**, **1.52x (Con Carga Prestacional Patronal +52%)**, cambiar el divisor mensual (`210h`, `220h`, `240h`), elegir el tipo de hora (`Ordinaria ×1.00`, `Extra Diurna ×1.25`, `Extra Nocturna ×1.75`, `Dominical ×1.75`) o definir una **Tarifa Hora Manual Fija (`customHourlyRateCOP`)** por colaborador o por registro.
 
 ---
 
-## 4. Abastecimiento, Activos Fijos y Control de Taller
+## 4. Abastecimiento, Activos Fijos, Remisiones por ID y Limpieza Relacional
 - **Catálogo de Materiales:** 2.826 productos técnicos clasificados.
-- **Activo de Alta Precisión:** Taladro Percutor Industrial DW (`SN-DW-88492011`, código `EQUIP-101`), bajo control de activos y remisión de préstamo `REM-2026-001` hacia el frente de retorqueo.
+- **Préstamo Relacional por ID (`PRD-A0000131-1819`):**
+  - El producto `PRD-A0000131-1819` (*TALADRO PERCUTOR DW*, SKU `A0000131`) tiene `observations: ""` (cero notas de préstamo en texto libre) y está vinculado mediante IDs relacionales: `remissionId: "REM-2026-001"`, `userId: "USR-18"` (*Juan Camilo Echeverry Agudelo*) y `projectId: "PRJ-1793367181536"`.
+- **Cero Contactos Huérfanos (`contacts`):**
+  - Los contactos generados desde oportunidades comerciales incluyen `opportunityId` y se eliminan en cascada al borrar la oportunidad origen. El contacto huérfano de prueba `CNT-1791503976666` (de la extinta `OPP-2026-001`) fue purgado de los contactos activos (`0` huérfanos).
 - **Motor MRP:** Requisición consolidada borrador `SOLPED-MRP-2026-001` generada para reposición de stock mínimo en rodamientos y lubricantes.
 
 ---

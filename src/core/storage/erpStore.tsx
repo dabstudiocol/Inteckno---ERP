@@ -486,8 +486,7 @@ const ErpContext = createContext<ErpContextType | undefined>(undefined);
 
 export function buildInitialEmployeesFromUsers(usersList: User[]): EmployeeRecord[] {
   const todayIso = new Date().toISOString().slice(0, 10);
-  const filteredUsers = usersList.filter((u) => u.id !== 'user-gustavo-mejia');
-  return filteredUsers.map((u, idx) => {
+  return usersList.map((u, idx) => {
     const isGerente = u.role.includes('gerente');
     const isLider = u.role.includes('lider');
     const isIng = u.role.includes('ingeniero') || u.role.includes('coord') || u.role.includes('admin');
@@ -495,12 +494,17 @@ export function buildInitialEmployeesFromUsers(usersList: User[]): EmployeeRecor
     const salary = isGerente ? 6500000 : isLider ? 4800000 : isIng ? 3800000 : isTec ? 3100000 : 2500000;
     const expiry = u.hseqExpiresAt || '2027-12-31';
     const isExpired = u.hseqStatus === 'expired' || expiry < todayIso;
+    const empIdCode = u.employeeId || `EMP-${u.id}`;
 
     return {
       id: u.id,
+      employeeId: empIdCode,
+      userId: u.id,
+      jobPositionId: u.jobPositionId,
+      competencyIds: u.competencyIds || ['SKILL-004'],
       name: u.name,
       fullName: u.name,
-      documentId: `CC-${1000000000 + (idx + 1) * 11111111}`,
+      documentId: u.nationalId || `CC-${1000000000 + (idx + 1) * 11111111}`,
       role: u.roleLabel || u.role,
       position: u.roleLabel || u.role,
       department: u.department || 'Operaciones STC',
@@ -1671,9 +1675,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .map((w) => w[0].toUpperCase())
       .join('');
 
+    const empCode = userData.employeeId || `EMP-${newId}`;
     const newUser: User = {
       ...userData,
       id: newId,
+      employeeId: empCode,
       avatar: userData.avatar || initials || 'IT',
       avatarColor: userData.avatarColor || '#00668F',
       password: userData.password || 'Inteckno2026*',
@@ -1681,8 +1687,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hseqStatus: userData.hseqStatus || 'valid',
       hseqExpiresAt: userData.hseqExpiresAt || '2028-12-31',
       canWorkHeights: userData.canWorkHeights ?? false,
-      competencies: userData.competencies || ['Inducción General STC'],
+      competencies: userData.competencies || ['SKILL-004'],
+      competencyIds: userData.competencyIds || userData.competencies || ['SKILL-004'],
     };
+
+    const newEmpRecord = buildInitialEmployeesFromUsers([newUser])[0];
 
     syncUserToCloud(newUser).catch((err) => {
       console.warn('[CloudSync] Error sincronizando nuevo usuario:', err);
@@ -1691,6 +1700,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState((prev) => ({
       ...prev,
       users: [...prev.users, newUser],
+      employees: prev.employees.some((e) => e.id === newUser.id || e.userId === newUser.id)
+        ? prev.employees
+        : [...prev.employees, newEmpRecord],
     }));
 
     return newUser;
@@ -1917,8 +1929,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState((prev) => ({
         ...prev,
         opportunities: prev.opportunities.filter((o) => o.id !== id),
+        // Eliminación en cascada de contactos creados exclusivamente por esta oportunidad para evitar contactos huérfanos
+        contacts: prev.contacts.filter((c) => {
+          if (c.opportunityId === id) return false;
+          if (target?.code && c.opportunityCode === target.code) return false;
+          if (target?.code && c.notes?.includes(`desde la oportunidad ${target.code}`)) return false;
+          return true;
+        }),
       }));
-      notify('info', 'Oportunidad Eliminada', 'La cotización/oportunidad ha sido retirada.');
+      notify('info', 'Oportunidad Eliminada', 'La cotización/oportunidad y sus contactos temporales vinculados han sido retirados.');
     },
     [state.opportunities, state.currentUser, notify]
   );
@@ -2401,8 +2420,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           phone: clientPhone || '',
           stcSystem: oppData.cableType || 'Sistema Teleférico',
           country: oppData.country || 'Colombia',
+          opportunityId: newOpp.id,
+          opportunityCode: code,
           notes: `Registrado automáticamente desde la oportunidad ${code}: ${oppData.title}`,
         };
+        newOpp.contactId = newContact.id;
       }
 
       setState((prev) => ({
@@ -3897,6 +3919,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...remData,
         id: `REM-${Date.now()}`,
         remissionNumber,
+        userId: remData.responsibleTechnicianId,
         status: 'en_campo',
         totalDispatchedItems: totalDispatched,
         totalReturnedItems: 0,
@@ -3918,7 +3941,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }),
       };
 
-      // Descontar inventario de cada producto despachado y registrar auditoría forense
+      // Descontar inventario de cada producto despachado y registrar auditoría forense con IDs relacionales
       setState((prev) => {
         const updatedProducts = prev.products.map((p) => {
           const itemDespachado = remData.items.find((it) => it.productId === p.id || it.sku === p.sku);
@@ -3929,6 +3952,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ...p,
               realStock: newStock,
               availableStock: Math.max(0, newStock - p.reservedStock),
+              userId: remData.responsibleTechnicianId,
+              custodianUserId: remData.responsibleTechnicianId,
+              custodianName: remData.responsibleTechnicianName,
+              projectId: remData.projectId,
+              projectCodeAllocation: remData.projectCode || p.projectCodeAllocation,
+              remissionId: newRemission.id,
+              activeRemissionId: newRemission.id,
+              loanStatus: 'DISPATCHED_TO_PROJECT',
             };
           }
           return p;

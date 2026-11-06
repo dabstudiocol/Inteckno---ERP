@@ -35,7 +35,13 @@ import { EmployeeRecord, PayrollNovelty, PayrollNoveltyType } from '../../types'
 import { AiDocumentUploader } from '../../components/ui/AiDocumentUploader';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
-import { useModuleCatalog, getLaborRates } from '../../core/services/moduleConfigService';
+import {
+  useModuleCatalog,
+  getLaborRates,
+  useLaborRates,
+  calculateCustomizableHourlyRate,
+  resolveCompetencyLabel,
+} from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { formatCOP } from '../../core/services/trmService';
 
@@ -105,6 +111,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
   const [editingEmployee, setEditingEmployee] = useState<EmployeeRecord | null>(null);
   const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeRecord | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [showRateCustomizer, setShowRateCustomizer] = useState(false);
+  const [laborRates, updateLaborRates] = useLaborRates();
   const [empSearch, setEmpSearch] = useState('');
   const [empDeptFilter, setEmpDeptFilter] = useState('all');
 
@@ -437,6 +445,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
     department: '',
     hireDate: '',
     baseSalaryCOP: 0,
+    customHourlyRateCOP: 0,
+    customFactorPrestacional: 0,
     heightCertExpiry: '',
     medicalExamExpiry: '',
     emergencyContact: '',
@@ -465,6 +475,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
 
     createEmployee({
       ...empForm,
+      customHourlyRateCOP: empForm.customHourlyRateCOP > 0 ? empForm.customHourlyRateCOP : undefined,
+      customFactorPrestacional: empForm.customFactorPrestacional > 0 ? empForm.customFactorPrestacional : undefined,
       hireDate: empForm.hireDate || today,
       heightCertStatus: isHeightValid ? 'vigente' : 'vencido',
       medicalExamStatus: isExamValid ? 'vigente' : 'vencido',
@@ -478,6 +490,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
       department: '',
       hireDate: '',
       baseSalaryCOP: 0,
+      customHourlyRateCOP: 0,
+      customFactorPrestacional: 0,
       heightCertExpiry: '',
       medicalExamExpiry: '',
       emergencyContact: '',
@@ -511,6 +525,17 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               )}
               <button
                 type="button"
+                onClick={() => setShowRateCustomizer((v) => !v)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-all"
+                title="Personalizar factor prestacional (ej. 1.00 sin carga o 1.52 con carga), horas mes y recargos"
+              >
+                <Settings size={14} className="text-[#00668F]" />
+                <span>
+                  Personalizar Tarifa Hora (×{laborRates.factorPrestacional} / {laborRates.divisorMensual}h)
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setIsNewEmpModalOpen(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2 bg-[#00668F] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#005273] cursor-pointer transition-all"
               >
@@ -519,6 +544,178 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               </button>
             </div>
           </div>
+
+          {/* PANEL INTERACTIVO DE PERSONALIZACIÓN DE FÓRMULA DE TARIFA HORA */}
+          {showRateCustomizer && (
+            <div className="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-lg space-y-4 animate-in fade-in duration-150">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-sky-400 block">
+                    Fórmula Financiera 100% Personalizable • Sincronizada en Nube
+                  </span>
+                  <h4 className="text-sm font-bold text-white">
+                    Configuración de Tarifa Hora Ordinaria, Carga Prestacional yHoras Extras
+                  </h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    ¿De dónde salía el <strong>1.52</strong>? No es hora extra: representa un +52% de carga prestacional patronal opcional (Salud, Pensión, ARL V, Prima, Cesantías y Vacaciones). Si deseas liquidar la hora pura sobre el sueldo básico sin carga adicional, selecciona <strong>1.00x (Sin Carga)</strong> o escribe el factor exacto que prefieras.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRateCustomizer(false)}
+                  className="self-end sm:self-center px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
+                >
+                  Cerrar ✕
+                </button>
+              </div>
+
+              {/* Botones rápidos de modo */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-400 mr-1">Modos Rápidos de Factor:</span>
+                {[
+                  { label: '1.00x • Hora Pura (Solo Salario Base ÷ Horas Mes)', value: 1.0 },
+                  { label: '1.30x • Carga Básica (+30%)', value: 1.3 },
+                  { label: '1.52x • Carga Prestacional Completa (+52%)', value: 1.52 },
+                ].map((preset) => {
+                  const active = Math.abs((laborRates.factorPrestacional || 1) - preset.value) < 0.005;
+                  return (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => {
+                        updateLaborRates({ factorPrestacional: preset.value });
+                        notify?.('success', 'Fórmula Actualizada', `Factor aplicado: ×${preset.value.toFixed(2)}`);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                        active
+                          ? 'bg-sky-500 text-white border-sky-400 shadow-xs'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Controles numéricos editables */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
+                <div className="bg-slate-800/90 p-2.5 rounded-xl border border-slate-700">
+                  <label className="text-[10px] text-sky-300 font-bold block mb-1">
+                    Factor Prestacional
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.5"
+                    max="3"
+                    value={laborRates.factorPrestacional || ''}
+                    placeholder="1.00"
+                    onChange={(e) => updateLaborRates({ factorPrestacional: Number(e.target.value) || 1.0 })}
+                    className="w-full p-1.5 rounded-lg bg-slate-900 border border-slate-600 text-white font-bold text-right"
+                  />
+                  <span className="text-[9px] text-slate-400 block mt-0.5">1.00 = Sin carga</span>
+                </div>
+
+                <div className="bg-slate-800/90 p-2.5 rounded-xl border border-slate-700">
+                  <label className="text-[10px] text-sky-300 font-bold block mb-1">
+                    Divisor Horas / Mes
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    max="300"
+                    value={laborRates.divisorMensual || ''}
+                    placeholder="210"
+                    onChange={(e) => updateLaborRates({ divisorMensual: Number(e.target.value) || 210 })}
+                    className="w-full p-1.5 rounded-lg bg-slate-900 border border-slate-600 text-white font-bold text-right"
+                  />
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Ej: 210, 220 o 240h</span>
+                </div>
+
+                <div className="bg-slate-800/90 p-2.5 rounded-xl border border-slate-700">
+                  <label className="text-[10px] text-emerald-300 font-bold block mb-1">
+                    Hora Ordinaria (HOD)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0.5"
+                    value={laborRates.hod || ''}
+                    placeholder="1.0"
+                    onChange={(e) => updateLaborRates({ hod: Number(e.target.value) || 1.0 })}
+                    className="w-full p-1.5 rounded-lg bg-slate-900 border border-slate-600 text-white font-bold text-right"
+                  />
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Normal = ×1.00</span>
+                </div>
+
+                <div className="bg-slate-800/90 p-2.5 rounded-xl border border-slate-700">
+                  <label className="text-[10px] text-amber-300 font-bold block mb-1">
+                    Extra Diurna (HED)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    value={laborRates.hed || ''}
+                    placeholder="1.25"
+                    onChange={(e) => updateLaborRates({ hed: Number(e.target.value) || 1.25 })}
+                    className="w-full p-1.5 rounded-lg bg-slate-900 border border-slate-600 text-white font-bold text-right"
+                  />
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Estándar = ×1.25</span>
+                </div>
+
+                <div className="bg-slate-800/90 p-2.5 rounded-xl border border-slate-700">
+                  <label className="text-[10px] text-amber-300 font-bold block mb-1">
+                    Extra Nocturna (HEN)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    value={laborRates.hen || ''}
+                    placeholder="1.75"
+                    onChange={(e) => updateLaborRates({ hen: Number(e.target.value) || 1.75 })}
+                    className="w-full p-1.5 rounded-lg bg-slate-900 border border-slate-600 text-white font-bold text-right"
+                  />
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Estándar = ×1.75</span>
+                </div>
+
+                <div className="bg-slate-800/90 p-2.5 rounded-xl border border-slate-700">
+                  <label className="text-[10px] text-purple-300 font-bold block mb-1">
+                    Dominical / Fest. (DOM)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    value={laborRates.dom || ''}
+                    placeholder="1.75"
+                    onChange={(e) => updateLaborRates({ dom: Number(e.target.value) || 1.75 })}
+                    className="w-full p-1.5 rounded-lg bg-slate-900 border border-slate-600 text-white font-bold text-right"
+                  />
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Estándar = ×1.75</span>
+                </div>
+
+                <div className="bg-slate-800/90 p-2.5 rounded-xl border border-slate-700">
+                  <label className="text-[10px] text-rose-300 font-bold block mb-1">
+                    Extra Dom. Noct. (HEND)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    value={laborRates.hend || ''}
+                    placeholder="2.50"
+                    onChange={(e) => updateLaborRates({ hend: Number(e.target.value) || 2.5 })}
+                    className="w-full p-1.5 rounded-lg bg-slate-900 border border-slate-600 text-white font-bold text-right"
+                  />
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Estándar = ×2.50</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Filtros y Búsqueda */}
           {employees.length > 0 && (
@@ -586,13 +783,26 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredEmployees.map((emp) => {
-                const laborRates = getLaborRates();
-                const hourlyRateCOP = Math.round(((emp.baseSalaryCOP || 0) * 1.52) / (laborRates.divisorMensual || 210));
+                const effectiveFactor =
+                  emp.customFactorPrestacional && emp.customFactorPrestacional > 0
+                    ? emp.customFactorPrestacional
+                    : laborRates.factorPrestacional || 1.0;
+                const effectiveDivisor = laborRates.divisorMensual || 210;
+                const hourlyRateCOP = calculateCustomizableHourlyRate(emp, laborRates);
+                const linkedUser = users.find(
+                  (u) => u.id === emp.userId || u.employeeId === emp.id || u.id === emp.id || u.name.toLowerCase() === emp.name.toLowerCase()
+                );
+                const skillIds = emp.competencyIds || linkedUser?.competencyIds || linkedUser?.competencies || [];
                 return (
                   <div key={emp.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-sm">{emp.name}</h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-bold text-gray-900 text-sm">{emp.name}</h4>
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                            {emp.employeeId || emp.id}
+                          </span>
+                        </div>
                         <p className="text-xs text-[#00668F] font-semibold">{emp.role}</p>
                         <p className="text-[11px] text-gray-400">{emp.documentId} • {emp.department}</p>
                       </div>
@@ -603,7 +813,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                         <button
                           type="button"
                           onClick={() => setEditingEmployee(emp)}
-                          title="Editar Datos y Certificados"
+                          title="Editar Datos, Tarifa Hora y Certificados"
                           className="p-1 rounded-lg text-gray-400 hover:text-[#00668F] hover:bg-sky-50 transition-colors cursor-pointer"
                         >
                           <Pencil size={13} />
@@ -619,10 +829,10 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       </div>
                     </div>
 
-                    {/* Resumen Salarial y Costo Real Empresa (Ley 2101 / Factor Prestacional 1.52) */}
+                    {/* Resumen Salarial y Costo Hora Personalizable */}
                     {(() => {
                       const baseSal = emp.baseSalaryCOP || 0;
-                      const companyCostCOP = Math.round(baseSal * (laborRates.factorPrestacional || 1.52));
+                      const companyCostCOP = Math.round(baseSal * effectiveFactor);
                       return (
                         <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100 grid grid-cols-3 gap-2 text-xs">
                           <div>
@@ -630,16 +840,40 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                             <span className="font-bold text-gray-900">{formatCOP(baseSal)}</span>
                           </div>
                           <div className="text-center">
-                            <span className="text-[10px] text-emerald-700 block font-bold">Costo Real Empresa (1.52)</span>
+                            <span className="text-[10px] text-emerald-700 block font-bold">
+                              {effectiveFactor === 1 ? 'Base Mensual (×1.00)' : `Costo Mes (×${effectiveFactor})`}
+                            </span>
                             <span className="font-extrabold text-emerald-800">{formatCOP(companyCostCOP)}/mes</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-[10px] text-gray-500 block font-medium">Costo Hora (210h)</span>
+                            <span className="text-[10px] text-gray-500 block font-medium">
+                              {emp.customHourlyRateCOP && emp.customHourlyRateCOP > 0
+                                ? 'Tarifa Hora Manual'
+                                : `Tarifa Hora (${effectiveDivisor}h)`}
+                            </span>
                             <span className="font-bold text-[#00668F]">{formatCOP(hourlyRateCOP)}/h</span>
                           </div>
                         </div>
                       );
                     })()}
+
+                    {/* Competencias Estandarizadas por ID de Catálogo */}
+                    {skillIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {skillIds.slice(0, 4).map((sk) => {
+                          const resolved = resolveCompetencyLabel(sk);
+                          return (
+                            <span
+                              key={sk}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 text-[#00668F] border border-sky-200 text-[10px] font-bold"
+                            >
+                              <span className="font-mono text-[9px] text-sky-600">[{resolved.id}]</span>
+                              <span>{resolved.name}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {/* Semáforo de Certificaciones Críticas para Trabajos en Pilonas (Resolución 4272 de 2021) */}
                     {(() => {
@@ -2344,21 +2578,79 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                     <label className="block text-xs font-bold text-gray-700 mb-1">Salario Base (COP)</label>
                     <input
                       type="number"
-                      min={1000000}
-                      value={editingEmployee.baseSalaryCOP}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, baseSalaryCOP: Number(e.target.value) })}
+                      min={0}
+                      placeholder="0"
+                      value={editingEmployee.baseSalaryCOP || ''}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, baseSalaryCOP: Number(e.target.value) || 0 })}
                       className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
                     />
+                    {editingEmployee.baseSalaryCOP > 0 && (
+                      <span className="text-[10px] text-gray-500 font-medium mt-0.5 block">
+                        {formatCOP(editingEmployee.baseSalaryCOP)}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Días de Vacaciones Disponibles</label>
                     <input
                       type="number"
                       min={0}
-                      value={editingEmployee.vacationDaysAvailable}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, vacationDaysAvailable: Number(e.target.value) })}
+                      placeholder="0"
+                      value={editingEmployee.vacationDaysAvailable || ''}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, vacationDaysAvailable: Number(e.target.value) || 0 })}
                       className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
                     />
+                  </div>
+                </div>
+
+                {/* Personalización Individual de Tarifa Hora */}
+                <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-[#00668F]">
+                      Personalización Individual de Tarifa Hora (Opcional)
+                    </span>
+                    <span className="text-[11px] font-extrabold text-emerald-700">
+                      Resultante: {formatCOP(calculateCustomizableHourlyRate(editingEmployee, laborRates))}/h
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-600 mb-1">
+                        Tarifa Hora Manual Fija (COP/h)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Automático según fórmula"
+                        value={editingEmployee.customHourlyRateCOP || ''}
+                        onChange={(e) =>
+                          setEditingEmployee({
+                            ...editingEmployee,
+                            customHourlyRateCOP: Number(e.target.value) || undefined,
+                          })
+                        }
+                        className="w-full text-xs p-2 rounded-lg border border-gray-300 bg-white font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-600 mb-1">
+                        Factor Individual (Ej: 1.00 o 1.52)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        placeholder={`Global (${laborRates.factorPrestacional})`}
+                        value={editingEmployee.customFactorPrestacional || ''}
+                        onChange={(e) =>
+                          setEditingEmployee({
+                            ...editingEmployee,
+                            customFactorPrestacional: Number(e.target.value) || undefined,
+                          })
+                        }
+                        className="w-full text-xs p-2 rounded-lg border border-gray-300 bg-white font-semibold"
+                      />
+                    </div>
                   </div>
                 </div>
 

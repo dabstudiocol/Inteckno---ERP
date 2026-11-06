@@ -235,6 +235,7 @@ export interface User {
   isActive?: boolean;
   nationalId?: string; // Cédula o Documento de Identidad
   accountStatus?: 'activa' | 'suspendida' | 'desactivada';
+  employeeId?: string; // Vínculo relacional 1:1 con EmployeeRecord en Talento Humano
   jobPositionId?: string; // Referencia al cargo oficial del Módulo de Cargos
   m365AccountSynced?: boolean;
   m365Id?: string;
@@ -243,6 +244,7 @@ export interface User {
   onboardingCompleted?: boolean;
   inductionPath?: string;
   competencies: string[];
+  competencyIds?: string[]; // IDs estandarizados de catálogo (ej. SKILL-001, SKILL-002)
   hseqStatus: 'valid' | 'expired' | 'pending';
   hseqExpiresAt: string;
   canWorkHeights: boolean;
@@ -649,6 +651,14 @@ export interface Product {
   calibracionCertificadoUrl?: string;
   calibracionVigente?: boolean;
   checkEvents?: EquipmentCheckEvent[];
+  // Trazabilidad Relacional de Préstamos / Remisiones por ID
+  userId?: string; // Técnico custodio actual (ej. USR-18)
+  custodianUserId?: string;
+  custodianName?: string;
+  projectId?: string; // Proyecto destino actual (ej. PRJ-1793367181536)
+  remissionId?: string; // Remisión de salida activa (ej. REM-2026-001)
+  activeRemissionId?: string;
+  loanStatus?: 'AVAILABLE' | 'DISPATCHED_TO_PROJECT' | 'RETURNED' | string;
 }
 
 export interface InventoryAuditLog {
@@ -717,6 +727,7 @@ export interface DispatchRemission {
   departureDate: string;
   expectedReturnDate: string;
   actualReturnDate?: string;
+  userId?: string; // Vínculo relacional explícito al usuario responsable
   responsibleTechnicianId: string;
   responsibleTechnicianName: string;
   projectId: string;
@@ -1245,6 +1256,8 @@ export interface CRMContact {
   stcSystem: string;
   country: string;
   notes: string;
+  opportunityId?: string; // Vínculo relacional con la oportunidad comercial origen
+  opportunityCode?: string;
 
   // Nuevos campos de cabecera y clasificación
   tags?: string[];
@@ -1629,6 +1642,10 @@ export interface InternationalLead {
 // 4. TALENTO HUMANO Y SST
 export interface EmployeeRecord {
   id: string;
+  employeeId?: string; // Código relacional único (ej. EMP-USR-02)
+  userId?: string; // Vínculo relacional 1:1 con User.id (ej. USR-02)
+  jobPositionId?: string; // Vínculo relacional con JobPosition
+  competencyIds?: string[]; // IDs estandarizados de catálogo (ej. SKILL-001)
   name: string;
   fullName?: string;
   documentId: string;
@@ -1638,6 +1655,8 @@ export interface EmployeeRecord {
   hireDate: string;
   baseSalaryCOP: number;
   monthlyBaseSalary?: number;
+  customHourlyRateCOP?: number; // Tarifa hora manual personalizada (opcional, si se define reemplaza la fórmula)
+  customFactorPrestacional?: number; // Factor prestacional personalizado por colaborador (ej. 1.00 sin carga, 1.52 con carga)
   city?: string;
   email?: string;
   phone?: string;

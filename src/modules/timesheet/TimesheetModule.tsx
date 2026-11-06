@@ -23,7 +23,11 @@ import { TimesheetEntry } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
-import { useModuleCatalog, getLaborRates } from '../../core/services/moduleConfigService';
+import {
+  useModuleCatalog,
+  useLaborRates,
+  calculateCustomizableHourlyRate,
+} from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { SmartEmployeeSelect } from '../../components/common/SmartEmployeeSelect';
 import { SmartProjectItemSelect } from '../../components/common/SmartProjectItemSelect';
@@ -180,19 +184,26 @@ export const TimesheetModule: React.FC = () => {
     role: currentUser.roleLabel || 'Colaborador ITK',
   };
 
-  // Factores Laborales Dinámicos (Ley 2101)
-  const laborRates = useMemo(() => getLaborRates(), [isConfigModalOpen]);
+  // Factores Laborales Dinámicos Personalizables
+  const [laborRates, updateLaborRates] = useLaborRates();
+  const [customEntryHourlyRate, setCustomEntryHourlyRate] = useState<number>(0);
+  const [quickHourMultiplier, setQuickHourMultiplier] = useState<number>(1.0);
 
-  // Encontrar el salario del colaborador para calcular la tarifa hora prestacional
+  // Encontrar el salario del colaborador para calcular la tarifa hora
   const collaboratorEmployee = useMemo(() => {
     return employees.find(
-      (e) => e.id === selectedUserId || e.name.toLowerCase() === selectedCollaborator.name.toLowerCase()
+      (e) =>
+        e.id === selectedUserId ||
+        e.userId === selectedUserId ||
+        e.employeeId === selectedUserId ||
+        e.name.toLowerCase() === selectedCollaborator.name.toLowerCase()
     );
   }, [employees, selectedUserId, selectedCollaborator.name]);
 
   const baseSalaryCOP = collaboratorEmployee?.baseSalaryCOP || 0;
-  const hasValidSalary = baseSalaryCOP > 0;
-  const baseHourlyRateCOP = hasValidSalary ? Math.round((baseSalaryCOP * laborRates.factorPrestacional) / (laborRates.divisorMensual || 210)) : 0;
+  const formulaHourlyRateCOP = calculateCustomizableHourlyRate(collaboratorEmployee, laborRates);
+  const baseHourlyRateCOP =
+    customEntryHourlyRate > 0 ? Math.round(customEntryHourlyRate) : formulaHourlyRateCOP;
 
   // Total de Horas Efectivas
   const totalDetailedHours = hodHours + hedHours + henHours + domHours + heddHours + hendHours;
@@ -201,7 +212,7 @@ export const TimesheetModule: React.FC = () => {
   // Costo Total de Mano de Obra en COP
   const calculatedLaborCostCOP = useMemo(() => {
     if (!isDetailedLaborMode) {
-      return effectiveHours * baseHourlyRateCOP;
+      return Math.round(effectiveHours * baseHourlyRateCOP * (quickHourMultiplier || 1.0));
     }
     const cost = baseHourlyRateCOP * (
       hodHours * laborRates.hod +
@@ -213,7 +224,7 @@ export const TimesheetModule: React.FC = () => {
       hendHours * laborRates.hend
     );
     return Math.round(cost);
-  }, [isDetailedLaborMode, effectiveHours, baseHourlyRateCOP, hodHours, hedHours, rnHours, henHours, domHours, heddHours, hendHours, laborRates]);
+  }, [isDetailedLaborMode, effectiveHours, baseHourlyRateCOP, quickHourMultiplier, hodHours, hedHours, rnHours, henHours, domHours, heddHours, hendHours, laborRates]);
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,15 +513,17 @@ export const TimesheetModule: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div>
-              <div className="flex items-center justify-between mb-1">
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <label className="block text-xs font-bold text-gray-700">
-                  5. Total Horas Trabajadas
+                  5. Total Horas Trabajadas y Personalización de Tarifa Hora
                 </label>
-                <span className="text-[11px] text-slate-500">
-                  Tarifa: {formatCOP(baseHourlyRateCOP)}/h • Costo: <strong className="text-emerald-700">{formatCOP(calculatedLaborCostCOP)}</strong>
+                <span className="text-[11px] text-slate-600">
+                  Tarifa Base: <strong>{formatCOP(baseHourlyRateCOP)}/h</strong> × Recargo <strong>×{quickHourMultiplier}</strong> • Costo Total:{' '}
+                  <strong className="text-emerald-700">{formatCOP(calculatedLaborCostCOP)}</strong>
                 </span>
               </div>
+
               <div className="flex items-center gap-2">
                 {[4, 8, 9, 10].map((h) => (
                   <button
@@ -536,6 +549,56 @@ export const TimesheetModule: React.FC = () => {
                     placeholder="0"
                     onChange={(e) => setHours(parseFloat(e.target.value) || 0)}
                     className="w-full p-2 text-xs font-bold text-center border border-slate-300 rounded-xl bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Barra Rápida de Personalización de Factor Prestacional, Tipo de Hora y Tarifa Manual */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                    Factor Base (¿Incluir Carga Prestacional?)
+                  </label>
+                  <select
+                    value={String(laborRates.factorPrestacional)}
+                    onChange={(e) => updateLaborRates({ factorPrestacional: parseFloat(e.target.value) || 1.0 })}
+                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800"
+                  >
+                    <option value="1">1.00x — Sin Carga (Solo Salario Base ÷ {laborRates.divisorMensual}h)</option>
+                    <option value="1.3">1.30x — Carga Básica (+30%)</option>
+                    <option value="1.52">1.52x — Carga Prestacional Completa (+52%)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                    Tipo de Hora (Ordinaria vs Extra)
+                  </label>
+                  <select
+                    value={String(quickHourMultiplier)}
+                    onChange={(e) => setQuickHourMultiplier(parseFloat(e.target.value) || 1.0)}
+                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800"
+                  >
+                    <option value="1">Hora Ordinaria Normal (×1.00 Sin Recargo)</option>
+                    <option value={String(laborRates.hed)}>Hora Extra Diurna (×{laborRates.hed})</option>
+                    <option value={String(laborRates.hen)}>Hora Extra Nocturna (×{laborRates.hen})</option>
+                    <option value={String(laborRates.dom)}>Dominical / Festivo (×{laborRates.dom})</option>
+                    <option value={String(laborRates.hedd)}>Extra Dom. Diurna (×{laborRates.hedd})</option>
+                    <option value={String(laborRates.hend)}>Extra Dom. Nocturna (×{laborRates.hend})</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                    Tarifa Hora Manual (Opcional - COP/h)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder={`Automática: ${formatCOP(formulaHourlyRateCOP)}/h`}
+                    value={customEntryHourlyRate || ''}
+                    onChange={(e) => setCustomEntryHourlyRate(Number(e.target.value) || 0)}
+                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-bold text-[#00668F]"
                   />
                 </div>
               </div>
