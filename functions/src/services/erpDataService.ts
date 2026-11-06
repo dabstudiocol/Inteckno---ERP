@@ -2807,12 +2807,19 @@ export async function executeAiAction(
           });
         }
 
-        return {
+        const updatedRow: any = {
           ...row,
           projectItemId: pItemId,
-          receiptPhotoFileId: receiptPhotoFileId || (receiptPhotos && receiptPhotos.length > 0 ? `DOC-REC-${row.id}` : undefined),
-          receiptPhotos,
         };
+        if (receiptPhotoFileId) {
+          updatedRow.receiptPhotoFileId = receiptPhotoFileId;
+        } else if (receiptPhotos && receiptPhotos.length > 0) {
+          updatedRow.receiptPhotoFileId = `DOC-REC-${row.id}`;
+        }
+        if (receiptPhotos !== undefined) {
+          updatedRow.receiptPhotos = receiptPhotos;
+        }
+        return updatedRow;
       });
 
       projects[targetProjectIdx] = {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T18:58:09.716Z",
+  "generatedAt": "2026-11-06T19:03:56.209Z",
   "status": {
     "status": "ok",
     "version": "1.0.0-ai-gateway",
@@ -11,13 +11,13 @@
       "write_prod_safe",
       "pii"
     ],
-    "timestamp": "2026-11-06T18:58:23.829Z",
+    "timestamp": "2026-11-06T19:04:10.202Z",
     "counts": {
       "projects": 1,
       "tasks": 0,
       "milestones": 0,
       "purchaseOrders": 0,
-      "requisitions": 1,
+      "requisitions": 0,
       "partners": 0,
       "products": 1500,
       "timesheets": 0,
@@ -178,14 +178,14 @@
   "diagnostics": {
     "healthy": true,
     "totalIssues": 32,
-    "checkedAt": "2026-11-06T18:58:24.558Z",
+    "checkedAt": "2026-11-06T19:04:11.005Z",
     "findings": [
       {
         "severity": "warning",
         "ruleViolated": "Regla 4 (Cero Mock Data en Producción)",
         "module": "projects",
         "entityId": "CODIGO PROYECTO PRUEBA",
-        "description": "El proyecto CODIGO PROYECTO PRUEBA contiene literales de prueba (\"CODIGO PROYECTO PRUEBA\" / \"CLIENTE PRUEBA\").",
+        "description": "El proyecto CODIGO PROYECTO PRUEBA contiene literales de prueba (\"CODIGO PROYECTO PRUEBA\" / \"CLIENTE PRUEBA S.A.S.\").",
         "suggestedFix": "Ejecutar POST /api/v1/ai/action con action=\"PURGE_MOCK_DATA\"."
       },
       {
@@ -445,7 +445,7 @@
       "totalContractCOP": 100000000,
       "totalActualCostCOP": 3975050,
       "totalCommittedPOCOP": 0,
-      "openRequisitionsCount": 1,
+      "openRequisitionsCount": 0,
       "activeOpportunitiesCount": 0,
       "totalSkusInStock": 1500,
       "lowStockAlertCount": 1345
@@ -473,8 +473,8 @@
     "nextCursor": null,
     "items": [
       {
-        "clientName": "CLIENTE PRUEBA",
-        "serviceType": "Recorte de Cables tractores",
+        "clientName": "CLIENTE PRUEBA S.A.S.",
+        "serviceType": "Recorte de Cables tractores y Mantenimiento Mayor",
         "paymentTermsDescription": "Contra entrega de informe final aprobado a satisfacción",
         "quoteCode": "CODIGO COTIZACION PRUEBA",
         "earnedValueEV": 0,
@@ -493,7 +493,7 @@
         },
         "budgetPV": 100000000,
         "contractAmount": 100000000,
-        "updatedAt": "2026-11-06T17:35:48.039Z",
+        "updatedAt": "2026-11-06T19:04:01.175Z",
         "contractCode": "CONTRATO PRUEBA",
         "offerBudget": {
           "items": [
@@ -517,8 +517,8 @@
         "cv": 0,
         "location": "Colombia",
         "currency": "COP",
-        "serviceId": "Recorte de Cables tractores",
-        "categoryId": "MANTENIMIENTO Y MONTAJE ESPECIALIZADO",
+        "serviceId": "SRV-005",
+        "categoryId": "CAT-001",
         "costMatrix": [
           {
             "id": "COST-1793387007211",
@@ -540,7 +540,8 @@
             "hasIva": true,
             "ivaAmount": 85500,
             "retentionAmount": 0,
-            "splitPercentage": 100
+            "splitPercentage": 100,
+            "projectItemId": "ITEM-1793386958665"
           },
           {
             "retentionAmount": 0,
@@ -562,7 +563,8 @@
             "actualUnitCost": 150000,
             "actualQuantity": 5,
             "plannedUnitCost": 150000,
-            "ivaAmount": 142500
+            "ivaAmount": 142500,
+            "projectItemId": "ITEM-1793374163278"
           },
           {
             "category": "mano_obra_itk",
@@ -587,7 +589,9 @@
             "ivaAmount": 0,
             "hasIva": false,
             "id": "COST-1793374221664",
-            "unit": "Horas"
+            "unit": "Horas",
+            "projectItemId": "ITEM-1793374163278",
+            "receiptPhotoFileId": "DOC-REC-COST-1793374221664"
           },
           {
             "id": "cost-ts-TS-2026-DH01",
@@ -611,7 +615,8 @@
             "hasIva": false,
             "ivaAmount": 0,
             "retentionAmount": 0,
-            "splitPercentage": 100
+            "splitPercentage": 100,
+            "projectItemId": "ITEM-1793374163278"
           }
         ],
         "spi": 1,
@@ -666,6 +671,10 @@
           "updatedAt": "2026-11-06T16:45:29.303Z"
         },
         "lastUpdated": "2026-11-06T17:35:48.039Z",
+        "clientId": "CLI-88231",
+        "supervisorId": "USR-07",
+        "serviceTypeId": "SRV-005",
+        "paymentTermId": "PT-CR-SAT",
         "computedTaxRate": 0.19
       }
     ]
@@ -727,7 +736,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-07",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Laureles, Circular 4 # 73-12",
@@ -769,7 +779,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-02",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Itagüí, Carrera 52 # 48-15",
@@ -822,7 +833,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-05",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-05-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-08-20",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "El Poblado, Calle 10 # 32-45",
@@ -875,7 +898,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-01",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Transversal 39B # 74-21",
@@ -928,7 +952,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-06",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Sabaneta, Calle 75 Sur # 45-20",
@@ -981,7 +1006,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-16-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-05-15",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Carrera 70 # 45E-18",
@@ -1023,7 +1060,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-08",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Envigado, Carrera 43A # 38S-19",
@@ -1087,7 +1125,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-18-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-06-30",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Sabaneta, Carrera 45 # 70-12",
@@ -1129,7 +1179,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Transversal 39 # 72-10",
@@ -1182,7 +1233,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Bello, Calle 55 # 48-30",
@@ -1246,7 +1298,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Itagüí, Carrera 52 # 55-14",
@@ -1299,7 +1352,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Calle 33 # 65C-18",
@@ -1352,7 +1406,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Calle 92 # 49A-12",
@@ -1416,7 +1471,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-05",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-24-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-04-10",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Bello, Diagonal 55 # 42-10",
@@ -1469,7 +1536,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-05",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Envigado, Transversal 32Sur # 40-12",
@@ -1522,7 +1590,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Carrera 76 # 30-45",
@@ -1564,7 +1633,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Sabaneta, Calle 72Sur # 43A-19",
@@ -1606,7 +1676,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Bello, Carrera 50 # 38-12",
@@ -1670,7 +1741,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Calle 44 # 70-22",
@@ -1723,7 +1795,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Itagüí, Calle 48 # 51-20",
@@ -1776,7 +1849,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Transversal 78 # 65-30",
@@ -1840,7 +1914,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Circular 2 # 70-14",
@@ -1893,7 +1968,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "La Estrella, Calle 75Sur # 60-12",
@@ -1946,7 +2022,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Calle 49B # 74-50",
@@ -1999,7 +2076,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Carrera 81 # 32-15",
@@ -2041,7 +2119,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-36-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-12-31",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Carrera 65 # 102-18",
@@ -2094,7 +2184,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-05",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-39-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-05-22",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Medellín, Circular 73 # 39-10",
@@ -2136,7 +2238,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-09",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "address": "Copacabana, Calle 48 # 55-22",
@@ -2200,7 +2303,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-05",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-41-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-06-18",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "id": "USR-99",
@@ -2262,7 +2377,19 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-03",
+        "certifications": [
+          {
+            "id": "CERT-USR-USR-99-01",
+            "certificationId": "CERT-ALT-4272",
+            "name": "Certificación Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "issuer": "SENA / Centro de Entrenamiento Autorizado",
+            "issueDate": "2025-01-15",
+            "expiryDate": "2027-12-31",
+            "status": "vigente"
+          }
+        ],
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "role": "gerente_general",
@@ -2298,7 +2425,8 @@
             "verifiedAt": "2026-11-06"
           }
         ],
-        "updatedAt": "2026-11-06T18:17:45.386Z"
+        "departmentId": "DEP-04",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       }
     ]
   },
@@ -6529,149 +6657,10 @@
   },
   "requisitions": {
     "module": "requisitions",
-    "totalCount": 1,
-    "returnedCount": 1,
+    "totalCount": 0,
+    "returnedCount": 0,
     "nextCursor": null,
-    "items": [
-      {
-        "id": "REQ-MRP-2026-001",
-        "reqNumber": "SOLPED-MRP-2026-001",
-        "reqType": "mrp_automated",
-        "status": "draft_mrp_consolidation",
-        "projectId": "PRJ-1793367181536",
-        "projectCode": "CODIGO PROYECTO PRUEBA",
-        "itemCode": "ITEM PRUEBA 1",
-        "requesterId": "MRP-CRON-ENGINE",
-        "requesterName": "Motor MRP Automatizado (00:00 Cron)",
-        "priority": "normal",
-        "totalLowStockDetectedInWarehouse": 1344,
-        "consolidatedSuppliersCount": 1,
-        "justification": "Consolidación automática MRP de 1344 alertas pasivas de stock bajo en un único borrador accionable por Compras (Auditoría Nivel 4).",
-        "items": [
-          {
-            "sku": "0",
-            "name": "PRODUCTO GENERICO",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000067",
-            "name": "GUARDACABLE DE 1/2",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000100",
-            "name": "BOTAS TIPO INGENIERO CAFE",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A000011",
-            "name": "RIDUZIONE ADAT.D3/8-TUBO D1/4",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000110",
-            "name": "BARRA HERRAGRO  18 LIBRAS",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000111",
-            "name": "PALA HERRAGRO",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000112",
-            "name": "CABO PARA PALA",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000114",
-            "name": "CINTA BANDIT 1/2 30 METROS",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000116",
-            "name": "DESTORNILLADOR DE PALA 1/4 X 4\" SATA ST65109EM",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000117",
-            "name": "LLAVE HEXAGONA IRWIN IW10606 -5MMLARGA",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000119",
-            "name": "TORNILLO HEXAGONAL M22 X 2,5 X 110",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A000012",
-            "name": "RACOR RECTO MACHO CILÍNDRICO DE 1/4 A 8MM",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000123",
-            "name": "CORREA CON TRINQUETE",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000125",
-            "name": "POLEA PIÑÓN - POLEA 2F - ITK-TTC-POL-P36",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          },
-          {
-            "sku": "A0000126",
-            "name": "MOSQUETON 3/8",
-            "qty": 10,
-            "unit": "UNIDAD",
-            "estimatedUnitCostCOP": 25000,
-            "supplierGroup": "PROV-CONSOLIDADO-STC"
-          }
-        ],
-        "createdAt": "2026-11-06T16:45:29.303Z"
-      }
-    ]
+    "items": []
   },
   "productsSample": {
     "module": "products",
@@ -6688,7 +6677,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -6699,7 +6687,11 @@
         "category": "Repuestos y Componentes",
         "sku": "0",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6710,7 +6702,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -6721,7 +6712,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000067",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6732,7 +6727,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -6743,7 +6737,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000100",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6765,7 +6763,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000108",
         "totalEntradas": 8,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-03D",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6776,7 +6777,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -6787,7 +6787,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A000011",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6798,7 +6802,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -6809,7 +6812,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000110",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6831,7 +6838,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000111",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-PATIO",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6853,7 +6863,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000112",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-AP",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6875,7 +6888,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000113",
         "totalEntradas": 3,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-02D",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6897,7 +6913,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000114",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-03D",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6919,7 +6938,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000115",
         "totalEntradas": 2,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-TB2",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6930,7 +6952,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -6941,7 +6962,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000116",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6952,7 +6977,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -6963,7 +6987,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000117",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6985,7 +7013,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000118",
         "totalEntradas": 2,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-08A",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -6996,7 +7027,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -7007,7 +7037,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000119",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7018,7 +7052,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -7029,7 +7062,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A000012",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7051,7 +7088,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000120",
         "totalEntradas": 126,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-03D",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7073,7 +7113,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000121",
         "totalEntradas": 10,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-03D",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7095,7 +7138,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000122",
         "totalEntradas": 6,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-03D",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7117,7 +7163,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000123",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-01A",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7128,7 +7177,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -7139,7 +7187,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000125",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7161,7 +7213,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000126",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-AP",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7183,7 +7238,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000127",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-04B",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7205,7 +7263,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000128",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-04D",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7216,7 +7277,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -7227,7 +7287,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000129",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7238,7 +7302,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -7249,7 +7312,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A000013",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7271,7 +7338,10 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000130",
         "totalEntradas": 1,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-04C",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7302,12 +7372,14 @@
         "projectCodeAllocation": "CODIGO PROYECTO PRUEBA",
         "userId": "USR-18",
         "projectId": "PRJ-1793367181536",
-        "updatedAt": "2026-11-06T18:17:45.386Z",
         "custodianName": "Jhon Alexander Sánchez Ramírez",
         "observations": "Activo Fijo EQUIP-101 (SN-DW-88492011) — Controlado en erp_modules/procurement.equipment y Remisión REM-2026-001",
         "loanStatus": "en_prestamo",
         "name": "TALADRO PERC DW RECARG DCD7781D 1/2\" 20V",
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-04G",
+        "locationId": "LOC-CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7318,7 +7390,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -7329,7 +7400,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000132",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       },
       {
         "isCriticalSpare": false,
@@ -7340,7 +7415,6 @@
         "costPriceCOP": 0,
         "totalSalidas": 0,
         "minStock": 1,
-        "shelf": "Bodega Central",
         "isHomologatedITK": true,
         "unit": "UNIDAD",
         "physicalState": "solido",
@@ -7351,7 +7425,11 @@
         "category": "Repuestos y Componentes",
         "sku": "A0000133",
         "totalEntradas": 0,
-        "_syncedAt": "2026-11-06T18:55:56.128Z"
+        "_syncedAt": "2026-11-06T18:59:32.015Z",
+        "shelfId": "SHLF-CENTRAL",
+        "locationId": "LOC-CENTRAL",
+        "shelf": "CENTRAL",
+        "updatedAt": "2026-11-06T19:04:01.175Z"
       }
     ]
   }
