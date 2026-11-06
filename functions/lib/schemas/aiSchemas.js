@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AiActionRequestSchema = exports.RestructureLevel3GovernancePayload = exports.PurgeMockDataPayload = exports.RecalculateProjectEvmPayload = exports.SyncUsersToEmployeesPayload = exports.SandboxDeletePayload = exports.UpsertRemissionPayload = exports.UpsertProductPayload = exports.RecordTimesheetPayload = exports.UpsertPurchaseOrderPayload = exports.UpsertRequisitionPayload = exports.UpsertProjectPayload = exports.UpsertOpportunityPayload = exports.CostMatrixRowSchema = exports.ProjectItemSchema = exports.SummaryQuerySchema = exports.DataQuerySchema = exports.ModuleNameEnum = void 0;
+exports.AiActionRequestSchema = exports.ExecuteLevel4And5ArchitecturePayload = exports.RestructureLevel3GovernancePayload = exports.PurgeMockDataPayload = exports.RecalculateProjectEvmPayload = exports.SyncUsersToEmployeesPayload = exports.SandboxDeletePayload = exports.UpsertRemissionPayload = exports.UpsertProductPayload = exports.RecordTimesheetPayload = exports.UpsertPurchaseOrderPayload = exports.UpsertRequisitionPayload = exports.UpsertProjectPayload = exports.UpsertOpportunityPayload = exports.CostMatrixRowSchema = exports.ProjectItemSchema = exports.SummaryQuerySchema = exports.DataQuerySchema = exports.ModuleNameEnum = void 0;
 const zod_1 = require("zod");
 /**
  * Validated Module Keys & Sub-Entities in Inteckno ERP
@@ -30,10 +30,15 @@ exports.ModuleNameEnum = zod_1.z.enum([
     'hr',
     'employees',
     'careerProfiles',
+    'competenciesCatalog',
+    'hseqAlerts',
     'novelties',
     'sstInspections',
     'jobPositions',
     'candidates',
+    'finances',
+    'retentionFunds',
+    'mrpDrafts',
     'commercial',
     'opportunities',
     'contacts',
@@ -241,6 +246,17 @@ exports.RestructureLevel3GovernancePayload = zod_1.z.object({
     segregateEquipmentFromConsumables: zod_1.z.boolean().default(true),
     recalculateTaxEngineSummary: zod_1.z.boolean().default(true),
 });
+exports.ExecuteLevel4And5ArchitecturePayload = zod_1.z.object({
+    enforceJobPositionForeignKeys: zod_1.z.boolean().default(true),
+    normalizeCompetenciesCatalog: zod_1.z.boolean().default(true),
+    runHseqProactiveAlertEngine: zod_1.z.boolean().default(true),
+    hseqWarningDaysThreshold: zod_1.z.number().int().min(1).default(60),
+    enforceCascadingSoftDeleteOnOrphans: zod_1.z.boolean().default(true),
+    runMrpAutomatedEngine: zod_1.z.boolean().default(true),
+    configureRetentionAndAdvanceSubledger: zod_1.z.boolean().default(true),
+    defaultAdvancePct: zod_1.z.number().min(0).max(50).default(10),
+    defaultRetentionGuaranteePct: zod_1.z.number().min(0).max(30).default(5),
+});
 exports.AiActionRequestSchema = zod_1.z.discriminatedUnion('action', [
     zod_1.z.object({ action: zod_1.z.literal('upsert_opportunity'), payload: exports.UpsertOpportunityPayload }),
     zod_1.z.object({ action: zod_1.z.literal('upsert_project'), payload: exports.UpsertProjectPayload }),
@@ -254,5 +270,6 @@ exports.AiActionRequestSchema = zod_1.z.discriminatedUnion('action', [
     zod_1.z.object({ action: zod_1.z.literal('RECALCULATE_PROJECT_EVM'), payload: exports.RecalculateProjectEvmPayload }),
     zod_1.z.object({ action: zod_1.z.literal('PURGE_MOCK_DATA'), payload: exports.PurgeMockDataPayload }),
     zod_1.z.object({ action: zod_1.z.literal('RESTRUCTURE_LEVEL3_GOVERNANCE'), payload: exports.RestructureLevel3GovernancePayload }),
+    zod_1.z.object({ action: zod_1.z.literal('EXECUTE_LEVEL4_AND_5_ARCHITECTURE'), payload: exports.ExecuteLevel4And5ArchitecturePayload }),
 ]);
 //# sourceMappingURL=aiSchemas.js.map

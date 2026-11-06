@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T16:34:18.093Z",
+  "generatedAt": "2026-11-06T16:45:22.875Z",
   "status": {
     "status": "ok",
     "version": "1.0.0-ai-gateway",
@@ -11,13 +11,13 @@
       "write_prod_safe",
       "pii"
     ],
-    "timestamp": "2026-11-06T16:34:32.308Z",
+    "timestamp": "2026-11-06T16:45:36.958Z",
     "counts": {
       "projects": 1,
       "tasks": 0,
       "milestones": 0,
       "purchaseOrders": 0,
-      "requisitions": 0,
+      "requisitions": 1,
       "partners": 0,
       "products": 1500,
       "timesheets": 0,
@@ -151,10 +151,15 @@
       "hr",
       "employees",
       "careerProfiles",
+      "competenciesCatalog",
+      "hseqAlerts",
       "novelties",
       "sstInspections",
       "jobPositions",
       "candidates",
+      "finances",
+      "retentionFunds",
+      "mrpDrafts",
       "commercial",
       "opportunities",
       "contacts",
@@ -173,7 +178,7 @@
   "diagnostics": {
     "healthy": true,
     "totalIssues": 1,
-    "checkedAt": "2026-11-06T16:34:33.181Z",
+    "checkedAt": "2026-11-06T16:45:37.617Z",
     "findings": [
       {
         "severity": "warning",
@@ -192,7 +197,7 @@
       "totalContractCOP": 100000000,
       "totalActualCostCOP": 3700000,
       "totalCommittedPOCOP": 0,
-      "openRequisitionsCount": 0,
+      "openRequisitionsCount": 1,
       "activeOpportunitiesCount": 0,
       "totalSkusInStock": 1500,
       "lowStockAlertCount": 1345
@@ -240,7 +245,7 @@
         },
         "budgetPV": 100000000,
         "contractAmount": 100000000,
-        "updatedAt": "2026-11-06T16:34:22.835Z",
+        "updatedAt": "2026-11-06T16:45:29.303Z",
         "contractCode": "CONTRATO PRUEBA",
         "offerBudget": {
           "items": [
@@ -338,7 +343,7 @@
           }
         ],
         "spi": 1,
-        "advancePaymentPercentage": 0,
+        "advancePaymentPercentage": 10,
         "projectItems": [
           {
             "id": "ITEM-1793374163278",
@@ -357,7 +362,7 @@
             "createdAt": "2026-10-30T19:02:38.665Z"
           }
         ],
-        "retentionGuaranteePercentage": 0,
+        "retentionGuaranteePercentage": 5,
         "startDate": "2026-10-30",
         "supervisorName": "Gustavo Alberto Mejía Tobón",
         "actualCostAC": 3700000,
@@ -371,6 +376,22 @@
           "effectiveTaxRate": 0.19,
           "calculatedTaxTotal": 228000,
           "grandTotal": 3928000
+        },
+        "advancePaymentAmount": 10000000,
+        "retentionGuaranteeAmount": 5000000,
+        "retentionSubLedger": {
+          "id": "RET-FUND-PRJ-1793367181536",
+          "projectId": "PRJ-1793367181536",
+          "projectCode": "CODIGO PROYECTO PRUEBA",
+          "contractAmountCOP": 100000000,
+          "advancePaymentPercentage": 10,
+          "retentionGuaranteePercentage": 5,
+          "advanceAmortizationBalanceCOP": 10000000,
+          "retentionGuaranteeEscrowCOP": 5000000,
+          "netPayableToInvoiceCOP": 85000000,
+          "formulaApplied": "Monto Neto = Monto Hito - (Monto Hito * %Anticipo) - (Monto Hito * %Garantía)",
+          "status": "active_escrow",
+          "updatedAt": "2026-11-06T16:45:29.303Z"
         },
         "computedTaxRate": 0.19
       }
@@ -406,7 +427,14 @@
         "hseqExpiresAt": "2027-12-31",
         "id": "USR-02",
         "department": "Gestión Comercial",
-        "email": "ahoyos@inteckno.com"
+        "email": "ahoyos@inteckno.com",
+        "jobPositionId": "POS-COM-01",
+        "competencyIds": [
+          "COMP-COM-001",
+          "COMP-COM-002",
+          "COMP-ENG-001"
+        ],
+        "jobPosition": "Coordinador Comercial y Licitaciones LATAM"
       },
       {
         "address": "Laureles, Circular 4 # 73-12",
@@ -432,7 +460,14 @@
         "hseqExpiresAt": "2027-12-31",
         "id": "USR-04",
         "department": "Administración y Finanzas",
-        "email": "cgarcia@inteckno.com"
+        "email": "cgarcia@inteckno.com",
+        "jobPositionId": "POS-GA-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-FIN-001",
+          "COMP-MGT-001"
+        ],
+        "jobPosition": "Gerente Administrativa y Financiera"
       },
       {
         "address": "Itagüí, Carrera 52 # 48-15",
@@ -459,7 +494,15 @@
         "hseqExpiresAt": "2027-08-20",
         "id": "USR-05",
         "department": "Operaciones de Campo",
-        "email": "dmorales@inteckno.com"
+        "email": "dmorales@inteckno.com",
+        "jobPositionId": "POS-SUP-01",
+        "competencyIds": [
+          "COMP-NDT-001",
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001"
+        ],
+        "jobPosition": "Supervisor Técnico de Campo STC"
       },
       {
         "address": "El Poblado, Calle 10 # 32-45",
@@ -485,7 +528,14 @@
         "hseqExpiresAt": "2027-12-31",
         "id": "USR-07",
         "department": "Dirección General",
-        "email": "gmejia@inteckno.com"
+        "email": "gmejia@inteckno.com",
+        "jobPositionId": "POS-GG-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-FIN-001",
+          "COMP-MGT-001"
+        ],
+        "jobPosition": "Gerente General"
       },
       {
         "address": "Medellín, Transversal 39B # 74-21",
@@ -513,7 +563,13 @@
         "department": "SST y Sostenibilidad",
         "email": "krojas@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-SST"
+        "jobPositionId": "POS-HSEQ-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-002",
+          "COMP-HSEQ-001"
+        ],
+        "jobPosition": "Coordinador HSEQ y Seguridad Industrial"
       },
       {
         "address": "Sabaneta, Calle 75 Sur # 45-20",
@@ -539,7 +595,13 @@
         "hseqExpiresAt": "2027-05-15",
         "id": "USR-16",
         "department": "Ingeniería y Proyectos",
-        "email": "sruiz@inteckno.com"
+        "email": "sruiz@inteckno.com",
+        "jobPositionId": "POS-LP-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002"
+        ],
+        "jobPosition": "Líder de Proyectos STC"
       },
       {
         "address": "Medellín, Carrera 70 # 45E-18",
@@ -565,7 +627,14 @@
         "hseqExpiresAt": "2027-12-31",
         "id": "USR-17",
         "department": "Cadena de Suministro",
-        "email": "svelez@inteckno.com"
+        "email": "svelez@inteckno.com",
+        "jobPositionId": "POS-PUR-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-LOG-001",
+          "COMP-FIN-001"
+        ],
+        "jobPosition": "Coordinador de Compras y Abastecimiento"
       },
       {
         "address": "Envigado, Carrera 43A # 38S-19",
@@ -592,7 +661,14 @@
         "hseqExpiresAt": "2027-06-30",
         "id": "USR-18",
         "department": "Ingeniería y Proyectos",
-        "email": "walzate@inteckno.com"
+        "email": "walzate@inteckno.com",
+        "jobPositionId": "POS-LP-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002",
+          "COMP-NDT-001"
+        ],
+        "jobPosition": "Líder de Proyectos STC"
       },
       {
         "address": "Sabaneta, Carrera 45 # 70-12",
@@ -620,7 +696,12 @@
         "department": "Ingeniería y Proyectos",
         "email": "adiaz@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Transversal 39 # 72-10",
@@ -648,7 +729,13 @@
         "department": "Ingeniería y Proyectos",
         "email": "cperez@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-TEC-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Bello, Calle 55 # 48-30",
@@ -676,7 +763,13 @@
         "department": "Ingeniería y Proyectos",
         "email": "fgiraldo@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042",
+          "COMP-ENG-002"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Itagüí, Carrera 52 # 55-14",
@@ -704,7 +797,13 @@
         "department": "Ingeniería y Proyectos",
         "email": "jgaleano@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Calle 33 # 65C-18",
@@ -732,7 +831,13 @@
         "department": "Ingeniería y Proyectos",
         "email": "jhernandez@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Calle 92 # 49A-12",
@@ -758,7 +863,15 @@
         "hseqExpiresAt": "2027-04-10",
         "id": "USR-24",
         "department": "Operaciones de Campo",
-        "email": "jguzman@inteckno.com"
+        "email": "jguzman@inteckno.com",
+        "jobPositionId": "POS-TEC-03",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-TEC-001",
+          "COMP-HSEQ-001",
+          "COMP-NDT-001"
+        ],
+        "jobPosition": "Técnico Especialista Electromecánico STC"
       },
       {
         "address": "Bello, Diagonal 55 # 42-10",
@@ -785,7 +898,13 @@
         "department": "Operaciones de Campo",
         "email": "yfranco@inteckno.com",
         "jobPositionId": "POS-AT",
-        "canWorkHeights": false
+        "canWorkHeights": false,
+        "competencyIds": [
+          "COMP-HSEQ-001",
+          "COMP-ENG-001",
+          "COMP-TEC-001"
+        ],
+        "jobPosition": "Técnico Operativo de Montaje y Alturas"
       },
       {
         "address": "Envigado, Transversal 32Sur # 40-12",
@@ -813,7 +932,12 @@
         "department": "Ingeniería y Proyectos",
         "email": "jcastellanos@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Carrera 76 # 30-45",
@@ -840,7 +964,12 @@
         "department": "Ingeniería y Proyectos",
         "email": "rdarcos@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Sabaneta, Calle 72Sur # 43A-19",
@@ -868,7 +997,13 @@
         "department": "Ingeniería y Proyectos",
         "email": "sarbelaez@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Bello, Carrera 50 # 38-12",
@@ -895,7 +1030,13 @@
         "department": "Ingeniería y Proyectos",
         "email": "nsolano@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-NDT-001",
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Calle 44 # 70-22",
@@ -922,7 +1063,12 @@
         "department": "Ingeniería y Proyectos",
         "email": "hgelves@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Itagüí, Calle 48 # 51-20",
@@ -949,7 +1095,12 @@
         "department": "Ingeniería y Proyectos",
         "email": "jocampo@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Transversal 78 # 65-30",
@@ -977,7 +1128,14 @@
         "department": "Ingeniería y Proyectos",
         "email": "gchatelain@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Circular 2 # 70-14",
@@ -1005,7 +1163,13 @@
         "department": "Ingeniería y Proyectos",
         "email": "gmancego@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "La Estrella, Calle 75Sur # 60-12",
@@ -1032,7 +1196,12 @@
         "department": "Ingeniería y Proyectos",
         "email": "mllanos@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Calle 49B # 74-50",
@@ -1060,7 +1229,12 @@
         "department": "Ingeniería y Proyectos",
         "email": "gmartinez@inteckno.com",
         "canWorkHeights": false,
-        "jobPositionId": "POS-IP"
+        "jobPositionId": "POS-IP",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Ingeniero de Proyectos STC"
       },
       {
         "address": "Medellín, Carrera 81 # 32-15",
@@ -1087,7 +1261,14 @@
         "hseqExpiresAt": "2027-12-31",
         "id": "USR-36",
         "department": "Ingeniería y Proyectos",
-        "email": "sduque@inteckno.com"
+        "email": "sduque@inteckno.com",
+        "jobPositionId": "POS-LI-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-NDT-001",
+          "COMP-ENG-042"
+        ],
+        "jobPosition": "Líder de Ingeniería y Diseño"
       },
       {
         "address": "Medellín, Carrera 65 # 102-18",
@@ -1114,7 +1295,14 @@
         "hseqExpiresAt": "2027-05-22",
         "id": "USR-39",
         "department": "Operaciones de Campo",
-        "email": "hguerrero@inteckno.com"
+        "email": "hguerrero@inteckno.com",
+        "jobPositionId": "POS-AT",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-TEC-001"
+        ],
+        "jobPosition": "Técnico Operativo de Montaje y Alturas"
       },
       {
         "address": "Medellín, Circular 73 # 39-10",
@@ -1140,7 +1328,14 @@
         "hseqExpiresAt": "2027-12-31",
         "id": "USR-40",
         "department": "Negocios Internacionales y ERP",
-        "email": "dhurtado@inteckno.com"
+        "email": "dhurtado@inteckno.com",
+        "jobPositionId": "POS-ANI-01",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-COM-001",
+          "COMP-LOG-001"
+        ],
+        "jobPosition": "Especialista de Negocios Internacionales"
       },
       {
         "address": "Copacabana, Calle 48 # 55-22",
@@ -1167,7 +1362,14 @@
         "hseqExpiresAt": "2027-06-18",
         "id": "USR-41",
         "department": "Operaciones de Campo",
-        "email": "msuescun@inteckno.com"
+        "email": "msuescun@inteckno.com",
+        "jobPositionId": "POS-AT",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001"
+        ],
+        "jobPosition": "Técnico Operativo de Montaje y Alturas"
       },
       {
         "id": "USR-99",
@@ -1197,50 +1399,6 @@
         "linkedInUrl": "https://www.linkedin.com/in/david-hurtado-2ab131250",
         "nationalId": "1034986228",
         "jobReadinessScore": 74,
-        "jobPosition": {
-          "softSkills": [
-            "Pensamiento analítico estructurado",
-            "Capacidad pedagógica para capacitar usuarios",
-            "Proactividad y respuesta ante incidentes"
-          ],
-          "salaryRange": {
-            "min": 5500000,
-            "isConfidential": true,
-            "max": 8000000,
-            "currency": "COP"
-          },
-          "code": "ITK-CAR-03",
-          "purpose": "Garantizar la disponibilidad 24/7, escalabilidad y ciberseguridad integral de la infraestructura digital de Inteckno S.A.S., administrando el ERP propio en React 19 / Firebase, Microsoft 365 y el cumplimiento ISO 27001 / Habeas Data.",
-          "academicRequirements": [
-            "Ingeniería de Sistemas, Telemática, Computación o Software.",
-            "Certificaciones recomendadas en Cloud (Google Cloud / Azure) y Ciberseguridad."
-          ],
-          "title": "Administrador de Sistemas & Arquitecto Cloud ERP",
-          "createdAt": "2026-01-15",
-          "responsibilities": [
-            "Mantener la arquitectura del ERP Inteckno en la nube de Google Firebase y Vercel.",
-            "Monitorear la sincronización con Microsoft Graph API (To Do, Outlook, Teams) y DIAN.",
-            "Gestionar las copias de seguridad automáticas, cifrado AES-256 y control de accesos RBAC.",
-            "Supervisar el asistente de IA LUC-IA-NA y su conexión con modelos Gemini en tiempo real.",
-            "Auditar periódicamente la seguridad informática y el cumplimiento de la Ley 1581 de 2012."
-          ],
-          "experienceRequired": "Mínimo 3 años administrando plataformas web modernas, bases de datos NoSQL y cloud enterprise.",
-          "technicalSkills": [
-            "React 19, TypeScript, Tailwind CSS y Node.js",
-            "Google Cloud Firestore y Firebase Hosting",
-            "Integración RESTful APIs y Microsoft Entra ID",
-            "Seguridad TLS 1.3 y mitigación OWASP Top 10"
-          ],
-          "workConditions": [
-            "Modalidad de trabajo híbrida con base en oficina técnica Medellín.",
-            "Disponibilidad remota ante eventuales contingencias del sistema."
-          ],
-          "id": "POS-03",
-          "department": "Sistemas y Tecnología",
-          "status": "activo",
-          "updatedAt": "2026-08-30"
-        },
-        "jobPositionId": "POS-IT",
         "dataPrivacyConsent": {
           "policyVersion": "v2026.1 - Ley 1581 de 2012",
           "accepted": true,
@@ -1256,7 +1414,12 @@
         "bloodType": "A+",
         "birthDate": "2004-01-29",
         "emergencyContactPhone": "+57 3103735257",
-        "emergencyContactName": "Luis Fernando Hurtado"
+        "emergencyContactName": "Luis Fernando Hurtado",
+        "jobPositionId": "POS-SIS-01",
+        "competencyIds": [
+          "COMP-ENG-001"
+        ],
+        "jobPosition": "Administrador de Sistemas y Arquitectura ERP"
       },
       {
         "role": "gerente_general",
@@ -1271,7 +1434,13 @@
         "hseqExpiresAt": "2027-12-31",
         "id": "user-gustavo-mejia",
         "department": "Ingeniería y Proyectos",
-        "email": "gerencia@inteckno.com"
+        "email": "gerencia@inteckno.com",
+        "jobPositionId": "POS-GG-01",
+        "competencyIds": [
+          "COMP-MGT-001",
+          "COMP-ENG-001"
+        ],
+        "jobPosition": "Gerente General"
       }
     ]
   },
@@ -1309,6 +1478,13 @@
         "emergencyPhone": "+57 320 333 4411",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-COM-01",
+        "jobPosition": "Coordinador Comercial y Licitaciones LATAM",
+        "competencyIds": [
+          "COMP-COM-001",
+          "COMP-COM-002",
+          "COMP-ENG-001"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1340,6 +1516,13 @@
         "emergencyPhone": "+57 310 111 2233",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-GA-01",
+        "jobPosition": "Gerente Administrativa y Financiera",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-FIN-001",
+          "COMP-MGT-001"
+        ],
         "computedHourlyCostCOP": 47048,
         "computedMonthlyCompanyCostCOP": 9880000
       },
@@ -1371,6 +1554,14 @@
         "emergencyPhone": "+57 312 444 8822",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-SUP-01",
+        "jobPosition": "Supervisor Técnico de Campo STC",
+        "competencyIds": [
+          "COMP-NDT-001",
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001"
+        ],
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
@@ -1402,6 +1593,13 @@
         "emergencyPhone": "+57 300 123 4567",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-GG-01",
+        "jobPosition": "Gerente General",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-FIN-001",
+          "COMP-MGT-001"
+        ],
         "computedHourlyCostCOP": 47048,
         "computedMonthlyCompanyCostCOP": 9880000
       },
@@ -1433,6 +1631,13 @@
         "emergencyPhone": "+57 311 222 3388",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-HSEQ-01",
+        "jobPosition": "Coordinador HSEQ y Seguridad Industrial",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-002",
+          "COMP-HSEQ-001"
+        ],
         "computedHourlyCostCOP": 18095,
         "computedMonthlyCompanyCostCOP": 3800000
       },
@@ -1464,6 +1669,12 @@
         "emergencyPhone": "+57 314 222 7788",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-LP-01",
+        "jobPosition": "Líder de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002"
+        ],
         "computedHourlyCostCOP": 34743,
         "computedMonthlyCompanyCostCOP": 7296000
       },
@@ -1495,6 +1706,13 @@
         "emergencyPhone": "+57 318 999 5566",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-PUR-01",
+        "jobPosition": "Coordinador de Compras y Abastecimiento",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-LOG-001",
+          "COMP-FIN-001"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1526,6 +1744,13 @@
         "emergencyPhone": "+57 315 888 9911",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-LP-01",
+        "jobPosition": "Líder de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002",
+          "COMP-NDT-001"
+        ],
         "computedHourlyCostCOP": 34743,
         "computedMonthlyCompanyCostCOP": 7296000
       },
@@ -1557,6 +1782,12 @@
         "emergencyPhone": "+57 316 111 5566",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1588,6 +1819,13 @@
         "emergencyPhone": "+57 315 888 2211",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-TEC-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1619,6 +1857,13 @@
         "emergencyPhone": "+57 314 222 1100",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042",
+          "COMP-ENG-002"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1650,6 +1895,13 @@
         "emergencyPhone": "+57 313 777 9922",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1681,6 +1933,13 @@
         "emergencyPhone": "+57 312 999 4433",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1712,6 +1971,14 @@
         "emergencyPhone": "+57 316 111 4455",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-TEC-03",
+        "jobPosition": "Técnico Especialista Electromecánico STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-TEC-001",
+          "COMP-HSEQ-001",
+          "COMP-NDT-001"
+        ],
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
@@ -1743,6 +2010,13 @@
         "emergencyPhone": "+57 319 333 7722",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-AT",
+        "jobPosition": "Técnico Operativo de Montaje y Alturas",
+        "competencyIds": [
+          "COMP-HSEQ-001",
+          "COMP-ENG-001",
+          "COMP-TEC-001"
+        ],
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
@@ -1774,6 +2048,12 @@
         "emergencyPhone": "+57 311 333 6655",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1805,6 +2085,12 @@
         "emergencyPhone": "+57 310 111 4477",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1836,6 +2122,13 @@
         "emergencyPhone": "+57 318 555 2211",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1867,6 +2160,13 @@
         "emergencyPhone": "+57 317 444 8833",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-NDT-001",
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1898,6 +2198,12 @@
         "emergencyPhone": "+57 316 777 1199",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1929,6 +2235,12 @@
         "emergencyPhone": "+57 315 999 3322",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1960,6 +2272,14 @@
         "emergencyPhone": "+57 314 111 8844",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -1991,6 +2311,13 @@
         "emergencyPhone": "+57 313 888 3311",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -2022,6 +2349,12 @@
         "emergencyPhone": "+57 312 222 5588",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -2053,6 +2386,12 @@
         "emergencyPhone": "+57 311 555 4499",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-IP",
+        "jobPosition": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       },
@@ -2084,6 +2423,13 @@
         "emergencyPhone": "+57 310 333 7711",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-LI-01",
+        "jobPosition": "Líder de Ingeniería y Diseño",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-NDT-001",
+          "COMP-ENG-042"
+        ],
         "computedHourlyCostCOP": 34743,
         "computedMonthlyCompanyCostCOP": 7296000
       },
@@ -2115,6 +2461,13 @@
         "emergencyPhone": "+57 317 333 1144",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-AT",
+        "jobPosition": "Técnico Operativo de Montaje y Alturas",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-TEC-001"
+        ],
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
@@ -2146,6 +2499,13 @@
         "emergencyPhone": "+57 301 888 4422",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-ANI-01",
+        "jobPosition": "Especialista de Negocios Internacionales",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-COM-001",
+          "COMP-LOG-001"
+        ],
         "computedHourlyCostCOP": 18095,
         "computedMonthlyCompanyCostCOP": 3800000
       },
@@ -2177,6 +2537,13 @@
         "emergencyPhone": "+57 318 999 2211",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-AT",
+        "jobPosition": "Técnico Operativo de Montaje y Alturas",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001"
+        ],
         "computedHourlyCostCOP": 22438,
         "computedMonthlyCompanyCostCOP": 4712000
       },
@@ -2208,6 +2575,11 @@
         "emergencyPhone": "+57 3103735257",
         "isActive": true,
         "updatedAt": "2026-11-06T16:11:14.527Z",
+        "jobPositionId": "POS-SIS-01",
+        "jobPosition": "Administrador de Sistemas y Arquitectura ERP",
+        "competencyIds": [
+          "COMP-ENG-001"
+        ],
         "computedHourlyCostCOP": 27505,
         "computedMonthlyCompanyCostCOP": 5776000
       }
@@ -2224,7 +2596,7 @@
         "userId": "USR-02",
         "name": "Alejandro Hoyos Correa",
         "role": "coord_comercial",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Licitaciones Estatales LATAM",
@@ -2234,10 +2606,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2245,14 +2616,21 @@
           "Costeo de Ofertas STC",
           "CRM y CSAT"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-COM-01",
+        "jobPositionTitle": "Coordinador Comercial y Licitaciones LATAM",
+        "competencyIds": [
+          "COMP-COM-001",
+          "COMP-COM-002",
+          "COMP-ENG-001"
+        ]
       },
       {
         "id": "CP-USR-04",
         "userId": "USR-04",
         "name": "Clemencia García Moncada",
         "role": "gerente_administrativa",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Homologación de Proveedores",
@@ -2262,10 +2640,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2273,14 +2650,21 @@
           "Control Presupuestal",
           "Facturación e Impuestos"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-GA-01",
+        "jobPositionTitle": "Gerente Administrativa y Financiera",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-FIN-001",
+          "COMP-MGT-001"
+        ]
       },
       {
         "id": "CP-USR-05",
         "userId": "USR-05",
         "name": "Dairo Antonio Morales Fuenmayor",
         "role": "supervisor_tecnico",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Inspección Magnetográfica",
@@ -2291,10 +2675,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2303,14 +2686,22 @@
           "Calibración de Equipos",
           "Coordinador de Alturas"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-SUP-01",
+        "jobPositionTitle": "Supervisor Técnico de Campo STC",
+        "competencyIds": [
+          "COMP-NDT-001",
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001"
+        ]
       },
       {
         "id": "CP-USR-07",
         "userId": "USR-07",
         "name": "Gustavo Alberto Mejía Tobón",
         "role": "gerente_general",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Estrategia Corporativa",
@@ -2320,10 +2711,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2331,14 +2721,21 @@
           "Evaluación de Riesgo",
           "Gestión Financiera STC"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-GG-01",
+        "jobPositionTitle": "Gerente General",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-FIN-001",
+          "COMP-MGT-001"
+        ]
       },
       {
         "id": "CP-USR-12",
         "userId": "USR-12",
         "name": "Kelly Johana Rojas Torres",
         "role": "hseq",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Matriz de Riesgos STC",
@@ -2349,10 +2746,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2361,14 +2757,21 @@
           "Auditorías ISO 45001",
           "Inspección EPP"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-HSEQ-01",
+        "jobPositionTitle": "Coordinador HSEQ y Seguridad Industrial",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-002",
+          "COMP-HSEQ-001"
+        ]
       },
       {
         "id": "CP-USR-16",
         "userId": "USR-16",
         "name": "Sebastián Ruiz Agudelo",
         "role": "lider_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Diseño Electromecánico CAD",
@@ -2378,10 +2781,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2389,14 +2791,20 @@
           "Cálculos de Tensión de Cables",
           "Auditoría Técnica"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-LP-01",
+        "jobPositionTitle": "Líder de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002"
+        ]
       },
       {
         "id": "CP-USR-17",
         "userId": "USR-17",
         "name": "Sebastián Vélez Yépez",
         "role": "coord_compras",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Negociación con Fabricantes Europeos",
@@ -2406,10 +2814,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2417,14 +2824,21 @@
           "Cuadros Comparativos",
           "Importaciones"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-PUR-01",
+        "jobPositionTitle": "Coordinador de Compras y Abastecimiento",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-LOG-001",
+          "COMP-FIN-001"
+        ]
       },
       {
         "id": "CP-USR-18",
         "userId": "USR-18",
         "name": "Wilson Albeiro Alzate Correa",
         "role": "lider_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Gerencia de Proyectos STC",
@@ -2435,10 +2849,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2447,14 +2860,21 @@
           "MS Project Avanzado",
           "END Nivel II"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-LP-01",
+        "jobPositionTitle": "Líder de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002",
+          "COMP-NDT-001"
+        ]
       },
       {
         "id": "CP-USR-19",
         "userId": "USR-19",
         "name": "Alejandro Díaz Cadamil",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Supervisión de Obras STC",
@@ -2465,10 +2885,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2477,14 +2896,20 @@
           "Control de Horas Hombre (HH)",
           "Planos As-Built"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-20",
         "userId": "USR-20",
         "name": "Carlos Eduardo Pérez",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Cálculo de Tensionado",
@@ -2495,10 +2920,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2507,14 +2931,21 @@
           "Supervisión de Cuadrilla",
           "Reportes DDR"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-TEC-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-21",
         "userId": "USR-21",
         "name": "Francisco Javier Giraldo Arcila",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Montaje de Poleas",
@@ -2525,10 +2956,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2537,14 +2967,21 @@
           "Protocolos LOTO",
           "Control de Avance WBS"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042",
+          "COMP-ENG-002"
+        ]
       },
       {
         "id": "CP-USR-22",
         "userId": "USR-22",
         "name": "Jefferson Galeano Peña",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Sistemas Hidráulicos STC",
@@ -2555,10 +2992,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2567,14 +3003,21 @@
           "Pruebas de Carga Dinámica",
           "Supervisión en Alturas"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-23",
         "userId": "USR-23",
         "name": "José Leonel Hernández Estrada",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Overhaul de Cabinas",
@@ -2585,10 +3028,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2597,14 +3039,21 @@
           "Auditoría Técnica de Campo",
           "Manejo ERP"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-24",
         "userId": "USR-24",
         "name": "Jonathan Estiven Guzmán",
         "role": "tecnico_stc",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Empalme de Cables",
@@ -2614,10 +3063,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2625,14 +3073,22 @@
           "Mantenimiento de Pilonas",
           "Overhaul de Pinzas"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-TEC-03",
+        "jobPositionTitle": "Técnico Especialista Electromecánico STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-TEC-001",
+          "COMP-HSEQ-001",
+          "COMP-NDT-001"
+        ]
       },
       {
         "id": "CP-USR-25",
         "userId": "USR-25",
         "name": "Yohan Daniel Franco Yépez",
         "role": "tecnico_stc",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 65,
         "professionalProfile": {
           "specialities": [
             "Apoyo en Alturas",
@@ -2642,25 +3098,42 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
-          ]
+            "RENOVACIÓN URGENTE: Curso Reentrenamiento Trabajo Seguro en Alturas (Res. 4272/2021)",
+            "Protocolo de Seguridad en Pilonas STC"
+          ],
+          "identifiedGaps": [
+            "Certificación Trabajo en Alturas Vencida (Bloqueo Operativo Activo)"
+          ],
+          "mandatoryRenewalTask": {
+            "taskId": "TRN-HSEQ-USR-25",
+            "title": "Reentrenamiento Obligatorio Res. 4272/2021",
+            "assignedBy": "USR-12 (Coordinador HSEQ)",
+            "status": "pending_urgent",
+            "dueDate": "2026-11-06"
+          }
         },
         "verifiedSkills": [
           "Apoyo en Alturas",
           "Pintura y Retoque de Torres",
           "Manejo de Torquímetros"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-AT",
+        "jobPositionTitle": "Técnico Operativo de Montaje y Alturas",
+        "competencyIds": [
+          "COMP-HSEQ-001",
+          "COMP-ENG-001",
+          "COMP-TEC-001"
+        ]
       },
       {
         "id": "CP-USR-26",
         "userId": "USR-26",
         "name": "Juan Pablo Castellanos Cadena",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Empalmes de Cable de Acero",
@@ -2671,10 +3144,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2683,14 +3155,20 @@
           "Coordinación de Cuadrillas",
           "Norma EN 12927"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-27",
         "userId": "USR-27",
         "name": "Rubén Darío Arcos Ordóñez",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Electromecánica Industrial",
@@ -2700,10 +3178,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2711,14 +3188,20 @@
           "Variadores de Frecuencia STC",
           "Motores Principales y Auxiliares"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-28",
         "userId": "USR-28",
         "name": "Santiago Arbeláez",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Mantenimiento Preventivo STC",
@@ -2729,10 +3212,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2741,14 +3223,21 @@
           "Reportes Diarios DDR",
           "Alturas Avanzado"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-29",
         "userId": "USR-29",
         "name": "Nencer Camilo Solano Mora",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Inspección Magnetográfica MRT",
@@ -2758,10 +3247,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2769,14 +3257,21 @@
           "Cálculos de Desgaste de Cable",
           "Supervisión de Obra"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-NDT-001",
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-30",
         "userId": "USR-30",
         "name": "Hernando Gelves",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Montajes Mecánicos de Gran Tonelaje",
@@ -2786,10 +3281,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2797,14 +3291,20 @@
           "Alineación de Ejes",
           "Diagnóstico de Vibraciones"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-31",
         "userId": "USR-31",
         "name": "Javier Andrés Ocampo",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Sistemas de Tracción y Contrapeso",
@@ -2814,10 +3314,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2825,14 +3324,20 @@
           "Válvulas Hidráulicas",
           "Comisionamiento de Teleféricos"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-32",
         "userId": "USR-32",
         "name": "Gabriel Jair Chatelain Naranjo",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Diseño y Ajuste de Balancines",
@@ -2843,10 +3348,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2855,14 +3359,22 @@
           "Seguridad en Alturas",
           "Gestión de Cuadrilla"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-33",
         "userId": "USR-33",
         "name": "Guendy Vanessa Mancego Villegas",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Gestión Documental de Calidad",
@@ -2873,10 +3385,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2885,14 +3396,21 @@
           "Inspección de Mordazas",
           "Control de Avance"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-34",
         "userId": "USR-34",
         "name": "Mauricio Llanos Loaiza",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Montaje de Estructuras Metálicas",
@@ -2902,10 +3420,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2913,14 +3430,20 @@
           "Topografía y Nivelación STC",
           "Supervisión de Campo"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-35",
         "userId": "USR-35",
         "name": "Glorymanelys Martínez Santos",
         "role": "ingeniero_proyectos",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Control de Calidad QA/QC",
@@ -2931,10 +3454,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2943,14 +3465,20 @@
           "Inspección de Soldadura",
           "Gestión de Hitos"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-IP",
+        "jobPositionTitle": "Ingeniero de Proyectos STC",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-36",
         "userId": "USR-36",
         "name": "Sebastián Duque Sánchez",
         "role": "lider_ingenieria",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Diseño Mecánico CAD SolidWorks",
@@ -2961,10 +3489,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -2973,14 +3500,21 @@
           "Tolerancias GD&T",
           "Norma EN 1709"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-LI-01",
+        "jobPositionTitle": "Líder de Ingeniería y Diseño",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-NDT-001",
+          "COMP-ENG-042"
+        ]
       },
       {
         "id": "CP-USR-39",
         "userId": "USR-39",
         "name": "Herson Guerrero Rúa",
         "role": "tecnico_stc",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Mantenimiento Electromecánico",
@@ -2991,10 +3525,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -3003,14 +3536,21 @@
           "Lubricación Técnica",
           "Trabajo en Alturas"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-AT",
+        "jobPositionTitle": "Técnico Operativo de Montaje y Alturas",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-HSEQ-001",
+          "COMP-TEC-001"
+        ]
       },
       {
         "id": "CP-USR-40",
         "userId": "USR-40",
         "name": "David Hurtado Yépez",
         "role": "asistente_negocios_internacionales",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Implementación ERP Odoo/Next",
@@ -3020,10 +3560,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -3031,14 +3570,21 @@
           "Análisis de Procesos BPMN",
           "Modelado de Negocio"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-ANI-01",
+        "jobPositionTitle": "Especialista de Negocios Internacionales",
+        "competencyIds": [
+          "COMP-ENG-001",
+          "COMP-COM-001",
+          "COMP-LOG-001"
+        ]
       },
       {
         "id": "CP-USR-41",
         "userId": "USR-41",
         "name": "Martín Suescún",
         "role": "tecnico_stc",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "specialities": [
             "Mantenimiento de Balancines",
@@ -3049,10 +3595,9 @@
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -3061,14 +3606,21 @@
           "Checklists en ERP",
           "Trabajo Seguro en Alturas"
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-AT",
+        "jobPositionTitle": "Técnico Operativo de Montaje y Alturas",
+        "competencyIds": [
+          "COMP-TEC-001",
+          "COMP-ENG-001",
+          "COMP-HSEQ-001"
+        ]
       },
       {
         "id": "CP-USR-99",
         "userId": "USR-99",
         "name": "David Hurtado Yepes",
         "role": "admin_sistemas",
-        "jobReadinessScore": 74,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "softSkills": [
             "Liderazgo y dirección de equipos en campo",
@@ -3180,27 +3732,9 @@
           "headline": "International Business Consultant @ INTECKNO S.A.S | Gerencia de Proyectos"
         },
         "lucianaImprovementPlan": {
-          "summary": "Diagnóstico completado para el cargo de Administrador de Sistemas & Arquitecto Cloud ERP. Nivel de adecuación actual: 74%. Cuentas con sólidas bases en Google Cloud Firestore y Firebase Hosting y Integración RESTful APIs y Microsoft Entra ID. Desarrollando React 19, TypeScript, Tailwind CSS y Node.js, consolidarás el 100% de cumplimiento para liderar iniciativas de alto impacto en Inteckno S.A.S.",
-          "promotionalPath": {
-            "missingRequirements": [
-              "Liderazgo de proyectos estratégicos en el área",
-              "Certificación de especialización profesional vigente",
-              "Auditoría y liquidación de indicadores clave en el ERP"
-            ],
-            "nextRoleTitle": "Arquitecto de Soluciones Cloud & Seguridad TI"
-          },
-          "generatedAt": "2026-10-06",
-          "technicalGaps": [
-            "React 19, TypeScript, Tailwind CSS y Node.js"
-          ],
-          "readinessScore": 74,
-          "recommendedWikiArticles": [
-            "ART-01: Protocolo de Ensayo Magneto-Inductivo (MRT) en Cables de Tracción STC"
-          ],
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "Arquitectura Cloud Serverless y Bases de Datos NoSQL",
-            "Ciberseguridad y Cumplimiento ISO 27001 para Plataformas Web",
-            "Desarrollo Frontend React Avanzado y APIs RESTful"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
         "verifiedSkills": [
@@ -3309,25 +3843,477 @@
             "category": "stc"
           }
         ],
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-SIS-01",
+        "jobPositionTitle": "Administrador de Sistemas y Arquitectura ERP",
+        "competencyIds": [
+          "COMP-ENG-001"
+        ]
       },
       {
         "id": "CP-user-gustavo-mejia",
         "userId": "user-gustavo-mejia",
         "name": "Gustavo Adolfo Mejía",
         "role": "gerente_general",
-        "jobReadinessScore": 88.5,
+        "jobReadinessScore": 100,
         "professionalProfile": {
           "yearsExperience": 5
         },
         "lucianaImprovementPlan": {
-          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "lastEvaluationDate": "2026-11-06T16:45:29.303Z",
           "recommendedCourses": [
-            "SG-SST Resolución 4272/2021",
-            "Mantenimiento Electromecánico STC"
+            "Actualización Normativa Europea EN 12929 / EN 1709"
           ]
         },
-        "updatedAt": "2026-11-06T16:34:22.835Z"
+        "updatedAt": "2026-11-06T16:45:29.303Z",
+        "jobPositionId": "POS-GG-01",
+        "jobPositionTitle": "Gerente General",
+        "competencyIds": [
+          "COMP-MGT-001",
+          "COMP-ENG-001"
+        ]
+      }
+    ]
+  },
+  "competenciesCatalog": {
+    "module": "competenciesCatalog",
+    "totalCount": 11,
+    "returnedCount": 11,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "COMP-ENG-001",
+        "code": "COMP-ENG-001",
+        "name": "Ingeniería de Sistemas de Transporte por Cable (EN 12929 / EN 1709)",
+        "category": "Ingeniería STC",
+        "criticality": "High"
+      },
+      {
+        "id": "COMP-ENG-002",
+        "code": "COMP-ENG-002",
+        "name": "Gestión de Valor Ganado (EVM) y Control Presupuestal",
+        "category": "Gestión de Proyectos",
+        "criticality": "High"
+      },
+      {
+        "id": "COMP-ENG-042",
+        "code": "COMP-ENG-042",
+        "name": "Alineación Láser y Diagnóstico de Vibraciones",
+        "category": "Mantenimiento Predictivo",
+        "criticality": "High"
+      },
+      {
+        "id": "COMP-NDT-001",
+        "code": "COMP-NDT-001",
+        "name": "Inspección Magneto-Inductiva de Cables (MRT) y Ensayos END Nivel II",
+        "category": "Ensayos No Destructivos",
+        "criticality": "High"
+      },
+      {
+        "id": "COMP-TEC-001",
+        "code": "COMP-TEC-001",
+        "name": "Overhaul de Pinzas Desembragables, Balancines y Reglajes de Estación",
+        "category": "Mantenimiento Mecánico STC",
+        "criticality": "High"
+      },
+      {
+        "id": "COMP-HSEQ-001",
+        "code": "COMP-HSEQ-001",
+        "name": "Trabajo Seguro en Alturas Avanzado (Resolución 4272/2021)",
+        "category": "Seguridad Industrial HSEQ",
+        "criticality": "High"
+      },
+      {
+        "id": "COMP-HSEQ-002",
+        "code": "COMP-HSEQ-002",
+        "name": "Auditoría SG-SST y Rescate Vertical en Pilonas",
+        "category": "Seguridad Industrial HSEQ",
+        "criticality": "High"
+      },
+      {
+        "id": "COMP-COM-001",
+        "code": "COMP-COM-001",
+        "name": "Estructuración de Licitaciones Estatales LATAM",
+        "category": "Comercial y Licitaciones",
+        "criticality": "Medium"
+      },
+      {
+        "id": "COMP-COM-002",
+        "code": "COMP-COM-002",
+        "name": "Costeo Financiero de Ofertas Internacionales e Incoterms",
+        "category": "Comercial y Licitaciones",
+        "criticality": "Medium"
+      },
+      {
+        "id": "COMP-LOG-001",
+        "code": "COMP-LOG-001",
+        "name": "Gestión de Inventarios, MRP y Trazabilidad de Activos Fijos",
+        "category": "Abastecimiento y Almacén",
+        "criticality": "Medium"
+      },
+      {
+        "id": "COMP-FIN-001",
+        "code": "COMP-FIN-001",
+        "name": "Tributación Multi-Jurisdicción LATAM y Control de Retenciones",
+        "category": "Finanzas y Contabilidad",
+        "criticality": "High"
+      }
+    ]
+  },
+  "jobPositions": {
+    "module": "jobPositions",
+    "totalCount": 16,
+    "returnedCount": 16,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "POS-GG-01",
+        "code": "POS-GG-01",
+        "title": "Gerente General",
+        "department": "Dirección Ejecutiva",
+        "requiredCompetencyIds": [
+          "COMP-MGT-001",
+          "COMP-ENG-001"
+        ]
+      },
+      {
+        "id": "POS-GA-01",
+        "code": "POS-GA-01",
+        "title": "Gerente Administrativa y Financiera",
+        "department": "Administración y Finanzas",
+        "requiredCompetencyIds": [
+          "COMP-FIN-001",
+          "COMP-MGT-001"
+        ]
+      },
+      {
+        "id": "POS-GP-01",
+        "code": "POS-GP-01",
+        "title": "Gerente de Proyectos STC",
+        "department": "Ingeniería y Proyectos",
+        "requiredCompetencyIds": [
+          "COMP-ENG-001",
+          "COMP-MGT-001"
+        ]
+      },
+      {
+        "id": "POS-LP-01",
+        "code": "POS-LP-01",
+        "title": "Líder de Proyectos STC",
+        "department": "Ingeniería y Proyectos",
+        "requiredCompetencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-002"
+        ]
+      },
+      {
+        "id": "POS-LI-01",
+        "code": "POS-LI-01",
+        "title": "Líder de Ingeniería y Diseño",
+        "department": "Ingeniería STC",
+        "requiredCompetencyIds": [
+          "COMP-ENG-001",
+          "COMP-NDT-001",
+          "COMP-ENG-042"
+        ]
+      },
+      {
+        "id": "POS-IP",
+        "code": "POS-IP",
+        "title": "Ingeniero de Proyectos STC",
+        "department": "Ingeniería y Proyectos",
+        "requiredCompetencyIds": [
+          "COMP-ENG-001",
+          "COMP-ENG-042"
+        ]
+      },
+      {
+        "id": "POS-SUP-01",
+        "code": "POS-SUP-01",
+        "title": "Supervisor Técnico de Campo STC",
+        "department": "Operaciones de Campo",
+        "requiredCompetencyIds": [
+          "COMP-TEC-001",
+          "COMP-HSEQ-001",
+          "COMP-NDT-001"
+        ]
+      },
+      {
+        "id": "POS-TEC-03",
+        "code": "POS-TEC-03",
+        "title": "Técnico Especialista Electromecánico STC",
+        "department": "Operaciones de Campo",
+        "requiredCompetencyIds": [
+          "COMP-TEC-001",
+          "COMP-HSEQ-001",
+          "COMP-NDT-001"
+        ]
+      },
+      {
+        "id": "POS-AT",
+        "code": "POS-AT",
+        "title": "Técnico Operativo de Montaje y Alturas",
+        "department": "Operaciones de Campo",
+        "requiredCompetencyIds": [
+          "COMP-TEC-001",
+          "COMP-HSEQ-001"
+        ]
+      },
+      {
+        "id": "POS-COM-01",
+        "code": "POS-COM-01",
+        "title": "Coordinador Comercial y Licitaciones LATAM",
+        "department": "Comercial y Licitaciones",
+        "requiredCompetencyIds": [
+          "COMP-COM-001",
+          "COMP-COM-002"
+        ]
+      },
+      {
+        "id": "POS-PUR-01",
+        "code": "POS-PUR-01",
+        "title": "Coordinador de Compras y Abastecimiento",
+        "department": "Compras y Logística",
+        "requiredCompetencyIds": [
+          "COMP-LOG-001",
+          "COMP-FIN-001"
+        ]
+      },
+      {
+        "id": "POS-HSEQ-01",
+        "code": "POS-HSEQ-01",
+        "title": "Coordinador HSEQ y Seguridad Industrial",
+        "department": "HSEQ",
+        "requiredCompetencyIds": [
+          "COMP-HSEQ-001",
+          "COMP-HSEQ-002"
+        ]
+      },
+      {
+        "id": "POS-ALM-01",
+        "code": "POS-ALM-01",
+        "title": "Almacenista y Control Metrológico",
+        "department": "Almacén e Inventarios",
+        "requiredCompetencyIds": [
+          "COMP-LOG-001"
+        ]
+      },
+      {
+        "id": "POS-ANI-01",
+        "code": "POS-ANI-01",
+        "title": "Especialista de Negocios Internacionales",
+        "department": "Comercio Exterior",
+        "requiredCompetencyIds": [
+          "COMP-COM-001",
+          "COMP-LOG-001"
+        ]
+      },
+      {
+        "id": "POS-CNT-01",
+        "code": "POS-CNT-01",
+        "title": "Contador Público y Tributario",
+        "department": "Finanzas",
+        "requiredCompetencyIds": [
+          "COMP-FIN-001"
+        ]
+      },
+      {
+        "id": "POS-SIS-01",
+        "code": "POS-SIS-01",
+        "title": "Administrador de Sistemas y Arquitectura ERP",
+        "department": "Tecnología",
+        "requiredCompetencyIds": [
+          "COMP-ENG-001"
+        ]
+      }
+    ]
+  },
+  "hseqAlerts": {
+    "module": "hseqAlerts",
+    "totalCount": 1,
+    "returnedCount": 1,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "HSEQ-ALT-USR-25",
+        "userId": "USR-25",
+        "userName": "Yohan Daniel Franco Yépez",
+        "jobPositionId": "POS-AT",
+        "coordinatorNotifiedId": "USR-12",
+        "status": "EXPIRED_BLOCKED",
+        "hseqExpiresAt": "2026-09-01",
+        "daysRemaining": -66,
+        "canWorkHeights": false,
+        "actionTaken": "Revocación automática de permisos en alturas (canWorkHeights=false) + Tarea obligatoria en Plan de Formación Luciana",
+        "createdAt": "2026-11-06T16:45:29.303Z"
+      }
+    ]
+  },
+  "retentionFunds": {
+    "module": "retentionFunds",
+    "totalCount": 1,
+    "returnedCount": 1,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "RET-FUND-PRJ-1793367181536",
+        "projectId": "PRJ-1793367181536",
+        "projectCode": "CODIGO PROYECTO PRUEBA",
+        "contractAmountCOP": 100000000,
+        "advancePaymentPercentage": 10,
+        "retentionGuaranteePercentage": 5,
+        "advanceAmortizationBalanceCOP": 10000000,
+        "retentionGuaranteeEscrowCOP": 5000000,
+        "netPayableToInvoiceCOP": 85000000,
+        "formulaApplied": "Monto Neto = Monto Hito - (Monto Hito * %Anticipo) - (Monto Hito * %Garantía)",
+        "status": "active_escrow",
+        "updatedAt": "2026-11-06T16:45:29.303Z"
+      }
+    ]
+  },
+  "mrpDrafts": {
+    "module": "mrpDrafts",
+    "totalCount": 1,
+    "returnedCount": 1,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "REQ-MRP-2026-001",
+        "reqNumber": "SOLPED-MRP-2026-001",
+        "reqType": "mrp_automated",
+        "status": "draft_mrp_consolidation",
+        "projectId": "PRJ-1793367181536",
+        "projectCode": "CODIGO PROYECTO PRUEBA",
+        "itemCode": "ITEM PRUEBA 1",
+        "requesterId": "MRP-CRON-ENGINE",
+        "requesterName": "Motor MRP Automatizado (00:00 Cron)",
+        "priority": "normal",
+        "totalLowStockDetectedInWarehouse": 1344,
+        "consolidatedSuppliersCount": 1,
+        "justification": "Consolidación automática MRP de 1344 alertas pasivas de stock bajo en un único borrador accionable por Compras (Auditoría Nivel 4).",
+        "items": [
+          {
+            "sku": "0",
+            "name": "PRODUCTO GENERICO",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000067",
+            "name": "GUARDACABLE DE 1/2",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000100",
+            "name": "BOTAS TIPO INGENIERO CAFE",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A000011",
+            "name": "RIDUZIONE ADAT.D3/8-TUBO D1/4",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000110",
+            "name": "BARRA HERRAGRO  18 LIBRAS",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000111",
+            "name": "PALA HERRAGRO",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000112",
+            "name": "CABO PARA PALA",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000114",
+            "name": "CINTA BANDIT 1/2 30 METROS",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000116",
+            "name": "DESTORNILLADOR DE PALA 1/4 X 4\" SATA ST65109EM",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000117",
+            "name": "LLAVE HEXAGONA IRWIN IW10606 -5MMLARGA",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000119",
+            "name": "TORNILLO HEXAGONAL M22 X 2,5 X 110",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A000012",
+            "name": "RACOR RECTO MACHO CILÍNDRICO DE 1/4 A 8MM",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000123",
+            "name": "CORREA CON TRINQUETE",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000125",
+            "name": "POLEA PIÑÓN - POLEA 2F - ITK-TTC-POL-P36",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000126",
+            "name": "MOSQUETON 3/8",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          }
+        ],
+        "createdAt": "2026-11-06T16:45:29.303Z"
       }
     ]
   },
@@ -3426,7 +4412,11 @@
         "role": "Contacto Comercial / Operador STC",
         "stcSystem": "Aéreo Monocable Desembragable 10-MGD",
         "country": "Colombia",
-        "notes": "Registrado automáticamente desde la oportunidad OPP-2026-001: Prueba 3"
+        "notes": "Registrado automáticamente desde la oportunidad OPP-2026-001: Prueba 3",
+        "isDeleted": true,
+        "status": "archived_cascade",
+        "deletedAt": "2026-11-06T16:45:29.303Z",
+        "deletedReason": "Cascading Soft-Delete (Auditoría Nivel 4): La oportunidad origen (OPP-2026-001) fue archivada/eliminada."
       }
     ]
   },
@@ -3439,10 +4429,149 @@
   },
   "requisitions": {
     "module": "requisitions",
-    "totalCount": 0,
-    "returnedCount": 0,
+    "totalCount": 1,
+    "returnedCount": 1,
     "nextCursor": null,
-    "items": []
+    "items": [
+      {
+        "id": "REQ-MRP-2026-001",
+        "reqNumber": "SOLPED-MRP-2026-001",
+        "reqType": "mrp_automated",
+        "status": "draft_mrp_consolidation",
+        "projectId": "PRJ-1793367181536",
+        "projectCode": "CODIGO PROYECTO PRUEBA",
+        "itemCode": "ITEM PRUEBA 1",
+        "requesterId": "MRP-CRON-ENGINE",
+        "requesterName": "Motor MRP Automatizado (00:00 Cron)",
+        "priority": "normal",
+        "totalLowStockDetectedInWarehouse": 1344,
+        "consolidatedSuppliersCount": 1,
+        "justification": "Consolidación automática MRP de 1344 alertas pasivas de stock bajo en un único borrador accionable por Compras (Auditoría Nivel 4).",
+        "items": [
+          {
+            "sku": "0",
+            "name": "PRODUCTO GENERICO",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000067",
+            "name": "GUARDACABLE DE 1/2",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000100",
+            "name": "BOTAS TIPO INGENIERO CAFE",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A000011",
+            "name": "RIDUZIONE ADAT.D3/8-TUBO D1/4",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000110",
+            "name": "BARRA HERRAGRO  18 LIBRAS",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000111",
+            "name": "PALA HERRAGRO",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000112",
+            "name": "CABO PARA PALA",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000114",
+            "name": "CINTA BANDIT 1/2 30 METROS",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000116",
+            "name": "DESTORNILLADOR DE PALA 1/4 X 4\" SATA ST65109EM",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000117",
+            "name": "LLAVE HEXAGONA IRWIN IW10606 -5MMLARGA",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000119",
+            "name": "TORNILLO HEXAGONAL M22 X 2,5 X 110",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A000012",
+            "name": "RACOR RECTO MACHO CILÍNDRICO DE 1/4 A 8MM",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000123",
+            "name": "CORREA CON TRINQUETE",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000125",
+            "name": "POLEA PIÑÓN - POLEA 2F - ITK-TTC-POL-P36",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          },
+          {
+            "sku": "A0000126",
+            "name": "MOSQUETON 3/8",
+            "qty": 10,
+            "unit": "UNIDAD",
+            "estimatedUnitCostCOP": 25000,
+            "supplierGroup": "PROV-CONSOLIDADO-STC"
+          }
+        ],
+        "createdAt": "2026-11-06T16:45:29.303Z"
+      }
+    ]
   },
   "productsSample": {
     "module": "products",

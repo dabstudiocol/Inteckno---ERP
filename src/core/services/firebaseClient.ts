@@ -2,10 +2,17 @@
  * CLIENTE OFICIAL DE FIREBASE PARA INTECKNO ERP
  * Conecta el ERP con Cloud Firestore, Firebase Authentication y Cloud Storage en Google Cloud.
  * Proyecto: inteckno-erp (Project Number: 370137794250)
+ * Incluye Persistencia Offline-First con IndexedDB multi-pestaña (Auditoría Nivel 4 - Trabajo en Pilonas STC).
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  Firestore,
+} from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 
 // Configuración oficial de Firebase para el proyecto 'inteckno-erp'
@@ -44,9 +51,18 @@ export function getFirebaseDb(): Firestore | null {
   const currentApp = getFirebaseApp();
   if (currentApp) {
     try {
-      db = getFirestore(currentApp);
-    } catch (e) {
-      console.warn('Error inicializando Firestore:', e);
+      // Auditoría Nivel 4 (Sección 3): Persistencia Offline-First con IndexedDB multi-pestaña
+      db = initializeFirestore(currentApp, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      });
+    } catch {
+      try {
+        db = getFirestore(currentApp);
+      } catch (e) {
+        console.warn('Error inicializando Firestore:', e);
+      }
     }
   }
   return db;

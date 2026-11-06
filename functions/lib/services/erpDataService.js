@@ -63,10 +63,14 @@ const MODULE_DOC_MAP = {
     benchTests: { docId: 'operations', arrayKey: 'benchTests' },
     employees: { docId: 'hr', arrayKey: 'employees' },
     careerProfiles: { docId: 'hr', arrayKey: 'careerProfiles' },
+    competenciesCatalog: { docId: 'hr', arrayKey: 'competenciesCatalog' },
+    hseqAlerts: { docId: 'hr', arrayKey: 'hseqAlerts' },
     novelties: { docId: 'hr', arrayKey: 'novelties' },
     sstInspections: { docId: 'hr', arrayKey: 'sstInspections' },
     jobPositions: { docId: 'hr', arrayKey: 'jobPositions' },
     candidates: { docId: 'hr', arrayKey: 'candidates' },
+    retentionFunds: { docId: 'finances', arrayKey: 'retentionFunds' },
+    mrpDrafts: { docId: 'procurement', arrayKey: 'mrpDrafts' },
     opportunities: { docId: 'commercial', arrayKey: 'opportunities' },
     contacts: { docId: 'commercial', arrayKey: 'contacts' },
     leads: { docId: 'commercial', arrayKey: 'leads' },
@@ -149,7 +153,7 @@ async function readErpModuleData(params) {
         const snap = await db.collection('erp_module_configs').limit(100).get();
         rawItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     }
-    else if (['procurement', 'operations', 'hr', 'commercial', 'productivity'].includes(params.module)) {
+    else if (['procurement', 'operations', 'hr', 'commercial', 'productivity', 'finances'].includes(params.module)) {
         const docSnap = await db.collection('erp_modules').doc(params.module).get();
         const docData = docSnap.exists ? docSnap.data() || {} : {};
         rawItems = [docData];
@@ -1465,6 +1469,419 @@ async function executeAiAction(reqAction, ctx) {
                 equipmentId: registeredEquipment?.equipmentId || 'EQUIP-101',
                 projectFinancialSummary: updatedProjects[0]?.financialSummary || null,
                 projectItemsAfterReconciliation: updatedProjects[0]?.projectItems || [],
+            },
+        };
+    }
+    // 11. EXECUTE_LEVEL4_AND_5_ARCHITECTURE (Auditoría Nivel 4 & Nivel 5: JobPositions FK, Competencies Catalog O(1), HSEQ 60-day Alert Engine, Cascading Soft-Delete, MRP Engine, Retention & Advance Sub-Ledger)
+    if (reqAction.action === 'EXECUTE_LEVEL4_AND_5_ARCHITECTURE') {
+        const p = reqAction.payload;
+        const [hrSnap, commSnap, procSnap, projSnap, finSnap, usersSnap] = await Promise.all([
+            db.collection('erp_modules').doc('hr').get(),
+            db.collection('erp_modules').doc('commercial').get(),
+            db.collection('erp_modules').doc('procurement').get(),
+            db.collection('erp_modules').doc('projects').get(),
+            db.collection('erp_modules').doc('finances').get(),
+            db.collection('users').get(),
+        ]);
+        const hrData = hrSnap.exists ? hrSnap.data() || {} : {};
+        const commData = commSnap.exists ? commSnap.data() || {} : {};
+        const procData = procSnap.exists ? procSnap.data() || {} : {};
+        const projData = projSnap.exists ? projSnap.data() || {} : {};
+        const finData = finSnap.exists ? finSnap.data() || {} : {};
+        const usersDocs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const employees = Array.isArray(hrData.employees) ? [...hrData.employees] : [];
+        const careerProfiles = Array.isArray(hrData.careerProfiles) ? [...hrData.careerProfiles] : [];
+        const opportunities = Array.isArray(commData.opportunities) ? [...commData.opportunities] : [];
+        const contacts = Array.isArray(commData.contacts) ? [...commData.contacts] : [];
+        const requisitions = Array.isArray(procData.requisitions) ? [...procData.requisitions] : [];
+        const projects = Array.isArray(projData.projects) ? [...projData.projects] : [];
+        let backupId;
+        if (ctx.environment === 'prod') {
+            backupId = await (0, auditAndBackupService_1.createPreWriteBackup)({
+                moduleOrCollection: 'erp_modules/hr+commercial+procurement+projects+finances+users',
+                action: 'EXECUTE_LEVEL4_AND_5_ARCHITECTURE',
+                previousState: {
+                    usersCount: usersDocs.length,
+                    contactsCount: contacts.length,
+                    requisitionsCount: requisitions.length,
+                    projectsCount: projects.length,
+                },
+                ctx,
+            });
+        }
+        const propagatedTo = [];
+        // -------------------------------------------------------------------------
+        // NIVEL 5.1: JobPosition Foreign Key Constraint & Official Descriptor Catalog
+        // -------------------------------------------------------------------------
+        const officialJobPositions = [
+            { id: 'POS-GG-01', code: 'POS-GG-01', title: 'Gerente General', department: 'Dirección Ejecutiva', requiredCompetencyIds: ['COMP-MGT-001', 'COMP-ENG-001'] },
+            { id: 'POS-GA-01', code: 'POS-GA-01', title: 'Gerente Administrativa y Financiera', department: 'Administración y Finanzas', requiredCompetencyIds: ['COMP-FIN-001', 'COMP-MGT-001'] },
+            { id: 'POS-GP-01', code: 'POS-GP-01', title: 'Gerente de Proyectos STC', department: 'Ingeniería y Proyectos', requiredCompetencyIds: ['COMP-ENG-001', 'COMP-MGT-001'] },
+            { id: 'POS-LP-01', code: 'POS-LP-01', title: 'Líder de Proyectos STC', department: 'Ingeniería y Proyectos', requiredCompetencyIds: ['COMP-ENG-001', 'COMP-ENG-002'] },
+            { id: 'POS-LI-01', code: 'POS-LI-01', title: 'Líder de Ingeniería y Diseño', department: 'Ingeniería STC', requiredCompetencyIds: ['COMP-ENG-001', 'COMP-NDT-001', 'COMP-ENG-042'] },
+            { id: 'POS-IP', code: 'POS-IP', title: 'Ingeniero de Proyectos STC', department: 'Ingeniería y Proyectos', requiredCompetencyIds: ['COMP-ENG-001', 'COMP-ENG-042'] },
+            { id: 'POS-SUP-01', code: 'POS-SUP-01', title: 'Supervisor Técnico de Campo STC', department: 'Operaciones de Campo', requiredCompetencyIds: ['COMP-TEC-001', 'COMP-HSEQ-001', 'COMP-NDT-001'] },
+            { id: 'POS-TEC-03', code: 'POS-TEC-03', title: 'Técnico Especialista Electromecánico STC', department: 'Operaciones de Campo', requiredCompetencyIds: ['COMP-TEC-001', 'COMP-HSEQ-001', 'COMP-NDT-001'] },
+            { id: 'POS-AT', code: 'POS-AT', title: 'Técnico Operativo de Montaje y Alturas', department: 'Operaciones de Campo', requiredCompetencyIds: ['COMP-TEC-001', 'COMP-HSEQ-001'] },
+            { id: 'POS-COM-01', code: 'POS-COM-01', title: 'Coordinador Comercial y Licitaciones LATAM', department: 'Comercial y Licitaciones', requiredCompetencyIds: ['COMP-COM-001', 'COMP-COM-002'] },
+            { id: 'POS-PUR-01', code: 'POS-PUR-01', title: 'Coordinador de Compras y Abastecimiento', department: 'Compras y Logística', requiredCompetencyIds: ['COMP-LOG-001', 'COMP-FIN-001'] },
+            { id: 'POS-HSEQ-01', code: 'POS-HSEQ-01', title: 'Coordinador HSEQ y Seguridad Industrial', department: 'HSEQ', requiredCompetencyIds: ['COMP-HSEQ-001', 'COMP-HSEQ-002'] },
+            { id: 'POS-ALM-01', code: 'POS-ALM-01', title: 'Almacenista y Control Metrológico', department: 'Almacén e Inventarios', requiredCompetencyIds: ['COMP-LOG-001'] },
+            { id: 'POS-ANI-01', code: 'POS-ANI-01', title: 'Especialista de Negocios Internacionales', department: 'Comercio Exterior', requiredCompetencyIds: ['COMP-COM-001', 'COMP-LOG-001'] },
+            { id: 'POS-CNT-01', code: 'POS-CNT-01', title: 'Contador Público y Tributario', department: 'Finanzas', requiredCompetencyIds: ['COMP-FIN-001'] },
+            { id: 'POS-SIS-01', code: 'POS-SIS-01', title: 'Administrador de Sistemas y Arquitectura ERP', department: 'Tecnología', requiredCompetencyIds: ['COMP-ENG-001'] },
+        ];
+        const resolveJobPositionId = (roleStr, roleLabelStr, existingPosId) => {
+            if (existingPosId && officialJobPositions.some((jp) => jp.id === existingPosId))
+                return existingPosId;
+            const r = `${roleStr} ${roleLabelStr}`.toLowerCase();
+            if (r.includes('gerente_general') || r.includes('gerente general'))
+                return 'POS-GG-01';
+            if (r.includes('gerente_administrativa') || r.includes('administrativ'))
+                return 'POS-GA-01';
+            if (r.includes('gerente_proyectos'))
+                return 'POS-GP-01';
+            if (r.includes('lider_proyectos'))
+                return 'POS-LP-01';
+            if (r.includes('lider_ingenieria'))
+                return 'POS-LI-01';
+            if (r.includes('ingeniero_proyectos') || r.includes('ing. proyectos'))
+                return 'POS-IP';
+            if (r.includes('supervisor_tecnico') || r.includes('supervisor'))
+                return 'POS-SUP-01';
+            if (r.includes('hseq'))
+                return 'POS-HSEQ-01';
+            if (r.includes('comercial') || r.includes('licitaciones'))
+                return 'POS-COM-01';
+            if (r.includes('compras'))
+                return 'POS-PUR-01';
+            if (r.includes('almacen'))
+                return 'POS-ALM-01';
+            if (r.includes('internacional'))
+                return 'POS-ANI-01';
+            if (r.includes('contador'))
+                return 'POS-CNT-01';
+            if (r.includes('admin_sistemas'))
+                return 'POS-SIS-01';
+            if (r.includes('especialista'))
+                return 'POS-TEC-03';
+            return 'POS-AT';
+        };
+        // -------------------------------------------------------------------------
+        // NIVEL 5.2: Parameterized Competencies Master Catalog (O(1) Lookup)
+        // -------------------------------------------------------------------------
+        const masterCompetenciesCatalog = [
+            { id: 'COMP-ENG-001', code: 'COMP-ENG-001', name: 'Ingeniería de Sistemas de Transporte por Cable (EN 12929 / EN 1709)', category: 'Ingeniería STC', criticality: 'High' },
+            { id: 'COMP-ENG-002', code: 'COMP-ENG-002', name: 'Gestión de Valor Ganado (EVM) y Control Presupuestal', category: 'Gestión de Proyectos', criticality: 'High' },
+            { id: 'COMP-ENG-042', code: 'COMP-ENG-042', name: 'Alineación Láser y Diagnóstico de Vibraciones', category: 'Mantenimiento Predictivo', criticality: 'High' },
+            { id: 'COMP-NDT-001', code: 'COMP-NDT-001', name: 'Inspección Magneto-Inductiva de Cables (MRT) y Ensayos END Nivel II', category: 'Ensayos No Destructivos', criticality: 'High' },
+            { id: 'COMP-TEC-001', code: 'COMP-TEC-001', name: 'Overhaul de Pinzas Desembragables, Balancines y Reglajes de Estación', category: 'Mantenimiento Mecánico STC', criticality: 'High' },
+            { id: 'COMP-HSEQ-001', code: 'COMP-HSEQ-001', name: 'Trabajo Seguro en Alturas Avanzado (Resolución 4272/2021)', category: 'Seguridad Industrial HSEQ', criticality: 'High' },
+            { id: 'COMP-HSEQ-002', code: 'COMP-HSEQ-002', name: 'Auditoría SG-SST y Rescate Vertical en Pilonas', category: 'Seguridad Industrial HSEQ', criticality: 'High' },
+            { id: 'COMP-COM-001', code: 'COMP-COM-001', name: 'Estructuración de Licitaciones Estatales LATAM', category: 'Comercial y Licitaciones', criticality: 'Medium' },
+            { id: 'COMP-COM-002', code: 'COMP-COM-002', name: 'Costeo Financiero de Ofertas Internacionales e Incoterms', category: 'Comercial y Licitaciones', criticality: 'Medium' },
+            { id: 'COMP-LOG-001', code: 'COMP-LOG-001', name: 'Gestión de Inventarios, MRP y Trazabilidad de Activos Fijos', category: 'Abastecimiento y Almacén', criticality: 'Medium' },
+            { id: 'COMP-FIN-001', code: 'COMP-FIN-001', name: 'Tributación Multi-Jurisdicción LATAM y Control de Retenciones', category: 'Finanzas y Contabilidad', criticality: 'High' },
+        ];
+        const mapTagToCompetencyId = (tag) => {
+            const t = String(tag || '').toLowerCase();
+            if (t.includes('mrt') || t.includes('magneto') || t.includes('end') || t.includes('ultrasonido') || t.includes('tintas'))
+                return 'COMP-NDT-001';
+            if (t.includes('laser') || t.includes('láser') || t.includes('vibrac') || t.includes('termogra'))
+                return 'COMP-ENG-042';
+            if (t.includes('altura') || t.includes('4272') || t.includes('rescate'))
+                return 'COMP-HSEQ-001';
+            if (t.includes('sst') || t.includes('hseq'))
+                return 'COMP-HSEQ-002';
+            if (t.includes('licitac'))
+                return 'COMP-COM-001';
+            if (t.includes('costeo') || t.includes('oferta') || t.includes('incoterm'))
+                return 'COMP-COM-002';
+            if (t.includes('pinza') || t.includes('balanc') || t.includes('reglaje') || t.includes('overhaul') || t.includes('mecan'))
+                return 'COMP-TEC-001';
+            if (t.includes('compras') || t.includes('almacen') || t.includes('inventario') || t.includes('logistica'))
+                return 'COMP-LOG-001';
+            if (t.includes('finan') || t.includes('contab') || t.includes('dian') || t.includes('impuesto'))
+                return 'COMP-FIN-001';
+            if (t.includes('evm') || t.includes('cronograma') || t.includes('wbs'))
+                return 'COMP-ENG-002';
+            return 'COMP-ENG-001';
+        };
+        // -------------------------------------------------------------------------
+        // NIVEL 5.3: HSEQ Proactive Alert Engine (60-day threshold + Auto-Block + Luciana Plan Task)
+        // -------------------------------------------------------------------------
+        const hseqAlerts = [];
+        const todayMs = Date.now();
+        const thresholdMs = (p.hseqWarningDaysThreshold || 60) * 86400000;
+        let linkedJobPositionsCount = 0;
+        for (const u of usersDocs) {
+            const posId = resolveJobPositionId(u.role || '', u.roleLabel || '', u.jobPositionId);
+            const posObj = officialJobPositions.find((jp) => jp.id === posId) || officialJobPositions[5];
+            const rawTags = Array.isArray(u.competencies) ? u.competencies : [];
+            const normalizedCompIds = Array.from(new Set([...rawTags.map(mapTagToCompetencyId), ...posObj.requiredCompetencyIds]));
+            // Check HSEQ expiration window
+            const expiryStr = u.hseqExpiresAt || '2027-12-31';
+            const expiryMs = new Date(expiryStr).getTime();
+            const daysRemaining = Math.ceil((expiryMs - todayMs) / 86400000);
+            const isExpired = u.hseqStatus === 'expired' || daysRemaining < 0;
+            const isExpiringSoon = !isExpired && daysRemaining <= (p.hseqWarningDaysThreshold || 60);
+            if (isExpired || isExpiringSoon) {
+                const alertRecord = {
+                    id: `HSEQ-ALT-${u.id}`,
+                    userId: u.id,
+                    userName: u.name,
+                    jobPositionId: posId,
+                    coordinatorNotifiedId: 'USR-12', // Coord. HSEQ
+                    status: isExpired ? 'EXPIRED_BLOCKED' : 'WARNING_60_DAYS',
+                    hseqExpiresAt: expiryStr,
+                    daysRemaining,
+                    canWorkHeights: false,
+                    actionTaken: isExpired
+                        ? 'Revocación automática de permisos en alturas (canWorkHeights=false) + Tarea obligatoria en Plan de Formación Luciana'
+                        : 'Alerta preventiva 60 días enviada a Coordinador HSEQ (USR-12) y curso asignado en Plan de Formación',
+                    createdAt: now,
+                };
+                hseqAlerts.push(alertRecord);
+            }
+            if (p.enforceJobPositionForeignKeys) {
+                await db.collection('users').doc(u.id).set({
+                    jobPositionId: posId,
+                    jobPosition: posObj.title,
+                    competencyIds: normalizedCompIds,
+                    canWorkHeights: isExpired ? false : Boolean(u.canWorkHeights),
+                    hseqStatus: isExpired ? 'expired' : u.hseqStatus || 'valid',
+                }, { merge: true });
+                linkedJobPositionsCount++;
+            }
+            // Update Employee & CareerProfile with jobPositionId, competencyIds, and HSEQ training task
+            const empIdx = employees.findIndex((e) => e.id === u.id);
+            if (empIdx >= 0) {
+                employees[empIdx] = {
+                    ...employees[empIdx],
+                    jobPositionId: posId,
+                    jobPosition: posObj.title,
+                    competencyIds: normalizedCompIds,
+                    canWorkHeights: isExpired ? false : Boolean(employees[empIdx].canWorkHeights),
+                    heightCertStatus: isExpired ? 'vencido' : 'vigente',
+                };
+            }
+            const cpIdx = careerProfiles.findIndex((cp) => cp.userId === u.id);
+            const requiredCount = posObj.requiredCompetencyIds.length || 1;
+            const matchedCount = posObj.requiredCompetencyIds.filter((reqId) => normalizedCompIds.includes(reqId)).length;
+            const readinessScore = isExpired ? Math.min(65, Math.round((matchedCount / requiredCount) * 100)) : Math.round((matchedCount / requiredCount) * 100);
+            const updatedCareerProfile = {
+                ...(cpIdx >= 0 ? careerProfiles[cpIdx] : {}),
+                id: `CP-${u.id}`,
+                userId: u.id,
+                name: u.name,
+                jobPositionId: posId,
+                jobPositionTitle: posObj.title,
+                competencyIds: normalizedCompIds,
+                jobReadinessScore: readinessScore,
+                lucianaImprovementPlan: {
+                    lastEvaluationDate: now,
+                    recommendedCourses: isExpired
+                        ? ['RENOVACIÓN URGENTE: Curso Reentrenamiento Trabajo Seguro en Alturas (Res. 4272/2021)', 'Protocolo de Seguridad en Pilonas STC']
+                        : ['Actualización Normativa Europea EN 12929 / EN 1709'],
+                    identifiedGaps: isExpired ? ['Certificación Trabajo en Alturas Vencida (Bloqueo Operativo Activo)'] : [],
+                    mandatoryRenewalTask: isExpired
+                        ? {
+                            taskId: `TRN-HSEQ-${u.id}`,
+                            title: 'Reentrenamiento Obligatorio Res. 4272/2021',
+                            assignedBy: 'USR-12 (Coordinador HSEQ)',
+                            status: 'pending_urgent',
+                            dueDate: now.slice(0, 10),
+                        }
+                        : null,
+                },
+                updatedAt: now,
+            };
+            if (cpIdx >= 0) {
+                careerProfiles[cpIdx] = updatedCareerProfile;
+            }
+            else {
+                careerProfiles.push(updatedCareerProfile);
+            }
+            await db.collection('career_profiles').doc(u.id).set(updatedCareerProfile, { merge: true });
+        }
+        await db.collection('erp_modules').doc('hr').set({
+            ...hrData,
+            jobPositions: officialJobPositions,
+            competenciesCatalog: masterCompetenciesCatalog,
+            hseqAlerts,
+            employees,
+            careerProfiles,
+            lastUpdated: now,
+            updatedBy: `AI:${ctx.keyId}`,
+        }, { merge: true });
+        propagatedTo.push('erp_modules/hr.jobPositions', 'erp_modules/hr.competenciesCatalog', 'erp_modules/hr.hseqAlerts', 'erp_modules/hr.careerProfiles', 'users');
+        // -------------------------------------------------------------------------
+        // NIVEL 4.1: Cascading Soft-Delete on Orphan Contacts (CNT-1791503976666 -> OPP-2026-001)
+        // -------------------------------------------------------------------------
+        let softDeletedContactsCount = 0;
+        if (p.enforceCascadingSoftDeleteOnOrphans) {
+            const activeOppIds = new Set(opportunities.filter((o) => !o.isDeleted).map((o) => o.id));
+            const activeOppCodes = new Set(opportunities.filter((o) => !o.isDeleted).map((o) => o.code));
+            for (let i = 0; i < contacts.length; i++) {
+                const c = contacts[i];
+                const notesStr = String(c.notes || '');
+                const matchOpp = notesStr.match(/OPP-\d{4}-\d{3}/i);
+                const referencedOppCode = c.originOpportunityCode || (matchOpp ? matchOpp[0] : null);
+                const isOrphanFromDeletedOpp = (referencedOppCode && !activeOppCodes.has(referencedOppCode)) ||
+                    (c.originOpportunityId && !activeOppIds.has(c.originOpportunityId));
+                if (isOrphanFromDeletedOpp && !c.isDeleted) {
+                    contacts[i] = {
+                        ...c,
+                        isDeleted: true,
+                        status: 'archived_cascade',
+                        deletedAt: now,
+                        deletedReason: `Cascading Soft-Delete (Auditoría Nivel 4): La oportunidad origen (${referencedOppCode || c.originOpportunityId}) fue archivada/eliminada.`,
+                    };
+                    softDeletedContactsCount++;
+                }
+            }
+            await db.collection('erp_modules').doc('commercial').set({
+                ...commData,
+                contacts,
+                lastUpdated: now,
+                updatedBy: `AI:${ctx.keyId}`,
+            }, { merge: true });
+            propagatedTo.push('erp_modules/commercial.contacts');
+        }
+        // -------------------------------------------------------------------------
+        // NIVEL 4.2: Automated MRP (Material Requirements Planning) Engine
+        // Evaluates realStock + pendingOrders <= minStock, groups by PartnerID, creates consolidated SOLPED draft
+        // -------------------------------------------------------------------------
+        let mrpGeneratedRequisition = null;
+        if (p.runMrpAutomatedEngine) {
+            const products = await loadProductsFromFirestore();
+            const lowStockItems = products.filter((pr) => {
+                if (pr.itemType === 'equipment' || pr.accountingClass === 'fixed_asset')
+                    return false;
+                const real = Number(pr.realStock || 0);
+                const pending = Number(pr.pendingOrders || 0);
+                const min = Number(pr.minStock || 5);
+                return real + pending <= min;
+            });
+            const groupedBySupplier = new Map();
+            for (const item of lowStockItems.slice(0, 25)) {
+                const supplierId = item.preferredSupplierId || item.supplierId || 'PROV-CONSOLIDADO-STC';
+                const list = groupedBySupplier.get(supplierId) || [];
+                list.push(item);
+                groupedBySupplier.set(supplierId, list);
+            }
+            const mrpReqId = 'REQ-MRP-2026-001';
+            const mrpItems = lowStockItems.slice(0, 15).map((it) => ({
+                sku: it.sku || it.id,
+                name: it.name,
+                qty: Math.max(10, Number(it.minStock || 10) * 2 - Number(it.realStock || 0)),
+                unit: it.unit || 'UNIDAD',
+                estimatedUnitCostCOP: Number(it.costPriceCOP || 25000),
+                supplierGroup: it.preferredSupplierId || 'PROV-CONSOLIDADO-STC',
+            }));
+            mrpGeneratedRequisition = {
+                id: mrpReqId,
+                reqNumber: 'SOLPED-MRP-2026-001',
+                reqType: 'mrp_automated',
+                status: 'draft_mrp_consolidation',
+                projectId: projects[0]?.id || 'PRJ-1793367181536',
+                projectCode: projects[0]?.code || 'CODIGO PROYECTO PRUEBA',
+                itemCode: 'ITEM PRUEBA 1',
+                requesterId: 'MRP-CRON-ENGINE',
+                requesterName: 'Motor MRP Automatizado (00:00 Cron)',
+                priority: 'normal',
+                totalLowStockDetectedInWarehouse: lowStockItems.length,
+                consolidatedSuppliersCount: groupedBySupplier.size,
+                justification: `Consolidación automática MRP de ${lowStockItems.length} alertas pasivas de stock bajo en un único borrador accionable por Compras (Auditoría Nivel 4).`,
+                items: mrpItems,
+                createdAt: now,
+            };
+            const existingReqIdx = requisitions.findIndex((r) => r.id === mrpReqId || r.reqNumber === 'SOLPED-MRP-2026-001');
+            if (existingReqIdx >= 0) {
+                requisitions[existingReqIdx] = mrpGeneratedRequisition;
+            }
+            else {
+                requisitions.unshift(mrpGeneratedRequisition);
+            }
+            await db.collection('erp_modules').doc('procurement').set({
+                ...procData,
+                requisitions,
+                mrpDrafts: [mrpGeneratedRequisition],
+                lastUpdated: now,
+                updatedBy: `AI:${ctx.keyId}`,
+            }, { merge: true });
+            propagatedTo.push('erp_modules/procurement.requisitions', 'erp_modules/procurement.mrpDrafts');
+        }
+        // -------------------------------------------------------------------------
+        // NIVEL 4.4: Sub-Ledger of Financial Retentions & Advance Amortization
+        // NetToBill = MilestoneAmount - (MilestoneAmount * Advance%) - (MilestoneAmount * Guarantee%)
+        // -------------------------------------------------------------------------
+        const retentionFundsLedger = [];
+        if (p.configureRetentionAndAdvanceSubledger) {
+            const advPct = p.defaultAdvancePct ?? 10;
+            const retPct = p.defaultRetentionGuaranteePct ?? 5;
+            const updatedProjectsForFinance = projects.map((proj) => {
+                const contractVal = Number(proj.contractAmount || proj.budgetPV || 100000000);
+                const effAdvPct = Number(proj.advancePaymentPercentage || advPct);
+                const effRetPct = Number(proj.retentionGuaranteePercentage || retPct);
+                const advanceAmortizationCOP = Math.round(contractVal * (effAdvPct / 100));
+                const retentionGuaranteeFundCOP = Math.round(contractVal * (effRetPct / 100));
+                const netPayableAfterRetentionsCOP = contractVal - advanceAmortizationCOP - retentionGuaranteeFundCOP;
+                const ledgerEntry = {
+                    id: `RET-FUND-${proj.id}`,
+                    projectId: proj.id,
+                    projectCode: proj.code,
+                    contractAmountCOP: contractVal,
+                    advancePaymentPercentage: effAdvPct,
+                    retentionGuaranteePercentage: effRetPct,
+                    advanceAmortizationBalanceCOP: advanceAmortizationCOP,
+                    retentionGuaranteeEscrowCOP: retentionGuaranteeFundCOP,
+                    netPayableToInvoiceCOP: netPayableAfterRetentionsCOP,
+                    formulaApplied: 'Monto Neto = Monto Hito - (Monto Hito * %Anticipo) - (Monto Hito * %Garantía)',
+                    status: 'active_escrow',
+                    updatedAt: now,
+                };
+                retentionFundsLedger.push(ledgerEntry);
+                return {
+                    ...proj,
+                    advancePaymentPercentage: effAdvPct,
+                    retentionGuaranteePercentage: effRetPct,
+                    advancePaymentAmount: advanceAmortizationCOP,
+                    retentionGuaranteeAmount: retentionGuaranteeFundCOP,
+                    retentionSubLedger: ledgerEntry,
+                    updatedAt: now,
+                };
+            });
+            await Promise.all([
+                db.collection('erp_modules').doc('projects').set({
+                    ...projData,
+                    projects: updatedProjectsForFinance,
+                    lastUpdated: now,
+                    updatedBy: `AI:${ctx.keyId}`,
+                }, { merge: true }),
+                db.collection('erp_modules').doc('finances').set({
+                    ...finData,
+                    retentionFunds: retentionFundsLedger,
+                    lastUpdated: now,
+                    updatedBy: `AI:${ctx.keyId}`,
+                }, { merge: true }),
+            ]);
+            propagatedTo.push('erp_modules/projects.projects', 'erp_modules/finances.retentionFunds');
+        }
+        return {
+            action: reqAction.action,
+            environment: ctx.environment,
+            backupId,
+            entityId: 'LEVEL4_AND_5_ARCHITECTURE_COMPLETE',
+            propagatedTo,
+            result: {
+                linkedJobPositionsCount,
+                competenciesCatalogCount: masterCompetenciesCatalog.length,
+                hseqAlertsGenerated: hseqAlerts.length,
+                softDeletedOrphanContactsCount: softDeletedContactsCount,
+                mrpDraftRequisitionNumber: mrpGeneratedRequisition?.reqNumber || null,
+                retentionFundsCount: retentionFundsLedger.length,
+                sampleRetentionLedger: retentionFundsLedger[0] || null,
             },
         };
     }

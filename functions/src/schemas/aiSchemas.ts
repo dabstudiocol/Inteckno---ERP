@@ -28,10 +28,15 @@ export const ModuleNameEnum = z.enum([
   'hr',
   'employees',
   'careerProfiles',
+  'competenciesCatalog',
+  'hseqAlerts',
   'novelties',
   'sstInspections',
   'jobPositions',
   'candidates',
+  'finances',
+  'retentionFunds',
+  'mrpDrafts',
   'commercial',
   'opportunities',
   'contacts',
@@ -264,6 +269,18 @@ export const RestructureLevel3GovernancePayload = z.object({
   recalculateTaxEngineSummary: z.boolean().default(true),
 });
 
+export const ExecuteLevel4And5ArchitecturePayload = z.object({
+  enforceJobPositionForeignKeys: z.boolean().default(true),
+  normalizeCompetenciesCatalog: z.boolean().default(true),
+  runHseqProactiveAlertEngine: z.boolean().default(true),
+  hseqWarningDaysThreshold: z.number().int().min(1).default(60),
+  enforceCascadingSoftDeleteOnOrphans: z.boolean().default(true),
+  runMrpAutomatedEngine: z.boolean().default(true),
+  configureRetentionAndAdvanceSubledger: z.boolean().default(true),
+  defaultAdvancePct: z.number().min(0).max(50).default(10),
+  defaultRetentionGuaranteePct: z.number().min(0).max(30).default(5),
+});
+
 export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('upsert_opportunity'), payload: UpsertOpportunityPayload }),
   z.object({ action: z.literal('upsert_project'), payload: UpsertProjectPayload }),
@@ -277,6 +294,7 @@ export const AiActionRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('RECALCULATE_PROJECT_EVM'), payload: RecalculateProjectEvmPayload }),
   z.object({ action: z.literal('PURGE_MOCK_DATA'), payload: PurgeMockDataPayload }),
   z.object({ action: z.literal('RESTRUCTURE_LEVEL3_GOVERNANCE'), payload: RestructureLevel3GovernancePayload }),
+  z.object({ action: z.literal('EXECUTE_LEVEL4_AND_5_ARCHITECTURE'), payload: ExecuteLevel4And5ArchitecturePayload }),
 ]);
 
 export type AiActionRequest = z.infer<typeof AiActionRequestSchema>;
