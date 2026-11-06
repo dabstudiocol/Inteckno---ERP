@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Project, WBSTask, User } from '../../../../types';
 import { ProjectTimesheetEntry } from '../../../../types/ProjectSchema';
-import { useErp } from '../../../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../../../core/storage/erpStore';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
@@ -77,12 +77,23 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
   const [entryToDelete, setEntryToDelete] = useState<ProjectTimesheetEntry | null>(null);
   const [selectedEntryDetail, setSelectedEntryDetail] = useState<ProjectTimesheetEntry | null>(null);
 
+  // Adjudicación Granular: Ítems Contractuales y Carpetas del Proyecto
+  const availableProjectItems = React.useMemo(() => {
+    const items = ensureProjectItems(project);
+    return items.map((it: any) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+  }, [project]);
+
   // Formulario de Hoja de Horas
   const [form, setForm] = useState({
     taskId: '',
+    itemCode: '',
     userId: '',
     date: new Date().toISOString().split('T')[0],
-    hours: 0,
+    hours: 8,
     isEndTask: false,
     endMethod: 'MRT' as 'MRT' | 'UT' | 'PT' | 'MT' | 'VT',
     workDescription: '',
@@ -249,11 +260,12 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
         task.name.toLowerCase().includes('inspección')
       : false;
 
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       taskId,
+      itemCode: task?.itemCode || prev.itemCode || (availableProjectItems[0]?.code || ''),
       isEndTask: isEnd,
-    });
+    }));
   };
 
   const handleSaveEntry = (e: React.FormEvent) => {
@@ -282,6 +294,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
     const targetTaskId = task ? task.id : (form.taskId || `TASK-${Date.now()}`);
     const targetTaskName = task ? task.name : 'Tarea WBS';
     const targetTaskCode = task ? task.code : '';
+    const finalItemCode = form.itemCode || task?.itemCode || availableProjectItems[0]?.code || undefined;
 
     const newEntry: ProjectTimesheetEntry = {
       id: `TS-${Date.now()}`,
@@ -289,6 +302,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
       taskId: targetTaskId,
       taskName: targetTaskName,
       taskCode: targetTaskCode,
+      itemCode: finalItemCode,
       userId: form.userId || (user ? user.id : 'USR-1'),
       userName: user ? user.name : 'Inspector Técnico',
       userRole: user ? user.roleLabel : 'Técnico Especialista',
@@ -320,7 +334,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
       projectCode: project.code,
       projectName: project.name,
       taskId: newEntry.taskId,
-      itemCode: task?.itemCode || undefined,
+      itemCode: finalItemCode,
       origin: 'proyecto',
       taskName: newEntry.taskName,
       date: newEntry.date,
@@ -362,9 +376,10 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
     setIsModalOpen(false);
     setForm({
       taskId: '',
+      itemCode: '',
       userId: '',
       date: new Date().toISOString().split('T')[0],
-      hours: 0,
+      hours: 8,
       isEndTask: false,
       endMethod: 'MRT',
       workDescription: '',
@@ -373,14 +388,16 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
 
   const openRegisterModal = () => {
     setForm({
-      taskId: '',
-      userId: '',
+      taskId: tasks[0]?.id || '',
+      itemCode: tasks[0]?.itemCode || availableProjectItems[0]?.code || '',
+      userId: erpUsers[0]?.id || '',
       date: new Date().toISOString().split('T')[0],
-      hours: 0,
+      hours: 8,
       isEndTask: false,
       endMethod: 'MRT',
       workDescription: '',
     });
+    captureGpsLocation();
     setIsModalOpen(true);
   };
 
@@ -459,7 +476,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Fecha / Técnico</th>
-                  <th className="py-3 px-4">Tarea WBS</th>
+                  <th className="py-3 px-4">Ítem / Actividad WBS</th>
                   <th className="py-3 px-4">Horas</th>
                   <th className="py-3 px-4">Acreditación END (HR)</th>
                   <th className="py-3 px-4">GPS en Montaña</th>
@@ -479,7 +496,12 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                       <div className="text-[11px] text-slate-400">{entry.date} • {entry.userRole}</div>
                     </td>
                     <td className="py-3 px-4 text-slate-700 dark:text-slate-300">
-                      {entry.taskName}
+                      {entry.itemCode && (
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 font-bold text-[10px] mr-1.5 mb-0.5">
+                          {entry.itemCode}
+                        </span>
+                      )}
+                      <span className="font-medium">{entry.taskName}</span>
                     </td>
                     <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
                       {entry.hours} hrs
@@ -550,20 +572,36 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
             </div>
 
             <form onSubmit={handleSaveEntry} className="mt-4 space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Actividad del Plan de Trabajo *
-                </label>
-                <CreatableSelect
-                  options={tasks.map((t) => ({
-                    id: t.id,
-                    name: `${t.code} - ${t.name}`,
-                    code: t.code
-                  }))}
-                  value={form.taskId}
-                  onChange={(val) => handleTaskChange(val)}
-                  placeholder="Seleccionar actividad WBS..."
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Ítem Contractual / Carpeta *
+                  </label>
+                  <CreatableSelect
+                    options={availableProjectItems}
+                    value={form.itemCode}
+                    onChange={(val) => setForm({ ...form, itemCode: val })}
+                    placeholder="Seleccionar ítem contractual..."
+                    isClearable={true}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Actividad del Plan de Trabajo (WBS) *
+                  </label>
+                  <CreatableSelect
+                    options={tasks.map((t) => ({
+                      id: t.id,
+                      name: `${t.code} - ${t.name}`,
+                      code: t.code
+                    }))}
+                    value={form.taskId}
+                    onChange={(val) => handleTaskChange(val)}
+                    placeholder="Seleccionar actividad WBS..."
+                    isClearable={true}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -606,7 +644,8 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                     min="1"
                     max="16"
                     required
-                    value={form.hours}
+                    value={form.hours || ''}
+                    placeholder="0"
                     onChange={(e) => setForm({ ...form, hours: Number(e.target.value) })}
                     className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   />

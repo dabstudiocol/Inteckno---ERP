@@ -204,6 +204,8 @@ export interface ProjectTimesheetEntry {
   taskId: string;
   taskName: string;
   taskCode?: string;
+  itemCode?: string; // ÍTEM Contractual o Carpeta del Proyecto (ej. ITEM 01, ITEM 11)
+  costMatrixItemId?: string; // ID del rubro específico en la matriz de costos
   userId: string;
   userName: string;
   userRole: string;

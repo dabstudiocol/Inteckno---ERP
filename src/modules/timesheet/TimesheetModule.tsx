@@ -18,7 +18,7 @@ import {
   DollarSign,
   FolderTree,
 } from 'lucide-react';
-import { useErp } from '../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../core/storage/erpStore';
 import { TimesheetEntry } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
@@ -127,7 +127,7 @@ export const TimesheetModule: React.FC = () => {
     if (selectedProjectId.startsWith('PRJ-INTERNAL')) {
       return [{ id: 'INTERNO', name: '[ Actividad Interna Sede / Taller ]', code: 'INTERNO' }];
     }
-    const items = (((selectedProject as any)?.projectItems || (selectedProject as any)?.items || []) as any[]);
+    const items = ensureProjectItems(selectedProject as any);
     const formatted = items.map((it: any) => ({
       id: it.code,
       name: `${it.code} — ${it.name}`,

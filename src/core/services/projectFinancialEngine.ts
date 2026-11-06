@@ -45,9 +45,11 @@ export function calculateProjectFinancials(
   let plannedCostPV = 0;
   let actualCostAC = 0;
 
-  if (costMatrix.length > 0) {
-    plannedCostPV = costMatrix.reduce((sum, item) => sum + (Number(item.plannedTotal) || 0), 0);
-    actualCostAC = costMatrix.reduce((sum, item) => sum + (Number(item.actualTotal) || 0), 0);
+  const matrixPlanned = costMatrix.reduce((sum, item) => sum + (Number(item.plannedTotal) || (Number(item.plannedQuantity) * Number(item.plannedUnitCost)) || 0), 0);
+  const matrixActual = costMatrix.reduce((sum, item) => sum + (Number(item.actualTotal) || (Number(item.actualQuantity) * Number(item.actualUnitCost)) || 0), 0);
+
+  if (matrixPlanned > 0) {
+    plannedCostPV = matrixPlanned;
   } else {
     // Si la matriz no está formulada, recurrir al presupuesto de oferta o campo explícito
     const offerItems = Array.isArray(project.offerBudget) 
@@ -59,13 +61,15 @@ export function calculateProjectFinancials(
     } else {
       plannedCostPV = Number(project.budgetPV) || 0;
     }
-    actualCostAC = Number(project.actualCostAC) || 0;
   }
+
+  // Costo Real Ejecutado (AC): Mayor entre el consolidado de matriz y el acumulador contable del proyecto
+  actualCostAC = Math.max(matrixActual, Number(project.actualCostAC) || 0);
 
   // 2. Valor Contractual
   const contractValue = Number(project.contractAmount) || Number(project.budgetPV) || 0;
 
-  // 3. Avance Físico Ponderado (desde WBS o tareas)
+  // 3. Avance Físico Ponderado (desde WBS o tareas con fallback a progreso registrado)
   let physicalProgressPct = 0;
   if (tasks.length > 0) {
     const totalPlannedHours = tasks.reduce((sum, t) => sum + (Number(t.plannedHours) || 0), 0);
@@ -80,6 +84,9 @@ export function calculateProjectFinancials(
       const totalProgress = tasks.reduce((sum, t) => sum + (Number(t.progressPct) || 0), 0);
       physicalProgressPct = Math.min(100, Math.max(0, Math.round(totalProgress / tasks.length)));
     }
+  } else {
+    const fromEV = project.budgetPV > 0 ? Math.round(((project.earnedValueEV || 0) / project.budgetPV) * 100) : 0;
+    physicalProgressPct = Math.min(100, Math.max(0, Number((project as any).progressPct) || Number((project as any).progress) || fromEV));
   }
 
   // 4. Avance Esperado / Programado en el Tiempo

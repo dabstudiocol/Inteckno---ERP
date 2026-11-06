@@ -29,7 +29,7 @@ import {
   Settings,
   Wallet,
 } from 'lucide-react';
-import { useErp } from '../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../core/storage/erpStore';
 import { ExpenseEntry, ExpenseCategory, InvoiceLineItem } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
 import {
@@ -156,8 +156,8 @@ export const ExpensesModule: React.FC = () => {
     if (!selectedProject) return [];
     const itemsMap = new Map<string, { id: string; name: string; code: string; costMatrixItemId?: string }>();
     
-    // De los items contractuales del proyecto (projectItems)
-    const contractItems = (((selectedProject as any)?.projectItems || (selectedProject as any)?.items || []) as any[]);
+    // De los items contractuales del proyecto (projectItems / costMatrix)
+    const contractItems = ensureProjectItems(selectedProject);
     contractItems.forEach((it: any) => {
       if (it.code) {
         itemsMap.set(it.code, {

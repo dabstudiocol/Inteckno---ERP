@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   Settings,
 } from 'lucide-react';
-import { useErp } from '../../../core/storage/erpStore';
+import { useErp, ensureProjectItems } from '../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
@@ -57,7 +57,7 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
 
   const availableProjectItems = useMemo(() => {
     if (!selectedProject) return [];
-    const items = (((selectedProject as any)?.projectItems || (selectedProject as any)?.items || []) as any[]);
+    const items = ensureProjectItems(selectedProject);
     const formatted = items.map((it: any) => ({
       id: it.code,
       name: `${it.code} — ${it.name}`,
