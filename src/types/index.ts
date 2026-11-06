@@ -722,6 +722,7 @@ export interface DispatchRemission {
   projectId: string;
   projectCode: string;
   projectName: string;
+  itemCode?: string; // ITEM Contractual al que se imputa el despacho
   status: RemissionStatus;
   items: RemissionItem[];
   totalDispatchedItems: number;
@@ -1848,6 +1849,7 @@ export interface WorkOrderOT {
   code: string;
   projectId: string;
   projectCode: string;
+  itemCode?: string;
   component: string;
   priority: 'baja' | 'media' | 'alta' | 'urgente';
   technician: string;
@@ -1863,6 +1865,8 @@ export interface ManufacturingOrder {
   material: string;
   quantity: number;
   projectCode: string;
+  projectId?: string;
+  itemCode?: string;
   stage: 'corte' | 'torno_cnc' | 'fresado' | 'tratamiento_termico' | 'listo_almacen';
   createdAt: string;
 }
@@ -1870,6 +1874,9 @@ export interface ManufacturingOrder {
 export interface BenchTestRecord {
   id: string;
   testCode: string;
+  projectId?: string;
+  projectCode?: string;
+  itemCode?: string;
   gripSerial: string;
   gripType: string;
   clampingForceKN: number;
@@ -1886,6 +1893,7 @@ export interface SstInspectionRecord {
   projectId: string;
   projectCode: string;
   projectName: string;
+  itemCode?: string;
   technicianId: string;
   technicianName: string;
   inspectorName: string;

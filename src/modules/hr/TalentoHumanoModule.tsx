@@ -35,7 +35,7 @@ import { EmployeeRecord, PayrollNovelty, PayrollNoveltyType } from '../../types'
 import { AiDocumentUploader } from '../../components/ui/AiDocumentUploader';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
-import { useModuleCatalog } from '../../core/services/moduleConfigService';
+import { useModuleCatalog, getLaborRates } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { formatCOP } from '../../core/services/trmService';
 
@@ -46,6 +46,7 @@ export interface SstInspectionRecord {
   projectId: string;
   projectCode: string;
   projectName: string;
+  itemCode?: string;
   technicianId: string;
   technicianName: string;
   inspectorName: string;
@@ -116,6 +117,28 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
   const [sstSubTab, setSstSubTab] = useState<'alturas' | 'clima'>('alturas');
   const [inspDate, setInspDate] = useState(new Date().toISOString().split('T')[0]);
   const [inspProjectId, setInspProjectId] = useState('');
+  const [inspItemCode, setInspItemCode] = useState<string>('');
+
+  const availableInspProjectItems = useMemo(() => {
+    const proj = projects.find((p) => p.id === inspProjectId);
+    if (!proj) return [];
+    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    return items.map((it: any) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+  }, [projects, inspProjectId]);
+
+  useEffect(() => {
+    if (availableInspProjectItems.length > 0) {
+      if (!availableInspProjectItems.some((i) => i.code === inspItemCode)) {
+        setInspItemCode(availableInspProjectItems[0]?.code || '');
+      }
+    } else {
+      setInspItemCode('');
+    }
+  }, [inspProjectId, availableInspProjectItems]);
   const [inspTechnicianId, setInspTechnicianId] = useState('');
   const [inspWindSpeed, setInspWindSpeed] = useState<number>(15);
   const [inspChecks, setInspChecks] = useState({
@@ -163,6 +186,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
       projectId: prj?.id || '',
       projectCode: prj?.code || 'STC-GENERAL',
       projectName: prj?.name || 'Operación General Teleféricos',
+      itemCode: inspItemCode || undefined,
       technicianId: tech?.id || currentUser.id,
       technicianName: tech?.name || currentUser.name,
       inspectorName: currentUser.name || 'Inspector SST Inteckno',
@@ -1110,7 +1134,14 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                               <span className="text-[11px] text-gray-400">{insp.date}</span>
                             </td>
                             <td className="p-3">
-                              <span className="font-bold text-gray-900 block">{insp.projectCode}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-gray-900 block">{insp.projectCode}</span>
+                                {insp.itemCode && (
+                                  <span className="px-1.5 py-0.2 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">
+                                    {insp.itemCode}
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[11px] text-gray-500 truncate block max-w-[180px]">{insp.projectName}</span>
                             </td>
                             <td className="p-3 font-semibold text-gray-800">{insp.technicianName}</td>
@@ -1246,7 +1277,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   <th className="p-3">Colaborador / C.C.</th>
                   <th className="p-3">Cargo</th>
                   <th className="p-3 text-right">Salario Base</th>
-                  <th className="p-3 text-center">Horas Validadas</th>
+                  <th className="p-3 text-center">Horas Base</th>
+                  <th className="p-3 text-right">Extras & Recargos (Ley 2101)</th>
                   <th className="p-3 text-right">Viáticos Campo</th>
                   <th className="p-3 text-right font-bold text-gray-900">Total a Liquidar</th>
                   <th className="p-3 text-right">Desprendible</th>
@@ -1270,8 +1302,31 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       (e.status === 'approved' || e.status === 'legalized')
                   );
                   const totalViaticosCOP = empExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+                  const laborRates = getLaborRates();
+                  const baseHourlyWorkerWage = (emp.baseSalaryCOP || 0) / (laborRates.divisorMensual || 210);
+
+                  let empOvertimePayCOP = 0;
+                  let empOvertimeHoursCount = 0;
+
+                  empTimesheets.forEach((t) => {
+                    if (t.hoursBreakdown) {
+                      const { hed = 0, rn = 0, hen = 0, dom = 0, hedd = 0, hend = 0 } = t.hoursBreakdown;
+                      empOvertimeHoursCount += (hed + hen + hedd + hend);
+                      empOvertimePayCOP += Math.round(
+                        baseHourlyWorkerWage * (
+                          hed * laborRates.hed +
+                          rn * laborRates.rn +
+                          hen * laborRates.hen +
+                          dom * laborRates.dom +
+                          hedd * laborRates.hedd +
+                          hend * laborRates.hend
+                        )
+                      );
+                    }
+                  });
+
                   const baseQuincenal = Math.round((emp.baseSalaryCOP || 0) / 2);
-                  const totalLiquidarCOP = baseQuincenal + totalViaticosCOP;
+                  const totalLiquidarCOP = baseQuincenal + empOvertimePayCOP + totalViaticosCOP;
 
                   return (
                     <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors">
@@ -1285,6 +1340,16 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                         <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-50 text-[#00668F] font-bold text-[11px]">
                           {totalHours} h
                         </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        {empOvertimePayCOP > 0 ? (
+                          <div>
+                            <span className="font-bold text-sky-800 block text-xs">{formatCOP(empOvertimePayCOP)}</span>
+                            <span className="text-[10px] text-sky-600 font-semibold">{empOvertimeHoursCount} h extras</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs">$0</span>
+                        )}
                       </td>
                       <td className="p-3 text-right font-medium text-emerald-700">{formatCOP(totalViaticosCOP)}</td>
                       <td className="p-3 text-right font-bold text-gray-900">
@@ -1356,19 +1421,35 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">Proyecto / Sistema de Cable</label>
-                <select
-                  value={inspProjectId}
-                  onChange={(e) => setInspProjectId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-300 bg-white font-medium"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code} — {p.name} ({p.clientName})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Proyecto / Sistema STC</label>
+                  <select
+                    value={inspProjectId}
+                    onChange={(e) => setInspProjectId(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 bg-white font-medium"
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.code} – {p.name} ({p.clientName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Ítem Contractual (Plan 1)</label>
+                  <select
+                    value={inspItemCode}
+                    onChange={(e) => setInspItemCode(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 bg-white font-medium"
+                    disabled={availableInspProjectItems.length === 0}
+                  >
+                    <option value="">{availableInspProjectItems.length === 0 ? '-- Sin ítems --' : '-- General del Proyecto --'}</option>
+                    {availableInspProjectItems.map((it) => (
+                      <option key={it.id} value={it.code}>{it.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -1481,11 +1562,42 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
         );
         const totalViaticosCOP = empExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
+        const laborRates = getLaborRates();
+        const baseHourlyWorkerWage = (selectedPayrollEmp.baseSalaryCOP || 0) / (laborRates.divisorMensual || 210);
+
+        let empOvertimePayCOP = 0;
+        let empOvertimeBreakdown = { hed: 0, rn: 0, hen: 0, dom: 0, hedd: 0, hend: 0 };
+        let totalOvertimeHours = 0;
+
+        empTimesheets.forEach((t) => {
+          if (t.hoursBreakdown) {
+            const { hed = 0, rn = 0, hen = 0, dom = 0, hedd = 0, hend = 0 } = t.hoursBreakdown;
+            empOvertimeBreakdown.hed += hed;
+            empOvertimeBreakdown.rn += rn;
+            empOvertimeBreakdown.hen += hen;
+            empOvertimeBreakdown.dom += dom;
+            empOvertimeBreakdown.hedd += hedd;
+            empOvertimeBreakdown.hend += hend;
+            totalOvertimeHours += (hed + hen + hedd + hend);
+            empOvertimePayCOP += Math.round(
+              baseHourlyWorkerWage * (
+                hed * laborRates.hed +
+                rn * laborRates.rn +
+                hen * laborRates.hen +
+                dom * laborRates.dom +
+                hedd * laborRates.hedd +
+                hend * laborRates.hend
+              )
+            );
+          }
+        });
+
         const baseQuincenal = Math.round((selectedPayrollEmp.baseSalaryCOP || 0) / 2);
-        const deduccionSalud = Math.round(baseQuincenal * 0.04);
-        const deduccionPension = Math.round(baseQuincenal * 0.04);
+        const basePrestacionalQuincenal = baseQuincenal + empOvertimePayCOP;
+        const deduccionSalud = Math.round(basePrestacionalQuincenal * 0.04);
+        const deduccionPension = Math.round(basePrestacionalQuincenal * 0.04);
         const totalDeducciones = deduccionSalud + deduccionPension;
-        const totalDevengado = baseQuincenal + totalViaticosCOP;
+        const totalDevengado = basePrestacionalQuincenal + totalViaticosCOP;
         const netoPagar = totalDevengado - totalDeducciones;
 
         return (
@@ -1536,9 +1648,20 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       <span className="font-bold text-gray-900">{formatCOP(baseQuincenal)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-700">Horas de Campo ({totalHours} h registradas)</span>
-                      <span className="font-semibold text-gray-800">Incluidas en turno</span>
+                      <span className="text-gray-700">Horas de Campo ({totalHours} h ordinarias)</span>
+                      <span className="font-semibold text-gray-800">Cubiertas en turno base</span>
                     </div>
+                    {empOvertimePayCOP > 0 && (
+                      <div className="flex justify-between bg-sky-50/80 p-2 rounded-lg border border-sky-100">
+                        <div>
+                          <span className="font-bold text-[#00668F] block">Horas Extras y Recargos (Ley 2101 / 210h)</span>
+                          <span className="text-[10px] text-gray-500">
+                            HED: {empOvertimeBreakdown.hed}h • RN: {empOvertimeBreakdown.rn}h • HEN: {empOvertimeBreakdown.hen}h • Dom: {empOvertimeBreakdown.dom}h • HEDD: {empOvertimeBreakdown.hedd}h • HEND: {empOvertimeBreakdown.hend}h
+                          </span>
+                        </div>
+                        <span className="font-bold text-[#00668F] self-center">{formatCOP(empOvertimePayCOP)}</span>
+                      </div>
+                    )}
                     {totalViaticosCOP > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-700">Viáticos de Alimentación y Transporte Legalizados</span>

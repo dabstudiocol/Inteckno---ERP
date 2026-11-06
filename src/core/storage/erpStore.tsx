@@ -3810,6 +3810,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const existingMatrix = (prj as any).costMatrix || [];
             const newCostItem = {
               id: `cost-rem-out-${remissionNumber}`,
+              itemCode: remData.itemCode || remData.items[0]?.itemCode || undefined,
               category: 'repuestos_fabricacion' as const,
               concept: `Salida de Almacén (${remissionNumber}): ${consumedItemsDesc.join(', ')}`,
               unit: 'Global',

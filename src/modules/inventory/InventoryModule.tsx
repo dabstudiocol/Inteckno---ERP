@@ -330,6 +330,32 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
   // ESTADO PARA REMISIÓN DE SALIDA (DESPACHO MULTI-ÍTEM)
   // --------------------------------------------------------------------------
   const [dispatchProjectId, setDispatchProjectId] = useState(projects[0]?.id || '');
+  const [dispatchItemCode, setDispatchItemCode] = useState<string>('');
+
+  const availableDispatchProjectItems = React.useMemo(() => {
+    const proj = projects.find((p) => p.id === dispatchProjectId);
+    if (!proj) return [];
+    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    const formatted = items.map((it: any) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+    return [
+      ...formatted,
+      { id: 'INDIRECTO', name: '[ Costo Indirecto / Soporte General ]', code: 'INDIRECTO' },
+    ];
+  }, [projects, dispatchProjectId]);
+
+  React.useEffect(() => {
+    if (availableDispatchProjectItems.length > 0) {
+      if (!availableDispatchProjectItems.some((i) => i.id === dispatchItemCode)) {
+        setDispatchItemCode(availableDispatchProjectItems[0]?.id || '');
+      }
+    } else {
+      setDispatchItemCode('');
+    }
+  }, [dispatchProjectId, availableDispatchProjectItems]);
   const [dispatchTechId, setDispatchTechId] = useState(users[0]?.id || '');
   const [departureDate, setDepartureDate] = useState(new Date().toISOString().split('T')[0]);
   const [expectedReturnDate, setExpectedReturnDate] = useState(
@@ -395,7 +421,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
   // --------------------------------------------------------------------------
   // ESTADO PARA EL ESCÁNER DE CÓDIGOS DE BARRA
   // --------------------------------------------------------------------------
-  const [barcodeInput, setBarcodeInput] = useState('');
   const [scannedResult, setScannedResult] = useState<Product | EquipmentTool | null>(null);
   const [scanMessage, setScanMessage] = useState('');
 
@@ -704,6 +729,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       projectId: project.id,
       projectCode: project.code,
       projectName: project.name,
+      itemCode: dispatchItemCode || undefined,
       notes: dispatchNotes || 'Despacho de materiales e instrumentación para labores en campo.',
       items: dispatchItems.map((it) => {
         const prod = products.find((p) => p.id === it.productId);
@@ -729,6 +755,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
           costApprovedBy: tech.name,
           costApprovedAt: new Date().toISOString(),
           imputedToProjectCost: Boolean(project.id),
+          itemCode: dispatchItemCode || undefined,
           condition: 'bueno',
           notes: '',
         };
@@ -1076,15 +1103,26 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
               </div>
 
               {/* Buscador de Inventario */}
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-2.5 text-gray-400" size={15} />
-                <input
-                  type="text"
-                  placeholder="Buscar por código, descripción, ubicación..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-hidden focus:border-[#00668F] bg-slate-50/50"
-                />
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={15} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por código, descripción, ubicación..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-hidden focus:border-[#00668F] bg-slate-50/50"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('barcode')}
+                  className="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#00668F] text-xs font-bold border border-sky-200 shrink-0 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Abrir Estación Óptica de Código de Barras / QR"
+                >
+                  <Barcode size={15} />
+                  <span className="hidden md:inline">Lector Óptico</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2144,6 +2182,20 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                   allowCustomText={true}
                   inputClassName="bg-white border-gray-200"
                 />
+                {availableDispatchProjectItems.length > 0 && (
+                  <div className="pt-2">
+                    <CreatableSelect
+                      label="Ítem Contractual / Carpeta de Obra (Adjudicación Plan 1)"
+                      value={
+                        availableDispatchProjectItems.find((i) => i.id === dispatchItemCode)?.name || dispatchItemCode
+                      }
+                      onChange={(val) => setDispatchItemCode(val)}
+                      options={availableDispatchProjectItems}
+                      placeholder="Seleccionar ítem contractual (ej. ITEM 01)..."
+                      inputClassName="bg-white border-gray-200"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -2961,6 +3013,11 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                     ) : (
                       <span className="font-semibold text-gray-900 truncate block">{rem.projectCode}</span>
                     )}
+                    {rem.itemCode && (
+                      <span className="px-1.5 py-0.2 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold block mt-0.5">
+                        {rem.itemCode}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <span className="text-[10px] text-gray-400 block font-medium">Técnico Responsable:</span>
@@ -3017,22 +3074,29 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         {rem.returnRemissionNumber || 'Pendiente'}
                       </td>
                       <td className="p-3 font-semibold text-gray-900">
-                        {rem.projectId ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigateWithContext('proyectos', 'view_project', { projectId: rem.projectId, tab: 'costs' });
-                            }}
-                            className="font-bold text-[#00668F] hover:underline flex items-center gap-1 group text-xs cursor-pointer"
-                            title={`Ir al Proyecto ${rem.projectCode} (Matriz de Costos)`}
-                          >
-                            <span>{rem.projectCode}</span>
-                            <ArrowRight size={10} className="opacity-60 group-hover:opacity-100 transition-opacity" />
-                          </button>
-                        ) : (
-                          rem.projectCode
-                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {rem.projectId ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigateWithContext('proyectos', 'view_project', { projectId: rem.projectId, tab: 'costs' });
+                              }}
+                              className="font-bold text-[#00668F] hover:underline flex items-center gap-1 group text-xs cursor-pointer"
+                              title={`Ir al Proyecto ${rem.projectCode} (Matriz de Costos)`}
+                            >
+                              <span>{rem.projectCode}</span>
+                              <ArrowRight size={10} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                          ) : (
+                            rem.projectCode
+                          )}
+                          {rem.itemCode && (
+                            <span className="px-1.5 py-0.2 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">
+                              {rem.itemCode}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3 font-medium text-gray-800">
                         {rem.responsibleTechnicianName}

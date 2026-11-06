@@ -92,6 +92,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
     deleteManufacturingOrder,
     createBenchTest,
     deleteBenchTest,
+    navigateWithContext,
   } = useErp();
   
   const currentTab = (activeModuleId === 'reparacion' || activeModuleId === 'manufactura' || activeModuleId === 'taller' || activeModuleId === 'plm' || activeModuleId === 'mantenimiento')
@@ -143,6 +144,32 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   // Modal Crear OT
   const [isOtModalOpen, setIsOtModalOpen] = useState(false);
   const [otProject, setOtProject] = useState(projects[0]?.id || '');
+  const [otItemCode, setOtItemCode] = useState<string>('');
+
+  const availableOtProjectItems = React.useMemo(() => {
+    const proj = projects.find((p) => p.id === otProject);
+    if (!proj) return [];
+    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    const formatted = items.map((it: any) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+    return [
+      ...formatted,
+      { id: 'INDIRECTO', name: '[ Labores Generales de Teleférico ]', code: 'INDIRECTO' },
+    ];
+  }, [projects, otProject]);
+
+  React.useEffect(() => {
+    if (availableOtProjectItems.length > 0) {
+      if (!availableOtProjectItems.some((i) => i.code === otItemCode)) {
+        setOtItemCode(availableOtProjectItems[0]?.code || '');
+      }
+    } else {
+      setOtItemCode('');
+    }
+  }, [otProject, availableOtProjectItems]);
   const [otComponent, setOtComponent] = useState('Pinza Desembragable');
   const [otPriority, setOtPriority] = useState<'baja' | 'media' | 'alta' | 'urgente'>('media');
   const [otTechnician, setOtTechnician] = useState('');
@@ -155,6 +182,7 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
       code: `OT-${new Date().getFullYear()}-${String(workOrders.length + 1).padStart(3, '0')}`,
       projectId: prj?.id || '',
       projectCode: prj?.code || 'STC-GENERAL',
+      itemCode: otItemCode || undefined,
       component: otComponent,
       priority: otPriority,
       technician: otTechnician || 'Técnico Especialista STC',
@@ -171,17 +199,43 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
   const [manufPartName, setManufPartName] = useState('');
   const [manufMaterial, setManufMaterial] = useState('Acero 4140 Tratado');
   const [manufQty, setManufQty] = useState(1);
-  const [manufProject, setManufProject] = useState(projects[0]?.code || 'STOCK-ITK');
+  const [manufProjectId, setManufProjectId] = useState(projects[0]?.id || 'STOCK-ITK');
+  const [manufItemCode, setManufItemCode] = useState<string>('');
+
+  const availableManufProjectItems = useMemo(() => {
+    if (manufProjectId === 'STOCK-ITK') return [];
+    const proj = projects.find((p) => p.id === manufProjectId);
+    if (!proj) return [];
+    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    return items.map((it: any) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+  }, [projects, manufProjectId]);
+
+  useEffect(() => {
+    if (availableManufProjectItems.length > 0) {
+      if (!availableManufProjectItems.some((i) => i.code === manufItemCode)) {
+        setManufItemCode(availableManufProjectItems[0]?.code || '');
+      }
+    } else {
+      setManufItemCode('');
+    }
+  }, [manufProjectId, availableManufProjectItems]);
 
   const handleCreateManuf = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manufPartName.trim()) return;
+    const selProject = projects.find((p) => p.id === manufProjectId);
     const newOrder = createManufacturingOrder({
       code: `OF-${new Date().getFullYear()}-${String(manufacturingOrders.length + 1).padStart(3, '0')}`,
       partName: manufPartName,
       material: manufMaterial,
       quantity: Math.max(1, Number(manufQty) || 1),
-      projectCode: manufProject,
+      projectId: selProject?.id,
+      projectCode: selProject ? selProject.code : 'STOCK-ITK',
+      itemCode: manufItemCode || undefined,
       stage: 'corte',
     });
     setIsManufModalOpen(false);
@@ -191,18 +245,45 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
 
   // Modal Registrar Ensayo Banco
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testProjectId, setTestProjectId] = useState(projects[0]?.id || '');
+  const [testItemCode, setTestItemCode] = useState<string>('');
   const [testSerial, setTestSerial] = useState('');
   const [testGripType, setTestGripType] = useState('Pinza Desembragable Doble Resorte');
   const [testForce, setTestForce] = useState(38);
   const [testRequired, setTestRequired] = useState(35);
   const [testTechnician, setTestTechnician] = useState('');
 
+  const availableTestProjectItems = useMemo(() => {
+    const proj = projects.find((p) => p.id === testProjectId);
+    if (!proj) return [];
+    const items = (((proj as any)?.projectItems || (proj as any)?.items || []) as any[]);
+    return items.map((it: any) => ({
+      id: it.code,
+      name: `${it.code} — ${it.name}`,
+      code: it.code,
+    }));
+  }, [projects, testProjectId]);
+
+  useEffect(() => {
+    if (availableTestProjectItems.length > 0) {
+      if (!availableTestProjectItems.some((i) => i.code === testItemCode)) {
+        setTestItemCode(availableTestProjectItems[0]?.code || '');
+      }
+    } else {
+      setTestItemCode('');
+    }
+  }, [testProjectId, availableTestProjectItems]);
+
   const handleCreateTest = (e: React.FormEvent) => {
     e.preventDefault();
     if (!testSerial.trim()) return;
+    const selPrj = projects.find((p) => p.id === testProjectId);
     const verdict = Number(testForce) >= Number(testRequired) ? 'conforme' : 'no_conforme';
     const newTest = createBenchTest({
       testCode: `ENS-${new Date().getFullYear()}-${String(benchTests.length + 1).padStart(3, '0')}`,
+      projectId: selPrj?.id,
+      projectCode: selPrj?.code,
+      itemCode: testItemCode || undefined,
       gripSerial: testSerial.trim(),
       gripType: testGripType,
       clampingForceKN: Number(testForce),
@@ -360,9 +441,23 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
               {workOrders.map((ot) => (
                 <div key={ot.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
-                      {ot.code} • {ot.projectCode}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (ot.projectId) {
+                          navigateWithContext('proyectos', 'view_project', { projectId: ot.projectId, tab: 'dashboard' });
+                        }
+                      }}
+                      className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 hover:bg-sky-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1.5 transition-colors cursor-pointer text-left"
+                      title={ot.projectId ? `Ir al Proyecto ${ot.projectCode}` : undefined}
+                    >
+                      <span>{ot.code} • {ot.projectCode}</span>
+                      {ot.itemCode && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">
+                          {ot.itemCode}
+                        </span>
+                      )}
+                    </button>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                       ot.priority === 'urgente' ? 'bg-rose-100 text-rose-800' :
                       ot.priority === 'alta' ? 'bg-amber-100 text-amber-800' :
@@ -423,8 +518,16 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
               {manufacturingOrders.map((mo) => (
                 <div key={mo.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
-                      {mo.code}
+                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md inline-flex items-center gap-1.5">
+                      <span>{mo.code}</span>
+                      {mo.projectCode && mo.projectCode !== 'STOCK-ITK' && (
+                        <span className="text-slate-600 font-normal">• {mo.projectCode}</span>
+                      )}
+                      {mo.itemCode && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">
+                          {mo.itemCode}
+                        </span>
+                      )}
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-800">
                       Cant: {mo.quantity} unid
@@ -433,7 +536,21 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                   <div>
                     <h4 className="font-bold text-sm text-slate-900">{mo.partName}</h4>
                     <p className="text-xs text-slate-500 mt-0.5">Material: <strong className="text-slate-800">{mo.material}</strong></p>
-                    <p className="text-xs text-slate-500">Destino: <strong className="text-slate-800">{mo.projectCode}</strong></p>
+                    <p className="text-xs text-slate-500">
+                      Destino:{' '}
+                      {mo.projectId && mo.projectCode !== 'STOCK-ITK' ? (
+                        <button
+                          type="button"
+                          onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: mo.projectId, tab: 'costs' })}
+                          className="font-bold text-[#00668F] hover:underline cursor-pointer"
+                          title={`Ir al Proyecto ${mo.projectCode}`}
+                        >
+                          {mo.projectCode}
+                        </button>
+                      ) : (
+                        <strong className="text-slate-800">{mo.projectCode}</strong>
+                      )}
+                    </p>
                   </div>
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                     <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded uppercase">
@@ -489,8 +606,27 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
               {benchTests.map((t) => (
                 <div key={t.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
-                      {t.testCode}
+                    <span className="font-mono font-bold text-xs text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md inline-flex items-center gap-1.5">
+                      <span>{t.testCode}</span>
+                      {t.projectCode && (
+                        t.projectId ? (
+                          <button
+                            type="button"
+                            onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: t.projectId, tab: 'dashboard' })}
+                            className="text-[#00668F] font-bold hover:underline cursor-pointer"
+                            title={`Ir al Proyecto ${t.projectCode}`}
+                          >
+                            • {t.projectCode}
+                          </button>
+                        ) : (
+                          <span className="text-slate-600 font-normal">• {t.projectCode}</span>
+                        )
+                      )}
+                      {t.itemCode && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">
+                          {t.itemCode}
+                        </span>
+                      )}
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                       t.verdict === 'conforme' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
@@ -587,17 +723,31 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
           <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-slate-200">
             <h3 className="text-base font-bold text-slate-900">Nueva Orden de Trabajo (OT) de Reparación</h3>
             <form onSubmit={handleCreateOt} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-600 font-bold mb-1">Proyecto Asignado</label>
-                <select
-                  value={otProject}
-                  onChange={(e) => setOtProject(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-xl"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Proyecto Asignado</label>
+                  <select
+                    value={otProject}
+                    onChange={(e) => setOtProject(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Ítem Contractual (Plan 1)</label>
+                  <select
+                    value={otItemCode}
+                    onChange={(e) => setOtItemCode(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  >
+                    {availableOtProjectItems.map((it) => (
+                      <option key={it.id} value={it.code}>{it.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-slate-600 font-bold mb-1">Componente STC</label>
@@ -706,18 +856,34 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-slate-600 font-bold mb-1">Proyecto / Destino</label>
-                <select
-                  value={manufProject}
-                  onChange={(e) => setManufProject(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-xl"
-                >
-                  <option value="STOCK-ITK">Bodega Central (Stock Inteckno)</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.code}>{p.code} - {p.name}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Proyecto / Destino</label>
+                  <select
+                    value={manufProjectId}
+                    onChange={(e) => setManufProjectId(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  >
+                    <option value="STOCK-ITK">Bodega Central (Stock Inteckno)</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {availableManufProjectItems.length > 0 && (
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Ítem Contractual (Plan 1)</label>
+                    <select
+                      value={manufItemCode}
+                      onChange={(e) => setManufItemCode(e.target.value)}
+                      className="w-full p-2 border border-slate-300 rounded-xl"
+                    >
+                      {availableManufProjectItems.map((it) => (
+                        <option key={it.id} value={it.code}>{it.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -745,6 +911,35 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
           <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-slate-200">
             <h3 className="text-base font-bold text-slate-900">Registrar Ensayo en Banco Hidráulico (EN 1709)</h3>
             <form onSubmit={handleCreateTest} className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Proyecto STC Asociado</label>
+                  <select
+                    value={testProjectId}
+                    onChange={(e) => setTestProjectId(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                  >
+                    <option value="">-- Sin Proyecto / Taller General --</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Ítem Contractual (Plan 1)</label>
+                  <select
+                    value={testItemCode}
+                    onChange={(e) => setTestItemCode(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-xl"
+                    disabled={availableTestProjectItems.length === 0}
+                  >
+                    <option value="">{availableTestProjectItems.length === 0 ? '-- Selecciona un proyecto --' : '-- General / Sin Ítem --'}</option>
+                    {availableTestProjectItems.map((it) => (
+                      <option key={it.id} value={it.code}>{it.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div>
                 <label className="block text-slate-600 font-bold mb-1">Serial de la Pinza / Mordaza</label>
                 <input
