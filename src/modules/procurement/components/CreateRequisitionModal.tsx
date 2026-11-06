@@ -13,6 +13,8 @@ import {
 import { useErp, ensureProjectItems } from '../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { SmartProductCombobox } from '../../../components/common/SmartProductCombobox';
+import { SmartProjectItemSelect } from '../../../components/common/SmartProjectItemSelect';
 
 interface CreateRequisitionModalProps {
   isOpen: boolean;
@@ -53,7 +55,24 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedItemCode, setSelectedItemCode] = useState<string>('');
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const selectedProject = useMemo(() => {
+    if (!selectedProjectId) return projects[0] || undefined;
+    return (
+      projects.find(
+        (p) =>
+          p.id === selectedProjectId ||
+          p.code === selectedProjectId ||
+          `${p.code} — ${p.name}` === selectedProjectId ||
+          p.name === selectedProjectId
+      ) || projects[0]
+    );
+  }, [projects, selectedProjectId]);
+
+  useEffect(() => {
+    if (isOpen && reqType === 'project' && !selectedProjectId && projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [isOpen, reqType, selectedProjectId, projects]);
 
   const availableProjectItems = useMemo(() => {
     if (!selectedProject) return [];
@@ -361,17 +380,10 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
                         </label>
                         <span className="text-[10px] text-[#00668F] font-bold">Mandatorio Plan 1</span>
                       </div>
-                      <CreatableSelect
-                        options={availableProjectItems}
-                        value={
-                          selectedItemCode
-                            ? (availableProjectItems.find((o) => o.code === selectedItemCode || o.id === selectedItemCode || o.name === selectedItemCode)?.name || selectedItemCode)
-                            : ''
-                        }
-                        onChange={(val) => {
-                          const found = availableProjectItems.find((o) => o.id === val || o.name === val || o.code === val);
-                          setSelectedItemCode(found ? found.code : val);
-                        }}
+                      <SmartProjectItemSelect
+                        projectId={selectedProject?.id || selectedProjectId}
+                        value={selectedItemCode}
+                        onChange={(code) => setSelectedItemCode(code)}
                         placeholder="Seleccionar ítem contractual (ej. ITEM 01)..."
                       />
                     </div>
@@ -496,30 +508,27 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                       <div className="sm:col-span-6 space-y-1">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Descripción del material o producto (Ej: Resma papel carta / Guardacables 1/2)"
+                        <SmartProductCombobox
                           value={item.name}
-                          onChange={(e) => handleUpdateItem(item.id, 'name', e.target.value)}
-                          className="w-full h-9 px-2.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-900 text-xs focus:outline-hidden"
+                          onChangeText={(raw) => handleUpdateItem(item.id, 'name', raw)}
+                          onSelectProduct={(prod) => {
+                            setItems((prev) =>
+                              prev.map((it) =>
+                                it.id === item.id
+                                  ? {
+                                      ...it,
+                                      name: prod.name,
+                                      sku: prod.sku,
+                                      unit: prod.unit || 'unid',
+                                      estimatedPriceCOP: prod.estimatedCostCOP,
+                                      availableStockInWarehouse: prod.stockCentral,
+                                    }
+                                  : it
+                              )
+                            );
+                          }}
+                          placeholder="Escribe 3 letras o SKU (ej. ROD, CABLE, TALADRO)..."
                         />
-                        {products.length > 0 && (
-                          <div className="pt-0.5">
-                            <CreatableSelect
-                              options={products.map((p) => ({
-                                id: p.id,
-                                name: `${p.sku ? `[${p.sku}] ` : ''}${p.name}`,
-                                code: p.sku
-                              }))}
-                              value=""
-                              onChange={(val) => {
-                                if (val) handleSelectFromCatalog(item.id, val);
-                              }}
-                              placeholder="Buscar y cargar desde catálogo..."
-                            />
-                          </div>
-                        )}
                       </div>
 
                       <div className="sm:col-span-3">

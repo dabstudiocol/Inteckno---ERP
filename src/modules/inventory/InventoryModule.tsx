@@ -50,6 +50,8 @@ import { UniversalModuleConfigModal } from '../../components/common/UniversalMod
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { SmartEmployeeSelect } from '../../components/common/SmartEmployeeSelect';
+import { SmartProjectItemSelect } from '../../components/common/SmartProjectItemSelect';
 import { getCalibrationStatus } from '../../utils/calibrationUtils';
 
 import { BiometricSignatureModal } from './components/BiometricSignatureModal';
@@ -2216,36 +2218,23 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 />
                 {availableDispatchProjectItems.length > 0 && (
                   <div className="pt-2">
-                    <CreatableSelect
+                    <SmartProjectItemSelect
                       label="Ítem Contractual / Carpeta de Obra (Adjudicación Plan 1)"
-                      value={
-                        availableDispatchProjectItems.find((i) => i.id === dispatchItemCode)?.name || dispatchItemCode
-                      }
-                      onChange={(val) => setDispatchItemCode(val)}
-                      options={availableDispatchProjectItems}
+                      projectId={dispatchProjectId}
+                      value={dispatchItemCode}
+                      onChange={(code) => setDispatchItemCode(code)}
                       placeholder="Seleccionar ítem contractual (ej. ITEM 01)..."
-                      inputClassName="bg-white border-gray-200"
                     />
                   </div>
                 )}
               </div>
 
               <div>
-                <CreatableSelect
-                  label="Responsable de lo que sale"
-                  value={collaboratorsList.find((u) => u.id === dispatchTechId)?.name || dispatchTechId}
-                  onChange={(val) => {
-                    const match = collaboratorsList.find((u) => u.name.toLowerCase() === val.toLowerCase() || u.id === val);
-                    setDispatchTechId(match?.id || val);
-                  }}
-                  options={collaboratorsList.map((u) => ({
-                    id: u.id,
-                    name: `${u.name} (${u.role})`,
-                    code: u.role,
-                  }))}
-                  placeholder="Seleccionar responsable..."
-                  allowCustomText={true}
-                  inputClassName="bg-white border-gray-200"
+                <SmartEmployeeSelect
+                  label="Técnico Responsable de la Herramienta / Remisión"
+                  value={dispatchTechId}
+                  onChange={(empId) => setDispatchTechId(empId)}
+                  placeholder="Seleccionar técnico responsable..."
                 />
               </div>
 

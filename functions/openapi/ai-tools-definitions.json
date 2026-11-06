@@ -1,0 +1,209 @@
+{
+  "version": "1.0.0",
+  "sourceSpec": "functions/openapi/inteckno-ai.yaml",
+  "baseUrlProd": "https://inteckno.web.app/api/v1/ai",
+  "baseUrlSandbox": "https://inteckno-sandbox.web.app/api/v1/ai",
+  "openai_tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "getErpStatus",
+        "description": "Check Inteckno ERP gateway health, active environment (prod/sandbox), and live record counts across all modules. Call this first in a session.",
+        "parameters": { "type": "object", "properties": {}, "required": [] }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "getErpSchema",
+        "description": "Retrieve the Inteckno ERP relational map, Firestore partition layout, and Closed-Loop Information Highway rules. Call before querying unfamiliar modules or executing actions.",
+        "parameters": { "type": "object", "properties": {}, "required": [] }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "getErpModuleData",
+        "description": "Read condensed, paginated, and filtered records from any Inteckno ERP module or sub-entity. Always specify 'fields' and 'limit' to save context tokens.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "module": {
+              "type": "string",
+              "enum": [
+                "projects", "tasks", "milestones", "procurement", "purchaseOrders", "requisitions",
+                "equipment", "partners", "inventoryAuditLogs", "products", "kardex", "operations",
+                "timesheets", "expenses", "ddrs", "remissions", "maintenancePlans", "workOrders",
+                "manufacturingOrders", "benchTests", "hr", "employees", "novelties", "sstInspections",
+                "jobPositions", "candidates", "commercial", "opportunities", "contacts", "leads",
+                "productivity", "todos", "calendarEvents", "documents", "articles", "chatGroups",
+                "users", "chat_messages", "configs"
+              ]
+            },
+            "fields": { "type": "string", "description": "Comma-separated fields to return" },
+            "filter": { "type": "string", "description": "Key:value filter pairs (e.g. projectCode:ITK-01,status:active)" },
+            "limit": { "type": "integer", "default": 50 },
+            "cursor": { "type": "string", "description": "ID/code of last item from previous page" }
+          },
+          "required": ["module"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "getErpSummary",
+        "description": "Get ultra-condensed financial and operational KPIs across Inteckno ERP or for a specific projectCode.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "projectCode": { "type": "string", "description": "Optional project code (= costCenter)" }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "runErpDiagnostics",
+        "description": "Run automated forensic integrity checks across all Inteckno ERP modules (detects missing ITEM 01 folders, orphan POs/SOLPEDs, costCenter mismatches, missing HR salaries).",
+        "parameters": { "type": "object", "properties": {}, "required": [] }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "executeErpAction",
+        "description": "Execute a Zod-validated business transaction that propagates across the Inteckno ERP Information Highway. In prod, only non-destructive deep merges are allowed.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "idempotencyKey": { "type": "string", "description": "Unique key for safe retries" },
+            "action": {
+              "type": "string",
+              "enum": [
+                "upsert_opportunity",
+                "upsert_project",
+                "upsert_requisition",
+                "upsert_purchase_order",
+                "record_timesheet",
+                "upsert_product",
+                "sandbox_delete_entity"
+              ]
+            },
+            "payload": { "type": "object", "description": "Action-specific payload matching aiSchemas.ts" }
+          },
+          "required": ["action", "payload"]
+        }
+      }
+    }
+  ],
+  "claude_tools": [
+    {
+      "name": "getErpStatus",
+      "description": "Check Inteckno ERP gateway health, active environment (prod/sandbox), and live record counts across all modules. Call first.",
+      "input_schema": { "type": "object", "properties": {}, "required": [] }
+    },
+    {
+      "name": "getErpSchema",
+      "description": "Retrieve the Inteckno ERP relational map, Firestore partition layout, and Closed-Loop Information Highway rules.",
+      "input_schema": { "type": "object", "properties": {}, "required": [] }
+    },
+    {
+      "name": "getErpModuleData",
+      "description": "Read condensed, paginated, and filtered records from any Inteckno ERP module. Pass 'fields' to save tokens.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "module": { "type": "string" },
+          "fields": { "type": "string" },
+          "filter": { "type": "string" },
+          "limit": { "type": "integer" },
+          "cursor": { "type": "string" }
+        },
+        "required": ["module"]
+      }
+    },
+    {
+      "name": "getErpSummary",
+      "description": "Get ultra-condensed financial and operational KPIs across Inteckno ERP or for a specific projectCode.",
+      "input_schema": {
+        "type": "object",
+        "properties": { "projectCode": { "type": "string" } },
+        "required": []
+      }
+    },
+    {
+      "name": "runErpDiagnostics",
+      "description": "Run automated forensic integrity checks across all Inteckno ERP modules.",
+      "input_schema": { "type": "object", "properties": {}, "required": [] }
+    },
+    {
+      "name": "executeErpAction",
+      "description": "Execute a Zod-validated business transaction that propagates across the Inteckno ERP Information Highway.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "idempotencyKey": { "type": "string" },
+          "action": { "type": "string" },
+          "payload": { "type": "object" }
+        },
+        "required": ["action", "payload"]
+      }
+    }
+  ],
+  "gemini_function_declarations": [
+    {
+      "name": "getErpStatus",
+      "description": "Check Inteckno ERP gateway health, active environment (prod/sandbox), and live record counts across all modules.",
+      "parameters": { "type": "OBJECT", "properties": {} }
+    },
+    {
+      "name": "getErpSchema",
+      "description": "Retrieve the Inteckno ERP relational map, Firestore partition layout, and Closed-Loop Information Highway rules.",
+      "parameters": { "type": "OBJECT", "properties": {} }
+    },
+    {
+      "name": "getErpModuleData",
+      "description": "Read condensed, paginated, and filtered records from any Inteckno ERP module.",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "module": { "type": "STRING" },
+          "fields": { "type": "STRING" },
+          "filter": { "type": "STRING" },
+          "limit": { "type": "INTEGER" },
+          "cursor": { "type": "STRING" }
+        },
+        "required": ["module"]
+      }
+    },
+    {
+      "name": "getErpSummary",
+      "description": "Get ultra-condensed financial and operational KPIs across Inteckno ERP or for a specific projectCode.",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": { "projectCode": { "type": "STRING" } }
+      }
+    },
+    {
+      "name": "runErpDiagnostics",
+      "description": "Run automated forensic integrity checks across all Inteckno ERP modules.",
+      "parameters": { "type": "OBJECT", "properties": {} }
+    },
+    {
+      "name": "executeErpAction",
+      "description": "Execute a Zod-validated business transaction that propagates across the Inteckno ERP Information Highway.",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "idempotencyKey": { "type": "STRING" },
+          "action": { "type": "STRING" },
+          "payload": { "type": "OBJECT" }
+        },
+        "required": ["action", "payload"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,587 @@
+openapi: 3.0.0
+info:
+  title: Inteckno ERP - AI Integration & Autonomous QA Gateway API
+  version: 1.0.0
+  description: |
+    Official Function-Calling / Tool-Use API for external AI agents (Claude, GPT-4o, Gemini) to inspect, audit, and test **Inteckno ERP Corporativo** (Cable Transport Systems / STC Engineering).
+    
+    ### Core Architectural Mandates
+    1. **Always start with `/status` and `/schema`** to understand the active environment (`prod` vs `sandbox`), collection layout, and the 4 Closed-Loop Information Highways.
+    2. **Token Economy**: When calling `/data/{module}`, pass `fields` (e.g., `fields=id,code,name,status,budgetPV`) and `limit` to avoid bloating context windows.
+    3. **Production Safety (Rule 14)**: In `prod`, destructive actions are hard-blocked (`403`), and all writes (`POST /action`) execute an automatic pre-write snapshot in `erp_backups` followed by a Non-Destructive Deep Merge.
+    4. **PII Protection**: Salaries, national IDs, and phone numbers are masked as `[MASKED_PII]` unless the `X-API-Key` holds the `pii` scope.
+
+servers:
+  - url: https://us-central1-inteckno-erp.cloudfunctions.net/aiApi/api/v1/ai
+    description: Production Gateway Direct (Cloud Functions 2nd Gen)
+  - url: https://inteckno.web.app/api/v1/ai
+    description: Production Gateway (via Firebase Hosting Rewrite)
+  - url: https://inteckno-sandbox.web.app/api/v1/ai
+    description: Staging / Sandbox Gateway for Autonomous QA
+  - url: http://127.0.0.1:5001/inteckno-erp/us-central1/aiApi/api/v1/ai
+    description: Local Firebase Emulator Suite
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        Scoped SHA-256 API Key validated via `crypto.timingSafeEqual` against Secret Manager and `ai_api_keys`.
+        Scopes: `read`, `write_sandbox`, `write_prod_safe`, `pii`.
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Payload failed strict Zod schema validation.
+        details:
+          type: object
+          nullable: true
+        retryAfterSeconds:
+          type: integer
+          nullable: true
+
+    StatusResponse:
+      type: object
+      required:
+        - status
+        - version
+        - environment
+        - counts
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+          example: 1.0.0-ai-gateway
+        environment:
+          type: string
+          enum: [prod, sandbox]
+        keyId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+
+    SchemaResponse:
+      type: object
+      properties:
+        version:
+          type: string
+        architecture:
+          type: string
+        businessRules:
+          type: object
+        informationHighways:
+          type: array
+          items:
+            type: object
+        firestoreStorageLayout:
+          type: object
+        queryableModules:
+          type: array
+          items:
+            type: string
+
+    PaginatedDataResponse:
+      type: object
+      required:
+        - module
+        - totalCount
+        - returnedCount
+        - items
+      properties:
+        module:
+          type: string
+        totalCount:
+          type: integer
+        returnedCount:
+          type: integer
+        nextCursor:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+
+    SummaryResponse:
+      type: object
+      properties:
+        filterProjectCode:
+          type: string
+          nullable: true
+        kpis:
+          type: object
+          properties:
+            projectsCount:
+              type: integer
+            totalContractCOP:
+              type: number
+            totalActualCostCOP:
+              type: number
+            totalCommittedPOCOP:
+              type: number
+            openRequisitionsCount:
+              type: integer
+            activeOpportunitiesCount:
+              type: integer
+            totalSkusInStock:
+              type: integer
+            lowStockAlertCount:
+              type: integer
+        projects:
+          type: array
+          items:
+            type: object
+
+    DiagnosticsResponse:
+      type: object
+      required:
+        - healthy
+        - totalIssues
+        - checkedAt
+        - findings
+      properties:
+        healthy:
+          type: boolean
+        totalIssues:
+          type: integer
+        checkedAt:
+          type: string
+          format: date-time
+        findings:
+          type: array
+          items:
+            type: object
+            properties:
+              severity:
+                type: string
+                enum: [critical, warning, info]
+              ruleViolated:
+                type: string
+              module:
+                type: string
+              entityId:
+                type: string
+              description:
+                type: string
+              suggestedFix:
+                type: string
+
+    ActionRequest:
+      type: object
+      required:
+        - action
+        - payload
+      properties:
+        action:
+          type: string
+          enum:
+            - upsert_opportunity
+            - upsert_project
+            - upsert_requisition
+            - upsert_purchase_order
+            - record_timesheet
+            - upsert_product
+            - sandbox_delete_entity
+        payload:
+          type: object
+          description: Action-specific object validated by Zod schemas (`UpsertProjectPayload`, `UpsertPurchaseOrderPayload`, etc.)
+
+    ActionResponse:
+      type: object
+      required:
+        - action
+        - environment
+        - entityId
+        - propagatedTo
+        - result
+      properties:
+        action:
+          type: string
+        environment:
+          type: string
+          enum: [prod, sandbox]
+        backupId:
+          type: string
+          nullable: true
+        entityId:
+          type: string
+        propagatedTo:
+          type: array
+          items:
+            type: string
+        result:
+          type: object
+
+paths:
+  /status:
+    get:
+      operationId: getErpStatus
+      summary: Check ERP gateway health, active environment (prod/sandbox), and live record counts across all modules.
+      description: |
+        **WHEN TO USE**: Call this first at the beginning of a session to verify connectivity, confirm whether you are connected to `prod` or `sandbox`, and see high-level record counts per module.
+        **WHEN NOT TO USE**: Do not use this to inspect individual project financials or line items (use `/summary` or `/data/{module}` instead).
+      responses:
+        '200':
+          description: Gateway healthy and module counts returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '401':
+          description: Missing or invalid X-API-Key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Revoked key or missing 'read' scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded (60 req/min).
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /schema:
+    get:
+      operationId: getErpSchema
+      summary: Retrieve the ERP relational map, Firestore partition layout, and Closed-Loop Information Highway rules.
+      description: |
+        **WHEN TO USE**: Call before querying unfamiliar modules or before executing any `POST /action` so you understand how entities link (`opportunityId` -> `projectId` -> `itemCode` -> `costMatrix`).
+        **WHEN NOT TO USE**: Do not call repeatedly in the same conversation; cache the schema in your context.
+      responses:
+        '200':
+          description: Complete ERP schema and business rules catalog.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /data/{module}:
+    get:
+      operationId: getErpModuleData
+      summary: Read condensed, paginated, and filtered records from any ERP module or sub-entity.
+      description: |
+        **WHEN TO USE**: When you need to inspect specific entities (`projects`, `tasks`, `purchaseOrders`, `requisitions`, `products`, `kardex`, `timesheets`, `expenses`, `employees`, `opportunities`, `contacts`, `users`, `configs`). Always use `fields` and `filter` to minimize token consumption.
+        **WHEN NOT TO USE**: Do not fetch all modules blindly when you only need executive KPIs (use `/summary`) or integrity checks (use `/diagnostics`).
+      parameters:
+        - name: module
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - projects
+              - tasks
+              - milestones
+              - procurement
+              - purchaseOrders
+              - requisitions
+              - equipment
+              - partners
+              - inventoryAuditLogs
+              - products
+              - kardex
+              - operations
+              - timesheets
+              - expenses
+              - ddrs
+              - remissions
+              - maintenancePlans
+              - workOrders
+              - manufacturingOrders
+              - benchTests
+              - hr
+              - employees
+              - novelties
+              - sstInspections
+              - jobPositions
+              - candidates
+              - commercial
+              - opportunities
+              - contacts
+              - leads
+              - productivity
+              - todos
+              - calendarEvents
+              - documents
+              - articles
+              - chatGroups
+              - users
+              - chat_messages
+              - configs
+        - name: fields
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated field names to project (e.g., `id,code,name,status,computedMarginPct`).
+        - name: filter
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Key-value filter pairs (e.g., `projectCode:ITK-01,status:active`) or JSON object.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ID/code of the last record from the previous page.
+      responses:
+        '200':
+          description: Condensed module records.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDataResponse'
+        '400':
+          description: Invalid module name or query parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /summary:
+    get:
+      operationId: getErpSummary
+      summary: Get ultra-condensed financial and operational KPIs across the ERP or for a specific projectCode.
+      description: |
+        **WHEN TO USE**: When answering executive questions about project margins `(Contract - EAC)/Contract`, committed PO costs, active opportunities, or low-stock alerts with minimal token usage.
+        **WHEN NOT TO USE**: When you need line-by-line cost matrix rows or individual SKU details (use `/data/projects` or `/data/products`).
+      parameters:
+        - name: projectCode
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional project code (= costCenter) to filter KPIs.
+      responses:
+        '200':
+          description: Ultra-condensed KPIs and project margin summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+        '400':
+          description: Invalid query parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /diagnostics:
+    get:
+      operationId: runErpDiagnostics
+      summary: Run automated forensic integrity checks across all modules and Closed-Loop Highways.
+      description: |
+        **WHEN TO USE**: Whenever asked to audit the ERP, find bugs, detect orphan Purchase Orders/Requisitions/WBS tasks, verify `projectItems` (`ITEM 01`) existence, check `code === costCenter` parity, or validate Ley 2101 salary configurations.
+        **WHEN NOT TO USE**: Do not use as a general data reader; it only returns anomalies and rule violations.
+      responses:
+        '200':
+          description: Forensic diagnostic findings and suggested fixes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosticsResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /action:
+    post:
+      operationId: executeErpAction
+      summary: Execute a Zod-validated business transaction that propagates across the ERP Information Highway.
+      description: |
+        **WHEN TO USE**: When creating or updating entities (`upsert_opportunity`, `upsert_project`, `upsert_requisition`, `upsert_purchase_order`, `record_timesheet`, `upsert_product`) or deleting test records in sandbox (`sandbox_delete_entity`). Always pass an `Idempotency-Key` header.
+        **WHEN NOT TO USE**: Never attempt to delete or wipe records in `prod` (strictly blocked by Rule 14). Never submit fake/mock placeholder data in `prod` (Rule 4).
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Unique UUID/string per logical mutation to prevent duplicate execution on retries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionRequest'
+      responses:
+        '200':
+          description: Action executed, backed up (if prod), and propagated to connected modules.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResponse'
+        '400':
+          description: Zod validation error or business rule violation (e.g., missing employee salary in HR).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient write scope or destructive action attempted in production.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

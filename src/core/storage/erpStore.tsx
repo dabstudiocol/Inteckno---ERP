@@ -33,6 +33,30 @@ export function ensureProjectItems(p: Project): any[] {
     }
   ];
 }
+
+export function recalculateProjectEvm(p: Project): Project {
+  const items = ensureProjectItems(p);
+  const matrix = ((p.costMatrix || []) as any[]);
+  const matrixActual = matrix.reduce(
+    (sum: number, row: any) => sum + Number(row?.actualTotal ?? row?.actualAmount ?? 0),
+    0
+  );
+  const matrixPlanned = matrix.reduce(
+    (sum: number, row: any) => sum + Number(row?.plannedTotal ?? row?.plannedAmount ?? 0),
+    0
+  );
+  const actualCostAC = Math.max(Number(p.actualCostAC || 0), matrixActual);
+  const contractVal = Number((p as any).contractAmount || p.budgetPV || 0);
+  const eac = Math.max(actualCostAC, matrixPlanned);
+  const computedMarginPct =
+    eac > 0 && contractVal > 0 ? Number((((contractVal - eac) / contractVal) * 100).toFixed(2)) : 'N/D';
+  return {
+    ...p,
+    projectItems: items,
+    actualCostAC,
+    ...( { computedEAC: eac, computedMarginPct } as any ),
+  };
+}
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getStoredTRM } from '../services/trmService';
 import { getProjectTaxRate } from '../services/taxService';
@@ -461,13 +485,17 @@ const ErpContext = createContext<ErpContextType | undefined>(undefined);
 
 
 export function buildInitialEmployeesFromUsers(usersList: User[]): EmployeeRecord[] {
-  return usersList.map((u, idx) => {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const filteredUsers = usersList.filter((u) => u.id !== 'user-gustavo-mejia');
+  return filteredUsers.map((u, idx) => {
     const isGerente = u.role.includes('gerente');
     const isLider = u.role.includes('lider');
-    const isIng = u.role.includes('ingeniero') || u.role.includes('coord');
+    const isIng = u.role.includes('ingeniero') || u.role.includes('coord') || u.role.includes('admin');
     const isTec = u.role.includes('tecnico') || u.role.includes('supervisor');
     const salary = isGerente ? 6500000 : isLider ? 4800000 : isIng ? 3800000 : isTec ? 3100000 : 2500000;
-    
+    const expiry = u.hseqExpiresAt || '2027-12-31';
+    const isExpired = u.hseqStatus === 'expired' || expiry < todayIso;
+
     return {
       id: u.id,
       name: u.name,
@@ -482,10 +510,10 @@ export function buildInitialEmployeesFromUsers(usersList: User[]): EmployeeRecor
       city: u.city || 'Medellín',
       email: u.email,
       phone: u.phone || '+57 300 000 0000',
-      heightCertExpiry: '2027-12-31',
-      heightCertStatus: 'vigente',
-      medicalExamExpiry: '2027-12-31',
-      medicalExamStatus: 'vigente',
+      heightCertExpiry: expiry,
+      heightCertStatus: isExpired ? 'vencido' : 'vigente',
+      medicalExamExpiry: expiry,
+      medicalExamStatus: isExpired ? 'vencido' : 'vigente',
       vacationDaysAvailable: 15,
       emergencyContact: u.emergencyContactName || 'Contacto Familiar',
       emergencyPhone: u.emergencyContactPhone || '+57 300 000 0000',
@@ -822,7 +850,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 merged.push(lp);
               }
             });
-            next.projects = merged.map((p: Project) => ({ ...p, projectItems: ensureProjectItems(p) }));
+            next.projects = merged.map((p: Project) => recalculateProjectEvm(p));
             hasChanges = true;
           }
           if (Array.isArray(cloudData.projects.tasks)) { next.tasks = cloudData.projects.tasks; hasChanges = true; }
@@ -875,7 +903,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (cloudData.hr.employees.length > 0) {
               next.employees = cloudData.hr.employees;
             } else if (!next.employees || next.employees.length === 0) {
-              next.employees = buildInitialEmployeesFromUsers(next.users && next.users.length > 0 ? next.users : SEED_USERS);
+              const autoSeeded = buildInitialEmployeesFromUsers(next.users && next.users.length > 0 ? next.users : SEED_USERS);
+              next.employees = autoSeeded;
+              syncModuleToCloud('hr', {
+                employees: autoSeeded,
+                novelties: cloudData.hr.novelties || [],
+                sstInspections: cloudData.hr.sstInspections || [],
+                jobPositions: cloudData.hr.jobPositions || [],
+                candidates: cloudData.hr.candidates || [],
+              }, prev.currentUser?.id || 'USR-01').catch(console.warn);
             }
             hasChanges = true;
           }
@@ -1156,7 +1192,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           ...prev,
-          projects: mergedProjects.map((p: Project) => ({ ...p, projectItems: ensureProjectItems(p) })),
+          projects: mergedProjects.map((p: Project) => recalculateProjectEvm(p)),
           tasks: Array.isArray(data.tasks) ? data.tasks : prev.tasks,
           milestones: Array.isArray(data.milestones) ? data.milestones : prev.milestones,
         };

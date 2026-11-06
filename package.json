@@ -9,6 +9,9 @@
     "preview": "vite preview",
     "test": "node scripts/test-e2e.cjs",
     "test:e2e": "node scripts/test-e2e.cjs",
+    "sandbox:seed": "node scripts/sandbox-seed.mjs",
+    "sandbox:emulators": "npx firebase-tools emulators:start --only functions,firestore,hosting",
+    "ai:gemini": "node scripts/gemini-erp-agent.mjs",
     "deploy": "tsc -b && vite build && npx firebase-tools deploy --only hosting,firestore:rules",
     "deploy:all": "tsc -b && vite build && npx firebase-tools deploy"
   },

@@ -25,6 +25,8 @@ import { UniversalModuleConfigModal } from '../../components/common/UniversalMod
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog, getLaborRates } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { SmartEmployeeSelect } from '../../components/common/SmartEmployeeSelect';
+import { SmartProjectItemSelect } from '../../components/common/SmartProjectItemSelect';
 import { formatCOP } from '../../core/services/trmService';
 
 export const TimesheetModule: React.FC = () => {
@@ -309,20 +311,19 @@ export const TimesheetModule: React.FC = () => {
         <form onSubmit={handleQuickSubmit} className="space-y-4">
           {/* Cuadrícula Simétrica de 2 Columnas (Estándar Regla 9) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {/* Colaborador Técnico */}
+            {/* Colaborador Técnico (Con bloqueo HSEQ y Tarifa Ley 2101 solo lectura) */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
                 1. Colaborador / Técnico Responsable
               </label>
-              <CreatableSelect
-                options={collaboratorsList.map((collab) => ({
-                  id: collab.id,
-                  name: `${collab.name} (${collab.role})`,
-                  code: collab.role,
-                }))}
+              <SmartEmployeeSelect
                 value={selectedUserId}
-                onChange={(val) => setSelectedUserId(val)}
-                placeholder="Seleccionar técnico..."
+                isHeightTask={/altura|pilona|polea|cable|torre/i.test(taskName)}
+                showHourlyCostBadge={true}
+                onChange={(empId, empObj) => {
+                  setSelectedUserId(empObj ? `${empObj.name} (${empObj.jobTitle})` : empId);
+                }}
+                placeholder="Seleccionar técnico del directorio..."
               />
             </div>
 
@@ -356,10 +357,10 @@ export const TimesheetModule: React.FC = () => {
                 </label>
                 <span className="text-[10px] text-[#00668F] font-bold">Mandatorio Plan 1</span>
               </div>
-              <CreatableSelect
-                options={availableProjectItems}
+              <SmartProjectItemSelect
+                projectId={selectedProject?.id || selectedProjectId}
                 value={selectedItemCode}
-                onChange={(val) => setSelectedItemCode(val)}
+                onChange={(code) => setSelectedItemCode(code)}
                 placeholder="Seleccionar ítem contractual (ej. ITEM 01, ITEM 11)..."
               />
             </div>

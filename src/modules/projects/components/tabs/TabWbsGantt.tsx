@@ -29,6 +29,8 @@ import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteM
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { TemplateManagerModal } from '../../../../components/common/TemplateManagerModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
+import { SmartEmployeeSelect } from '../../../../components/common/SmartEmployeeSelect';
+import { SmartProjectItemSelect } from '../../../../components/common/SmartProjectItemSelect';
 import { INTECKNO_WBS_TEMPLATES_5_FAMILIAS } from '../../../../core/config/intecknoDomainCatalog';
 
 interface TabWbsGanttProps {
@@ -1799,17 +1801,15 @@ export const TabWbsGantt: React.FC<TabWbsGanttProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <CreatableSelect
-                      label="Responsable Técnico"
+                    <SmartEmployeeSelect
+                      label="Responsable Técnico (Validación HSEQ Res. 4272)"
                       value={taskForm.assignedToName}
-                      onChange={(val) => setTaskForm({ ...taskForm, assignedToName: val })}
-                      options={(erpUsers || []).map((u) => ({
-                        id: u.id,
-                        name: u.name,
-                        code: u.roleLabel || undefined,
-                      }))}
-                      placeholder="Seleccionar o escribir..."
-                      allowCustomText={true}
+                      isHeightTask={/altura|pilona|polea|cable|torre|montaje|izaj/i.test(`${taskForm.name} ${taskForm.description}`)}
+                      showHourlyCostBadge={true}
+                      onChange={(_id, empObj) =>
+                        setTaskForm({ ...taskForm, assignedToName: empObj ? empObj.name : _id })
+                      }
+                      placeholder="Seleccionar técnico con HSEQ vigente..."
                     />
                   </div>
 

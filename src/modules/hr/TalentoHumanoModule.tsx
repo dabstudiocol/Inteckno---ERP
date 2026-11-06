@@ -561,24 +561,35 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       );
                     })()}
 
-                    {/* Semáforo de Certificaciones Críticas para Trabajos en Pilonas */}
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100">
-                        <span className="text-[10px] text-gray-500 block font-medium">Curso Alturas (Avanzado)</span>
-                        <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
-                          <ShieldCheck size={14} />
-                          <span>Vigente ({emp.heightCertExpiry || 'Al día'})</span>
-                        </div>
-                      </div>
+                    {/* Semáforo de Certificaciones Críticas para Trabajos en Pilonas (Resolución 4272 de 2021) */}
+                    {(() => {
+                      const todayIso = new Date().toISOString().slice(0, 10);
+                      const isHeightExpired =
+                        emp.heightCertStatus === 'vencido' ||
+                        (emp.heightCertExpiry && emp.heightCertExpiry < todayIso);
+                      const isMedExpired =
+                        emp.medicalExamStatus === 'vencido' ||
+                        (emp.medicalExamExpiry && emp.medicalExamExpiry < todayIso);
+                      return (
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className={`p-2.5 rounded-xl border ${isHeightExpired ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-gray-100'}`}>
+                            <span className="text-[10px] text-gray-500 block font-medium">Curso Alturas (Res. 4272)</span>
+                            <div className={`flex items-center gap-1 font-bold mt-0.5 ${isHeightExpired ? 'text-rose-700' : 'text-emerald-700'}`}>
+                              {isHeightExpired ? <AlertTriangle size={14} /> : <ShieldCheck size={14} />}
+                              <span>{isHeightExpired ? `VENCIDO (${emp.heightCertExpiry})` : `Vigente (${emp.heightCertExpiry || 'Al día'})`}</span>
+                            </div>
+                          </div>
 
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-gray-100">
-                        <span className="text-[10px] text-gray-500 block font-medium">Examen Médico Ocupacional</span>
-                        <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
-                          <CheckCircle2 size={14} />
-                          <span>Apto ({emp.medicalExamExpiry || 'Al día'})</span>
+                          <div className={`p-2.5 rounded-xl border ${isMedExpired ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-gray-100'}`}>
+                            <span className="text-[10px] text-gray-500 block font-medium">Examen Médico Ocupacional</span>
+                            <div className={`flex items-center gap-1 font-bold mt-0.5 ${isMedExpired ? 'text-rose-700' : 'text-emerald-700'}`}>
+                              {isMedExpired ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
+                              <span>{isMedExpired ? `VENCIDO (${emp.medicalExamExpiry})` : `Apto (${emp.medicalExamExpiry || 'Al día'})`}</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
 
                     <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
                       <span>Días de Vacaciones: <strong className="text-gray-900">{emp.vacationDaysAvailable || 15} días</strong></span>

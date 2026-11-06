@@ -20,6 +20,8 @@ import { useErp, ensureProjectItems } from '../../../../core/storage/erpStore';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
+import { SmartEmployeeSelect } from '../../../../components/common/SmartEmployeeSelect';
+import { SmartProjectItemSelect } from '../../../../components/common/SmartProjectItemSelect';
 
 interface TabHojaHorasProps {
   project: Project;
@@ -577,12 +579,12 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Ítem Contractual / Carpeta *
                   </label>
-                  <CreatableSelect
-                    options={availableProjectItems}
+                  <SmartProjectItemSelect
+                    projectId={project.id}
                     value={form.itemCode}
                     onChange={(val) => setForm({ ...form, itemCode: val })}
+                    includeIndirectOption={false}
                     placeholder="Seleccionar ítem contractual..."
-                    isClearable={true}
                   />
                 </div>
 
@@ -609,14 +611,22 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Técnico / Inspector *
                   </label>
-                  <CreatableSelect
-                    options={unifiedStaff.map((u) => ({
-                      id: u.id,
-                      name: `${u.name} (${u.roleLabel})`,
-                      code: u.id
-                    }))}
+                  <SmartEmployeeSelect
                     value={form.userId}
-                    onChange={(val) => setForm({ ...form, userId: val })}
+                    onChange={(empId) => setForm({ ...form, userId: empId })}
+                    showHourlyCostBadge={true}
+                    isHeightTask={(() => {
+                      const selTask = tasks.find((t) => t.id === form.taskId);
+                      const taskName = (selTask?.name || '').toLowerCase();
+                      return (
+                        taskName.includes('pilona') ||
+                        taskName.includes('altura') ||
+                        taskName.includes('torre') ||
+                        taskName.includes('polea') ||
+                        taskName.includes('cable') ||
+                        taskName.includes('balanc')
+                      );
+                    })()}
                     placeholder="Seleccionar técnico..."
                   />
                 </div>

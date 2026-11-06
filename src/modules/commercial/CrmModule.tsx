@@ -1749,7 +1749,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
             <div>
               <h3 className="text-sm font-bold text-gray-900">Historial de Propuestas Técnico-Económicas</h3>
               <p className="text-xs text-gray-500">
-                Control de propuestas, cotizaciones ofertadas y conversión directa a Proyectos STC.
+                Control de propuestas del Pipeline Comercial y Presupuestos de Oferta vinculados a Proyectos STC.
               </p>
             </div>
             <button
@@ -1761,7 +1761,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
             </button>
           </div>
 
-          {opportunities.length === 0 ? (
+          {opportunities.length === 0 && projects.length === 0 ? (
             <div className="p-12 text-center bg-slate-50/70 rounded-2xl border border-dashed border-gray-200 space-y-3 max-w-lg mx-auto my-4 shadow-2xs">
               <div className="w-14 h-14 rounded-2xl bg-sky-50 text-[#00668F] flex items-center justify-center mx-auto">
                 <FileText size={28} />
@@ -1880,6 +1880,45 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                       </td>
                     </tr>
                   ))}
+                  {projects
+                    .filter((p) => !opportunities.some((o) => o.id === p.opportunityId || o.awardedProjectId === p.id))
+                    .map((proj) => {
+                      const offerObj = proj.offerBudget && !Array.isArray(proj.offerBudget) ? proj.offerBudget : null;
+                      const offerTotal = Number(offerObj?.grandTotalOffer || (proj as any).contractAmount || proj.budgetPV || 0);
+                      return (
+                        <tr key={`proj-quote-${proj.id}`} className="hover:bg-slate-50/80 bg-emerald-50/20">
+                          <td className="p-3 font-bold text-[#00668F]">
+                            {proj.quoteCode || `COT-${proj.code}`}
+                          </td>
+                          <td className="p-3 font-semibold text-gray-900">
+                            {proj.name}
+                            <span className="block text-[10px] text-gray-400 font-normal">
+                              Proyecto STC: {proj.code}
+                            </span>
+                          </td>
+                          <td className="p-3 text-gray-700 font-medium">{proj.clientName}</td>
+                          <td className="p-3 font-bold text-gray-900">
+                            {formatCOP(offerTotal)}
+                          </td>
+                          <td className="p-3">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              ADJUDICADA / EN OBRA
+                            </span>
+                          </td>
+                          <td className="p-3 text-gray-500">{proj.startDate || 'Activa'}</td>
+                          <td className="p-3 text-right flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: proj.id, tab: 'costos' })}
+                              className="px-2.5 py-1 bg-[#00668F] hover:bg-[#005273] text-white rounded-md text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>Ver Presupuesto Oferta</span>
+                              <ArrowRight size={10} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>

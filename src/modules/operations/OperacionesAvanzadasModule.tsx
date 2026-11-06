@@ -25,6 +25,8 @@ import { UniversalModuleConfigModal } from '../../components/common/UniversalMod
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
+import { SmartEmployeeSelect } from '../../components/common/SmartEmployeeSelect';
+import { SmartProjectItemSelect } from '../../components/common/SmartProjectItemSelect';
 
 
 interface OperacionesProps {
@@ -828,15 +830,13 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                 </div>
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Ítem Contractual (Plan 1)</label>
-                  <select
+                  <SmartProjectItemSelect
+                    projectId={otProject}
                     value={otItemCode}
-                    onChange={(e) => setOtItemCode(e.target.value)}
-                    className="w-full p-2 border border-slate-300 rounded-xl"
-                  >
-                    {availableOtProjectItems.map((it) => (
-                      <option key={it.id} value={it.code}>{it.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setOtItemCode(val)}
+                    includeIndirectOption={true}
+                    placeholder="Seleccionar ítem contractual..."
+                  />
                 </div>
               </div>
               <div>
@@ -865,13 +865,19 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Técnico Asignado</label>
-                  <input
-                    type="text"
+                  <label className="block text-slate-600 font-bold mb-1">Técnico Asignado (Control HSEQ)</label>
+                  <SmartEmployeeSelect
                     value={otTechnician}
-                    onChange={(e) => setOtTechnician(e.target.value)}
-                    placeholder="Nombre del técnico..."
-                    className="w-full p-2 border border-slate-300 rounded-xl"
+                    onChange={(_id, empObj) => setOtTechnician(empObj?.name || '')}
+                    isHeightTask={
+                      otComponent.toLowerCase().includes('pilona') ||
+                      otComponent.toLowerCase().includes('polea') ||
+                      otComponent.toLowerCase().includes('balanc') ||
+                      otComponent.toLowerCase().includes('cable') ||
+                      otComponent.toLowerCase().includes('torre') ||
+                      otDescription.toLowerCase().includes('altura')
+                    }
+                    placeholder="Seleccionar técnico certificado..."
                   />
                 </div>
               </div>
@@ -1067,12 +1073,10 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
               </div>
               <div>
                 <label className="block text-slate-600 font-bold mb-1">Técnico Calibrador</label>
-                <input
-                  type="text"
+                <SmartEmployeeSelect
                   value={testTechnician}
-                  onChange={(e) => setTestTechnician(e.target.value)}
-                  placeholder="Nombre del técnico o ingeniero..."
-                  className="w-full p-2 border border-slate-300 rounded-xl"
+                  onChange={(_id, empObj) => setTestTechnician(empObj?.name || '')}
+                  placeholder="Seleccionar técnico o ingeniero..."
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -1187,12 +1191,16 @@ export const OperacionesAvanzadasModule: React.FC<OperacionesProps> = ({
                 </div>
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">Técnico Responsable STC</label>
-                  <CreatableSelect
-                    options={users.map((u) => ({ id: u.name, name: u.name }))}
+                  <SmartEmployeeSelect
                     value={planTechnician}
-                    onChange={(val) => setPlanTechnician(val)}
+                    onChange={(_id, empObj) => setPlanTechnician(empObj?.name || '')}
+                    isHeightTask={
+                      planComponent.toLowerCase().includes('pilona') ||
+                      planComponent.toLowerCase().includes('balanc') ||
+                      planComponent.toLowerCase().includes('cable') ||
+                      planComponent.toLowerCase().includes('polea')
+                    }
                     placeholder="Seleccionar técnico..."
-                    allowCustomText={true}
                   />
                 </div>
               </div>

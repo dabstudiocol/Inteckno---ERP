@@ -481,5 +481,48 @@ service cloud.firestore {
       allow create, update: if true;
       allow delete: if isAuthenticated() && isAdmin();
     }
+
+    // -------------------------------------------------------------------------
+    // LEVEL 2 & LEVEL 3 ARCHITECTURE COLLECTIONS (Career Profiles & Fixed Assets)
+    // -------------------------------------------------------------------------
+    match /career_profiles/{userId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    match /hr_profiles/{userId} {
+      allow read: if isAdmin() || isOwner(userId);
+      allow create, update: if isAdmin() || isOwner(userId);
+      allow delete: if isAdmin();
+    }
+
+    match /performance_plans/{userId} {
+      allow read: if isAdmin() || isManager() || isOwner(userId);
+      allow create, update: if isAdmin() || isManager();
+      allow delete: if isAdmin();
+    }
+
+    match /fixed_assets/{assetId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // AI GATEWAY SECURITY & AUDIT COLLECTIONS (Admin SDK / Cloud Functions Only)
+    // Web clients are strictly forbidden from reading or writing these collections.
+    // -------------------------------------------------------------------------
+    match /ai_audit_log/{logId} {
+      allow read, write: if false;
+    }
+
+    match /ai_api_keys/{keyHash} {
+      allow read, write: if false;
+    }
+
+    match /ai_idempotency_keys/{idemId} {
+      allow read, write: if false;
+    }
   }
 }

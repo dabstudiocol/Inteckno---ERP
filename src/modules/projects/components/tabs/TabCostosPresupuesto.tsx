@@ -1186,8 +1186,46 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     );
   };
 
-  return (
+    const itemsBudgetAllocatedSum = projectItems.reduce((acc, f) => acc + Number(f.budgetPlanned || 0), 0);
+    const bacGapCOP = contractAmountCOP - itemsBudgetAllocatedSum;
+
+    return (
     <div className="space-y-4">
+      {/* VALIDADOR DE GOBERNANZA EVM / BAC (AUDITORÍA NIVEL 2 ACT-01: Σ projectItems === contractAmount) */}
+      {contractAmountCOP > 0 && projectItems.length > 0 && Math.abs(bacGapCOP) > 1 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-bold text-amber-900">
+                Alerta de Línea Base EVM / BAC (SSOT): Brecha de {formatCOP(Math.abs(bacGapCOP))} frente al Valor Contractual
+              </h4>
+              <p className="text-[11px] text-amber-800 mt-0.5">
+                La suma asignada en carpetas contractuales (<span className="font-mono font-bold">{formatCOP(itemsBudgetAllocatedSum)}</span>) debe coincidir con el contrato adjudicado (<span className="font-mono font-bold">{formatCOP(contractAmountCOP)}</span>) para calcular SPI y CPI con exactitud.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const reconciled = projectItems.map((it, idx) => {
+                if (idx === projectItems.length - 1) {
+                  const prevSum = projectItems.slice(0, -1).reduce((s, x) => s + Number(x.budgetPlanned || 0), 0);
+                  return { ...it, budgetPlanned: Math.max(0, contractAmountCOP - prevSum) };
+                }
+                return it;
+              });
+              setProjectItems(reconciled);
+              onUpdateProject?.({ ...project, projectItems: reconciled as any } as any);
+              notify?.('success', 'Línea Base BAC Reconciliada', `Se asignó el saldo de ${formatCOP(Math.abs(bacGapCOP))} a ${reconciled[reconciled.length - 1]?.code}.`);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
+          >
+            Nivelar Línea Base BAC Automáticamente
+          </button>
+        </div>
+      )}
+
       {/* SELECTOR DE 3 SUBPESTAÑAS PRINCIPALES: DASHBOARD CON GRÁFICOS | MATRIZ DE ITEMS Y COSTOS | PRESUPUESTO */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-2xs flex items-center gap-1.5 max-w-2xl">
         <button
@@ -1735,10 +1773,10 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             const totalIvaCosts = visibleCostItems.reduce((acc, c) => acc + (c.hasIva ? (c.ivaAmount || 0) : 0), 0);
             const totalRetentionCosts = visibleCostItems.reduce((acc, c) => acc + (c.retentionAmount || 0), 0);
 
-            // Incluir explícitamente el IVA Soportado en la gráfica de dona
+            // Incluir explícitamente el Impuesto Soportado según la jurisdicción del proyecto (TaxEngine)
             if (totalIvaCosts > 0) {
               catMap.set('iva_soportado', {
-                name: 'IVA Soportado (19%)',
+                name: `${projectTaxRate.taxName} Soportado (${projectTaxRate.label})`,
                 value: totalIvaCosts,
                 count: visibleCostItems.filter((c) => c.hasIva).length,
                 color: catColors.iva_soportado,

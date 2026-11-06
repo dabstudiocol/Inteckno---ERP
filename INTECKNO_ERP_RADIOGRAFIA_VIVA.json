@@ -1,0 +1,4124 @@
+{
+  "generatedAt": "2026-11-06T16:34:18.093Z",
+  "status": {
+    "status": "ok",
+    "version": "1.0.0-ai-gateway",
+    "environment": "prod",
+    "keyId": "master-secret-key",
+    "scopes": [
+      "read",
+      "write_sandbox",
+      "write_prod_safe",
+      "pii"
+    ],
+    "timestamp": "2026-11-06T16:34:32.308Z",
+    "counts": {
+      "projects": 1,
+      "tasks": 0,
+      "milestones": 0,
+      "purchaseOrders": 0,
+      "requisitions": 0,
+      "partners": 0,
+      "products": 1500,
+      "timesheets": 0,
+      "expenses": 0,
+      "workOrders": 0,
+      "employees": 30,
+      "opportunities": 0,
+      "contacts": 1,
+      "users": 31
+    }
+  },
+  "schema": {
+    "version": "1.0.0-ai-gateway",
+    "architecture": "Cloud-First Real-Time Firestore (`erp_modules` + `erp_products` + `erp_kardex`)",
+    "businessRules": {
+      "zeroMockData": "Empty collections return [] and numeric fields 0. Never invent placeholder rows.",
+      "costCenterRule": "Project.code === Project.costCenter",
+      "realMarginFormula": "(Contract - EAC) / Contract where EAC = max(actualCostAC, plannedCost). Returns \"N/D\" if EAC === 0.",
+      "colombiaLaborHourFormula": "((baseSalaryCOP * 1.52) / 210) per Ley 2101/2021. Never invent rate if salary is missing.",
+      "dynamicTaxByCountry": "Colombia 19%, México 16%, Chile 19%, Perú 18%, Bolivia 13%, Ecuador 15%, Panamá 7%.",
+      "nonDestructiveProdWrites": "In prod, POST /action performs non-destructive deep merge and creates pre-write backup in erp_backups."
+    },
+    "informationHighways": [
+      {
+        "axis": "EJE 1: Comercial -> Proyectos STC",
+        "flow": "opportunities -> projects (inherits clientNit, offerBudget, projectItems [ITEM 01..N], milestones)",
+        "joinKeys": [
+          "opportunityId",
+          "clientId",
+          "code"
+        ]
+      },
+      {
+        "axis": "EJE 2: Ingeniería -> Abastecimiento -> Almacén -> Matriz de Costos",
+        "flow": "projects.projectItems -> requisitions (SOLPED) -> purchaseOrders (OC) -> products / kardex -> projects.costMatrix",
+        "joinKeys": [
+          "projectId",
+          "projectCode",
+          "itemCode",
+          "originRequisitionId",
+          "sku"
+        ]
+      },
+      {
+        "axis": "EJE 3: Campo -> Nómina RRHH -> Valor Ganado (EVM)",
+        "flow": "employees (baseSalaryCOP) -> timesheets (hours + itemCode) -> projects.actualCostAC & costMatrix",
+        "joinKeys": [
+          "employeeId",
+          "projectId",
+          "projectCode",
+          "itemCode"
+        ]
+      },
+      {
+        "axis": "EJE 4: Operaciones -> Facturación 48h -> Recaudo -> EBITDA",
+        "flow": "projects -> milestones (acceptanceActSigned -> 48h rule) -> billingItems / dian_invoices",
+        "joinKeys": [
+          "projectId",
+          "projectCode",
+          "milestoneIndex"
+        ]
+      }
+    ],
+    "firestoreStorageLayout": {
+      "erp_modules/projects": [
+        "projects",
+        "tasks",
+        "milestones"
+      ],
+      "erp_modules/procurement": [
+        "purchaseOrders",
+        "requisitions",
+        "equipment",
+        "partners",
+        "inventoryAuditLogs"
+      ],
+      "erp_modules/operations": [
+        "timesheets",
+        "expenses",
+        "ddrs",
+        "remissions",
+        "maintenancePlans",
+        "workOrders",
+        "manufacturingOrders",
+        "benchTests"
+      ],
+      "erp_modules/hr": [
+        "employees",
+        "novelties",
+        "sstInspections",
+        "jobPositions",
+        "candidates"
+      ],
+      "erp_modules/commercial": [
+        "opportunities",
+        "contacts",
+        "leads"
+      ],
+      "erp_modules/productivity": [
+        "todos",
+        "calendarEvents",
+        "documents",
+        "articles",
+        "chatGroups"
+      ],
+      "erp_products/{productId}": "Individual SKU documents synced with erp_inventory/meta & chunk_0..N (300 items/chunk)",
+      "erp_kardex/{kardexId}": "Immutable stock audit ledger",
+      "users/{userId}": "Corporate users and RBAC profiles"
+    },
+    "queryableModules": [
+      "projects",
+      "tasks",
+      "milestones",
+      "procurement",
+      "purchaseOrders",
+      "requisitions",
+      "equipment",
+      "partners",
+      "inventoryAuditLogs",
+      "products",
+      "kardex",
+      "operations",
+      "timesheets",
+      "expenses",
+      "ddrs",
+      "remissions",
+      "maintenancePlans",
+      "workOrders",
+      "manufacturingOrders",
+      "benchTests",
+      "hr",
+      "employees",
+      "careerProfiles",
+      "novelties",
+      "sstInspections",
+      "jobPositions",
+      "candidates",
+      "commercial",
+      "opportunities",
+      "contacts",
+      "leads",
+      "productivity",
+      "todos",
+      "calendarEvents",
+      "documents",
+      "articles",
+      "chatGroups",
+      "users",
+      "chat_messages",
+      "configs"
+    ]
+  },
+  "diagnostics": {
+    "healthy": true,
+    "totalIssues": 1,
+    "checkedAt": "2026-11-06T16:34:33.181Z",
+    "findings": [
+      {
+        "severity": "warning",
+        "ruleViolated": "Regla 4 (Cero Mock Data en Producción)",
+        "module": "projects",
+        "entityId": "CODIGO PROYECTO PRUEBA",
+        "description": "El proyecto CODIGO PROYECTO PRUEBA contiene literales de prueba (\"CODIGO PROYECTO PRUEBA\" / \"CLIENTE PRUEBA\").",
+        "suggestedFix": "Ejecutar POST /api/v1/ai/action con action=\"PURGE_MOCK_DATA\"."
+      }
+    ]
+  },
+  "summary": {
+    "filterProjectCode": null,
+    "kpis": {
+      "projectsCount": 1,
+      "totalContractCOP": 100000000,
+      "totalActualCostCOP": 3700000,
+      "totalCommittedPOCOP": 0,
+      "openRequisitionsCount": 0,
+      "activeOpportunitiesCount": 0,
+      "totalSkusInStock": 1500,
+      "lowStockAlertCount": 1345
+    },
+    "projects": [
+      {
+        "code": "CODIGO PROYECTO PRUEBA",
+        "name": "DESCRIPTIVO PRUEBA",
+        "status": "active",
+        "country": "Colombia",
+        "taxRate": 0.19,
+        "contractCOP": 100000000,
+        "eacCOP": 3700000,
+        "actualCostCOP": 3700000,
+        "committedPOCOP": 0,
+        "marginPct": 96.3,
+        "itemsCount": 2
+      }
+    ]
+  },
+  "projects": {
+    "module": "projects",
+    "totalCount": 1,
+    "returnedCount": 1,
+    "nextCursor": null,
+    "items": [
+      {
+        "clientName": "CLIENTE PRUEBA",
+        "serviceType": "Recorte de Cables tractores",
+        "paymentTermsDescription": "Contra entrega de informe final aprobado a satisfacción",
+        "quoteCode": "CODIGO COTIZACION PRUEBA",
+        "earnedValueEV": 0,
+        "status": "active",
+        "lineOfBusiness": "Mantenimiento",
+        "code": "CODIGO PROYECTO PRUEBA",
+        "name": "DESCRIPTIVO PRUEBA",
+        "costCenter": "CODIGO PROYECTO PRUEBA",
+        "cpi": 1,
+        "id": "PRJ-1793367181536",
+        "dynamicData": {
+          "serviceId": "Recorte de Cables tractores",
+          "componentIntervened": "Balancines",
+          "categoryId": "MANTENIMIENTO Y MONTAJE ESPECIALIZADO",
+          "cableInterventionLengthMeters": 0
+        },
+        "budgetPV": 100000000,
+        "contractAmount": 100000000,
+        "updatedAt": "2026-11-06T16:34:22.835Z",
+        "contractCode": "CONTRATO PRUEBA",
+        "offerBudget": {
+          "items": [
+            {
+              "id": "offer-1793374115784",
+              "budgetPlanned": 5000000,
+              "description": "DESCRIPCION PRUEBA",
+              "hasIva": false,
+              "rubroName": "RUBRO PRUEBA"
+            }
+          ],
+          "totalBudgetedCost": 5000000,
+          "totalBudgetedProfit": 79033613,
+          "subtotal": 84033613,
+          "ivaAmount": 15966387,
+          "grandTotalOffer": 100000000,
+          "lastUpdated": "2026-11-06T16:34:22.835Z"
+        },
+        "endDate": "2026-11-19",
+        "serviceCategory": "MANTENIMIENTO Y MONTAJE ESPECIALIZADO",
+        "cv": 0,
+        "location": "Colombia",
+        "currency": "COP",
+        "serviceId": "Recorte de Cables tractores",
+        "categoryId": "MANTENIMIENTO Y MONTAJE ESPECIALIZADO",
+        "costMatrix": [
+          {
+            "id": "COST-1793387007211",
+            "itemCode": "ITEM PRUEBA 2",
+            "itemName": "DESCRIPTIVO PRUEBA 2",
+            "category": "imprevistos_contingencia",
+            "costType": "indirecto",
+            "concept": "CONCEPTO PRUEBA 3",
+            "unit": "Global",
+            "plannedQuantity": 1,
+            "plannedUnitCost": 450000,
+            "plannedTotal": 450000,
+            "actualQuantity": 1,
+            "actualUnitCost": 450000,
+            "actualTotal": 450000,
+            "variance": 0,
+            "date": "2026-10-30",
+            "invoiceNumber": "RECIBO PRUEBA 3",
+            "hasIva": true,
+            "ivaAmount": 85500,
+            "retentionAmount": 0,
+            "splitPercentage": 100
+          },
+          {
+            "retentionAmount": 0,
+            "plannedQuantity": 5,
+            "variance": 0,
+            "unit": "Pasaje",
+            "invoiceNumber": "FACTURA PRUEBA 2",
+            "actualTotal": 750000,
+            "id": "COST-1793375513688",
+            "concept": "CONCEPTO PRUEBA 2",
+            "splitPercentage": 100,
+            "plannedTotal": 750000,
+            "date": "2026-10-30",
+            "itemName": "DESCRIPTIVO PRUEBA",
+            "hasIva": true,
+            "category": "viaticos_transporte",
+            "itemCode": "ITEM PRUEBA 1",
+            "costType": "directo",
+            "actualUnitCost": 150000,
+            "actualQuantity": 5,
+            "plannedUnitCost": 150000,
+            "ivaAmount": 142500
+          },
+          {
+            "category": "mano_obra_itk",
+            "retentionAmount": 0,
+            "itemName": "DESCRIPTIVO PRUEBA",
+            "receiptPhotos": [
+              "https://storage.googleapis.com/inteckno-erp.appspot.com/receipts/PRJ-1793367181536/COST-1793374221664.jpg"
+            ],
+            "invoiceNumber": "RECIBO PRUEBA",
+            "costType": "directo",
+            "plannedQuantity": 50,
+            "itemCode": "ITEM PRUEBA 1",
+            "date": "2026-10-30",
+            "plannedTotal": 2500000,
+            "splitPercentage": 100,
+            "actualUnitCost": 50000,
+            "actualQuantity": 50,
+            "variance": 0,
+            "actualTotal": 2500000,
+            "concept": "CONCEPTO PRUEBA",
+            "plannedUnitCost": 50000,
+            "ivaAmount": 0,
+            "hasIva": false,
+            "id": "COST-1793374221664",
+            "unit": "Horas"
+          }
+        ],
+        "spi": 1,
+        "advancePaymentPercentage": 0,
+        "projectItems": [
+          {
+            "id": "ITEM-1793374163278",
+            "code": "ITEM PRUEBA 1",
+            "name": "DESCRIPTIVO PRUEBA",
+            "budgetPlanned": 15000000,
+            "status": "activo",
+            "createdAt": "2026-10-30T15:29:23.278Z"
+          },
+          {
+            "id": "ITEM-1793386958665",
+            "code": "ITEM PRUEBA 2",
+            "name": "DESCRIPTIVO PRUEBA 2",
+            "budgetPlanned": 85000000,
+            "status": "activo",
+            "createdAt": "2026-10-30T19:02:38.665Z"
+          }
+        ],
+        "retentionGuaranteePercentage": 0,
+        "startDate": "2026-10-30",
+        "supervisorName": "Gustavo Alberto Mejía Tobón",
+        "actualCostAC": 3700000,
+        "computedEAC": 3700000,
+        "computedMarginPct": 96.3,
+        "country": "CO",
+        "financialSummary": {
+          "subtotal": 3700000,
+          "taxableAmount": 1200000,
+          "taxAppliedCode": "CO_IVA",
+          "effectiveTaxRate": 0.19,
+          "calculatedTaxTotal": 228000,
+          "grandTotal": 3928000
+        },
+        "computedTaxRate": 0.19
+      }
+    ]
+  },
+  "users": {
+    "module": "users",
+    "totalCount": 31,
+    "returnedCount": 31,
+    "nextCursor": null,
+    "items": [
+      {
+        "address": "Bello, Calle 50 # 49-30",
+        "role": "coord_comercial",
+        "city": "Bello, Antioquia",
+        "emergencyContactName": "Carlos Hoyos (Padre)",
+        "competencies": [
+          "Licitaciones Estatales LATAM",
+          "Costeo de Ofertas STC",
+          "CRM y CSAT"
+        ],
+        "avatar": "AH",
+        "avatarColor": "#9333EA",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Coordinador Comercial",
+        "birthDate": "1986-09-12",
+        "emergencyContactPhone": "+57 320 333 4411",
+        "canWorkHeights": false,
+        "hseqStatus": "valid",
+        "phone": "+57 320 888 9900",
+        "name": "Alejandro Hoyos Correa",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "USR-02",
+        "department": "Gestión Comercial",
+        "email": "ahoyos@inteckno.com"
+      },
+      {
+        "address": "Laureles, Circular 4 # 73-12",
+        "role": "gerente_administrativa",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Javier García (Hermano)",
+        "competencies": [
+          "Homologación de Proveedores",
+          "Control Presupuestal",
+          "Facturación e Impuestos"
+        ],
+        "avatar": "CG",
+        "avatarColor": "#8E5000",
+        "bloodType": "A+",
+        "isActive": true,
+        "roleLabel": "Gerente Administrativa",
+        "birthDate": "1980-04-22",
+        "emergencyContactPhone": "+57 310 111 2233",
+        "canWorkHeights": false,
+        "hseqStatus": "valid",
+        "phone": "+57 310 987 6543",
+        "name": "Clemencia García Moncada",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "USR-04",
+        "department": "Administración y Finanzas",
+        "email": "cgarcia@inteckno.com"
+      },
+      {
+        "address": "Itagüí, Carrera 52 # 48-15",
+        "role": "supervisor_tecnico",
+        "city": "Itagüí, Antioquia",
+        "emergencyContactName": "Mariana Morales (Cónyuge)",
+        "competencies": [
+          "Inspección Magnetográfica",
+          "Reglajes de Estación",
+          "Calibración de Equipos",
+          "Coordinador de Alturas"
+        ],
+        "avatar": "DM",
+        "avatarColor": "#0F766E",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Supervisor Técnico de Campo",
+        "birthDate": "1982-12-03",
+        "emergencyContactPhone": "+57 312 444 8822",
+        "canWorkHeights": true,
+        "hseqStatus": "valid",
+        "phone": "+57 312 333 4455",
+        "name": "Dairo Antonio Morales Fuenmayor",
+        "hseqExpiresAt": "2027-08-20",
+        "id": "USR-05",
+        "department": "Operaciones de Campo",
+        "email": "dmorales@inteckno.com"
+      },
+      {
+        "address": "El Poblado, Calle 10 # 32-45",
+        "role": "gerente_general",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Familia Mejía",
+        "competencies": [
+          "Estrategia Corporativa",
+          "Evaluación de Riesgo",
+          "Gestión Financiera STC"
+        ],
+        "avatar": "GM",
+        "avatarColor": "#00668F",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Gerente General",
+        "birthDate": "1976-08-14",
+        "emergencyContactPhone": "+57 300 123 4567",
+        "canWorkHeights": false,
+        "hseqStatus": "valid",
+        "phone": "+57 300 456 7890",
+        "name": "Gustavo Alberto Mejía Tobón",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "USR-07",
+        "department": "Dirección General",
+        "email": "gmejia@inteckno.com"
+      },
+      {
+        "address": "Medellín, Transversal 39B # 74-21",
+        "role": "hseq",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Andrés Rojas (Hermano)",
+        "competencies": [
+          "Matriz de Riesgos STC",
+          "Liberaciones Digitales SST",
+          "Auditorías ISO 45001",
+          "Inspección EPP"
+        ],
+        "avatar": "KR",
+        "avatarColor": "#DC2626",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Coordinadora HSEQ / SST",
+        "birthDate": "1991-05-19",
+        "emergencyContactPhone": "+57 311 222 3388",
+        "hseqStatus": "valid",
+        "phone": "+57 311 777 8899",
+        "name": "Kelly Johana Rojas Torres",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "USR-12",
+        "department": "SST y Sostenibilidad",
+        "email": "krojas@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-SST"
+      },
+      {
+        "address": "Sabaneta, Calle 75 Sur # 45-20",
+        "role": "lider_proyectos",
+        "city": "Sabaneta, Antioquia",
+        "emergencyContactName": "Paola Ruiz",
+        "competencies": [
+          "Diseño Electromecánico CAD",
+          "Cálculos de Tensión de Cables",
+          "Auditoría Técnica"
+        ],
+        "avatar": "SR",
+        "avatarColor": "#1E40AF",
+        "bloodType": "B+",
+        "isActive": true,
+        "roleLabel": "Líder de Proyectos",
+        "birthDate": "1988-03-17",
+        "emergencyContactPhone": "+57 314 222 7788",
+        "canWorkHeights": true,
+        "hseqStatus": "valid",
+        "phone": "+57 314 555 6677",
+        "name": "Sebastián Ruiz Agudelo",
+        "hseqExpiresAt": "2027-05-15",
+        "id": "USR-16",
+        "department": "Ingeniería y Proyectos",
+        "email": "sruiz@inteckno.com"
+      },
+      {
+        "address": "Medellín, Carrera 70 # 45E-18",
+        "role": "coord_compras",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Diana Vélez (Hermana)",
+        "competencies": [
+          "Negociación con Fabricantes Europeos",
+          "Cuadros Comparativos",
+          "Importaciones"
+        ],
+        "avatar": "SV",
+        "avatarColor": "#D97706",
+        "bloodType": "A+",
+        "isActive": true,
+        "roleLabel": "Comprador Técnico",
+        "birthDate": "1990-06-25",
+        "emergencyContactPhone": "+57 318 999 5566",
+        "canWorkHeights": false,
+        "hseqStatus": "valid",
+        "phone": "+57 318 444 1122",
+        "name": "Sebastián Vélez Yépez",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "USR-17",
+        "department": "Cadena de Suministro",
+        "email": "svelez@inteckno.com"
+      },
+      {
+        "address": "Envigado, Carrera 43A # 38S-19",
+        "role": "lider_proyectos",
+        "city": "Envigado, Antioquia",
+        "emergencyContactName": "Claudia Correa (Cónyuge)",
+        "competencies": [
+          "Gerencia de Proyectos STC",
+          "Gestión de Valor Ganado (EVM)",
+          "MS Project Avanzado",
+          "END Nivel II"
+        ],
+        "avatar": "WA",
+        "avatarColor": "#166534",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Coordinador de Proyectos",
+        "birthDate": "1984-11-05",
+        "emergencyContactPhone": "+57 315 888 9911",
+        "canWorkHeights": true,
+        "hseqStatus": "valid",
+        "phone": "+57 315 222 3344",
+        "name": "Wilson Albeiro Alzate Correa",
+        "hseqExpiresAt": "2027-06-30",
+        "id": "USR-18",
+        "department": "Ingeniería y Proyectos",
+        "email": "walzate@inteckno.com"
+      },
+      {
+        "address": "Sabaneta, Carrera 45 # 70-12",
+        "role": "ingeniero_proyectos",
+        "city": "Sabaneta, Antioquia",
+        "emergencyContactName": "Elena Cadamil",
+        "competencies": [
+          "Supervisión de Obras STC",
+          "Montaje Electromecánico",
+          "Control de Horas Hombre (HH)",
+          "Planos As-Built"
+        ],
+        "avatar": "AD",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1992-05-14",
+        "emergencyContactPhone": "+57 316 111 5566",
+        "hseqStatus": "valid",
+        "phone": "+57 316 222 3344",
+        "name": "Alejandro Díaz Cadamil",
+        "hseqExpiresAt": "2027-09-30",
+        "id": "USR-19",
+        "department": "Ingeniería y Proyectos",
+        "email": "adiaz@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Transversal 39 # 72-10",
+        "role": "ingeniero_proyectos",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Ana Pérez",
+        "competencies": [
+          "Cálculo de Tensionado",
+          "Inspección de Balancines",
+          "Supervisión de Cuadrilla",
+          "Reportes DDR"
+        ],
+        "avatar": "CP",
+        "avatarColor": "#0D9488",
+        "bloodType": "A+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1991-09-22",
+        "emergencyContactPhone": "+57 315 888 2211",
+        "hseqStatus": "valid",
+        "phone": "+57 315 333 4455",
+        "name": "Carlos Eduardo Pérez",
+        "hseqExpiresAt": "2027-10-15",
+        "id": "USR-20",
+        "department": "Ingeniería y Proyectos",
+        "email": "cperez@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Bello, Calle 55 # 48-30",
+        "role": "ingeniero_proyectos",
+        "city": "Bello, Antioquia",
+        "emergencyContactName": "Clara Arcila",
+        "competencies": [
+          "Montaje de Poleas",
+          "Alineación Láser STC",
+          "Protocolos LOTO",
+          "Control de Avance WBS"
+        ],
+        "avatar": "FG",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1990-11-18",
+        "emergencyContactPhone": "+57 314 222 1100",
+        "hseqStatus": "valid",
+        "phone": "+57 314 444 5566",
+        "name": "Francisco Javier Giraldo Arcila",
+        "hseqExpiresAt": "2027-11-20",
+        "id": "USR-21",
+        "department": "Ingeniería y Proyectos",
+        "email": "fgiraldo@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Itagüí, Carrera 52 # 55-14",
+        "role": "ingeniero_proyectos",
+        "city": "Itagüí, Antioquia",
+        "emergencyContactName": "Gloria Peña",
+        "competencies": [
+          "Sistemas Hidráulicos STC",
+          "Frenos de Emergencia",
+          "Pruebas de Carga Dinámica",
+          "Supervisión en Alturas"
+        ],
+        "avatar": "JG",
+        "avatarColor": "#0D9488",
+        "bloodType": "B+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1993-01-28",
+        "emergencyContactPhone": "+57 313 777 9922",
+        "hseqStatus": "valid",
+        "phone": "+57 313 555 6677",
+        "name": "Jefferson Galeano Peña",
+        "hseqExpiresAt": "2027-08-30",
+        "id": "USR-22",
+        "department": "Ingeniería y Proyectos",
+        "email": "jgaleano@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Calle 33 # 65C-18",
+        "role": "ingeniero_proyectos",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Rosa Estrada",
+        "competencies": [
+          "Overhaul de Cabinas",
+          "Reglajes de Estación",
+          "Auditoría Técnica de Campo",
+          "Manejo ERP"
+        ],
+        "avatar": "JH",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1989-07-04",
+        "emergencyContactPhone": "+57 312 999 4433",
+        "hseqStatus": "valid",
+        "phone": "+57 312 666 7788",
+        "name": "José Leonel Hernández Estrada",
+        "hseqExpiresAt": "2027-07-10",
+        "id": "USR-23",
+        "department": "Ingeniería y Proyectos",
+        "email": "jhernandez@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Calle 92 # 49A-12",
+        "role": "tecnico_stc",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Martha Guzmán (Madre)",
+        "competencies": [
+          "Empalme de Cables",
+          "Mantenimiento de Pilonas",
+          "Overhaul de Pinzas"
+        ],
+        "avatar": "JG",
+        "avatarColor": "#475569",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Técnico Especialista STC",
+        "birthDate": "1994-07-30",
+        "emergencyContactPhone": "+57 316 111 4455",
+        "canWorkHeights": true,
+        "hseqStatus": "valid",
+        "phone": "+57 316 999 1122",
+        "name": "Jonathan Estiven Guzmán",
+        "hseqExpiresAt": "2027-04-10",
+        "id": "USR-24",
+        "department": "Operaciones de Campo",
+        "email": "jguzman@inteckno.com"
+      },
+      {
+        "address": "Bello, Diagonal 55 # 42-10",
+        "role": "tecnico_stc",
+        "city": "Bello, Antioquia",
+        "emergencyContactName": "Gloria Yépez (Madre)",
+        "competencies": [
+          "Apoyo en Alturas",
+          "Pintura y Retoque de Torres",
+          "Manejo de Torquímetros"
+        ],
+        "avatar": "YF",
+        "avatarColor": "#475569",
+        "bloodType": "A+",
+        "isActive": true,
+        "roleLabel": "Técnico Operativo STC",
+        "birthDate": "1997-02-14",
+        "emergencyContactPhone": "+57 319 333 7722",
+        "hseqStatus": "expired",
+        "phone": "+57 319 888 4433",
+        "name": "Yohan Daniel Franco Yépez",
+        "hseqExpiresAt": "2026-09-01",
+        "id": "USR-25",
+        "department": "Operaciones de Campo",
+        "email": "yfranco@inteckno.com",
+        "jobPositionId": "POS-AT",
+        "canWorkHeights": false
+      },
+      {
+        "address": "Envigado, Transversal 32Sur # 40-12",
+        "role": "ingeniero_proyectos",
+        "city": "Envigado, Antioquia",
+        "emergencyContactName": "Laura Cadena",
+        "competencies": [
+          "Empalmes de Cable de Acero",
+          "Ensayos No Destructivos",
+          "Coordinación de Cuadrillas",
+          "Norma EN 12927"
+        ],
+        "avatar": "JC",
+        "avatarColor": "#0D9488",
+        "bloodType": "A+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1992-12-10",
+        "emergencyContactPhone": "+57 311 333 6655",
+        "hseqStatus": "valid",
+        "phone": "+57 311 777 8811",
+        "name": "Juan Pablo Castellanos Cadena",
+        "hseqExpiresAt": "2027-06-25",
+        "id": "USR-26",
+        "department": "Ingeniería y Proyectos",
+        "email": "jcastellanos@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Carrera 76 # 30-45",
+        "role": "ingeniero_proyectos",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Nohora Ordóñez",
+        "competencies": [
+          "Electromecánica Industrial",
+          "Variadores de Frecuencia STC",
+          "Motores Principales y Auxiliares"
+        ],
+        "avatar": "RA",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1990-04-16",
+        "emergencyContactPhone": "+57 310 111 4477",
+        "hseqStatus": "valid",
+        "phone": "+57 310 888 9922",
+        "name": "Rubén Darío Arcos Ordóñez",
+        "hseqExpiresAt": "2027-05-30",
+        "id": "USR-27",
+        "department": "Ingeniería y Proyectos",
+        "email": "rdarcos@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Sabaneta, Calle 72Sur # 43A-19",
+        "role": "ingeniero_proyectos",
+        "city": "Sabaneta, Antioquia",
+        "emergencyContactName": "Beatriz Arbeláez",
+        "competencies": [
+          "Mantenimiento Preventivo STC",
+          "Instrumentación y Control",
+          "Reportes Diarios DDR",
+          "Alturas Avanzado"
+        ],
+        "avatar": "SA",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1994-08-25",
+        "emergencyContactPhone": "+57 318 555 2211",
+        "hseqStatus": "valid",
+        "phone": "+57 318 999 1133",
+        "name": "Santiago Arbeláez",
+        "hseqExpiresAt": "2027-09-12",
+        "id": "USR-28",
+        "department": "Ingeniería y Proyectos",
+        "email": "sarbelaez@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Bello, Carrera 50 # 38-12",
+        "role": "ingeniero_proyectos",
+        "city": "Bello, Antioquia",
+        "emergencyContactName": "Luz Mora",
+        "competencies": [
+          "Inspección Magnetográfica MRT",
+          "Cálculos de Desgaste de Cable",
+          "Supervisión de Obra"
+        ],
+        "avatar": "NS",
+        "avatarColor": "#0D9488",
+        "bloodType": "B+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1991-03-31",
+        "emergencyContactPhone": "+57 317 444 8833",
+        "hseqStatus": "valid",
+        "phone": "+57 317 111 2244",
+        "name": "Nencer Camilo Solano Mora",
+        "hseqExpiresAt": "2027-10-05",
+        "id": "USR-29",
+        "department": "Ingeniería y Proyectos",
+        "email": "nsolano@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Calle 44 # 70-22",
+        "role": "ingeniero_proyectos",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Marta Gelves",
+        "competencies": [
+          "Montajes Mecánicos de Gran Tonelaje",
+          "Alineación de Ejes",
+          "Diagnóstico de Vibraciones"
+        ],
+        "avatar": "HG",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1988-10-12",
+        "emergencyContactPhone": "+57 316 777 1199",
+        "hseqStatus": "valid",
+        "phone": "+57 316 222 3355",
+        "name": "Hernando Gelves",
+        "hseqExpiresAt": "2027-08-20",
+        "id": "USR-30",
+        "department": "Ingeniería y Proyectos",
+        "email": "hgelves@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Itagüí, Calle 48 # 51-20",
+        "role": "ingeniero_proyectos",
+        "city": "Itagüí, Antioquia",
+        "emergencyContactName": "Andrés Ocampo",
+        "competencies": [
+          "Sistemas de Tracción y Contrapeso",
+          "Válvulas Hidráulicas",
+          "Comisionamiento de Teleféricos"
+        ],
+        "avatar": "JO",
+        "avatarColor": "#0D9488",
+        "bloodType": "A+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1993-06-19",
+        "emergencyContactPhone": "+57 315 999 3322",
+        "hseqStatus": "valid",
+        "phone": "+57 315 333 4466",
+        "name": "Javier Andrés Ocampo",
+        "hseqExpiresAt": "2027-11-15",
+        "id": "USR-31",
+        "department": "Ingeniería y Proyectos",
+        "email": "jocampo@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Transversal 78 # 65-30",
+        "role": "ingeniero_proyectos",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Silvia Naranjo",
+        "competencies": [
+          "Diseño y Ajuste de Balancines",
+          "Torque Hidráulico",
+          "Seguridad en Alturas",
+          "Gestión de Cuadrilla"
+        ],
+        "avatar": "GC",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1992-02-17",
+        "emergencyContactPhone": "+57 314 111 8844",
+        "hseqStatus": "valid",
+        "phone": "+57 314 444 5577",
+        "name": "Gabriel Jair Chatelain Naranjo",
+        "hseqExpiresAt": "2027-07-28",
+        "id": "USR-32",
+        "department": "Ingeniería y Proyectos",
+        "email": "gchatelain@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Circular 2 # 70-14",
+        "role": "ingeniero_proyectos",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Carmen Villegas",
+        "competencies": [
+          "Gestión Documental de Calidad",
+          "Planificación WBS",
+          "Inspección de Mordazas",
+          "Control de Avance"
+        ],
+        "avatar": "GM",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1995-12-08",
+        "emergencyContactPhone": "+57 313 888 3311",
+        "hseqStatus": "valid",
+        "phone": "+57 313 555 6688",
+        "name": "Guendy Vanessa Mancego Villegas",
+        "hseqExpiresAt": "2027-10-30",
+        "id": "USR-33",
+        "department": "Ingeniería y Proyectos",
+        "email": "gmancego@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "La Estrella, Calle 75Sur # 60-12",
+        "role": "ingeniero_proyectos",
+        "city": "La Estrella, Antioquia",
+        "emergencyContactName": "Gloria Loaiza",
+        "competencies": [
+          "Montaje de Estructuras Metálicas",
+          "Topografía y Nivelación STC",
+          "Supervisión de Campo"
+        ],
+        "avatar": "ML",
+        "avatarColor": "#0D9488",
+        "bloodType": "B+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1990-08-11",
+        "emergencyContactPhone": "+57 312 222 5588",
+        "hseqStatus": "valid",
+        "phone": "+57 312 666 7799",
+        "name": "Mauricio Llanos Loaiza",
+        "hseqExpiresAt": "2027-09-18",
+        "id": "USR-34",
+        "department": "Ingeniería y Proyectos",
+        "email": "mllanos@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Calle 49B # 74-50",
+        "role": "ingeniero_proyectos",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Rafael Martínez",
+        "competencies": [
+          "Control de Calidad QA/QC",
+          "Dossiers Técnicos",
+          "Inspección de Soldadura",
+          "Gestión de Hitos"
+        ],
+        "avatar": "GM",
+        "avatarColor": "#0D9488",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero de Proyectos",
+        "birthDate": "1994-01-23",
+        "emergencyContactPhone": "+57 311 555 4499",
+        "hseqStatus": "valid",
+        "phone": "+57 311 777 8822",
+        "name": "Glorymanelys Martínez Santos",
+        "hseqExpiresAt": "2027-11-05",
+        "id": "USR-35",
+        "department": "Ingeniería y Proyectos",
+        "email": "gmartinez@inteckno.com",
+        "canWorkHeights": false,
+        "jobPositionId": "POS-IP"
+      },
+      {
+        "address": "Medellín, Carrera 81 # 32-15",
+        "role": "lider_ingenieria",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Margarita Sánchez",
+        "competencies": [
+          "Diseño Mecánico CAD SolidWorks",
+          "Cálculos de Fatiga y Resistencia",
+          "Tolerancias GD&T",
+          "Norma EN 1709"
+        ],
+        "avatar": "SD",
+        "avatarColor": "#2563EB",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Ingeniero Mecánico Especialista",
+        "birthDate": "1989-05-15",
+        "emergencyContactPhone": "+57 310 333 7711",
+        "canWorkHeights": true,
+        "hseqStatus": "valid",
+        "phone": "+57 310 888 9933",
+        "name": "Sebastián Duque Sánchez",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "USR-36",
+        "department": "Ingeniería y Proyectos",
+        "email": "sduque@inteckno.com"
+      },
+      {
+        "address": "Medellín, Carrera 65 # 102-18",
+        "role": "tecnico_stc",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Patricia Rúa",
+        "competencies": [
+          "Mantenimiento Electromecánico",
+          "Sustitución de Poleas",
+          "Lubricación Técnica",
+          "Trabajo en Alturas"
+        ],
+        "avatar": "HG",
+        "avatarColor": "#475569",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Técnico de Campo STC",
+        "birthDate": "1995-10-05",
+        "emergencyContactPhone": "+57 317 333 1144",
+        "canWorkHeights": true,
+        "hseqStatus": "valid",
+        "phone": "+57 317 888 2233",
+        "name": "Herson Guerrero Rúa",
+        "hseqExpiresAt": "2027-05-22",
+        "id": "USR-39",
+        "department": "Operaciones de Campo",
+        "email": "hguerrero@inteckno.com"
+      },
+      {
+        "address": "Medellín, Circular 73 # 39-10",
+        "role": "asistente_negocios_internacionales",
+        "city": "Medellín, Antioquia",
+        "emergencyContactName": "Familia Hurtado",
+        "competencies": [
+          "Implementación ERP Odoo/Next",
+          "Análisis de Procesos BPMN",
+          "Modelado de Negocio"
+        ],
+        "avatar": "DH",
+        "avatarColor": "#2563EB",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Asistente Negocios Internacionales",
+        "birthDate": "1996-10-18",
+        "emergencyContactPhone": "+57 301 888 4422",
+        "canWorkHeights": false,
+        "hseqStatus": "valid",
+        "phone": "+57 301 234 5678",
+        "name": "David Hurtado Yépez",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "USR-40",
+        "department": "Negocios Internacionales y ERP",
+        "email": "dhurtado@inteckno.com"
+      },
+      {
+        "address": "Copacabana, Calle 48 # 55-22",
+        "role": "tecnico_stc",
+        "city": "Copacabana, Antioquia",
+        "emergencyContactName": "Rodrigo Suescún",
+        "competencies": [
+          "Mantenimiento de Balancines",
+          "Revisión de Mordazas",
+          "Checklists en ERP",
+          "Trabajo Seguro en Alturas"
+        ],
+        "avatar": "MS",
+        "avatarColor": "#475569",
+        "bloodType": "O+",
+        "isActive": true,
+        "roleLabel": "Técnico de Campo STC",
+        "birthDate": "1996-03-12",
+        "emergencyContactPhone": "+57 318 999 2211",
+        "canWorkHeights": true,
+        "hseqStatus": "valid",
+        "phone": "+57 318 777 3344",
+        "name": "Martín Suescún",
+        "hseqExpiresAt": "2027-06-18",
+        "id": "USR-41",
+        "department": "Operaciones de Campo",
+        "email": "msuescun@inteckno.com"
+      },
+      {
+        "id": "USR-99",
+        "email": "sistemas@inteckno.com",
+        "role": "admin_sistemas",
+        "department": "Sistemas y Tecnología",
+        "avatar": "SI",
+        "address": "Sede Principal Inteckno, Edificio Corporativo",
+        "isActive": true,
+        "hseqStatus": "valid",
+        "city": "Medellín, Antioquia",
+        "avatarColor": "#0078D4",
+        "canWorkHeights": false,
+        "roleLabel": "Administrador de Sistemas & TI",
+        "preferences": {
+          "confirmBeforeDelete": true,
+          "dateFormat": "DD/MM/YYYY",
+          "defaultLandingModule": "proyectos",
+          "emailAlerts": true,
+          "defaultCurrency": "COP",
+          "visualDensity": "compact",
+          "toastsEnabled": true,
+          "fontSize": "normal",
+          "theme": "light",
+          "soundEnabled": true
+        },
+        "linkedInUrl": "https://www.linkedin.com/in/david-hurtado-2ab131250",
+        "nationalId": "1034986228",
+        "jobReadinessScore": 74,
+        "jobPosition": {
+          "softSkills": [
+            "Pensamiento analítico estructurado",
+            "Capacidad pedagógica para capacitar usuarios",
+            "Proactividad y respuesta ante incidentes"
+          ],
+          "salaryRange": {
+            "min": 5500000,
+            "isConfidential": true,
+            "max": 8000000,
+            "currency": "COP"
+          },
+          "code": "ITK-CAR-03",
+          "purpose": "Garantizar la disponibilidad 24/7, escalabilidad y ciberseguridad integral de la infraestructura digital de Inteckno S.A.S., administrando el ERP propio en React 19 / Firebase, Microsoft 365 y el cumplimiento ISO 27001 / Habeas Data.",
+          "academicRequirements": [
+            "Ingeniería de Sistemas, Telemática, Computación o Software.",
+            "Certificaciones recomendadas en Cloud (Google Cloud / Azure) y Ciberseguridad."
+          ],
+          "title": "Administrador de Sistemas & Arquitecto Cloud ERP",
+          "createdAt": "2026-01-15",
+          "responsibilities": [
+            "Mantener la arquitectura del ERP Inteckno en la nube de Google Firebase y Vercel.",
+            "Monitorear la sincronización con Microsoft Graph API (To Do, Outlook, Teams) y DIAN.",
+            "Gestionar las copias de seguridad automáticas, cifrado AES-256 y control de accesos RBAC.",
+            "Supervisar el asistente de IA LUC-IA-NA y su conexión con modelos Gemini en tiempo real.",
+            "Auditar periódicamente la seguridad informática y el cumplimiento de la Ley 1581 de 2012."
+          ],
+          "experienceRequired": "Mínimo 3 años administrando plataformas web modernas, bases de datos NoSQL y cloud enterprise.",
+          "technicalSkills": [
+            "React 19, TypeScript, Tailwind CSS y Node.js",
+            "Google Cloud Firestore y Firebase Hosting",
+            "Integración RESTful APIs y Microsoft Entra ID",
+            "Seguridad TLS 1.3 y mitigación OWASP Top 10"
+          ],
+          "workConditions": [
+            "Modalidad de trabajo híbrida con base en oficina técnica Medellín.",
+            "Disponibilidad remota ante eventuales contingencias del sistema."
+          ],
+          "id": "POS-03",
+          "department": "Sistemas y Tecnología",
+          "status": "activo",
+          "updatedAt": "2026-08-30"
+        },
+        "jobPositionId": "POS-IT",
+        "dataPrivacyConsent": {
+          "policyVersion": "v2026.1 - Ley 1581 de 2012",
+          "accepted": true,
+          "acceptedAt": "2026-01-15T08:00:00Z"
+        },
+        "phone": "+57 3207871541",
+        "name": "David Hurtado Yepes",
+        "hseqExpiresAt": "2027-12-31",
+        "competencies": [
+          "Seguridad",
+          "Redes"
+        ],
+        "bloodType": "A+",
+        "birthDate": "2004-01-29",
+        "emergencyContactPhone": "+57 3103735257",
+        "emergencyContactName": "Luis Fernando Hurtado"
+      },
+      {
+        "role": "gerente_general",
+        "avatarColor": "#0078D4",
+        "bloodType": "O+",
+        "isActive": true,
+        "birthDate": "1995-01-29",
+        "canWorkHeights": false,
+        "hseqStatus": "valid",
+        "phone": "+57 310 456 7890",
+        "name": "Gustavo Adolfo Mejía",
+        "hseqExpiresAt": "2027-12-31",
+        "id": "user-gustavo-mejia",
+        "department": "Ingeniería y Proyectos",
+        "email": "gerencia@inteckno.com"
+      }
+    ]
+  },
+  "employees": {
+    "module": "employees",
+    "totalCount": 30,
+    "returnedCount": 30,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "USR-02",
+        "userId": "USR-02",
+        "name": "Alejandro Hoyos Correa",
+        "fullName": "Alejandro Hoyos Correa",
+        "documentId": "CC-1011111111",
+        "role": "Coordinador Comercial",
+        "position": "Coordinador Comercial",
+        "department": "Gestión Comercial",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Bello, Antioquia",
+        "email": "ahoyos@inteckno.com",
+        "phone": "+57 320 888 9900",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Carlos Hoyos (Padre)",
+        "emergencyPhone": "+57 320 333 4411",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-04",
+        "userId": "USR-04",
+        "name": "Clemencia García Moncada",
+        "fullName": "Clemencia García Moncada",
+        "documentId": "CC-1022222222",
+        "role": "Gerente Administrativa",
+        "position": "Gerente Administrativa",
+        "department": "Administración y Finanzas",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 6500000,
+        "monthlyBaseSalary": 6500000,
+        "monthlyCompanyCostCOP": 9880000,
+        "hourlyRateCOP": 47048,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "cgarcia@inteckno.com",
+        "phone": "+57 310 987 6543",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Javier García (Hermano)",
+        "emergencyPhone": "+57 310 111 2233",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 47048,
+        "computedMonthlyCompanyCostCOP": 9880000
+      },
+      {
+        "id": "USR-05",
+        "userId": "USR-05",
+        "name": "Dairo Antonio Morales Fuenmayor",
+        "fullName": "Dairo Antonio Morales Fuenmayor",
+        "documentId": "CC-1033333333",
+        "role": "Supervisor Técnico de Campo",
+        "position": "Supervisor Técnico de Campo",
+        "department": "Operaciones de Campo",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3100000,
+        "monthlyBaseSalary": 3100000,
+        "monthlyCompanyCostCOP": 4712000,
+        "hourlyRateCOP": 22438,
+        "factorPrestacional": 1.52,
+        "city": "Itagüí, Antioquia",
+        "email": "dmorales@inteckno.com",
+        "phone": "+57 312 333 4455",
+        "canWorkHeights": true,
+        "heightCertExpiry": "2027-08-20",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-08-20",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Mariana Morales (Cónyuge)",
+        "emergencyPhone": "+57 312 444 8822",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 22438,
+        "computedMonthlyCompanyCostCOP": 4712000
+      },
+      {
+        "id": "USR-07",
+        "userId": "USR-07",
+        "name": "Gustavo Alberto Mejía Tobón",
+        "fullName": "Gustavo Alberto Mejía Tobón",
+        "documentId": "CC-1044444444",
+        "role": "Gerente General",
+        "position": "Gerente General",
+        "department": "Dirección General",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 6500000,
+        "monthlyBaseSalary": 6500000,
+        "monthlyCompanyCostCOP": 9880000,
+        "hourlyRateCOP": 47048,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "gmejia@inteckno.com",
+        "phone": "+57 300 456 7890",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Familia Mejía",
+        "emergencyPhone": "+57 300 123 4567",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 47048,
+        "computedMonthlyCompanyCostCOP": 9880000
+      },
+      {
+        "id": "USR-12",
+        "userId": "USR-12",
+        "name": "Kelly Johana Rojas Torres",
+        "fullName": "Kelly Johana Rojas Torres",
+        "documentId": "CC-1055555555",
+        "role": "Coordinadora HSEQ / SST",
+        "position": "Coordinadora HSEQ / SST",
+        "department": "SST y Sostenibilidad",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 2500000,
+        "monthlyBaseSalary": 2500000,
+        "monthlyCompanyCostCOP": 3800000,
+        "hourlyRateCOP": 18095,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "krojas@inteckno.com",
+        "phone": "+57 311 777 8899",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Andrés Rojas (Hermano)",
+        "emergencyPhone": "+57 311 222 3388",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 18095,
+        "computedMonthlyCompanyCostCOP": 3800000
+      },
+      {
+        "id": "USR-16",
+        "userId": "USR-16",
+        "name": "Sebastián Ruiz Agudelo",
+        "fullName": "Sebastián Ruiz Agudelo",
+        "documentId": "CC-1066666666",
+        "role": "Líder de Proyectos",
+        "position": "Líder de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 4800000,
+        "monthlyBaseSalary": 4800000,
+        "monthlyCompanyCostCOP": 7296000,
+        "hourlyRateCOP": 34743,
+        "factorPrestacional": 1.52,
+        "city": "Sabaneta, Antioquia",
+        "email": "sruiz@inteckno.com",
+        "phone": "+57 314 555 6677",
+        "canWorkHeights": true,
+        "heightCertExpiry": "2027-05-15",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-05-15",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Paola Ruiz",
+        "emergencyPhone": "+57 314 222 7788",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 34743,
+        "computedMonthlyCompanyCostCOP": 7296000
+      },
+      {
+        "id": "USR-17",
+        "userId": "USR-17",
+        "name": "Sebastián Vélez Yépez",
+        "fullName": "Sebastián Vélez Yépez",
+        "documentId": "CC-1077777777",
+        "role": "Comprador Técnico",
+        "position": "Comprador Técnico",
+        "department": "Cadena de Suministro",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "svelez@inteckno.com",
+        "phone": "+57 318 444 1122",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Diana Vélez (Hermana)",
+        "emergencyPhone": "+57 318 999 5566",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-18",
+        "userId": "USR-18",
+        "name": "Wilson Albeiro Alzate Correa",
+        "fullName": "Wilson Albeiro Alzate Correa",
+        "documentId": "CC-1088888888",
+        "role": "Coordinador de Proyectos",
+        "position": "Coordinador de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 4800000,
+        "monthlyBaseSalary": 4800000,
+        "monthlyCompanyCostCOP": 7296000,
+        "hourlyRateCOP": 34743,
+        "factorPrestacional": 1.52,
+        "city": "Envigado, Antioquia",
+        "email": "walzate@inteckno.com",
+        "phone": "+57 315 222 3344",
+        "canWorkHeights": true,
+        "heightCertExpiry": "2027-06-30",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-06-30",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Claudia Correa (Cónyuge)",
+        "emergencyPhone": "+57 315 888 9911",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 34743,
+        "computedMonthlyCompanyCostCOP": 7296000
+      },
+      {
+        "id": "USR-19",
+        "userId": "USR-19",
+        "name": "Alejandro Díaz Cadamil",
+        "fullName": "Alejandro Díaz Cadamil",
+        "documentId": "CC-1099999999",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Sabaneta, Antioquia",
+        "email": "adiaz@inteckno.com",
+        "phone": "+57 316 222 3344",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-09-30",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-09-30",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Elena Cadamil",
+        "emergencyPhone": "+57 316 111 5566",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-20",
+        "userId": "USR-20",
+        "name": "Carlos Eduardo Pérez",
+        "fullName": "Carlos Eduardo Pérez",
+        "documentId": "CC-1111111110",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "cperez@inteckno.com",
+        "phone": "+57 315 333 4455",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-10-15",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-10-15",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Ana Pérez",
+        "emergencyPhone": "+57 315 888 2211",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-21",
+        "userId": "USR-21",
+        "name": "Francisco Javier Giraldo Arcila",
+        "fullName": "Francisco Javier Giraldo Arcila",
+        "documentId": "CC-1122222221",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Bello, Antioquia",
+        "email": "fgiraldo@inteckno.com",
+        "phone": "+57 314 444 5566",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-11-20",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-11-20",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Clara Arcila",
+        "emergencyPhone": "+57 314 222 1100",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-22",
+        "userId": "USR-22",
+        "name": "Jefferson Galeano Peña",
+        "fullName": "Jefferson Galeano Peña",
+        "documentId": "CC-1133333332",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Itagüí, Antioquia",
+        "email": "jgaleano@inteckno.com",
+        "phone": "+57 313 555 6677",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-08-30",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-08-30",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Gloria Peña",
+        "emergencyPhone": "+57 313 777 9922",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-23",
+        "userId": "USR-23",
+        "name": "José Leonel Hernández Estrada",
+        "fullName": "José Leonel Hernández Estrada",
+        "documentId": "CC-1144444443",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "jhernandez@inteckno.com",
+        "phone": "+57 312 666 7788",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-07-10",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-07-10",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Rosa Estrada",
+        "emergencyPhone": "+57 312 999 4433",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-24",
+        "userId": "USR-24",
+        "name": "Jonathan Estiven Guzmán",
+        "fullName": "Jonathan Estiven Guzmán",
+        "documentId": "CC-1155555554",
+        "role": "Técnico Especialista STC",
+        "position": "Técnico Especialista STC",
+        "department": "Operaciones de Campo",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3100000,
+        "monthlyBaseSalary": 3100000,
+        "monthlyCompanyCostCOP": 4712000,
+        "hourlyRateCOP": 22438,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "jguzman@inteckno.com",
+        "phone": "+57 316 999 1122",
+        "canWorkHeights": true,
+        "heightCertExpiry": "2027-04-10",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-04-10",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Martha Guzmán (Madre)",
+        "emergencyPhone": "+57 316 111 4455",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 22438,
+        "computedMonthlyCompanyCostCOP": 4712000
+      },
+      {
+        "id": "USR-25",
+        "userId": "USR-25",
+        "name": "Yohan Daniel Franco Yépez",
+        "fullName": "Yohan Daniel Franco Yépez",
+        "documentId": "CC-1166666665",
+        "role": "Técnico Operativo STC",
+        "position": "Técnico Operativo STC",
+        "department": "Operaciones de Campo",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3100000,
+        "monthlyBaseSalary": 3100000,
+        "monthlyCompanyCostCOP": 4712000,
+        "hourlyRateCOP": 22438,
+        "factorPrestacional": 1.52,
+        "city": "Bello, Antioquia",
+        "email": "yfranco@inteckno.com",
+        "phone": "+57 319 888 4433",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2026-09-01",
+        "heightCertStatus": "vencido",
+        "medicalExamExpiry": "2026-09-01",
+        "medicalExamStatus": "vencido",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Gloria Yépez (Madre)",
+        "emergencyPhone": "+57 319 333 7722",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 22438,
+        "computedMonthlyCompanyCostCOP": 4712000
+      },
+      {
+        "id": "USR-26",
+        "userId": "USR-26",
+        "name": "Juan Pablo Castellanos Cadena",
+        "fullName": "Juan Pablo Castellanos Cadena",
+        "documentId": "CC-1177777776",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Envigado, Antioquia",
+        "email": "jcastellanos@inteckno.com",
+        "phone": "+57 311 777 8811",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-06-25",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-06-25",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Laura Cadena",
+        "emergencyPhone": "+57 311 333 6655",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-27",
+        "userId": "USR-27",
+        "name": "Rubén Darío Arcos Ordóñez",
+        "fullName": "Rubén Darío Arcos Ordóñez",
+        "documentId": "CC-1188888887",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "rdarcos@inteckno.com",
+        "phone": "+57 310 888 9922",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-05-30",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-05-30",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Nohora Ordóñez",
+        "emergencyPhone": "+57 310 111 4477",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-28",
+        "userId": "USR-28",
+        "name": "Santiago Arbeláez",
+        "fullName": "Santiago Arbeláez",
+        "documentId": "CC-1199999998",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Sabaneta, Antioquia",
+        "email": "sarbelaez@inteckno.com",
+        "phone": "+57 318 999 1133",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-09-12",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-09-12",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Beatriz Arbeláez",
+        "emergencyPhone": "+57 318 555 2211",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-29",
+        "userId": "USR-29",
+        "name": "Nencer Camilo Solano Mora",
+        "fullName": "Nencer Camilo Solano Mora",
+        "documentId": "CC-1211111109",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Bello, Antioquia",
+        "email": "nsolano@inteckno.com",
+        "phone": "+57 317 111 2244",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-10-05",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-10-05",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Luz Mora",
+        "emergencyPhone": "+57 317 444 8833",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-30",
+        "userId": "USR-30",
+        "name": "Hernando Gelves",
+        "fullName": "Hernando Gelves",
+        "documentId": "CC-1222222220",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "hgelves@inteckno.com",
+        "phone": "+57 316 222 3355",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-08-20",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-08-20",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Marta Gelves",
+        "emergencyPhone": "+57 316 777 1199",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-31",
+        "userId": "USR-31",
+        "name": "Javier Andrés Ocampo",
+        "fullName": "Javier Andrés Ocampo",
+        "documentId": "CC-1233333331",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Itagüí, Antioquia",
+        "email": "jocampo@inteckno.com",
+        "phone": "+57 315 333 4466",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-11-15",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-11-15",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Andrés Ocampo",
+        "emergencyPhone": "+57 315 999 3322",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-32",
+        "userId": "USR-32",
+        "name": "Gabriel Jair Chatelain Naranjo",
+        "fullName": "Gabriel Jair Chatelain Naranjo",
+        "documentId": "CC-1244444442",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "gchatelain@inteckno.com",
+        "phone": "+57 314 444 5577",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-07-28",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-07-28",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Silvia Naranjo",
+        "emergencyPhone": "+57 314 111 8844",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-33",
+        "userId": "USR-33",
+        "name": "Guendy Vanessa Mancego Villegas",
+        "fullName": "Guendy Vanessa Mancego Villegas",
+        "documentId": "CC-1255555553",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "gmancego@inteckno.com",
+        "phone": "+57 313 555 6688",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-10-30",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-10-30",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Carmen Villegas",
+        "emergencyPhone": "+57 313 888 3311",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-34",
+        "userId": "USR-34",
+        "name": "Mauricio Llanos Loaiza",
+        "fullName": "Mauricio Llanos Loaiza",
+        "documentId": "CC-1266666664",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "La Estrella, Antioquia",
+        "email": "mllanos@inteckno.com",
+        "phone": "+57 312 666 7799",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-09-18",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-09-18",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Gloria Loaiza",
+        "emergencyPhone": "+57 312 222 5588",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-35",
+        "userId": "USR-35",
+        "name": "Glorymanelys Martínez Santos",
+        "fullName": "Glorymanelys Martínez Santos",
+        "documentId": "CC-1277777775",
+        "role": "Ingeniero de Proyectos",
+        "position": "Ingeniero de Proyectos",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "gmartinez@inteckno.com",
+        "phone": "+57 311 777 8822",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-11-05",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-11-05",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Rafael Martínez",
+        "emergencyPhone": "+57 311 555 4499",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      },
+      {
+        "id": "USR-36",
+        "userId": "USR-36",
+        "name": "Sebastián Duque Sánchez",
+        "fullName": "Sebastián Duque Sánchez",
+        "documentId": "CC-1288888886",
+        "role": "Ingeniero Mecánico Especialista",
+        "position": "Ingeniero Mecánico Especialista",
+        "department": "Ingeniería y Proyectos",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 4800000,
+        "monthlyBaseSalary": 4800000,
+        "monthlyCompanyCostCOP": 7296000,
+        "hourlyRateCOP": 34743,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "sduque@inteckno.com",
+        "phone": "+57 310 888 9933",
+        "canWorkHeights": true,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Margarita Sánchez",
+        "emergencyPhone": "+57 310 333 7711",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 34743,
+        "computedMonthlyCompanyCostCOP": 7296000
+      },
+      {
+        "id": "USR-39",
+        "userId": "USR-39",
+        "name": "Herson Guerrero Rúa",
+        "fullName": "Herson Guerrero Rúa",
+        "documentId": "CC-1299999997",
+        "role": "Técnico de Campo STC",
+        "position": "Técnico de Campo STC",
+        "department": "Operaciones de Campo",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3100000,
+        "monthlyBaseSalary": 3100000,
+        "monthlyCompanyCostCOP": 4712000,
+        "hourlyRateCOP": 22438,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "hguerrero@inteckno.com",
+        "phone": "+57 317 888 2233",
+        "canWorkHeights": true,
+        "heightCertExpiry": "2027-05-22",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-05-22",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Patricia Rúa",
+        "emergencyPhone": "+57 317 333 1144",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 22438,
+        "computedMonthlyCompanyCostCOP": 4712000
+      },
+      {
+        "id": "USR-40",
+        "userId": "USR-40",
+        "name": "David Hurtado Yépez",
+        "fullName": "David Hurtado Yépez",
+        "documentId": "CC-1311111108",
+        "role": "Asistente Negocios Internacionales",
+        "position": "Asistente Negocios Internacionales",
+        "department": "Negocios Internacionales y ERP",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 2500000,
+        "monthlyBaseSalary": 2500000,
+        "monthlyCompanyCostCOP": 3800000,
+        "hourlyRateCOP": 18095,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "dhurtado@inteckno.com",
+        "phone": "+57 301 234 5678",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Familia Hurtado",
+        "emergencyPhone": "+57 301 888 4422",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 18095,
+        "computedMonthlyCompanyCostCOP": 3800000
+      },
+      {
+        "id": "USR-41",
+        "userId": "USR-41",
+        "name": "Martín Suescún",
+        "fullName": "Martín Suescún",
+        "documentId": "CC-1322222219",
+        "role": "Técnico de Campo STC",
+        "position": "Técnico de Campo STC",
+        "department": "Operaciones de Campo",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3100000,
+        "monthlyBaseSalary": 3100000,
+        "monthlyCompanyCostCOP": 4712000,
+        "hourlyRateCOP": 22438,
+        "factorPrestacional": 1.52,
+        "city": "Copacabana, Antioquia",
+        "email": "msuescun@inteckno.com",
+        "phone": "+57 318 777 3344",
+        "canWorkHeights": true,
+        "heightCertExpiry": "2027-06-18",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-06-18",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Rodrigo Suescún",
+        "emergencyPhone": "+57 318 999 2211",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 22438,
+        "computedMonthlyCompanyCostCOP": 4712000
+      },
+      {
+        "id": "USR-99",
+        "userId": "USR-99",
+        "name": "David Hurtado Yepes",
+        "fullName": "David Hurtado Yepes",
+        "documentId": "CC-1333333330",
+        "role": "Administrador de Sistemas & TI",
+        "position": "Administrador de Sistemas & TI",
+        "department": "Sistemas y Tecnología",
+        "hireDate": "2024-01-15",
+        "baseSalaryCOP": 3800000,
+        "monthlyBaseSalary": 3800000,
+        "monthlyCompanyCostCOP": 5776000,
+        "hourlyRateCOP": 27505,
+        "factorPrestacional": 1.52,
+        "city": "Medellín, Antioquia",
+        "email": "sistemas@inteckno.com",
+        "phone": "+57 3207871541",
+        "canWorkHeights": false,
+        "heightCertExpiry": "2027-12-31",
+        "heightCertStatus": "vigente",
+        "medicalExamExpiry": "2027-12-31",
+        "medicalExamStatus": "vigente",
+        "vacationDaysAvailable": 15,
+        "emergencyContact": "Luis Fernando Hurtado",
+        "emergencyPhone": "+57 3103735257",
+        "isActive": true,
+        "updatedAt": "2026-11-06T16:11:14.527Z",
+        "computedHourlyCostCOP": 27505,
+        "computedMonthlyCompanyCostCOP": 5776000
+      }
+    ]
+  },
+  "careerProfiles": {
+    "module": "careerProfiles",
+    "totalCount": 31,
+    "returnedCount": 31,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "CP-USR-02",
+        "userId": "USR-02",
+        "name": "Alejandro Hoyos Correa",
+        "role": "coord_comercial",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Licitaciones Estatales LATAM",
+            "Costeo de Ofertas STC",
+            "CRM y CSAT"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Licitaciones Estatales LATAM",
+          "Costeo de Ofertas STC",
+          "CRM y CSAT"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-04",
+        "userId": "USR-04",
+        "name": "Clemencia García Moncada",
+        "role": "gerente_administrativa",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Homologación de Proveedores",
+            "Control Presupuestal",
+            "Facturación e Impuestos"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Homologación de Proveedores",
+          "Control Presupuestal",
+          "Facturación e Impuestos"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-05",
+        "userId": "USR-05",
+        "name": "Dairo Antonio Morales Fuenmayor",
+        "role": "supervisor_tecnico",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Inspección Magnetográfica",
+            "Reglajes de Estación",
+            "Calibración de Equipos",
+            "Coordinador de Alturas"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Inspección Magnetográfica",
+          "Reglajes de Estación",
+          "Calibración de Equipos",
+          "Coordinador de Alturas"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-07",
+        "userId": "USR-07",
+        "name": "Gustavo Alberto Mejía Tobón",
+        "role": "gerente_general",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Estrategia Corporativa",
+            "Evaluación de Riesgo",
+            "Gestión Financiera STC"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Estrategia Corporativa",
+          "Evaluación de Riesgo",
+          "Gestión Financiera STC"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-12",
+        "userId": "USR-12",
+        "name": "Kelly Johana Rojas Torres",
+        "role": "hseq",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Matriz de Riesgos STC",
+            "Liberaciones Digitales SST",
+            "Auditorías ISO 45001",
+            "Inspección EPP"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Matriz de Riesgos STC",
+          "Liberaciones Digitales SST",
+          "Auditorías ISO 45001",
+          "Inspección EPP"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-16",
+        "userId": "USR-16",
+        "name": "Sebastián Ruiz Agudelo",
+        "role": "lider_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Diseño Electromecánico CAD",
+            "Cálculos de Tensión de Cables",
+            "Auditoría Técnica"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Diseño Electromecánico CAD",
+          "Cálculos de Tensión de Cables",
+          "Auditoría Técnica"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-17",
+        "userId": "USR-17",
+        "name": "Sebastián Vélez Yépez",
+        "role": "coord_compras",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Negociación con Fabricantes Europeos",
+            "Cuadros Comparativos",
+            "Importaciones"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Negociación con Fabricantes Europeos",
+          "Cuadros Comparativos",
+          "Importaciones"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-18",
+        "userId": "USR-18",
+        "name": "Wilson Albeiro Alzate Correa",
+        "role": "lider_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Gerencia de Proyectos STC",
+            "Gestión de Valor Ganado (EVM)",
+            "MS Project Avanzado",
+            "END Nivel II"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Gerencia de Proyectos STC",
+          "Gestión de Valor Ganado (EVM)",
+          "MS Project Avanzado",
+          "END Nivel II"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-19",
+        "userId": "USR-19",
+        "name": "Alejandro Díaz Cadamil",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Supervisión de Obras STC",
+            "Montaje Electromecánico",
+            "Control de Horas Hombre (HH)",
+            "Planos As-Built"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Supervisión de Obras STC",
+          "Montaje Electromecánico",
+          "Control de Horas Hombre (HH)",
+          "Planos As-Built"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-20",
+        "userId": "USR-20",
+        "name": "Carlos Eduardo Pérez",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Cálculo de Tensionado",
+            "Inspección de Balancines",
+            "Supervisión de Cuadrilla",
+            "Reportes DDR"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Cálculo de Tensionado",
+          "Inspección de Balancines",
+          "Supervisión de Cuadrilla",
+          "Reportes DDR"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-21",
+        "userId": "USR-21",
+        "name": "Francisco Javier Giraldo Arcila",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Montaje de Poleas",
+            "Alineación Láser STC",
+            "Protocolos LOTO",
+            "Control de Avance WBS"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Montaje de Poleas",
+          "Alineación Láser STC",
+          "Protocolos LOTO",
+          "Control de Avance WBS"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-22",
+        "userId": "USR-22",
+        "name": "Jefferson Galeano Peña",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Sistemas Hidráulicos STC",
+            "Frenos de Emergencia",
+            "Pruebas de Carga Dinámica",
+            "Supervisión en Alturas"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Sistemas Hidráulicos STC",
+          "Frenos de Emergencia",
+          "Pruebas de Carga Dinámica",
+          "Supervisión en Alturas"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-23",
+        "userId": "USR-23",
+        "name": "José Leonel Hernández Estrada",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Overhaul de Cabinas",
+            "Reglajes de Estación",
+            "Auditoría Técnica de Campo",
+            "Manejo ERP"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Overhaul de Cabinas",
+          "Reglajes de Estación",
+          "Auditoría Técnica de Campo",
+          "Manejo ERP"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-24",
+        "userId": "USR-24",
+        "name": "Jonathan Estiven Guzmán",
+        "role": "tecnico_stc",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Empalme de Cables",
+            "Mantenimiento de Pilonas",
+            "Overhaul de Pinzas"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Empalme de Cables",
+          "Mantenimiento de Pilonas",
+          "Overhaul de Pinzas"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-25",
+        "userId": "USR-25",
+        "name": "Yohan Daniel Franco Yépez",
+        "role": "tecnico_stc",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Apoyo en Alturas",
+            "Pintura y Retoque de Torres",
+            "Manejo de Torquímetros"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Apoyo en Alturas",
+          "Pintura y Retoque de Torres",
+          "Manejo de Torquímetros"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-26",
+        "userId": "USR-26",
+        "name": "Juan Pablo Castellanos Cadena",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Empalmes de Cable de Acero",
+            "Ensayos No Destructivos",
+            "Coordinación de Cuadrillas",
+            "Norma EN 12927"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Empalmes de Cable de Acero",
+          "Ensayos No Destructivos",
+          "Coordinación de Cuadrillas",
+          "Norma EN 12927"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-27",
+        "userId": "USR-27",
+        "name": "Rubén Darío Arcos Ordóñez",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Electromecánica Industrial",
+            "Variadores de Frecuencia STC",
+            "Motores Principales y Auxiliares"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Electromecánica Industrial",
+          "Variadores de Frecuencia STC",
+          "Motores Principales y Auxiliares"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-28",
+        "userId": "USR-28",
+        "name": "Santiago Arbeláez",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Mantenimiento Preventivo STC",
+            "Instrumentación y Control",
+            "Reportes Diarios DDR",
+            "Alturas Avanzado"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Mantenimiento Preventivo STC",
+          "Instrumentación y Control",
+          "Reportes Diarios DDR",
+          "Alturas Avanzado"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-29",
+        "userId": "USR-29",
+        "name": "Nencer Camilo Solano Mora",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Inspección Magnetográfica MRT",
+            "Cálculos de Desgaste de Cable",
+            "Supervisión de Obra"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Inspección Magnetográfica MRT",
+          "Cálculos de Desgaste de Cable",
+          "Supervisión de Obra"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-30",
+        "userId": "USR-30",
+        "name": "Hernando Gelves",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Montajes Mecánicos de Gran Tonelaje",
+            "Alineación de Ejes",
+            "Diagnóstico de Vibraciones"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Montajes Mecánicos de Gran Tonelaje",
+          "Alineación de Ejes",
+          "Diagnóstico de Vibraciones"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-31",
+        "userId": "USR-31",
+        "name": "Javier Andrés Ocampo",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Sistemas de Tracción y Contrapeso",
+            "Válvulas Hidráulicas",
+            "Comisionamiento de Teleféricos"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Sistemas de Tracción y Contrapeso",
+          "Válvulas Hidráulicas",
+          "Comisionamiento de Teleféricos"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-32",
+        "userId": "USR-32",
+        "name": "Gabriel Jair Chatelain Naranjo",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Diseño y Ajuste de Balancines",
+            "Torque Hidráulico",
+            "Seguridad en Alturas",
+            "Gestión de Cuadrilla"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Diseño y Ajuste de Balancines",
+          "Torque Hidráulico",
+          "Seguridad en Alturas",
+          "Gestión de Cuadrilla"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-33",
+        "userId": "USR-33",
+        "name": "Guendy Vanessa Mancego Villegas",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Gestión Documental de Calidad",
+            "Planificación WBS",
+            "Inspección de Mordazas",
+            "Control de Avance"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Gestión Documental de Calidad",
+          "Planificación WBS",
+          "Inspección de Mordazas",
+          "Control de Avance"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-34",
+        "userId": "USR-34",
+        "name": "Mauricio Llanos Loaiza",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Montaje de Estructuras Metálicas",
+            "Topografía y Nivelación STC",
+            "Supervisión de Campo"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Montaje de Estructuras Metálicas",
+          "Topografía y Nivelación STC",
+          "Supervisión de Campo"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-35",
+        "userId": "USR-35",
+        "name": "Glorymanelys Martínez Santos",
+        "role": "ingeniero_proyectos",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Control de Calidad QA/QC",
+            "Dossiers Técnicos",
+            "Inspección de Soldadura",
+            "Gestión de Hitos"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Control de Calidad QA/QC",
+          "Dossiers Técnicos",
+          "Inspección de Soldadura",
+          "Gestión de Hitos"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-36",
+        "userId": "USR-36",
+        "name": "Sebastián Duque Sánchez",
+        "role": "lider_ingenieria",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Diseño Mecánico CAD SolidWorks",
+            "Cálculos de Fatiga y Resistencia",
+            "Tolerancias GD&T",
+            "Norma EN 1709"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Diseño Mecánico CAD SolidWorks",
+          "Cálculos de Fatiga y Resistencia",
+          "Tolerancias GD&T",
+          "Norma EN 1709"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-39",
+        "userId": "USR-39",
+        "name": "Herson Guerrero Rúa",
+        "role": "tecnico_stc",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Mantenimiento Electromecánico",
+            "Sustitución de Poleas",
+            "Lubricación Técnica",
+            "Trabajo en Alturas"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Mantenimiento Electromecánico",
+          "Sustitución de Poleas",
+          "Lubricación Técnica",
+          "Trabajo en Alturas"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-40",
+        "userId": "USR-40",
+        "name": "David Hurtado Yépez",
+        "role": "asistente_negocios_internacionales",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Implementación ERP Odoo/Next",
+            "Análisis de Procesos BPMN",
+            "Modelado de Negocio"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Implementación ERP Odoo/Next",
+          "Análisis de Procesos BPMN",
+          "Modelado de Negocio"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-41",
+        "userId": "USR-41",
+        "name": "Martín Suescún",
+        "role": "tecnico_stc",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "specialities": [
+            "Mantenimiento de Balancines",
+            "Revisión de Mordazas",
+            "Checklists en ERP",
+            "Trabajo Seguro en Alturas"
+          ],
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "verifiedSkills": [
+          "Mantenimiento de Balancines",
+          "Revisión de Mordazas",
+          "Checklists en ERP",
+          "Trabajo Seguro en Alturas"
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-USR-99",
+        "userId": "USR-99",
+        "name": "David Hurtado Yepes",
+        "role": "admin_sistemas",
+        "jobReadinessScore": 74,
+        "professionalProfile": {
+          "softSkills": [
+            "Liderazgo y dirección de equipos en campo",
+            "Comunicación asertiva y resolución técnica de problemas",
+            "Toma de decisiones bajo presión con enfoque preventivo HSEQ",
+            "Rigor y disciplina operativa en cumplimiento de normativas",
+            "Process optimization",
+            "Problem solving",
+            "Leadership",
+            "Customer service",
+            "Sales"
+          ],
+          "summary": "I build things that automate work and make processes smarter. As an International Business student at EAFIT with a focus on Project Management, I've spent the last two years combining business thinking with hands-on technical development — building web apps, Power Apps, chatbots, and AI-powered automation tools for real companies and real problems.",
+          "education": [
+            {
+              "id": "EDU-1790954843150-0",
+              "degree": "B.Sc. Negocios Internacionales",
+              "institution": "Universidad EAFIT",
+              "fieldOfStudy": "Negocios Internacionales, Gerencia de Proyectos",
+              "level": "Bachelor",
+              "graduationYear": "2026"
+            }
+          ],
+          "languages": [
+            {
+              "id": "LANG-1790954843150-0",
+              "language": "English",
+              "level": "C1"
+            },
+            {
+              "id": "LANG-1790954843150-1",
+              "language": "French",
+              "level": "B1"
+            }
+          ],
+          "practicalSkills": [
+            "Process Mapping",
+            "Business Process Automation",
+            "Project Planning",
+            "Python",
+            "JavaScript",
+            "Microsoft Power Platform",
+            "Power Apps",
+            "Power Automate",
+            "Power BI",
+            "n8n",
+            "AI APIs",
+            "Figma",
+            "Illustrator"
+          ],
+          "certifications": [
+            {
+              "id": "CERT-01",
+              "name": "Certificación Trabajo Seguro en Alturas Res. 4272/2021",
+              "issuer": "Centro de Formación Técnica para el Trabajo SENA",
+              "issueDate": "2025-08-10",
+              "expiryDate": "2026-08-10",
+              "status": "vigente"
+            },
+            {
+              "id": "CERT-02",
+              "name": "Inspector END Defectoscopía Magnética MRT Nivel II (EN 12927)",
+              "issuer": "Asociación Colombiana de Soldadura y Ensayos No Destructivos",
+              "issueDate": "2024-11-05",
+              "expiryDate": "2027-11-05",
+              "status": "vigente"
+            }
+          ],
+          "experience": [
+            {
+              "id": "EXP-1790954843150-0",
+              "role": "International Business Consultant",
+              "company": "INTECKNO S.A.S",
+              "city": "Medellín",
+              "startDate": "2026-08",
+              "endDate": "Present",
+              "isCurrent": true,
+              "description": "International Business Consultant"
+            },
+            {
+              "id": "EXP-1790954843150-1",
+              "role": "Intern de Transformación Digital en Logística y Distribución | Arquitectura de Procesos",
+              "company": "Alquería",
+              "city": "Itagüí",
+              "startDate": "2026-02",
+              "endDate": "2026-07",
+              "isCurrent": false,
+              "description": "Worked on process automation and digitization projects inside one of Colombia's largest food distribution networks. Built a Power Apps application with QR code scanning for truck entry registration, developed automated weekly reports, and managed internal improvement projects."
+            },
+            {
+              "id": "EXP-1790954843150-2",
+              "role": "Co-Founder",
+              "company": "Sipping",
+              "startDate": "2023-12",
+              "endDate": "2025-03",
+              "isCurrent": false,
+              "description": "Managed supply chain, inventory control, and P&L for a nutritional products retail business. Designed brand identity and scaled operations to COP 8M monthly revenue with 60% profit margin."
+            },
+            {
+              "id": "EXP-1790954843150-3",
+              "role": "Customer Service Representative",
+              "company": "TP",
+              "startDate": "2023-11",
+              "endDate": "2024-02",
+              "isCurrent": false,
+              "description": "Managed 60+ daily complex interactions in English and Spanish for a US telecommunications account. Achieved #1 in sales with 35% conversion rate and met 100% of QA and CSAT KPIs."
+            }
+          ],
+          "headline": "International Business Consultant @ INTECKNO S.A.S | Gerencia de Proyectos"
+        },
+        "lucianaImprovementPlan": {
+          "summary": "Diagnóstico completado para el cargo de Administrador de Sistemas & Arquitecto Cloud ERP. Nivel de adecuación actual: 74%. Cuentas con sólidas bases en Google Cloud Firestore y Firebase Hosting y Integración RESTful APIs y Microsoft Entra ID. Desarrollando React 19, TypeScript, Tailwind CSS y Node.js, consolidarás el 100% de cumplimiento para liderar iniciativas de alto impacto en Inteckno S.A.S.",
+          "promotionalPath": {
+            "missingRequirements": [
+              "Liderazgo de proyectos estratégicos en el área",
+              "Certificación de especialización profesional vigente",
+              "Auditoría y liquidación de indicadores clave en el ERP"
+            ],
+            "nextRoleTitle": "Arquitecto de Soluciones Cloud & Seguridad TI"
+          },
+          "generatedAt": "2026-10-06",
+          "technicalGaps": [
+            "React 19, TypeScript, Tailwind CSS y Node.js"
+          ],
+          "readinessScore": 74,
+          "recommendedWikiArticles": [
+            "ART-01: Protocolo de Ensayo Magneto-Inductivo (MRT) en Cables de Tracción STC"
+          ],
+          "recommendedCourses": [
+            "Arquitectura Cloud Serverless y Bases de Datos NoSQL",
+            "Ciberseguridad y Cumplimiento ISO 27001 para Plataformas Web",
+            "Desarrollo Frontend React Avanzado y APIs RESTful"
+          ]
+        },
+        "verifiedSkills": [
+          {
+            "category": "stc",
+            "name": "Process Mapping",
+            "id": "SKILL-AUTO-1790954857356-0",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "level": "Intermedio",
+            "verifiedAt": "2026-10-02"
+          },
+          {
+            "category": "stc",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "name": "Business Process Automation",
+            "verifiedAt": "2026-10-02",
+            "level": "Intermedio",
+            "id": "SKILL-AUTO-1790954857356-1"
+          },
+          {
+            "level": "Intermedio",
+            "verifiedAt": "2026-10-02",
+            "name": "Project Planning",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "category": "stc",
+            "id": "SKILL-AUTO-1790954857356-2"
+          },
+          {
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "verifiedAt": "2026-10-02",
+            "level": "Intermedio",
+            "id": "SKILL-AUTO-1790954857356-3",
+            "name": "Python",
+            "category": "stc"
+          },
+          {
+            "verifiedAt": "2026-10-02",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "id": "SKILL-AUTO-1790954857356-4",
+            "level": "Intermedio",
+            "name": "JavaScript",
+            "category": "stc"
+          },
+          {
+            "verifiedAt": "2026-10-02",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "level": "Intermedio",
+            "name": "Microsoft Power Platform",
+            "category": "stc",
+            "id": "SKILL-AUTO-1790954857356-5"
+          },
+          {
+            "verifiedAt": "2026-10-02",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "category": "stc",
+            "id": "SKILL-AUTO-1790954857356-6",
+            "level": "Intermedio",
+            "name": "Power Apps"
+          },
+          {
+            "verifiedAt": "2026-10-02",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "name": "Power Automate",
+            "id": "SKILL-AUTO-1790954857356-7",
+            "category": "stc",
+            "level": "Intermedio"
+          },
+          {
+            "id": "SKILL-AUTO-1790954857356-8",
+            "level": "Intermedio",
+            "verifiedAt": "2026-10-02",
+            "name": "Power BI",
+            "category": "stc",
+            "verifiedBy": "Extraído de CV / Validado por IA"
+          },
+          {
+            "name": "n8n",
+            "id": "SKILL-AUTO-1790954857356-9",
+            "verifiedAt": "2026-10-02",
+            "level": "Intermedio",
+            "category": "stc",
+            "verifiedBy": "Extraído de CV / Validado por IA"
+          },
+          {
+            "verifiedAt": "2026-10-02",
+            "level": "Intermedio",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "id": "SKILL-AUTO-1790954857356-10",
+            "category": "stc",
+            "name": "AI APIs"
+          },
+          {
+            "name": "Figma",
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "level": "Intermedio",
+            "verifiedAt": "2026-10-02",
+            "category": "stc",
+            "id": "SKILL-AUTO-1790954857356-11"
+          },
+          {
+            "verifiedBy": "Extraído de CV / Validado por IA",
+            "verifiedAt": "2026-10-02",
+            "id": "SKILL-AUTO-1790954857356-12",
+            "level": "Intermedio",
+            "name": "Illustrator",
+            "category": "stc"
+          }
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      },
+      {
+        "id": "CP-user-gustavo-mejia",
+        "userId": "user-gustavo-mejia",
+        "name": "Gustavo Adolfo Mejía",
+        "role": "gerente_general",
+        "jobReadinessScore": 88.5,
+        "professionalProfile": {
+          "yearsExperience": 5
+        },
+        "lucianaImprovementPlan": {
+          "lastEvaluationDate": "2026-11-06T16:34:22.835Z",
+          "recommendedCourses": [
+            "SG-SST Resolución 4272/2021",
+            "Mantenimiento Electromecánico STC"
+          ]
+        },
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      }
+    ]
+  },
+  "equipment": {
+    "module": "equipment",
+    "totalCount": 1,
+    "returnedCount": 1,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "EQUIP-101",
+        "equipmentId": "EQUIP-101",
+        "sourceProductId": "PRD-A0000131-1819",
+        "sku": "A0000131",
+        "name": "Taladro Percutor Industrial DeWalt",
+        "model": "DWD520",
+        "manufacturerSerial": "SN-DW-88492011",
+        "itemType": "equipment",
+        "accountingClass": "fixed_asset",
+        "costPriceCOP": 640000,
+        "status": "En Obra",
+        "assignedTo": {
+          "projectId": "PRJ-1793367181536",
+          "projectCode": "CODIGO PROYECTO PRUEBA",
+          "responsibleUserId": "USR-18",
+          "responsibleName": "Jhon Alexander Sánchez Ramírez",
+          "remissionId": "REM-2026-001"
+        },
+        "calibration": {
+          "lastDate": "2026-01-15",
+          "nextDueDate": "2027-01-15",
+          "certifiedBy": "Laboratorio Metrológico Inteckno STC"
+        },
+        "maintenanceLog": [
+          {
+            "logId": "MNT-2026-001",
+            "date": "2026-02-10",
+            "type": "PREVENTIVO",
+            "description": "Inspección de mandril, escobillas y aislamiento dieléctrico.",
+            "costCOP": 45000,
+            "technician": "Almacén y Metrología STC"
+          }
+        ],
+        "updatedAt": "2026-11-06T16:34:22.835Z"
+      }
+    ]
+  },
+  "remissions": {
+    "module": "remissions",
+    "totalCount": 1,
+    "returnedCount": 1,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "REM-2026-001",
+        "remissionNumber": "REM-2026-001",
+        "projectId": "PRJ-1793367181536",
+        "projectCode": "CODIGO PROYECTO PRUEBA",
+        "itemCode": "ITEM 01",
+        "responsibleId": "USR-18",
+        "responsibleName": "Jhon Alexander Sanchez Ramirez",
+        "destinationFront": "Frente de Retorqueo STC",
+        "type": "equipment_loan",
+        "status": "en_prestamo",
+        "items": [
+          {
+            "productId": "PRD-A0000131-1819",
+            "sku": "A0000131",
+            "name": "TALADRO PERCUTOR DW",
+            "qty": 1,
+            "unit": "UNIDAD"
+          }
+        ],
+        "date": "2026-11-06",
+        "createdAt": "2026-11-06T16:25:23.015Z"
+      }
+    ]
+  },
+  "opportunities": {
+    "module": "opportunities",
+    "totalCount": 0,
+    "returnedCount": 0,
+    "nextCursor": null,
+    "items": []
+  },
+  "contacts": {
+    "module": "contacts",
+    "totalCount": 1,
+    "returnedCount": 1,
+    "nextCursor": null,
+    "items": [
+      {
+        "id": "CNT-1791503976666",
+        "name": "Prueba",
+        "company": "Prueba",
+        "role": "Contacto Comercial / Operador STC",
+        "stcSystem": "Aéreo Monocable Desembragable 10-MGD",
+        "country": "Colombia",
+        "notes": "Registrado automáticamente desde la oportunidad OPP-2026-001: Prueba 3"
+      }
+    ]
+  },
+  "purchaseOrders": {
+    "module": "purchaseOrders",
+    "totalCount": 0,
+    "returnedCount": 0,
+    "nextCursor": null,
+    "items": []
+  },
+  "requisitions": {
+    "module": "requisitions",
+    "totalCount": 0,
+    "returnedCount": 0,
+    "nextCursor": null,
+    "items": []
+  },
+  "productsSample": {
+    "module": "products",
+    "totalCount": 1500,
+    "returnedCount": 30,
+    "nextCursor": "PRD-A0000133-2489",
+    "items": [
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "PRODUCTO GENERICO",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-0-1940",
+        "category": "Repuestos y Componentes",
+        "sku": "0",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "GUARDACABLE DE 1/2",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000067-2291",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000067",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "BOTAS TIPO INGENIERO CAFE",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000100-2640",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000100",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 8,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "3.D",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "RODAMIENTO 6020.2RSC3",
+        "realStock": 8,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000108-1864",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000108",
+        "totalEntradas": 8,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "RIDUZIONE ADAT.D3/8-TUBO D1/4",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A000011-1867",
+        "category": "Repuestos y Componentes",
+        "sku": "A000011",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "BARRA HERRAGRO  18 LIBRAS",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000110-2672",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000110",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 1,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "PATIO",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "PALA HERRAGRO",
+        "realStock": 1,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000111-2095",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000111",
+        "totalEntradas": 1,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "A.P",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "CABO PARA PALA",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000112-2589",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000112",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 3,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "2.D",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "POLICHADORA DE 7\". 1300W STANLEY",
+        "realStock": 3,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000113-1958",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000113",
+        "totalEntradas": 3,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "3.D",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "CINTA BANDIT 1/2 30 METROS",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000114-2506",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000114",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 2,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "TB.2",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "ALICATE AISLADO DE 8 1/2\" TIPO CRESCENT",
+        "realStock": 2,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000115-2756",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000115",
+        "totalEntradas": 2,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "DESTORNILLADOR DE PALA 1/4 X 4\" SATA ST65109EM",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000116-2415",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000116",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "LLAVE HEXAGONA IRWIN IW10606 -5MMLARGA",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000117-2158",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000117",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 2,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "8.A",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "BALDE PLÁSTICO PARA CONSTRUCCIÓN 9 LITROS APROXIMADAMENTE\"",
+        "realStock": 2,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000118-2678",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000118",
+        "totalEntradas": 2,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "TORNILLO HEXAGONAL M22 X 2,5 X 110",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000119-998",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000119",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "RACOR RECTO MACHO CILÍNDRICO DE 1/4 A 8MM",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A000012-1921",
+        "category": "Repuestos y Componentes",
+        "sku": "A000012",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 114,
+        "costPriceCOP": 0,
+        "totalSalidas": 12,
+        "minStock": 11,
+        "shelf": "3.D",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "RODAMIENTO 6308.2RSC3",
+        "realStock": 114,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000120-1860",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000120",
+        "totalEntradas": 126,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 10,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "3.D",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "RODAMIENTO 6210.RSC3",
+        "realStock": 10,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000121-1863",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000121",
+        "totalEntradas": 10,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 6,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "3.D",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "RODAMIENTO 6211.2RSC3",
+        "realStock": 6,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000122-1861",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000122",
+        "totalEntradas": 6,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "1.A",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "CORREA CON TRINQUETE",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000123-2431",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000123",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "POLEA PIÑÓN - POLEA 2F - ITK-TTC-POL-P36",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000125-1959",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000125",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "A.P",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "MOSQUETON 3/8",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000126-2110",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000126",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 1,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "4.B",
+        "isHomologatedITK": true,
+        "unit": "JUEGO",
+        "physicalState": "solido",
+        "name": "EMBOQUILLADOR EXPA CORTA TUBO RACHE",
+        "realStock": 1,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000127-2387",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000127",
+        "totalEntradas": 1,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 1,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "4.D",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "DOBLADORA TUBOS 1/2",
+        "realStock": 1,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000128-2390",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000128",
+        "totalEntradas": 1,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "TUBERIA RIGIDA COBRE TIPO L",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000129-259",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000129",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "TERMINAL VCP HEMBRA VTFC-FB250 16-14 AZUL NYLON",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A000013-1788",
+        "category": "Repuestos y Componentes",
+        "sku": "A000013",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 1,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "4.C",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "COPA HEXAGONAL  3/4 41MM WURTH",
+        "realStock": 1,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000130-2454",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000130",
+        "totalEntradas": 1,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 640000,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "4.G",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "TALADRO PERC DW RECARG DCD7781D 1/2\" 20V",
+        "costPriceUSD": 201.01,
+        "id": "PRD-A0000131-1819",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000131",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z",
+        "loanStatus": "en_prestamo",
+        "activeRemissionId": "REM-2026-001",
+        "custodianName": "Jhon Alexander Sánchez Ramírez",
+        "itemType": "equipment",
+        "serialNumber": "SN-DW-88492011",
+        "observations": "Activo Fijo EQUIP-101 (SN-DW-88492011) — Controlado en erp_modules/procurement.equipment y Remisión REM-2026-001",
+        "custodianUserId": "USR-18",
+        "realStock": 1,
+        "accountingClass": "fixed_asset",
+        "linkedEquipmentId": "EQUIP-101"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "CONDENSADORES DE MARCHA 370 VAC 50/60HZ 35MFD +/- 5%",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000132-2488",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000132",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      },
+      {
+        "isCriticalSpare": false,
+        "purchaseDate": "2026-10-23",
+        "locationName": "Bodega Central Inteckno",
+        "reservedStock": 0,
+        "availableStock": 0,
+        "costPriceCOP": 0,
+        "totalSalidas": 0,
+        "minStock": 1,
+        "shelf": "Bodega Central",
+        "isHomologatedITK": true,
+        "unit": "UNIDAD",
+        "physicalState": "solido",
+        "name": "CONDENSADORES DE ARRANQUE 330 VAC 50/60HZ 189-227 MFD",
+        "realStock": 0,
+        "costPriceUSD": 0,
+        "id": "PRD-A0000133-2489",
+        "category": "Repuestos y Componentes",
+        "sku": "A0000133",
+        "totalEntradas": 0,
+        "_syncedAt": "2026-11-06T16:16:31.852Z"
+      }
+    ]
+  }
+}

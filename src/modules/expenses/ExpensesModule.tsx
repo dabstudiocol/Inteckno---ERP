@@ -45,6 +45,8 @@ import {
 import { ExpensesConfigModal } from './ExpensesConfigModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { SmartEmployeeSelect } from '../../components/common/SmartEmployeeSelect';
+import { SmartProjectItemSelect } from '../../components/common/SmartProjectItemSelect';
 import { TabPettyCash } from './components/TabPettyCash';
 
 export const ExpensesModule: React.FC = () => {
@@ -957,45 +959,40 @@ export const ExpensesModule: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <CreatableSelect
+                          <SmartEmployeeSelect
                             label="Colaborador Responsable del Gasto"
-                            required
                             value={selectedUserId}
-                            onChange={(val) => setSelectedUserId(val)}
-                            options={collaboratorsList.map((collab) => ({
-                              id: collab.id,
-                              name: `${collab.name} (${collab.role})`,
-                              code: collab.role,
-                            }))}
+                            onChange={(empId, empObj) =>
+                              setSelectedUserId(empObj ? `${empObj.name} (${empObj.jobTitle})` : empId)
+                            }
                             placeholder="Seleccionar colaborador de campo..."
-                            inputClassName="bg-white"
                           />
                         </div>
                       </div>
 
-                      {/* Selector Relacional de ITEM Contractual de Obra */}
-                      {projectItemOptions.length > 0 && (
-                        <div>
-                          <CreatableSelect
-                            label="ITEM Contractual de Obra / Rubro en Matriz (Opcional)"
-                            value={selectedItemCode}
-                            onChange={(val) => {
-                              setSelectedItemCode(val);
-                              const match = projectItemOptions.find((o) => o.code.toUpperCase() === val.toUpperCase() || o.id === val);
-                              if (match?.costMatrixItemId) {
-                                setSelectedCostMatrixItemId(match.costMatrixItemId);
-                              } else {
-                                const matrixMatch = ((selectedProject as any)?.costMatrix || []).find((c: any) => c.itemCode?.toUpperCase() === val.toUpperCase());
-                                setSelectedCostMatrixItemId(matrixMatch?.id || '');
-                              }
-                            }}
-                            options={projectItemOptions.map((o) => ({ id: o.code, name: o.name, code: o.code }))}
-                            placeholder="Vincular a ITEM de obra (ej. ITEM 01, ITEM 02)..."
-                            inputClassName="bg-white"
-                            isClearable={true}
-                          />
-                        </div>
-                      )}
+                      {/* Selector Relacional en Cascada de ITEM Contractual de Obra */}
+                      <div>
+                        <SmartProjectItemSelect
+                          label="Carpeta Contractual / Ítem Presupuestal (Mandatorio Plan 1)"
+                          projectId={selectedProject?.id || selectedProjectId}
+                          value={selectedItemCode}
+                          onChange={(code) => {
+                            setSelectedItemCode(code);
+                            const match = projectItemOptions.find(
+                              (o) => o.code.toUpperCase() === code.toUpperCase() || o.id === code
+                            );
+                            if (match?.costMatrixItemId) {
+                              setSelectedCostMatrixItemId(match.costMatrixItemId);
+                            } else {
+                              const matrixMatch = ((selectedProject as any)?.costMatrix || []).find(
+                                (c: any) => c.itemCode?.toUpperCase() === code.toUpperCase()
+                              );
+                              setSelectedCostMatrixItemId(matrixMatch?.id || '');
+                            }
+                          }}
+                          placeholder="Vincular a ITEM de obra (ej. ITEM 01, ITEM 02)..."
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
