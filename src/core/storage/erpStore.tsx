@@ -1362,7 +1362,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, currentUserId);
 
       // Sincronización del catálogo de inventario con particionamiento seguro de Firestore (<1MB por chunk)
-      syncInventoryToCloud(state.products, currentUserId);
+      // Sincronización de catálogo de inventario desacoplada del tick general para proteger cuota de escrituras Firestore
 
       syncModuleToCloud('operations', {
         timesheets: state.timesheets,
@@ -1405,7 +1405,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.milestones,
     state.purchaseOrders,
     state.requisitions,
-    state.products,
     state.equipment,
     state.partners,
     state.timesheets,
@@ -3832,12 +3831,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reason,
         projectCode,
       });
-      // Sincronizar producto individual en Firestore
-      syncSingleProductToCloud({
-        ...targetProd,
-        realStock: newStock,
-        availableStock: Math.max(0, newStock - targetProd.reservedStock),
-      }).catch(console.warn);
+      // Nota de Cuota: atomicStockTransaction actualiza el SKU y el Kardex en Cloud de forma transaccional sin duplicar escrituras
 
       // Ejecutar transacción atómica de stock en Cloud Firestore
       atomicStockTransaction(targetProd.id, delta, {

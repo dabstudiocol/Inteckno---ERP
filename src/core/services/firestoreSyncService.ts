@@ -426,8 +426,40 @@ export async function loadInventoryFromCloud(): Promise<Product[] | null> {
   if (!db) return null;
 
   try {
-    // 1. Intentar cargar desde colección de documentos individuales erp_products (cero race conditions)
-    const prodSnap = await getDocs(query(collection(db, 'erp_products'), limit(1500)));
+    // 1. Consultar metadatos de chunks consolidados en erp_inventory (~1 sola lectura inicial)
+    const metaRef = doc(db, 'erp_inventory', 'meta');
+    const metaSnap = await getDoc(metaRef);
+    if (metaSnap.exists()) {
+      const meta = metaSnap.data();
+      const chunkCount = Number(meta?.chunkCount) || 0;
+      if (chunkCount === 0) return [];
+
+      // Descargar únicamente los N chunks (ej. 4 o 5 chunks = ~4-5 lecturas en vez de 1.500)
+      const chunkReads = [];
+      for (let i = 0; i < chunkCount; i++) {
+        const cRef = doc(db, 'erp_inventory', 'chunk_' + i);
+        chunkReads.push(getDoc(cRef));
+      }
+
+      const chunkSnaps = await Promise.all(chunkReads);
+      const reconstructed: Product[] = [];
+
+      chunkSnaps.forEach((cs) => {
+        if (cs.exists()) {
+          const cData = cs.data();
+          if (Array.isArray(cData?.items)) {
+            reconstructed.push(...cData.items);
+          }
+        }
+      });
+
+      if (reconstructed.length > 0) {
+        return reconstructed;
+      }
+    }
+
+    // 2. Fallback de contingencia: si no existen chunks, leer erp_products de forma acotada
+    const prodSnap = await getDocs(query(collection(db, 'erp_products'), limit(500)));
     if (!prodSnap.empty && prodSnap.size > 0) {
       const items: Product[] = [];
       prodSnap.forEach((docSnap) => {
@@ -436,46 +468,10 @@ export async function loadInventoryFromCloud(): Promise<Product[] | null> {
           items.push(data as Product);
         }
       });
-      if (items.length > 0) {
-        return items;
-      }
+      return items;
     }
 
-    // 2. Fallback a bloques particionados erp_inventory/chunk_X (compatibilidad)
-    const metaRef = doc(db, 'erp_inventory', 'meta');
-    const metaSnap = await getDoc(metaRef);
-    if (!metaSnap.exists()) return null;
-
-    const meta = metaSnap.data();
-    const chunkCount = Number(meta?.chunkCount) || 0;
-    if (chunkCount === 0) return [];
-
-    const chunkReads = [];
-    for (let i = 0; i < chunkCount; i++) {
-      const cRef = doc(db, 'erp_inventory', 'chunk_' + i);
-      chunkReads.push(getDoc(cRef));
-    }
-
-    const chunkSnaps = await Promise.all(chunkReads);
-    const reconstructed: Product[] = [];
-
-    chunkSnaps.forEach((cs) => {
-      if (cs.exists()) {
-        const cData = cs.data();
-        if (Array.isArray(cData?.items)) {
-          reconstructed.push(...cData.items);
-        }
-      }
-    });
-
-    // Migración silenciosa automática a documentos individuales en segundo plano
-    if (reconstructed.length > 0) {
-      setTimeout(() => {
-        migrateProductsToIndividualDocs(reconstructed).catch(console.warn);
-      }, 1500);
-    }
-
-    return reconstructed;
+    return null;
   } catch (err) {
     console.warn('[FirestoreSync] Error cargando inventario desde Cloud:', err);
     return null;
@@ -483,32 +479,12 @@ export async function loadInventoryFromCloud(): Promise<Product[] | null> {
 }
 
 /**
- * Migra los productos de chunks hacia documentos individuales en erp_products.
+ * Migra los productos de chunks hacia documentos individuales en erp_products (No-op para evitar picos de escritura).
  */
-export async function migrateProductsToIndividualDocs(products: Product[]): Promise<void> {
-  const db = getFirebaseDb();
-  if (!db || !products.length) return;
-  try {
-    for (let i = 0; i < products.length; i += 300) {
-      const slice = products.slice(i, i + 300);
-      const batch = writeBatch(db);
-      for (const p of slice) {
-        if (p.id) {
-          const pRef = doc(db, 'erp_products', p.id);
-          batch.set(pRef, JSON.parse(JSON.stringify(p)), { merge: true });
-        }
-      }
-      await batch.commit();
-    }
-    console.log("[FirestoreSync] Sincronizacion de inventario completada con exito.");
-  } catch (err) {
-    console.warn('[FirestoreSync] Error en migración de productos a erp_products:', err);
-  }
+export async function migrateProductsToIndividualDocs(_products: Product[]): Promise<void> {
+  return;
 }
 
-/**
- * Carga los asientos contables más recientes del Kardex desde Cloud Firestore
- */
 export async function loadKardexFromCloud(limitCount: number = 300): Promise<InventoryAuditLog[] | null> {
   const db = getFirebaseDb();
   if (!db) return null;
@@ -595,21 +571,7 @@ export async function syncInventoryToCloud(
       return true;
     }
 
-    // 1. Guardar o actualizar documentos individuales en erp_products (Resuelve Race Conditions)
-    for (let i = 0; i < products.length; i += 300) {
-      const slice = products.slice(i, i + 300);
-      const batch = writeBatch(db);
-      for (const prod of slice) {
-        if (prod.id) {
-          const pRef = doc(db, 'erp_products', prod.id);
-          const clean = JSON.parse(JSON.stringify(prod));
-          batch.set(pRef, { ...clean, _syncedAt: now }, { merge: true });
-        }
-      }
-      await batch.commit();
-    }
-
-    // 2. Mantener chunks en erp_inventory para snapshot rápido de arranque
+    // Mantener chunks en erp_inventory para snapshot ultraligero y económico (~4 a 5 escrituras totales)
     const chunks: Product[][] = [];
     for (let i = 0; i < products.length; i += INVENTORY_CHUNK_SIZE) {
       chunks.push(products.slice(i, i + INVENTORY_CHUNK_SIZE));
@@ -636,7 +598,7 @@ export async function syncInventoryToCloud(
       updatedBy: userId || 'system',
     });
 
-    console.log("[FirestoreSync] Sincronizacion de inventario completada con exito.");
+    console.log('[FirestoreSync] Sincronización de inventario particionado completada con éxito (~5 escrituras).');
     return true;
   } catch (err) {
     console.error('[FirestoreSync] Error crítico sincronizando inventario:', err);
@@ -644,9 +606,6 @@ export async function syncInventoryToCloud(
   }
 }
 
-/**
- * Guarda o actualiza un producto individual en Cloud Firestore (erp_products).
- */
 export async function syncSingleProductToCloud(product: Product): Promise<boolean> {
   const db = getFirebaseDb();
   if (!db || !product?.id) return false;
