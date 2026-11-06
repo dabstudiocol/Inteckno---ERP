@@ -47,7 +47,8 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
     issueMilestoneInvoice, 
     markMilestonePaid,
     createMilestone,
-    notify 
+    notify,
+    navigateWithContext,
   } = useErp();
   const currentTrm = getStoredTRM();
   const [activeTab, setActiveTab] = useState<BillingSubTab>(initialView === 'acts' ? 'acts' : 'milestones');
@@ -353,9 +354,15 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                   render: (m) => (
                     <div>
                       <div className="font-bold text-xs text-gray-900">{m.title}</div>
-                      <div className="text-[11px] text-[#00668F] font-semibold">
-                        {m.projectCode} — {m.clientName} {m.clientNit ? `(NIT: ${m.clientNit})` : ''}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: m.projectId, tab: 'costs' })}
+                        className="text-[11px] text-[#00668F] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                        title="Ver en Matriz de Costos del Proyecto"
+                      >
+                        <span>{m.projectCode} — {m.clientName} {m.clientNit ? `(NIT: ${m.clientNit})` : ''}</span>
+                        <ArrowRight size={11} />
+                      </button>
                     </div>
                   ),
                 },

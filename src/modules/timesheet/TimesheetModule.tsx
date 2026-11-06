@@ -12,6 +12,7 @@ import {
   UserCheck,
   Settings,
   Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { TimesheetEntry } from '../../types';
@@ -22,7 +23,7 @@ import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 export const TimesheetModule: React.FC = () => {
-  const { timesheets, projects, tasks, users, employees, currentUser, submitTimesheet, approveTimesheet, rejectTimesheet, deleteTimesheet } = useErp();
+  const { timesheets, projects, tasks, users, employees, currentUser, submitTimesheet, approveTimesheet, rejectTimesheet, deleteTimesheet, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
 
   // Estado del formulario rápido móvil
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id || '');
@@ -39,6 +40,18 @@ export const TimesheetModule: React.FC = () => {
       setSelectedUserId(currentUser.id);
     }
   }, [currentUser.id, selectedUserId]);
+
+  useEffect(() => {
+    if (navigationContext && navigationContext.targetModule === 'registro-horas') {
+      if (navigationContext.action === 'impute_hours') {
+        const pid = navigationContext.data?.projectId;
+        if (pid) {
+          setSelectedProjectId(pid);
+          clearNavigationContext();
+        }
+      }
+    }
+  }, [navigationContext, clearNavigationContext]);
 
   // Lista unificada de colaboradores (Usuarios de sistema + Personal registrado en Talento Humano)
   const collaboratorsList = React.useMemo(() => {
@@ -308,7 +321,22 @@ export const TimesheetModule: React.FC = () => {
               header: 'Proyecto STC',
               render: (t) => (
                 <div>
-                  <span className="font-bold text-xs text-[#00668F]">{t.projectCode}</span>
+                  {t.projectId && !t.projectId.startsWith('PRJ-INTERNAL') ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateWithContext('proyectos', 'view_project', { projectId: t.projectId, tab: 'horas' });
+                      }}
+                      title={`Ir al Proyecto ${t.projectCode} (Control de Horas)`}
+                      className="font-bold text-xs text-[#00668F] hover:underline flex items-center gap-1 group cursor-pointer"
+                    >
+                      <span>{t.projectCode}</span>
+                      <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  ) : (
+                    <span className="font-bold text-xs text-[#00668F]">{t.projectCode}</span>
+                  )}
                   <div className="text-[11px] text-gray-500 line-clamp-1">{t.projectName}</div>
                 </div>
               ),

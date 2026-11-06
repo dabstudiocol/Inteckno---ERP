@@ -117,6 +117,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     currentUser,
     activeModuleId,
     setActiveModule,
+    navigateWithContext,
   } = useErp();
 
   const [isWarehouseReceiptModalOpen, setIsWarehouseReceiptModalOpen] = useState(false);
@@ -2945,7 +2946,21 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-[10px] text-gray-400 block font-medium">Proyecto STC:</span>
-                    <span className="font-semibold text-gray-900 truncate block">{rem.projectCode}</span>
+                    {rem.projectId ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigateWithContext('proyectos', 'view_project', { projectId: rem.projectId, tab: 'costs' });
+                        }}
+                        className="font-semibold text-[#00668F] hover:underline flex items-center gap-1 group text-xs text-left"
+                      >
+                        <span className="truncate">{rem.projectCode}</span>
+                        <ArrowRight size={10} className="shrink-0" />
+                      </button>
+                    ) : (
+                      <span className="font-semibold text-gray-900 truncate block">{rem.projectCode}</span>
+                    )}
                   </div>
                   <div>
                     <span className="text-[10px] text-gray-400 block font-medium">Técnico Responsable:</span>
@@ -3002,7 +3017,22 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                         {rem.returnRemissionNumber || 'Pendiente'}
                       </td>
                       <td className="p-3 font-semibold text-gray-900">
-                        {rem.projectCode}
+                        {rem.projectId ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateWithContext('proyectos', 'view_project', { projectId: rem.projectId, tab: 'costs' });
+                            }}
+                            className="font-bold text-[#00668F] hover:underline flex items-center gap-1 group text-xs cursor-pointer"
+                            title={`Ir al Proyecto ${rem.projectCode} (Matriz de Costos)`}
+                          >
+                            <span>{rem.projectCode}</span>
+                            <ArrowRight size={10} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                          </button>
+                        ) : (
+                          rem.projectCode
+                        )}
                       </td>
                       <td className="p-3 font-medium text-gray-800">
                         {rem.responsibleTechnicianName}

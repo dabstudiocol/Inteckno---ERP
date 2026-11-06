@@ -55,6 +55,8 @@ export interface ProjectsModuleProps {
 export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) => {
   const {
     projects,
+    navigationContext,
+    clearNavigationContext,
     tasks,
     opportunities,
     users,
@@ -96,6 +98,31 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
       setViewMode('table');
     }
   }, [initialView]);
+
+  useEffect(() => {
+    if (navigationContext && (navigationContext.targetModule === 'proyectos' || navigationContext.targetModule === 'projects')) {
+      if (navigationContext.action === 'view_project') {
+        const pid = navigationContext.data?.projectId;
+        if (pid) {
+          setSelectedProjectId(pid);
+          if (navigationContext.data?.tab) {
+            const tabMap: Record<string, InternalTab> = {
+              costs: 'costos',
+              costos: 'costos',
+              wbs: 'wbs',
+              gantt: 'wbs',
+              hours: 'horas',
+              horas: 'horas',
+              hseq: 'hseq',
+              billing: 'costos',
+            };
+            setActiveTab(tabMap[navigationContext.data.tab] || 'dashboard');
+          }
+          clearNavigationContext();
+        }
+      }
+    }
+  }, [navigationContext, clearNavigationContext]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState<string>('');

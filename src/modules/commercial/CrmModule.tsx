@@ -378,10 +378,12 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     deleteContact,
     currentUser,
     users,
+    projects,
     activeModuleId,
     setActiveModule,
     notify,
     createCalendarEvent,
+    navigateWithContext,
   } = useErp();
 
   // Si se pasa activeTab por prop o se deduce del activeModuleId del ERP
@@ -983,7 +985,11 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     if (result.success) {
       setSelectedOppForAward(null);
       setOppPreviousStage(null);
-      setActiveModule('proyectos');
+      if (result.projectId) {
+        navigateWithContext('proyectos', 'view_project', { projectId: result.projectId, tab: 'dashboard' });
+      } else {
+        setActiveModule('proyectos');
+      }
       notify?.(
         'success',
         'Oportunidad Adjudicada a Proyecto',
@@ -1468,9 +1474,29 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                         )}
 
                         {opp.stage === 'awarded' && (
-                          <div className="mt-1.5 pt-1.5 border-t border-emerald-100 flex items-center justify-between text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-lg">
-                            <span>Proyecto Creado</span>
-                            <CheckCircle2 size={11} />
+                          <div className="mt-1.5 pt-1.5 border-t border-emerald-100">
+                            {(() => {
+                              const linkedProject = projects.find((p) => p.opportunityId === opp.id || p.id === opp.awardedProjectId);
+                              return linkedProject ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateWithContext('proyectos', 'view_project', { projectId: linkedProject.id, tab: 'dashboard' });
+                                  }}
+                                  className="w-full flex items-center justify-between text-[9px] text-emerald-800 hover:text-emerald-950 font-bold bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                                  title={`Abrir Proyecto ${linkedProject.code}`}
+                                >
+                                  <span className="truncate">Ver Proyecto ({linkedProject.code})</span>
+                                  <ArrowRight size={10} className="shrink-0" />
+                                </button>
+                              ) : (
+                                <div className="flex items-center justify-between text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-lg">
+                                  <span>Proyecto Creado</span>
+                                  <CheckCircle2 size={11} />
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
@@ -1663,7 +1689,22 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                           Adjudicar
                         </button>
                       ) : (
-                        <span className="text-emerald-600 font-bold text-[11px]">Adjudicado</span>
+                        (() => {
+                          const linkedProject = projects.find((p) => p.opportunityId === opp.id || p.id === opp.awardedProjectId);
+                          return linkedProject ? (
+                            <button
+                              type="button"
+                              onClick={() => navigateWithContext('proyectos', 'view_project', { projectId: linkedProject.id, tab: 'dashboard' })}
+                              className="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              title={`Ir al Proyecto ${linkedProject.code}`}
+                            >
+                              <span>{linkedProject.code}</span>
+                              <ArrowRight size={10} />
+                            </button>
+                          ) : (
+                            <span className="text-emerald-600 font-bold text-[11px]">Adjudicado</span>
+                          );
+                        })()
                       )}
                     </td>
                   </tr>

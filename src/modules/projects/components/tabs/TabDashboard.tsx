@@ -59,7 +59,7 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
   currentTrm,
   onNavigateTab 
 }) => {
-  const { updateProject, setActiveModule, currentUser, notify } = useErp();
+  const { updateProject, setActiveModule, navigateWithContext, currentUser, notify } = useErp();
   const dyn = (project as any).dynamicData || {};
   const lineOfBusiness = project.lineOfBusiness || 'Diagnóstico';
 
@@ -146,30 +146,13 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
   };
 
   const handleTriggerSolped = () => {
-    window.dispatchEvent(
-      new CustomEvent('inteckno:create-solped-for-project', {
-        detail: {
-          projectId: project.id,
-          projectCode: project.code,
-          projectName: project.name,
-          clientName: project.clientName,
-        },
-      })
-    );
-    setActiveModule('requisiciones');
+    navigateWithContext('requisiciones', 'create_solped', { project });
     notify?.('info', 'Petición de Materiales', `Creando SOLPED para el proyecto ${project.code}.`);
   };
 
   const handleTriggerGasto = () => {
-    window.dispatchEvent(
-      new CustomEvent('inteckno:create-expense-for-project', {
-        detail: {
-          projectId: project.id,
-          projectCode: project.code,
-        },
-      })
-    );
-    setActiveModule('gastos');
+    navigateWithContext('gastos', 'create_expense', { projectId: project.id, projectCode: project.code });
+    notify?.('info', 'Legalización de Gastos', `Imputando viático al proyecto ${project.code}.`);
   };
 
   return (
@@ -208,7 +191,13 @@ export const TabDashboard: React.FC<TabDashboardProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-3.5">
           <button
             type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('horas') : setActiveModule('registro-horas')}
+            onClick={() => {
+              if (onNavigateTab) {
+                onNavigateTab('horas');
+              } else {
+                navigateWithContext('registro-horas', 'impute_hours', { projectId: project.id });
+              }
+            }}
             className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/80 text-left transition-all cursor-pointer group"
           >
             <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">

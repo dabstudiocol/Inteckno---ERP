@@ -64,6 +64,9 @@ interface PoItemRow {
 
 export const ProcurementModule: React.FC = () => {
   const {
+    navigationContext,
+    clearNavigationContext,
+    navigateWithContext,
     partners,
     purchaseOrders,
     products,
@@ -94,17 +97,18 @@ export const ProcurementModule: React.FC = () => {
   const [selectedPoForDetail, setSelectedPoForDetail] = useState<PurchaseOrder | null>(null);
 
   useEffect(() => {
-    const handleCreatePoFromReq = (e: Event) => {
-      const customEvent = e as CustomEvent<InternalRequisition>;
-      if (customEvent.detail?.id) {
-        setActiveTab('orders');
-        setPreselectedReqIdForPo(customEvent.detail.id);
-        setIsRegisterPoModalOpen(true);
+    if (navigationContext && (navigationContext.targetModule === 'compras' || navigationContext.targetModule === 'procurement')) {
+      if (navigationContext.action === 'create_po_from_req') {
+        const req = navigationContext.data?.requisition;
+        if (req?.id) {
+          setActiveTab('orders');
+          setPreselectedReqIdForPo(req.id);
+          setIsRegisterPoModalOpen(true);
+          clearNavigationContext();
+        }
       }
-    };
-    window.addEventListener('inteckno:create-po-from-requisition', handleCreatePoFromReq);
-    return () => window.removeEventListener('inteckno:create-po-from-requisition', handleCreatePoFromReq);
-  }, []);
+    }
+  }, [navigationContext, clearNavigationContext]);
   const [isQuoteComparisonOpen, setIsQuoteComparisonOpen] = useState(false);
   const [isCreateReqModalOpen, setIsCreateReqModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
@@ -618,7 +622,22 @@ export const ProcurementModule: React.FC = () => {
                       )}
                     </div>
                     <div className="text-[11px] text-slate-500">
-                      {po.projectCode ? `Centro Costos: ${po.projectCode}` : 'Gasto General / Oficina'}
+                      {po.projectCode ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateWithContext('proyectos', 'view_project', { projectId: po.projectId, tab: 'costs' });
+                          }}
+                          className="text-[11px] font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+                          title="Ver en Matriz de Costos del Proyecto"
+                        >
+                          <span>Centro Costos: {po.projectCode}</span>
+                          <ArrowRight size={11} />
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-slate-500">Gasto General / Oficina</span>
+                      )}
                     </div>
                   </div>
                 ),

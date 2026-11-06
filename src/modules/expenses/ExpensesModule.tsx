@@ -48,7 +48,7 @@ import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { TabPettyCash } from './components/TabPettyCash';
 
 export const ExpensesModule: React.FC = () => {
-  const { expenses, projects, users, employees, partners, currentUser, submitExpense, approveExpense, deleteExpense, notify } = useErp();
+  const { expenses, projects, users, employees, partners, currentUser, submitExpense, approveExpense, deleteExpense, notify, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
 
   // Pestaña Activa: Comprobantes Generales vs Caja Menor
   const [activeTab, setActiveTab] = useState<'comprobantes' | 'caja_menor'>('comprobantes');
@@ -92,16 +92,18 @@ export const ExpensesModule: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id || '');
 
   React.useEffect(() => {
-    const handleExpenseFromProject = (e: any) => {
-      if (e.detail?.projectId) {
-        setImputationType('proyecto');
-        setSelectedProjectId(e.detail.projectId);
-        setIsModalOpen(true);
+    if (navigationContext && (navigationContext.targetModule === 'gastos' || navigationContext.targetModule === 'expenses')) {
+      if (navigationContext.action === 'create_expense') {
+        const pid = navigationContext.data?.projectId;
+        if (pid) {
+          setImputationType('proyecto');
+          setSelectedProjectId(pid);
+          setIsModalOpen(true);
+          clearNavigationContext();
+        }
       }
-    };
-    window.addEventListener('inteckno:create-expense-for-project', handleExpenseFromProject);
-    return () => window.removeEventListener('inteckno:create-expense-for-project', handleExpenseFromProject);
-  }, []);
+    }
+  }, [navigationContext, clearNavigationContext]);
   const [selectedOfficeId, setSelectedOfficeId] = useState(
     moduleConfig.offices[0]?.id || ''
   );
@@ -549,9 +551,20 @@ export const ExpensesModule: React.FC = () => {
                         <Building size={11} className="text-[#00668F]" /> Gasto Oficina / Sede
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 text-[#00668F] text-[10px] font-bold">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (exp.projectId) {
+                            navigateWithContext('proyectos', 'view_project', { projectId: exp.projectId, tab: 'costs' });
+                          }
+                        }}
+                        title={`Ir al Proyecto ${exp.projectCode} (Matriz de Costos)`}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 hover:bg-sky-100 text-[#00668F] text-[10px] font-bold transition-colors cursor-pointer group"
+                      >
                         <Briefcase size={11} /> {exp.projectCode}
-                      </span>
+                        <ExternalLink size={9} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </button>
                     )}
                     <div className="text-[11px] text-gray-500 font-medium">{exp.categoryLabel}</div>
                   </div>

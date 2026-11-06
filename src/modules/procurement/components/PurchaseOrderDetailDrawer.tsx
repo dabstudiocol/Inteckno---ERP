@@ -19,6 +19,7 @@ import {
   FileCheck,
   Receipt,
   Scale,
+  ArrowRight,
 } from 'lucide-react';
 import { PurchaseOrder, Partner, Project } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
@@ -42,7 +43,7 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
   onClose,
   onUpdatePo,
 }) => {
-  const { notify } = useErp();
+  const { notify, navigateWithContext } = useErp();
   const [activeTab, setActiveTab] = useState<'items' | 'receipts' | 'finances' | 'logistics'>('items');
 
   // Estado local para enmienda
@@ -172,9 +173,24 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
                   # SOLPED: {po.solpedNumber}
                 </span>
               )}
-              <span className="text-xs px-2.5 py-0.5 rounded-md bg-sky-500/30 text-sky-100 font-semibold truncate">
-                {po.projectCode || 'Gasto General / Oficina'}
-              </span>
+              {po.projectCode ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigateWithContext('proyectos', 'view_project', { projectId: po.projectId, tab: 'costs' });
+                  }}
+                  className="text-xs px-2.5 py-0.5 rounded-md bg-sky-500/30 hover:bg-sky-500/50 text-white font-bold flex items-center gap-1 transition-all cursor-pointer border border-sky-400/40"
+                  title="Ver en Matriz de Costos del Proyecto"
+                >
+                  <span>Proyecto: {po.projectCode}</span>
+                  <ArrowRight size={12} />
+                </button>
+              ) : (
+                <span className="text-xs px-2.5 py-0.5 rounded-md bg-white/10 text-slate-200 truncate">
+                  Gasto General / Oficina
+                </span>
+              )}
               {po.requesterName && (
                 <span className="text-xs px-2 py-0.5 rounded-md bg-white/10 text-slate-200 truncate">
                   Solicitante: {po.requesterName}

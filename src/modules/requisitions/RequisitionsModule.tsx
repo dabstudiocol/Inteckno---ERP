@@ -17,7 +17,7 @@ import { RequisitionDetailModal } from '../procurement/components/RequisitionDet
 import { DocumentFlowBar } from '../../components/common/DocumentFlowBar';
 
 export const RequisitionsModule: React.FC = () => {
-  const { requisitions, setActiveModule } = useErp();
+  const { requisitions, setActiveModule, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -28,19 +28,19 @@ export const RequisitionsModule: React.FC = () => {
   }>({});
 
   React.useEffect(() => {
-    const handleCreateFromProject = (e: any) => {
-      if (e.detail) {
+    if (navigationContext && navigationContext.targetModule === 'requisiciones') {
+      if (navigationContext.action === 'create_solped') {
+        const proj = navigationContext.data?.project;
         setInitialModalData({
-          projectId: e.detail.project?.id,
-          category: e.detail.initialCategory,
-          itemConcept: e.detail.initialItemConcept,
+          projectId: proj?.id || navigationContext.data?.projectId,
+          category: navigationContext.data?.category,
+          itemConcept: navigationContext.data?.itemConcept,
         });
         setIsModalOpen(true);
+        clearNavigationContext();
       }
-    };
-    window.addEventListener('inteckno:create-solped-for-project', handleCreateFromProject);
-    return () => window.removeEventListener('inteckno:create-solped-for-project', handleCreateFromProject);
-  }, []);
+    }
+  }, [navigationContext, clearNavigationContext]);
 
 
   return (
@@ -98,7 +98,18 @@ export const RequisitionsModule: React.FC = () => {
               header: 'Proyecto STC / Destino',
               render: (req) => (
                 <div>
-                  <span className="font-bold text-xs text-gray-900">{req.projectCode}</span>
+                  <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateWithContext('proyectos', 'view_project', { projectId: req.projectId, tab: 'costs' });
+                      }}
+                      className="font-bold text-xs text-[#00668F] hover:underline cursor-pointer flex items-center gap-1"
+                      title="Ver Matriz de Costos del Proyecto"
+                    >
+                      <span>{req.projectCode}</span>
+                      <ArrowRight size={12} />
+                    </button>
                   <div className="text-[11px] text-gray-500">{req.projectName}</div>
                   {req.requisitionType && (
                     <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-sky-50 text-[#00668F] border border-sky-200">
@@ -209,12 +220,7 @@ export const RequisitionsModule: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveModule('compras');
-                      setTimeout(() => {
-                        window.dispatchEvent(
-                          new CustomEvent('inteckno:create-po-from-requisition', { detail: req })
-                        );
-                      }, 80);
+                      navigateWithContext('compras', 'create_po_from_req', { requisition: req });
                     }}
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00668F] hover:bg-[#005073] text-white text-[11px] font-bold transition-all cursor-pointer ml-auto"
                     title="Convertir esta SOLPED en Orden de Compra"

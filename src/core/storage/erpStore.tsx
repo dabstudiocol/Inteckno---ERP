@@ -220,6 +220,12 @@ interface ErpState {
   employees: EmployeeRecord[];
   novelties: PayrollNovelty[];
   maintenancePlans: MaintenancePlan[];
+  navigationContext: {
+    targetModule: string;
+    action: string;
+    data?: any;
+    timestamp: number;
+  } | null;
 }
 
 export interface ErpContextType extends ErpState {
@@ -233,6 +239,8 @@ export interface ErpContextType extends ErpState {
   createUserAccount: (user: Omit<User, 'id'>) => User;
   toggleUserStatus: (userId: string) => void;
   setActiveModule: (moduleId: string) => void;
+  navigateWithContext: (targetModule: string, action: string, data?: any) => void;
+  clearNavigationContext: () => void;
   notify: (type: AppNotification['type'], title: string, message: string, extra?: Partial<AppNotification>) => void;
   dismissNotification: (id: string) => void;
   markNotificationAsRead: (id: string) => void;
@@ -428,6 +436,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeChatChannelId: 'general',
       activeChatToast: null,
       activeCalendarToast: null,
+      navigationContext: null,
       documents: [],
       todos: [],
       calendarEvents: [],
@@ -1563,6 +1572,48 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const user = prev.users.find((u) => u.id === userId) || prev.users[0];
       return { ...prev, currentUser: user, isAuthenticated: true };
     });
+  }, []);
+
+  const navigateWithContext = useCallback((targetModule: string, action: string, data?: any) => {
+    const CANONICAL_MAP: Record<string, string> = {
+      projects: 'proyectos',
+      proyectos: 'proyectos',
+      procurement: 'compras',
+      compras: 'compras',
+      orders: 'compras',
+      timesheet: 'registro-horas',
+      'registro-horas': 'registro-horas',
+      billing: 'contabilidad',
+      contabilidad: 'contabilidad',
+      facturacion: 'contabilidad',
+      commercial: 'crm',
+      crm: 'crm',
+      inventory: 'inventario',
+      inventario: 'inventario',
+      requisitions: 'requisiciones',
+      requisiciones: 'requisiciones',
+      solped: 'requisiciones',
+      expenses: 'gastos',
+      gastos: 'gastos',
+    };
+    const canonical = CANONICAL_MAP[targetModule.toLowerCase()] || targetModule;
+    setState((prev) => ({
+      ...prev,
+      activeModuleId: canonical,
+      navigationContext: {
+        targetModule: canonical,
+        action,
+        data,
+        timestamp: Date.now(),
+      },
+    }));
+  }, []);
+
+  const clearNavigationContext = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      navigationContext: null,
+    }));
   }, []);
 
   const setActiveModule = useCallback((moduleId: string) => {
@@ -5956,6 +6007,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createUserAccount,
         toggleUserStatus,
         setActiveModule,
+        navigateWithContext,
+        clearNavigationContext,
         notify,
         dismissNotification,
         markNotificationAsRead,
