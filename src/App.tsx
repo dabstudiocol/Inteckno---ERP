@@ -26,11 +26,31 @@ import { UserManagementModule } from './modules/inteckno/UserManagementModule';
 import { CargosModule } from './modules/inteckno/CargosModule';
 import { RequisitionsModule } from './modules/requisitions/RequisitionsModule';
 
+import { Forbidden403View } from './components/common/Forbidden403View';
+import { canUserAccessModule } from './core/auth/rbac';
+
 const MainContent: React.FC = () => {
-  const { activeModuleId, isAuthenticated } = useErp();
+  const { activeModuleId, isAuthenticated, currentUser, setActiveModule } = useErp();
 
   if (!isAuthenticated) {
     return <LoginView />;
+  }
+
+  // Auditoría Práctica Parte 6: Blindaje de Roles y Guardián de Rutas (Route Guard)
+  // Previene 'Security by Obscurity' si un usuario digita o fuerza la URL de costos, nómina o tableros
+  const role = currentUser?.role || 'tecnico_stc';
+  const isAuthorized = canUserAccessModule(role, activeModuleId);
+
+  if (!isAuthorized) {
+    return (
+      <AppShell activeTitle="403 Acceso Denegado" activeSubtitle="Violación de Control de Acceso RBAC">
+        <Forbidden403View
+          moduleName={activeModuleId.toUpperCase()}
+          userRole={currentUser?.roleLabel || role}
+          onGoBack={() => setActiveModule('proyectos')}
+        />
+      </AppShell>
+    );
   }
 
   const getModuleInfo = () => {

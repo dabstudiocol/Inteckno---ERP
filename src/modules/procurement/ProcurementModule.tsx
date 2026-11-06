@@ -189,8 +189,8 @@ export const ProcurementModule: React.FC = () => {
 
   // Arreglos seguros
   const safePartners = Array.isArray(partners) ? partners : [];
-  const safePOs = Array.isArray(purchaseOrders) ? purchaseOrders : [];
-  const safeReqs = Array.isArray(requisitions) ? requisitions : [];
+  const safePOs = (Array.isArray(purchaseOrders) ? purchaseOrders : []).filter((po) => !po.isDeleted);
+  const safeReqs = (Array.isArray(requisitions) ? requisitions : []).filter((r) => !r.isDeleted);
   const safeProducts = Array.isArray(products) ? products : [];
   const suppliers = safePartners.filter((p) => p && (p.type === 'supplier' || p.type === 'both'));
 

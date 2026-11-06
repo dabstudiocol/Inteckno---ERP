@@ -66,6 +66,7 @@ import { formatCOP, formatUSD, getStoredTRM } from '../../../../core/services/tr
 import { getLaborRates } from '../../../../core/services/moduleConfigService';
 import { getProjectTaxRate } from '../../../../core/services/taxService';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
+import { DataOriginTooltip, DataOriginTrace } from '../../../../components/common/DataOriginTooltip';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
 import { DetailModal } from '../../../../components/common/DetailModal';
 
@@ -3029,7 +3030,28 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                               {c.date || '—'}
                             </td>
                             <td className="py-2.5 px-4 font-bold text-slate-800">
-                              {c.concept}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span>{c.concept}</span>
+                                <DataOriginTooltip
+                                  trace={{
+                                    sourceModule: c.id.startsWith('cost-ts-')
+                                      ? 'Planilla de Horas (Timesheets) • RRHH'
+                                      : c.id.startsWith('cost-po-')
+                                      ? 'Abastecimiento • Orden de Compra (OC)'
+                                      : c.id.startsWith('cost-rem-')
+                                      ? 'Bodega Central • Remisión de Salida'
+                                      : c.id.startsWith('cost-tool-')
+                                      ? 'Control Metrológico / Activos HSEQ'
+                                      : 'Imputación Directa de Obra',
+                                    sourceEntityId: c.id,
+                                    sourceUser: c.observations || 'Supervisor Técnico Registrado',
+                                    sourceTimestamp: c.date,
+                                    targetModule: `Matriz de Costos • Proyecto ${project.code}`,
+                                    calculationLogic: `Valor Imputado: ${formatCOP(valDirecto)} COP (IVA ${projectTaxRate.label})`,
+                                    status: 'verified',
+                                  }}
+                                />
+                              </div>
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono text-slate-700">
                               {formatCOP(valDirecto)}

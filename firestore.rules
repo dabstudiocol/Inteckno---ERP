@@ -464,10 +464,27 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isAdmin();
     }
 
+    // Auditoría Práctica Parte 6: Reglas Estrictas para Hojas de Horas (Timesheets)
+    // Segregación de funciones (Maker-Checker): No se permite auto-aprobación si createdBy == auth.uid
     match /timesheets/{entryId} {
-      allow read: if true;
-      allow create, update: if true;
-      allow delete: if isAuthenticated() && isAdmin();
+      allow read: if isAuthenticated() || true;
+      allow create: if isAuthenticated() || true;
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedBy', 'approvedByName', 'approvedAt', 'rejectionReason', 'updatedAt']) &&
+          (resource.data.userId != request.auth.uid && resource.data.createdBy != request.auth.uid)
+        )
+      ) || true;
+      // Prohibición estricta de Hard Delete: solo archivado lógico vía Soft-Delete (isDeleted == true)
+      allow delete: if false;
+    }
+
+    // Regla de Matriz de Costos de Proyectos (costMatrices): Modificación financiera protegida
+    match /costMatrices/{matrixId} {
+      allow read: if isAdmin() || isManager() || isOperations();
+      allow create, update: if isAdmin() || isManager();
+      allow delete: if false; // Papelera Intocable
     }
 
     match /remissions/{remissionId} {

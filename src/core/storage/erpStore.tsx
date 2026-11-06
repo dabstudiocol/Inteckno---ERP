@@ -2151,7 +2151,16 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       setState((prev) => ({
         ...prev,
-        requisitions: prev.requisitions.filter((r) => r.id !== id),
+        requisitions: prev.requisitions.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                isDeleted: true,
+                deletedAt: new Date().toISOString(),
+                deletedBy: prev.currentUser?.id || 'USR-SYSTEM',
+              }
+            : r
+        ),
       }));
       notify('info', 'Requisición Eliminada', 'La requisición interna ha sido retirada.');
     },
@@ -2334,7 +2343,16 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           ...prev,
-          timesheets: prev.timesheets.filter((t) => t.id !== id),
+          timesheets: prev.timesheets.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  isDeleted: true,
+                  deletedAt: new Date().toISOString(),
+                  deletedBy: prev.currentUser?.id || 'USR-SYSTEM',
+                }
+              : t
+          ),
           tasks: updatedTasks,
           projects: updatedProjects,
         };
@@ -3348,9 +3366,70 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
 
+        // Coreografía de Trazabilidad: Eje 5 (Mantenimiento, Activos y HSEQ)
+        // Si la OC compra una herramienta costosa/activo (ej. torquímetro), se registra en equipment con nextDueDate
+        // y se programa plan preventivo a 30 días antes con notificación HSEQ
+        const newEquipmentTools: EquipmentTool[] = [];
+        const newMaintenancePlans: any[] = [];
+        const newNotifications: any[] = [];
+
+        po.items.forEach((it, idx) => {
+          const isHighPrecision = /torquimetro|torqumetro|laser|lser|alineador|multimetro|multmetro|ensayo|end|ndt|vibrac/i.test(`${it.name} ${it.sku}`);
+          if (isHighPrecision || po.isEquipmentPurchase) {
+            const today = new Date();
+            const calibMonths = po.equipmentCalibPeriodMonths || 12;
+            const nextDue = new Date(today.getTime() + calibMonths * 30 * 24 * 60 * 60 * 1000);
+            const nextDueDateStr = nextDue.toISOString().split('T')[0];
+            const eqCode = `EQ-${it.sku || 'TOOL'}-${Date.now().toString().slice(-4)}`;
+
+            newEquipmentTools.push({
+              id: `EQ-${Date.now()}-${idx}`,
+              code: eqCode,
+              name: it.name || 'Herramienta de Precisión',
+              serialNumber: `SN-${Date.now().toString().slice(-6)}`,
+              type: 'herramienta_especial',
+              calibrationDate: today.toISOString().split('T')[0],
+              calibrationExpiry: nextDueDateStr,
+              nextDueDate: nextDueDateStr,
+              isCalibrated: true,
+              calibrationCertNumber: `CAL-${Date.now().toString().slice(-5)}`,
+              status: 'available',
+              dailyUsageCostCOP: Math.round((it.unitPriceCOP || 100000) * 0.03), // 3% depreciación/uso diario
+            });
+
+            // 30 días antes de nextDueDate -> Generar maintenancePlan preventivo automático y notificar HSEQ
+            const advanceAlertDate = new Date(nextDue.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            newMaintenancePlans.push({
+              id: `MP-AUTO-${Date.now()}-${idx}`,
+              code: `MP-CAL-${eqCode}`,
+              projectCode: po.projectCode || 'TALLER-CENTRAL',
+              systemName: `Metrología y Calibración NDT (${it.name})`,
+              component: 'Pinzas Desembragables',
+              equipmentCode: eqCode,
+              maintenanceType: 'preventivo',
+              scheduledDate: advanceAlertDate,
+              status: 'programado',
+              observations: `Alerta preventiva generada automáticamente: Re-calibración obligatoria antes de ${nextDueDateStr} según Eje 5 HSEQ.`,
+            });
+
+            newNotifications.push({
+              id: `notif-eq-${Date.now()}-${idx}`,
+              type: 'urgent',
+              title: 'Metrología y Calibración HSEQ',
+              message: `Herramienta de precisión recibida: ${it.name} (${eqCode}). Próxima calibración obligatoria: ${nextDueDateStr}. Plan preventivo programado.`,
+              targetRole: 'hseq',
+              timestamp: new Date().toISOString(),
+              read: false,
+            });
+          }
+        });
+
         return {
           ...prev,
           products: [...updatedProducts, ...newProductsToAdd],
+          equipment: [...prev.equipment, ...newEquipmentTools],
+          maintenancePlans: [...(prev.maintenancePlans || []), ...newMaintenancePlans],
+          notifications: [...prev.notifications, ...newNotifications],
           purchaseOrders: prev.purchaseOrders.map((p) =>
             p.id === poId ? { ...p, status: 'received', deliveryStatus: 'entregado', physicalReceiptDone: true, technicalQualityInspectionDone: true } : p
           ),
@@ -4175,10 +4254,38 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return p;
         });
 
-        // Reintegrar equipos
+        // Reintegrar equipos y calcular costo por uso / depreciación inyectado al proyecto (Eje 5)
+        let totalEquipmentUsageCostCOP = 0;
+        const equipmentUsageCostItems: any[] = [];
+
         const updatedEquipment = prev.equipment.map((eq) => {
           const retItem = updatedItems.find((it) => it.productId === eq.id || it.sku === eq.code);
           if (retItem && retItem.qtyReturned > 0) {
+            // Calcular días de permanencia en obra
+            const departureMs = remission.departureDate ? new Date(remission.departureDate).getTime() : Date.now();
+            const returnMs = returnDate ? new Date(returnDate).getTime() : Date.now();
+            const daysUsed = Math.max(1, Math.ceil((returnMs - departureMs) / (1000 * 60 * 60 * 24)));
+            const dailyRate = eq.dailyUsageCostCOP || 25000;
+            const toolUsageCOP = daysUsed * dailyRate;
+
+            totalEquipmentUsageCostCOP += toolUsageCOP;
+            equipmentUsageCostItems.push({
+              id: `cost-tool-${eq.code}-${Date.now()}`,
+              category: 'alquiler_equipos' as const,
+              concept: `Depreciación / Uso de Equipo: ${eq.name} (${eq.code}) - ${daysUsed} días @ ${dailyRate.toLocaleString('es-CO')}/día`,
+              unit: 'Días',
+              plannedQuantity: daysUsed,
+              plannedUnitCost: dailyRate,
+              plannedTotal: toolUsageCOP,
+              actualQuantity: daysUsed,
+              actualUnitCost: dailyRate,
+              actualTotal: toolUsageCOP,
+              variance: 0,
+              costType: 'directo' as const,
+              date: returnDate,
+              observations: `Liquidado al retorno de Remisión ${remission.remissionNumber} (Retorno ${returnNumber}). Eje 5 HSEQ.`,
+            });
+
             return {
               ...eq,
               status: 'available' as const,
@@ -4210,7 +4317,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (dispatchItem) {
               // Reversar el valor provisional de la salida y fijar el consumo neto real
               const previousDispatchCOP = dispatchItem.actualTotal || 0;
-              newAC = Math.max(0, (prj.actualCostAC || 0) - previousDispatchCOP + consumedCostCOP);
+              newAC = Math.max(0, (prj.actualCostAC || 0) - previousDispatchCOP + consumedCostCOP + totalEquipmentUsageCostCOP);
 
               if (consumedCostCOP > 0) {
                 newCostMatrix = existingMatrix.map((item: any) =>
@@ -4232,7 +4339,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               }
             } else {
               // No había registro previo de salida: imputar directamente el costo consumido en COP
-              newAC = (prj.actualCostAC || 0) + consumedCostCOP;
+              newAC = (prj.actualCostAC || 0) + consumedCostCOP + totalEquipmentUsageCostCOP;
               newCostMatrix = consumedCostCOP > 0
                 ? [
                     ...existingMatrix,
@@ -4266,7 +4373,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               actualCostAC: newAC,
               cpi: newCPI,
               cv: newCV,
-              costMatrix: newCostMatrix,
+              costMatrix: [...newCostMatrix, ...equipmentUsageCostItems],
             };
           }
           return prj;

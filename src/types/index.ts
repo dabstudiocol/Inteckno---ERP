@@ -437,6 +437,7 @@ export interface WBSTask {
   status: 'pending' | 'in_progress' | 'completed' | 'blocked';
   priority?: 'alta' | 'media' | 'baja';
   deliverable?: string; // Entregable clave
+  competencyId?: string; // Eje 6: Competencia técnica de catálogo requerida (ej. SKILL-005 MRT)
   assignedToName?: string;
   assignedToUserId?: string;
   itemCode?: string;
@@ -503,6 +504,12 @@ export interface TimesheetEntry {
   description: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   rejectionReason?: string;
+  approvedBy?: string; // Checker ID
+  approvedByName?: string;
+  approvedAt?: string;
+  isDeleted?: boolean; // Auditoría Práctica Parte 6: Soft-Delete Obligatorio
+  deletedAt?: string;
+  deletedBy?: string;
   hoursBreakdown?: {
     hod?: number;
     hed?: number;
@@ -776,6 +783,11 @@ export interface EquipmentTool {
   assignedUserName?: string;
   loanDate?: string;
   expectedReturnDate?: string;
+  // Eje 5: Trazabilidad Metrológica y Depreciación / Costo por uso
+  dailyUsageCostCOP?: number; // Tarifa diaria de alquiler interno o depreciación
+  nextDueDate?: string; // Próxima calibración o mantenimiento programado
+  lastMaintenancePlanId?: string; // Plan preventivo generado automáticamante
+  sstInspectionId?: string; // Última inspección de seguridad HSEQ vinculada
 }
 
 export interface PurchaseOrderItem {
@@ -837,6 +849,12 @@ export interface PurchaseOrder {
   notes?: string;
   deliveryBatchesCount?: number; // Contador de recepciones parciales
   estimatedArrivalDate?: string; // Fecha estimada de llegada de los items
+  isEquipmentPurchase?: boolean; // Eje 5: Herramienta de alta precisión o activo
+  equipmentCalibPeriodMonths?: number; // Periodicidad de calibración (ej. 12 meses)
+  // Auditoría y Blindaje de Datos (Auditoría Práctica Parte 6: Soft-Delete Obligatorio)
+  isDeleted?: boolean;
+  deletedAt?: string;
+  deletedBy?: string;
   // Logística y Trazabilidad de Transporte
   carrierName?: string;
   trackingNumber?: string;
@@ -1020,6 +1038,10 @@ export interface InternalRequisition {
   notes?: string;
   sourceDocumentName?: string;
   createdAt: string;
+  // Auditoría y Blindaje de Datos (Auditoría Práctica Parte 6: Soft-Delete Obligatorio)
+  isDeleted?: boolean;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 export interface BillingMilestone {

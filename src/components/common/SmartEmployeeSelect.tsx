@@ -24,6 +24,7 @@ interface SmartEmployeeSelectProps {
   value: string;
   onChange: (employeeId: string, employeeObj: SmartEmployeeOption | null) => void;
   isHeightTask?: boolean;
+  requiredCompetencyId?: string; // Eje 6: Validación de competencia técnica de catálogo (ej. SKILL-005)
   label?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -35,6 +36,7 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
   value,
   onChange,
   isHeightTask = false,
+  requiredCompetencyId,
   label,
   placeholder = 'Buscar y seleccionar colaborador...',
   disabled = false,
@@ -153,18 +155,35 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
   }, []);
 
   const filtered = useMemo(() => {
+    let pool = mergedEmployees;
+
+    // Filtro por competencia técnica requerida (Eje 6: Cruce con catálogo de competencias)
+    if (requiredCompetencyId) {
+      const targetReq = requiredCompetencyId.trim().toLowerCase();
+      pool = pool.filter((emp) => {
+        const linkedUser = users.find((u) => u.id === emp.userId || u.name.toLowerCase() === emp.name.toLowerCase());
+        const linkedEmp = employees.find((e) => e.id === emp.employeeId || e.name.toLowerCase() === emp.name.toLowerCase());
+        const cIds = [
+          ...(linkedUser?.competencyIds || []),
+          ...(linkedUser?.competencies || []),
+          ...(linkedEmp?.competencyIds || [])
+        ].map((c) => String(c).toLowerCase());
+        return cIds.some((c) => c === targetReq || c.includes(targetReq));
+      });
+    }
+
     const q = searchTerm.trim().toLowerCase();
     if (!q || (selectedEmployee && searchTerm === `${selectedEmployee.name} (${selectedEmployee.jobTitle})`)) {
-      return mergedEmployees;
+      return pool;
     }
-    return mergedEmployees.filter(
+    return pool.filter(
       (e) =>
         e.name.toLowerCase().includes(q) ||
         e.jobTitle.toLowerCase().includes(q) ||
         e.department.toLowerCase().includes(q) ||
         e.employeeId.toLowerCase().includes(q)
     );
-  }, [mergedEmployees, searchTerm, selectedEmployee]);
+  }, [mergedEmployees, searchTerm, selectedEmployee, requiredCompetencyId, users, employees]);
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();

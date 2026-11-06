@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AiActionRequestSchema = exports.ExecuteRelationalIdAuditFixPayload = exports.ExecuteLevel679ArchitecturePayload = exports.ExecuteLevel4And5ArchitecturePayload = exports.RestructureLevel3GovernancePayload = exports.PurgeMockDataPayload = exports.RecalculateProjectEvmPayload = exports.SyncUsersToEmployeesPayload = exports.SandboxDeletePayload = exports.UpsertRemissionPayload = exports.UpsertProductPayload = exports.RecordTimesheetPayload = exports.UpsertPurchaseOrderPayload = exports.UpsertRequisitionPayload = exports.UpsertProjectPayload = exports.UpsertOpportunityPayload = exports.CostMatrixRowSchema = exports.ProjectItemSchema = exports.SummaryQuerySchema = exports.DataQuerySchema = exports.ModuleNameEnum = void 0;
+exports.AiActionRequestSchema = exports.ExecuteAuditParts234RelationalFixPayload = exports.ExecuteRelationalIdAuditFixPayload = exports.ExecuteLevel679ArchitecturePayload = exports.ExecuteLevel4And5ArchitecturePayload = exports.RestructureLevel3GovernancePayload = exports.PurgeMockDataPayload = exports.RecalculateProjectEvmPayload = exports.SyncUsersToEmployeesPayload = exports.SandboxDeletePayload = exports.UpsertRemissionPayload = exports.UpsertProductPayload = exports.RecordTimesheetPayload = exports.UpsertPurchaseOrderPayload = exports.UpsertRequisitionPayload = exports.UpsertProjectPayload = exports.UpsertOpportunityPayload = exports.CostMatrixRowSchema = exports.ProjectItemSchema = exports.SummaryQuerySchema = exports.DataQuerySchema = exports.ModuleNameEnum = void 0;
 const zod_1 = require("zod");
 /**
  * Validated Module Keys & Sub-Entities in Inteckno ERP
@@ -273,6 +273,17 @@ exports.ExecuteRelationalIdAuditFixPayload = zod_1.z.object({
     linkAllUsersToEmployeeIds: zod_1.z.boolean().default(true),
     standardizeSkillCatalogIds: zod_1.z.boolean().default(true),
 });
+exports.ExecuteAuditParts234RelationalFixPayload = zod_1.z.object({
+    linkProjectClientIdAndSupervisorId: zod_1.z.boolean().default(true),
+    decoupleEmbeddedJobPositionFromUsers: zod_1.z.boolean().default(true),
+    linkCostMatrixToProjectItemId: zod_1.z.boolean().default(true),
+    standardizeProjectServiceAndCategoryIds: zod_1.z.boolean().default(true),
+    standardizeUserDepartmentsWithIds: zod_1.z.boolean().default(true),
+    standardizeUserCertificationsWithIds: zod_1.z.boolean().default(true),
+    standardizeWarehouseShelvesAndLocations: zod_1.z.boolean().default(true),
+    standardizePaymentTermsAndStcSystems: zod_1.z.boolean().default(true),
+    cleanHeavyBase64FromCostMatrix: zod_1.z.boolean().default(true),
+});
 exports.AiActionRequestSchema = zod_1.z.discriminatedUnion('action', [
     zod_1.z.object({ action: zod_1.z.literal('upsert_opportunity'), payload: exports.UpsertOpportunityPayload }),
     zod_1.z.object({ action: zod_1.z.literal('upsert_project'), payload: exports.UpsertProjectPayload }),
@@ -289,5 +300,6 @@ exports.AiActionRequestSchema = zod_1.z.discriminatedUnion('action', [
     zod_1.z.object({ action: zod_1.z.literal('EXECUTE_LEVEL4_AND_5_ARCHITECTURE'), payload: exports.ExecuteLevel4And5ArchitecturePayload }),
     zod_1.z.object({ action: zod_1.z.literal('EXECUTE_LEVEL6_7_9_ARCHITECTURE'), payload: exports.ExecuteLevel679ArchitecturePayload }),
     zod_1.z.object({ action: zod_1.z.literal('EXECUTE_RELATIONAL_ID_AUDIT_FIX'), payload: exports.ExecuteRelationalIdAuditFixPayload }),
+    zod_1.z.object({ action: zod_1.z.literal('EXECUTE_AUDIT_PARTS_2_3_4_FIX'), payload: exports.ExecuteAuditParts234RelationalFixPayload }),
 ]);
 //# sourceMappingURL=aiSchemas.js.map

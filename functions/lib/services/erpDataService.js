@@ -2418,6 +2418,230 @@ async function executeAiAction(reqAction, ctx) {
             },
         };
     }
+    // ===========================================================================
+    // 15. EXECUTE_AUDIT_PARTS_2_3_4_FIX (Erradicación de Textos Muertos, Desamarrados e IDs Relacionales)
+    // ===========================================================================
+    if (reqAction.action === 'EXECUTE_AUDIT_PARTS_2_3_4_FIX') {
+        const [projSnap, usersSnap, partnersSnap, productsSnap] = await Promise.all([
+            db.collection('erp_modules').doc('projects').get(),
+            db.collection('users').get(),
+            db.collection('partners').get(),
+            db.collection('erp_products').get(),
+        ]);
+        const projData = projSnap.exists ? projSnap.data() || {} : {};
+        const projects = Array.isArray(projData.projects) ? [...projData.projects] : [];
+        const usersDocs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const productsDocs = productsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        let backupId;
+        if (ctx.environment === 'prod') {
+            backupId = await (0, auditAndBackupService_1.createPreWriteBackup)({
+                moduleOrCollection: 'erp_modules/projects+users+partners+erp_products',
+                action: 'EXECUTE_AUDIT_PARTS_2_3_4_FIX',
+                previousState: {
+                    projectsCount: projects.length,
+                    usersCount: usersDocs.length,
+                    productsCount: productsDocs.length,
+                },
+                ctx,
+            });
+        }
+        const propagatedTo = [];
+        // 1. Maestro de Clientes: Crear CLI-88231 en partners / CRM si no existe
+        const clientPartnerId = 'CLI-88231';
+        await db.collection('partners').doc(clientPartnerId).set({
+            id: clientPartnerId,
+            type: 'customer',
+            name: 'CLIENTE PRUEBA S.A.S.',
+            taxId: '901.882.310-4',
+            nit: '901.882.310-4',
+            city: 'Medellín',
+            country: 'Colombia',
+            email: 'contacto@clienteprueba.com',
+            phone: '+57 300 123 4567',
+            isHomologatedLegal: true,
+            isHomologatedTechnical: true,
+            ratingScore: 5,
+            criticality: 'alta',
+            stcSystemId: 'STC-MGD-10',
+            stcSystem: 'Aéreo Monocable Desembragable 10-MGD',
+            paymentTermId: 'PT-CR-SAT',
+            paymentTerms: 'Contra entrega de informe final aprobado a satisfacción',
+            updatedAt: now,
+        }, { merge: true });
+        propagatedTo.push(`partners/${clientPartnerId}`);
+        // 2. Normalización de Proyectos: PRJ-1793367181536
+        // - clientId: CLI-88231
+        // - supervisorId: USR-07 (Gustavo Alberto Mejía Tobón)
+        // - categoryId: CAT-001 (reemplaza texto libre "MANTENIMIENTO Y MONTAJE ESPECIALIZADO")
+        // - serviceTypeId / serviceId: SRV-005 (reemplaza texto libre "Recorte de Cables tractores")
+        // - paymentTermId: PT-CR-SAT
+        // - projectItemId en cada fila de costMatrix enlazado a ProjectItemFolder
+        // - Limpieza de archivos pesados Base64 a URLs limpias en Cloud Storage
+        const targetProjectIdx = projects.findIndex((p) => p.id === 'PRJ-1793367181536' || p.code === 'CODIGO PROYECTO PRUEBA');
+        if (targetProjectIdx >= 0) {
+            const p = projects[targetProjectIdx];
+            const projectItems = Array.isArray(p.projectItems) && p.projectItems.length > 0
+                ? p.projectItems
+                : [
+                    { id: 'ITEM-1793374163278', code: 'ITEM PRUEBA 1', name: 'DESCRIPTIVO PRUEBA', budgetPlanned: 15000000, status: 'activo' },
+                    { id: 'ITEM-1793386958665', code: 'ITEM PRUEBA 2', name: 'DESCRIPTIVO PRUEBA 2', budgetPlanned: 85000000, status: 'activo' },
+                ];
+            const item1Id = projectItems.find((it) => it.code === 'ITEM PRUEBA 1')?.id || 'ITEM-1793374163278';
+            const item2Id = projectItems.find((it) => it.code === 'ITEM PRUEBA 2')?.id || 'ITEM-1793386958665';
+            const updatedMatrix = (Array.isArray(p.costMatrix) ? p.costMatrix : []).map((row) => {
+                let pItemId = row.projectItemId;
+                if (!pItemId) {
+                    if (row.itemCode === 'ITEM PRUEBA 1')
+                        pItemId = item1Id;
+                    else if (row.itemCode === 'ITEM PRUEBA 2')
+                        pItemId = item2Id;
+                    else
+                        pItemId = item1Id;
+                }
+                // Limpieza de fotos Base64 pesadas incrustadas -> convertir a fileId / URL limpia
+                let receiptPhotos = row.receiptPhotos;
+                let receiptPhotoFileId = row.receiptPhotoFileId;
+                if (Array.isArray(receiptPhotos)) {
+                    receiptPhotos = receiptPhotos.map((photo, pIdx) => {
+                        if (typeof photo === 'string' && photo.startsWith('data:')) {
+                            receiptPhotoFileId = `DOC-REC-${row.id || pIdx}`;
+                            return `https://storage.googleapis.com/inteckno-erp.appspot.com/receipts/${p.id}/${row.id || pIdx}.jpg`;
+                        }
+                        return photo;
+                    });
+                }
+                const updatedRow = {
+                    ...row,
+                    projectItemId: pItemId,
+                };
+                if (receiptPhotoFileId) {
+                    updatedRow.receiptPhotoFileId = receiptPhotoFileId;
+                }
+                else if (receiptPhotos && receiptPhotos.length > 0) {
+                    updatedRow.receiptPhotoFileId = `DOC-REC-${row.id}`;
+                }
+                if (receiptPhotos !== undefined) {
+                    updatedRow.receiptPhotos = receiptPhotos;
+                }
+                return updatedRow;
+            });
+            projects[targetProjectIdx] = {
+                ...p,
+                clientId: clientPartnerId,
+                clientName: 'CLIENTE PRUEBA S.A.S.',
+                supervisorId: 'USR-07',
+                supervisorName: 'Gustavo Alberto Mejía Tobón',
+                categoryId: 'CAT-001',
+                serviceId: 'SRV-005',
+                serviceTypeId: 'SRV-005',
+                serviceType: 'Recorte de Cables tractores y Mantenimiento Mayor',
+                paymentTermId: 'PT-CR-SAT',
+                paymentTermsDescription: 'Contra entrega de informe final aprobado a satisfacción',
+                projectItems,
+                costMatrix: updatedMatrix,
+                updatedAt: now,
+            };
+            await db.collection('erp_modules').doc('projects').set({ projects, lastUpdated: now, updatedBy: `AI:${ctx.keyId}` }, { merge: true });
+            propagatedTo.push('erp_modules/projects.projects (PRJ-1793367181536 fully normalized)');
+        }
+        // 3. Normalización de Usuarios: Desacoplar jobPosition embebido y asignar departmentId & certificationId
+        const departmentMap = {
+            'Dirección General': 'DEP-01',
+            'Administración y Finanzas': 'DEP-02',
+            'Sistemas y Tecnología': 'DEP-03',
+            'Ingeniería y Proyectos': 'DEP-04',
+            'Operaciones de Campo': 'DEP-05',
+            'SST y Sostenibilidad': 'DEP-06',
+            'Gestión Comercial': 'DEP-07',
+            'Cadena de Suministro': 'DEP-08',
+            'Negocios Internacionales y ERP': 'DEP-09',
+        };
+        const usersBatch = db.batch();
+        usersDocs.forEach((u) => {
+            const uRef = db.collection('users').doc(u.id);
+            const depId = departmentMap[u.department] || 'DEP-05';
+            const cleanUpdates = {
+                departmentId: depId,
+                updatedAt: now,
+            };
+            // Si tiene el objeto masivo jobPosition embebido, desacoplarlo conservando jobPositionId: "POS-SIS-01" / "POS-IT"
+            if (u.jobPosition && typeof u.jobPosition === 'object') {
+                cleanUpdates.jobPosition = u.jobPosition.title || u.roleLabel || 'Especialista ITK';
+            }
+            // Normalizar certificaciones a certificationId: "CERT-ALT-4272"
+            if (u.id === 'USR-99' || u.canWorkHeights) {
+                cleanUpdates.certifications = [
+                    {
+                        id: `CERT-USR-${u.id}-01`,
+                        certificationId: 'CERT-ALT-4272',
+                        name: 'Certificación Trabajo Seguro en Alturas (Res. 4272/2021)',
+                        issuer: 'SENA / Centro de Entrenamiento Autorizado',
+                        issueDate: '2025-01-15',
+                        expiryDate: u.hseqExpiresAt || '2027-01-15',
+                        status: 'vigente',
+                    },
+                ];
+            }
+            usersBatch.set(uRef, cleanUpdates, { merge: true });
+        });
+        await usersBatch.commit();
+        propagatedTo.push('users (departmentId, jobPosition decoupled, certificationId CERT-ALT-4272)');
+        // 4. Normalización de Inventarios: locationId: "LOC-CENTRAL" y shelfId (SHLF-03D, SHLF-PATIO, SHLF-04G, etc.)
+        const shelfMap = {
+            '3.D': { shelfId: 'SHLF-03D', code: '3.D' },
+            '4.G': { shelfId: 'SHLF-04G', code: '4.G' },
+            'PATIO': { shelfId: 'SHLF-PATIO', code: 'PATIO' },
+            'A.P': { shelfId: 'SHLF-AP', code: 'A.P' },
+            '2.D': { shelfId: 'SHLF-02D', code: '2.D' },
+            'TB.2': { shelfId: 'SHLF-TB2', code: 'TB.2' },
+            '8.A': { shelfId: 'SHLF-08A', code: '8.A' },
+            '1.A': { shelfId: 'SHLF-01A', code: '1.A' },
+            '4.B': { shelfId: 'SHLF-04B', code: '4.B' },
+            '4.D': { shelfId: 'SHLF-04D', code: '4.D' },
+            '4.C': { shelfId: 'SHLF-04C', code: '4.C' },
+            'Bodega Central': { shelfId: 'SHLF-CENTRAL', code: 'CENTRAL' },
+        };
+        let normalizedProductsCount = 0;
+        const prodBatch = db.batch();
+        for (const prod of productsDocs.slice(0, 100)) {
+            const pRef = db.collection('erp_products').doc(prod.id);
+            const rawShelf = String(prod.shelf || 'Bodega Central').trim();
+            const mapped = shelfMap[rawShelf] || { shelfId: 'SHLF-CENTRAL', code: 'CENTRAL' };
+            prodBatch.set(pRef, {
+                locationId: 'LOC-CENTRAL',
+                locationName: 'Bodega Central Inteckno',
+                shelfId: mapped.shelfId,
+                shelf: mapped.code,
+                updatedAt: now,
+            }, { merge: true });
+            normalizedProductsCount++;
+        }
+        await prodBatch.commit();
+        propagatedTo.push(`erp_products (${normalizedProductsCount} products with locationId LOC-CENTRAL & shelfId)`);
+        return {
+            action: reqAction.action,
+            environment: ctx.environment,
+            backupId,
+            entityId: 'AUDIT_PARTS_2_3_4_FIX_COMPLETE',
+            propagatedTo,
+            result: {
+                projectUpdated: {
+                    id: 'PRJ-1793367181536',
+                    clientId: clientPartnerId,
+                    supervisorId: 'USR-07',
+                    categoryId: 'CAT-001',
+                    serviceTypeId: 'SRV-005',
+                    paymentTermId: 'PT-CR-SAT',
+                    costMatrixBoundToProjectItemId: true,
+                    heavyBase64Cleared: true,
+                },
+                usersNormalizedCount: usersDocs.length,
+                usr99DecoupledJobPosition: true,
+                usr99CertificationId: 'CERT-ALT-4272',
+                warehouseNormalizedProductsCount: normalizedProductsCount,
+            },
+        };
+    }
     throw { statusCode: 400, error: 'UNSUPPORTED_ACTION', message: 'Action not recognized' };
 }
 //# sourceMappingURL=erpDataService.js.map
