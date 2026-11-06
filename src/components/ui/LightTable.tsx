@@ -14,6 +14,11 @@ interface LightTableProps<T> {
   keyExtractor: (item: T) => string;
   onRowClick?: (item: T) => void;
   emptyMessage?: string;
+  emptySubtitle?: string;
+  emptyAction?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 export function LightTable<T>({
@@ -22,11 +27,27 @@ export function LightTable<T>({
   keyExtractor,
   onRowClick,
   emptyMessage = 'No hay registros disponibles.',
+  emptySubtitle,
+  emptyAction,
 }: LightTableProps<T>) {
   if (data.length === 0) {
     return (
-      <div className="p-5 text-center bg-white rounded-xl">
-        <p className="text-xs text-slate-500 font-medium">{emptyMessage}</p>
+      <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-200 space-y-1">
+        <p className="text-xs text-slate-700 font-bold">{emptyMessage}</p>
+        {emptySubtitle && (
+          <p className="text-[11px] text-slate-400 max-w-sm mx-auto">{emptySubtitle}</p>
+        )}
+        {emptyAction && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={emptyAction.onClick}
+              className="px-3.5 py-1.5 rounded-xl bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>{emptyAction.label}</span>
+            </button>
+          </div>
+        )}
       </div>
     );
   }

@@ -389,8 +389,26 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {employees.map((emp) => (
+          {employees.length === 0 ? (
+            <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-gray-200 space-y-2">
+              <Users size={40} className="mx-auto text-[#00668F] opacity-40" />
+              <h4 className="text-sm font-bold text-gray-800">No hay colaboradores registrados en el directorio</h4>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Registra ingenieros, supervisores y técnicos especialistas de teleféricos para gestionar sus certificaciones, licencias en alturas y liquidación de nómina.
+              </p>
+              <div className="pt-2">
+                <button
+                  onClick={() => setIsNewEmpModalOpen(true)}
+                  className="px-4 py-2 bg-[#00668F] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#005273] cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Plus size={15} />
+                  <span>Registrar Primer Empleado</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {employees.map((emp) => (
               <div key={emp.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
@@ -438,6 +456,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
@@ -1285,7 +1304,18 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {employees.map((emp) => {
+                {employees.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="p-12 text-center text-gray-400">
+                      <Coins size={36} className="mx-auto mb-2 text-[#00668F] opacity-40" />
+                      <p className="text-xs font-bold text-gray-700">Sin colaboradores para liquidar</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Registra el personal técnico para calcular sus aportes de ley y horas extras.
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  employees.map((emp) => {
                   const empTimesheets = timesheets.filter(
                     (t) =>
                       t.userId === emp.id ||
@@ -1367,7 +1397,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       </td>
                     </tr>
                   );
-                })}
+                })
+                )}
               </tbody>
             </table>
           </div>

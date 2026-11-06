@@ -42,6 +42,7 @@ export const DashboardModule: React.FC = () => {
     approveTimesheet,
     approvePurchaseOrderGM,
     signMilestoneAct,
+    navigateWithContext,
   } = useErp();
 
   // Métricas calculadas en tiempo real
@@ -76,10 +77,10 @@ export const DashboardModule: React.FC = () => {
     : null;
 
   // Compuertas de Calidad con datos reales
-  const totalStaffCount = (employees && employees.length > 0) ? employees.length : users.length;
+  const totalStaffCount = (employees && employees.length > 0) ? employees.length : 0;
   const validStaffCount = (employees && employees.length > 0)
     ? employees.filter((e) => e.heightCertStatus !== 'vencido' && e.medicalExamStatus !== 'vencido').length
-    : users.length;
+    : 0;
 
   const totalEquipCount = equipment.length;
   const validEquipCount = equipment.filter(
@@ -264,7 +265,7 @@ export const DashboardModule: React.FC = () => {
           <LightTable
             data={projects.slice(0, 4)}
             keyExtractor={(p) => p.id}
-            onRowClick={() => setActiveModule('projects')}
+            onRowClick={(p) => navigateWithContext('proyectos', 'view_project', { projectId: p.id, tab: 'dashboard' })}
             columns={[
               {
                 key: 'name',
@@ -322,9 +323,9 @@ export const DashboardModule: React.FC = () => {
                 align: 'center',
                 render: (p) => {
                   const fin = calculateProjectFinancials(p, (p as any).wbsTasks || []);
-                  if (fin.projectedMarginPct === null || fin.contractValue <= 0) {
+                  if (fin.projectedMarginPct === null || fin.contractValue <= 0 || fin.actualCostAC === 0) {
                     return (
-                      <span className="text-[11px] text-gray-400 font-medium" title="Sin costos registrados">
+                      <span className="text-[11px] text-gray-400 font-medium" title="Sin costos reales ejecutados">
                         N/D
                       </span>
                     );

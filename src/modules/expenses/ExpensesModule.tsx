@@ -528,13 +528,19 @@ export const ExpensesModule: React.FC = () => {
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-base font-bold text-slate-900">Comprobantes Radicados ({expenses.length})</h3>
-              <p className="text-xs text-slate-500">Revisión contable y legalización por Gerencia Administrativa (Clemencia García)</p>
+              <p className="text-xs text-slate-500">Revisión contable y legalización por Gerencia Administrativa</p>
             </div>
           </div>
 
         <LightTable
           data={expenses}
           keyExtractor={(exp) => exp.id}
+          emptyMessage="No hay comprobantes de gastos radicados"
+          emptySubtitle="Escanea o sube facturas de campo para legalizar viáticos e imputar a la matriz de costos del proyecto."
+          emptyAction={{
+            label: "+ Subir Factura / Gasto",
+            onClick: handleOpenNewExpenseModal,
+          }}
           columns={[
             {
               key: 'date',

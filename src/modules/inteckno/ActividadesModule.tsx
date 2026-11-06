@@ -94,6 +94,7 @@ export const ActividadesModule: React.FC = () => {
     projects,
     createCalendarEvent,
     notify,
+    navigateWithContext,
   } = useErp();
 
   // Lista unificada de colaboradores (Usuarios de sistema + Personal registrado en Talento Humano)

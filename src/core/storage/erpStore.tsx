@@ -476,6 +476,40 @@ export interface ErpContextType extends ErpState {
 
 const ErpContext = createContext<ErpContextType | undefined>(undefined);
 
+
+export function buildInitialEmployeesFromUsers(usersList: User[]): EmployeeRecord[] {
+  return usersList.map((u, idx) => {
+    const isGerente = u.role.includes('gerente');
+    const isLider = u.role.includes('lider');
+    const isIng = u.role.includes('ingeniero') || u.role.includes('coord');
+    const isTec = u.role.includes('tecnico') || u.role.includes('supervisor');
+    const salary = isGerente ? 6500000 : isLider ? 4800000 : isIng ? 3800000 : isTec ? 3100000 : 2500000;
+    
+    return {
+      id: u.id,
+      name: u.name,
+      fullName: u.name,
+      documentId: `CC-${1000000000 + (idx + 1) * 11111111}`,
+      role: u.roleLabel || u.role,
+      position: u.roleLabel || u.role,
+      department: u.department || 'Operaciones STC',
+      hireDate: '2023-02-01',
+      baseSalaryCOP: salary,
+      monthlyBaseSalary: salary,
+      city: u.city || 'Medellín',
+      email: u.email,
+      phone: u.phone || '+57 300 000 0000',
+      heightCertExpiry: '2027-12-31',
+      heightCertStatus: 'vigente',
+      medicalExamExpiry: '2027-12-31',
+      medicalExamStatus: 'vigente',
+      vacationDaysAvailable: 15,
+      emergencyContact: u.emergencyContactName || 'Contacto Familiar',
+      emergencyPhone: u.emergencyContactPhone || '+57 300 000 0000',
+    };
+  });
+}
+
 export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<ErpState>(() => {
     const defaultState: ErpState = {
@@ -485,9 +519,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       users: SEED_USERS,
       projects: [],
       tasks: [],
-      partners: [],
+      partners: SEED_PARTNERS,
       products: [],
-      equipment: [],
+      equipment: SEED_EQUIPMENT,
       purchaseOrders: [],
       requisitions: [],
       milestones: [],
@@ -496,9 +530,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ddrs: [],
       notifications: [],
       opportunities: [],
-      contacts: [],
+      contacts: SEED_CONTACTS,
       chatMessages: [],
-      chatGroups: [],
+      chatGroups: SEED_CHAT_GROUPS,
       activeChatChannelId: 'general',
       activeChatToast: null,
       activeCalendarToast: null,
@@ -506,11 +540,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       documents: [],
       todos: [],
       calendarEvents: [],
-      articles: [],
+      articles: SEED_ARTICLES,
       leads: [],
-      employees: [],
+      employees: buildInitialEmployeesFromUsers(SEED_USERS),
       novelties: [],
-      maintenancePlans: [],
+      maintenancePlans: SEED_MAINTENANCE_PLANS,
       remissions: [],
       inventoryAuditLogs: [],
       workOrders: [],
@@ -622,9 +656,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           activeCalendarToast: null,
           projects: Array.isArray(parsed.projects) ? parsed.projects : [],
           tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
-          partners: Array.isArray(parsed.partners) ? parsed.partners : [],
+          partners: Array.isArray(parsed.partners) && parsed.partners.length > 0 ? parsed.partners : SEED_PARTNERS,
           products: Array.isArray(parsed.products) ? parsed.products : [],
-          equipment: Array.isArray(parsed.equipment) ? parsed.equipment : [],
+          equipment: Array.isArray(parsed.equipment) && parsed.equipment.length > 0 ? parsed.equipment : SEED_EQUIPMENT,
           purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders : [],
           requisitions: Array.isArray(parsed.requisitions) ? parsed.requisitions : [],
           milestones: Array.isArray(parsed.milestones) ? parsed.milestones : [],
@@ -633,17 +667,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ddrs: Array.isArray(parsed.ddrs) ? parsed.ddrs : [],
           notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
           opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : [],
-          contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
+          contacts: Array.isArray(parsed.contacts) && parsed.contacts.length > 0 ? parsed.contacts : SEED_CONTACTS,
           chatMessages: Array.isArray(parsed.chatMessages) ? parsed.chatMessages : [],
-          chatGroups: Array.isArray(parsed.chatGroups) ? parsed.chatGroups : [],
+          chatGroups: Array.isArray(parsed.chatGroups) && parsed.chatGroups.length > 0 ? parsed.chatGroups : SEED_CHAT_GROUPS,
           documents: Array.isArray(parsed.documents) ? parsed.documents : [],
           todos: Array.isArray(parsed.todos) ? parsed.todos : [],
           calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : [],
-          articles: Array.isArray(parsed.articles) ? parsed.articles : [],
+          articles: Array.isArray(parsed.articles) && parsed.articles.length > 0 ? parsed.articles : SEED_ARTICLES,
           leads: Array.isArray(parsed.leads) ? parsed.leads : [],
-          employees: Array.isArray(parsed.employees) ? parsed.employees : [],
+          employees: Array.isArray(parsed.employees) && parsed.employees.length > 0 ? parsed.employees : buildInitialEmployeesFromUsers(SEED_USERS),
           novelties: Array.isArray(parsed.novelties) ? parsed.novelties : [],
-          maintenancePlans: Array.isArray(parsed.maintenancePlans) ? parsed.maintenancePlans : [],
+          maintenancePlans: Array.isArray(parsed.maintenancePlans) && parsed.maintenancePlans.length > 0 ? parsed.maintenancePlans : SEED_MAINTENANCE_PLANS,
           remissions: Array.isArray(parsed.remissions) ? parsed.remissions : [],
           inventoryAuditLogs: Array.isArray(parsed.inventoryAuditLogs) ? parsed.inventoryAuditLogs : [],
         };
@@ -1147,8 +1181,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         purchaseOrders: Array.isArray(data.purchaseOrders) ? data.purchaseOrders : prev.purchaseOrders,
         requisitions: Array.isArray(data.requisitions) ? data.requisitions : prev.requisitions,
-        equipment: Array.isArray(data.equipment) ? data.equipment : prev.equipment,
-        partners: Array.isArray(data.partners) ? data.partners : prev.partners,
+        equipment: Array.isArray(data.equipment) && data.equipment.length > 0 ? data.equipment : prev.equipment,
+        partners: Array.isArray(data.partners) && data.partners.length > 0 ? data.partners : prev.partners,
         inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
         inventoryWriteOffs: Array.isArray(data.inventoryWriteOffs) ? data.inventoryWriteOffs : prev.inventoryWriteOffs,
       }));
@@ -1183,7 +1217,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isRemoteUpdateRef.current = true;
       setState((prev) => ({
         ...prev,
-        employees: Array.isArray(data.employees) ? data.employees : prev.employees,
+        employees: Array.isArray(data.employees) && data.employees.length > 0 ? data.employees : prev.employees,
         novelties: Array.isArray(data.novelties) ? data.novelties : prev.novelties,
         sstInspections: Array.isArray(data.sstInspections) ? data.sstInspections : prev.sstInspections,
         jobPositions: Array.isArray(data.jobPositions) && data.jobPositions.length > 0 ? data.jobPositions : prev.jobPositions,
@@ -1202,7 +1236,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ddrs: Array.isArray(data.ddrs) ? data.ddrs : prev.ddrs,
         remissions: Array.isArray(data.remissions) ? data.remissions : prev.remissions,
         maintenancePlans: Array.isArray(data.maintenancePlans) ? data.maintenancePlans : prev.maintenancePlans,
-        employees: Array.isArray(data.employees) ? data.employees : prev.employees,
+        employees: Array.isArray(data.employees) && data.employees.length > 0 ? data.employees : prev.employees,
       }));
     });
 
@@ -1213,7 +1247,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState((prev) => ({
         ...prev,
         opportunities: Array.isArray(data.opportunities) ? data.opportunities : prev.opportunities,
-        contacts: Array.isArray(data.contacts) ? data.contacts : prev.contacts,
+        contacts: Array.isArray(data.contacts) && data.contacts.length > 0 ? data.contacts : prev.contacts,
         leads: Array.isArray(data.leads) ? data.leads : prev.leads,
       }));
     });
@@ -1227,8 +1261,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         todos: Array.isArray(data.todos) ? data.todos : prev.todos,
         calendarEvents: Array.isArray(data.calendarEvents) ? data.calendarEvents : prev.calendarEvents,
         documents: Array.isArray(data.documents) ? data.documents : prev.documents,
-        articles: Array.isArray(data.articles) ? data.articles : prev.articles,
-        chatGroups: Array.isArray(data.chatGroups) ? data.chatGroups : prev.chatGroups,
+        articles: Array.isArray(data.articles) && data.articles.length > 0 ? data.articles : prev.articles,
+        chatGroups: Array.isArray(data.chatGroups) && data.chatGroups.length > 0 ? data.chatGroups : prev.chatGroups,
       }));
     });
 

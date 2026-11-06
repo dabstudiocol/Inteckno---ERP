@@ -211,6 +211,7 @@ export const CalendarioModule: React.FC = () => {
     milestones,
     triggerCalendarReminderToast,
     notify,
+    navigateWithContext,
   } = useErp();
 
   // Lista unificada de colaboradores para convocatorias y eventos
@@ -1218,9 +1219,20 @@ export const CalendarioModule: React.FC = () => {
                             </h4>
 
                             {evt.projectCode && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 block truncate">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const prj = projects.find((p) => p.code === evt.projectCode);
+                                  if (prj) {
+                                    navigateWithContext('proyectos', 'view_project', { projectId: prj.id, tab: 'dashboard' });
+                                  }
+                                }}
+                                className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-sky-50 hover:bg-sky-100 text-[#00668F] border border-sky-200 block truncate transition-colors cursor-pointer text-left"
+                                title={`Ir al Proyecto ${evt.projectCode}`}
+                              >
                                 {evt.projectCode}
-                              </span>
+                              </button>
                             )}
 
                             {isVirtual && evt.teamsMeetingUrl && (
@@ -1320,11 +1332,22 @@ export const CalendarioModule: React.FC = () => {
 
               {selectedEvent.projectCode && (
                 <div className="flex items-center gap-2 text-gray-700">
-                  <Briefcase size={14} className="text-amber-500" />
+                  <Briefcase size={14} className="text-[#00668F]" />
                   <span className="font-semibold">Proyecto STC:</span>
-                  <span>
-                    {selectedEvent.projectCode} - {selectedEvent.projectName}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prj = projects.find((p) => p.code === selectedEvent.projectCode);
+                      if (prj) {
+                        navigateWithContext('proyectos', 'view_project', { projectId: prj.id, tab: 'dashboard' });
+                      }
+                    }}
+                    className="font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+                    title={`Ir al Proyecto ${selectedEvent.projectCode}`}
+                  >
+                    <span>{selectedEvent.projectCode} - {selectedEvent.projectName}</span>
+                    <ExternalLink size={11} />
+                  </button>
                 </div>
               )}
 

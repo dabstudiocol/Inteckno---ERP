@@ -233,7 +233,7 @@ const COMPANY_AREAS: { id: CompanyDepartment | 'all'; label: string; icon: strin
 ];
 
 export const DocumentosModule: React.FC = () => {
-  const { documents, addDocument, updateDocument, deleteDocument, currentUser, users, projects } = useErp();
+  const { documents, addDocument, updateDocument, deleteDocument, currentUser, users, projects, navigateWithContext } = useErp();
 
   // Estados principales de navegación
   const [activeTab, setActiveTab] = useState<OrganizerTab>('todos');
@@ -290,7 +290,17 @@ export const DocumentosModule: React.FC = () => {
   });
 
   const allFolders = useMemo(() => {
-    const list = [...DEFAULT_FOLDERS, ...customFolders]
+    const dynamicProjectFolders: DocFolder[] = projects.map((p) => ({
+      id: `f-proj-${p.id}`,
+      name: `${p.code} — ${p.name}`,
+      subtitle: `${p.clientName || 'Cliente'} • Carpeta de Obra STC`,
+      scope: 'empresa' as const,
+      department: 'Operaciones' as const,
+      projectCode: p.code,
+      iconColor: '#00668F',
+    }));
+
+    const list = [...dynamicProjectFolders, ...DEFAULT_FOLDERS, ...customFolders]
       .filter((f) => !deletedFolderIds.includes(f.id))
       .map((f) => ({ ...f, ...(folderOverrides[f.id] || {}) }));
 
