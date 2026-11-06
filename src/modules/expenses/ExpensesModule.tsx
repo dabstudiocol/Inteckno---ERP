@@ -90,6 +90,18 @@ export const ExpensesModule: React.FC = () => {
   // Estado del Formulario
   const [imputationType, setImputationType] = useState<'proyecto' | 'oficina'>('proyecto');
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id || '');
+
+  React.useEffect(() => {
+    const handleExpenseFromProject = (e: any) => {
+      if (e.detail?.projectId) {
+        setImputationType('proyecto');
+        setSelectedProjectId(e.detail.projectId);
+        setIsModalOpen(true);
+      }
+    };
+    window.addEventListener('inteckno:create-expense-for-project', handleExpenseFromProject);
+    return () => window.removeEventListener('inteckno:create-expense-for-project', handleExpenseFromProject);
+  }, []);
   const [selectedOfficeId, setSelectedOfficeId] = useState(
     moduleConfig.offices[0]?.id || ''
   );
