@@ -54,7 +54,7 @@ interface GlobalOpportunityRadarProps {
 export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
   onSelectForQuotation,
 }) => {
-  const { createOpportunity, users, currentUser } = useErp();
+  const { createOpportunity, users, currentUser, notify, navigateWithContext } = useErp();
 
   // Catálogos reactivos desde la Configuración del Módulo
   const configuredCountries = useModuleCatalog('radar-oportunidades', 'monitoredCountries');
@@ -184,6 +184,12 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
     });
 
     setConvertedIds((prev) => ({ ...prev, [opp.id]: true }));
+    notify?.(
+      'success',
+      'Licitación Transferida al CRM',
+      `La oportunidad "${opp.title}" ha sido incorporada al Pipeline Comercial.`
+    );
+    navigateWithContext('crm', 'view_opportunity', { query: opp.entity || opp.title });
   };
 
   // Filtrado reactivo completo con todos los filtros
@@ -731,18 +737,24 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => handleConvertToCrm(opp)}
-                    disabled={isConverted}
+                    onClick={() => {
+                      if (isConverted) {
+                        navigateWithContext('crm', 'view_opportunity', { query: opp.entity || opp.title });
+                      } else {
+                        handleConvertToCrm(opp);
+                      }
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       isConverted
-                        ? 'bg-emerald-50 text-emerald-700'
+                        ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                     }`}
+                    title={isConverted ? 'Ver Oportunidad en el CRM Comercial' : 'Incorporar Licitación al Pipeline Comercial'}
                   >
                     {isConverted ? (
                       <>
                         <CheckCircle2 size={13} className="text-emerald-600" />
-                        <span>En CRM</span>
+                        <span>En CRM ➔</span>
                       </>
                     ) : (
                       <>

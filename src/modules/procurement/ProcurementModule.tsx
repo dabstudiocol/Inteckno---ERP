@@ -106,6 +106,13 @@ export const ProcurementModule: React.FC = () => {
           setIsRegisterPoModalOpen(true);
           clearNavigationContext();
         }
+      } else if (navigationContext.action === 'open_po_receipt' || navigationContext.action === 'view_po') {
+        const po = navigationContext.data?.po || purchaseOrders.find((p) => p.id === navigationContext.data?.poId);
+        if (po) {
+          setActiveTab('orders');
+          setSelectedPoForDetail(po);
+          clearNavigationContext();
+        }
       }
     }
   }, [navigationContext, clearNavigationContext]);

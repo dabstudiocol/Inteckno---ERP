@@ -22,7 +22,9 @@ import {
   Sparkles,
   Loader2,
   Settings,
+  ArrowRight,
 } from 'lucide-react';
+import { useErp } from '../../core/storage/erpStore';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import {
@@ -107,6 +109,7 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { navigateWithContext, opportunities } = useErp();
   const catalogCountries = useModuleCatalog('crm', 'countries');
   const catalogCurrencies = useModuleCatalog('crm', 'currencies');
   const catalogPaymentTerms = useModuleCatalog('crm', 'paymentTerms');
@@ -353,6 +356,26 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              navigateWithContext('crm', 'create_opportunity', {
+                clientId: formData.id,
+                clientName: formData.company || formData.name,
+                contactPerson: formData.name,
+                contactEmail: formData.email,
+                contactPhone: formData.phone,
+                country: formData.country,
+                cableType: formData.stcSystem,
+              });
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 text-xs font-bold transition-colors cursor-pointer"
+            title="Crear nueva oportunidad comercial para este cliente"
+          >
+            <Plus size={14} />
+            <span className="hidden sm:inline">Nueva Oportunidad</span>
+          </button>
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config', { detail: { moduleId: 'crm' } }))}
@@ -877,6 +900,80 @@ export const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
         {/* --------------------------------------------------------------------- */}
         {activeTab === 'ventas_compras' && (
           <div className="space-y-6 max-w-5xl mx-auto">
+            {/* OPORTUNIDADES VINCULADAS EN CRM */}
+            <div className="bg-white p-6 rounded-2xl shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                    <Briefcase size={16} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">Oportunidades Comerciales en Pipeline</h4>
+                    <p className="text-xs text-gray-500">Historial y estado de propuestas vinculadas a este cliente u operador.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigateWithContext('crm', 'create_opportunity', {
+                      clientId: formData.id,
+                      clientName: formData.company || formData.name,
+                      contactPerson: formData.name,
+                      contactEmail: formData.email,
+                      contactPhone: formData.phone,
+                      country: formData.country,
+                      cableType: formData.stcSystem,
+                    });
+                  }}
+                  className="px-3 py-1.5 bg-[#00668F] hover:bg-[#005073] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                >
+                  <Plus size={13} />
+                  <span>+ Nueva Oportunidad</span>
+                </button>
+              </div>
+
+              {(() => {
+                const linkedOpps = opportunities.filter(
+                  (o) => o.clientId === formData.id || o.clientName.toLowerCase() === (formData.company || formData.name).toLowerCase()
+                );
+                if (linkedOpps.length === 0) {
+                  return (
+                    <div className="p-4 text-center text-xs text-gray-400 bg-slate-50 rounded-xl">
+                      No hay oportunidades comerciales activas para este cliente en el pipeline.
+                    </div>
+                  );
+                }
+                return (
+                  <div className="divide-y divide-gray-100">
+                    {linkedOpps.map((opp) => (
+                      <div key={opp.id} className="py-2.5 flex items-center justify-between text-xs hover:bg-slate-50/80 px-2 rounded-lg transition-colors">
+                        <div>
+                          <div className="font-bold text-gray-900 flex items-center gap-2">
+                            <span className="font-mono text-[#00668F]">{opp.code}</span>
+                            <span>{opp.title}</span>
+                          </div>
+                          <div className="text-[11px] text-gray-500 font-medium mt-0.5">
+                            Etapa: <strong className="text-gray-700 uppercase">{opp.stage}</strong> · Cierre est.: {opp.expectedCloseDate || 'N/D'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            navigateWithContext('crm', 'view_opportunity', { oppId: opp.id });
+                          }}
+                          className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-[#00668F] rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <span>Ver en CRM</span>
+                          <ArrowRight size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
             {/* VENTAS */}
             <div className="bg-white p-6 rounded-2xl shadow-xs space-y-4">
               <div className="flex items-center gap-2 pb-2">

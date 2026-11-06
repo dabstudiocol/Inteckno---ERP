@@ -384,6 +384,8 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     notify,
     createCalendarEvent,
     navigateWithContext,
+    navigationContext,
+    clearNavigationContext,
   } = useErp();
 
   // Si se pasa activeTab por prop o se deduce del activeModuleId del ERP
@@ -760,6 +762,68 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     leadSource: '',
     tags: [] as string[],
   });
+
+  // Autopista Determinista de Navegación Closed-Loop
+  useEffect(() => {
+    if (
+      navigationContext &&
+      (navigationContext.targetModule === 'crm' ||
+        navigationContext.targetModule === 'comercial' ||
+        navigationContext.targetModule === 'ventas' ||
+        navigationContext.targetModule === 'contactos')
+    ) {
+      if (navigationContext.action === 'create_opportunity') {
+        const d = navigationContext.data || {};
+        setOppForm((prev) => ({
+          ...prev,
+          title: d.title || prev.title,
+          clientName: d.clientName || prev.clientName,
+          clientId: d.clientId || prev.clientId,
+          clientContactPerson: d.contactPerson || d.clientContactPerson || prev.clientContactPerson,
+          clientEmail: d.contactEmail || d.clientEmail || prev.clientEmail,
+          clientPhone: d.contactPhone || d.clientPhone || prev.clientPhone,
+          cableType: d.cableType || prev.cableType,
+          country: d.country || prev.country,
+          estimatedValueUSD: d.estimatedValueUSD || 0,
+          stage: d.stage || 'qualification',
+        }));
+        setInternalTab('pipeline');
+        setIsNewOppModalOpen(true);
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_opportunity') {
+        setInternalTab('pipeline');
+        if (navigationContext.data?.oppId) {
+          const found = opportunities.find((o) => o.id === navigationContext.data.oppId);
+          if (found) {
+            setEditingOpp(found);
+            setOppModalTab('general');
+          }
+        } else if (navigationContext.data?.query) {
+          setSearchQuery(navigationContext.data.query);
+        }
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_contact') {
+        setInternalTab('contactos');
+        if (navigationContext.data?.contactId) {
+          const found = contacts.find((c) => c.id === navigationContext.data.contactId);
+          if (found) setEditingContact(found);
+        } else if (navigationContext.data?.query) {
+          setSearchQuery(navigationContext.data.query);
+        }
+        clearNavigationContext();
+      } else if (navigationContext.action === 'create_contact') {
+        setInternalTab('contactos');
+        setIsNewContactModalOpen(true);
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_quotations') {
+        setInternalTab('ventas');
+        if (navigationContext.data?.query) {
+          setSearchQuery(navigationContext.data.query);
+        }
+        clearNavigationContext();
+      }
+    }
+  }, [navigationContext, opportunities, contacts, clearNavigationContext]);
 
   // Estados interactivos de Drag and Drop para el Pipeline Kanban
   const [draggedOppId, setDraggedOppId] = useState<string | null>(null);
@@ -1286,9 +1350,22 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                             {opp.title}
                           </h4>
 
-                          <div className="text-[10px] text-gray-700 font-medium flex items-center gap-1">
-                            <Building2 size={11} className="text-gray-400 shrink-0" />
-                            <span className="truncate">{opp.clientName}</span>
+                          <div className="text-[10px] text-gray-700 font-medium flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1 truncate min-w-0">
+                              <Building2 size={11} className="text-gray-400 shrink-0" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSearchQuery(opp.clientName);
+                                  setInternalTab('contactos');
+                                }}
+                                title={`Ver Ficha del Cliente ${opp.clientName} en Directorio`}
+                                className="truncate hover:text-[#00668F] hover:underline cursor-pointer text-left font-semibold"
+                              >
+                                {opp.clientName}
+                              </button>
+                            </div>
                           </div>
 
                           <div className="text-[10px] text-gray-500 truncate">
@@ -1602,14 +1679,37 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                   )}
                 </div>
 
-                {/* Botones de Acción: Ficha Completa & Edición */}
-                <div className="pt-2 flex items-center gap-2">
+                {/* Botones de Acción: Ficha Completa, Nueva Oportunidad & Edición */}
+                <div className="pt-2 flex items-center gap-1.5">
                   <button
                     onClick={() => setEditingContact(cnt)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#00668F]/10 hover:bg-[#00668F] text-[#00668F] hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer group shadow-2xs"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 bg-[#00668F]/10 hover:bg-[#00668F] text-[#00668F] hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer group shadow-2xs truncate"
                   >
-                    <Maximize2 size={13} className="transition-transform group-hover:scale-110" />
-                    <span>Ver Ficha Completa</span>
+                    <Maximize2 size={13} className="shrink-0 transition-transform group-hover:scale-110" />
+                    <span className="truncate">Ver Ficha</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOppForm((prev) => ({
+                        ...prev,
+                        title: '',
+                        clientName: cnt.company || cnt.name,
+                        clientId: cnt.id,
+                        clientContactPerson: cnt.name,
+                        clientEmail: cnt.email || '',
+                        clientPhone: cnt.phone || '',
+                        country: cnt.country || '',
+                        cableType: cnt.stcSystem || '',
+                        stage: 'qualification',
+                      }));
+                      setIsNewOppModalOpen(true);
+                      setInternalTab('pipeline');
+                    }}
+                    title={`Crear nueva oportunidad para ${cnt.company || cnt.name}`}
+                    className="flex items-center justify-center gap-1 px-2.5 py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                  >
+                    <Plus size={13} className="shrink-0" />
+                    <span className="hidden sm:inline">Oportunidad</span>
                   </button>
                   <button
                     onClick={() => setEditingContact(cnt)}
@@ -1652,9 +1752,34 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
               <tbody className="divide-y divide-gray-100">
                 {opportunities.map((opp) => (
                   <tr key={opp.id} className="hover:bg-slate-50/80">
-                    <td className="p-3 font-bold text-[#00668F]">{opp.code}</td>
+                    <td className="p-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(opp.code);
+                          setInternalTab('pipeline');
+                        }}
+                        className="font-bold text-[#00668F] hover:underline flex items-center gap-1 group text-xs text-left cursor-pointer"
+                        title="Ver Oportunidad en Pipeline Comercial"
+                      >
+                        <span>{opp.code}</span>
+                        <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    </td>
                     <td className="p-3 font-semibold text-gray-900">{opp.title}</td>
-                    <td className="p-3 text-gray-600">{opp.clientName}</td>
+                    <td className="p-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(opp.clientName);
+                          setInternalTab('contactos');
+                        }}
+                        className="text-gray-700 hover:text-[#00668F] hover:underline text-xs text-left font-medium cursor-pointer"
+                        title={`Ver Contacto ${opp.clientName} en Directorio`}
+                      >
+                        {opp.clientName}
+                      </button>
+                    </td>
                     <td className="p-3">
                       {(() => {
                         const fin = getOppFinancialBreakdown(opp, currentTrm);

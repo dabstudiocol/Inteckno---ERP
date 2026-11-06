@@ -59,6 +59,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     logout,
     activeModuleId,
     setActiveModule,
+    navigateWithContext,
     notifications,
     dismissNotification,
     products,
@@ -161,15 +162,12 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   const handleNavigateFromAlert = (moduleId: string, actionType?: string, payload?: any) => {
     setIsUserAlertsModalOpen(false);
-    setActiveModule(moduleId);
     if (actionType === 'open_requisition' && payload?.req) {
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('inteckno:open-requisition-detail', { detail: payload.req }));
-      }, 50);
+      navigateWithContext(moduleId, 'open_requisition', { req: payload.req });
     } else if (actionType === 'open_po_receipt' && payload?.po) {
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('inteckno:open-po-receipt', { detail: payload.po }));
-      }, 50);
+      navigateWithContext(moduleId, 'open_po_receipt', { po: payload.po });
+    } else {
+      setActiveModule(moduleId);
     }
   };
 

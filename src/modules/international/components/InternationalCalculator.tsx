@@ -71,7 +71,7 @@ interface InternationalCalculatorProps {
 export const InternationalCalculator: React.FC<InternationalCalculatorProps> = ({
   initialOpportunity,
 }) => {
-  const { partners, contacts, opportunities, createOpportunity, updateOpportunity, setActiveModule, notify, currentUser } = useErp();
+  const { partners, contacts, opportunities, createOpportunity, updateOpportunity, setActiveModule, notify, currentUser, navigateWithContext } = useErp();
   // Estado Principal de la Calculadora Internacional (limpio por defecto; se prellena solo si viene desde una licitación del Radar)
   const [state, setState] = useState<InternationalCalculationState>({
     unitSystem: 'metric',
@@ -487,6 +487,7 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
         'Cotización Sincronizada con CRM',
         `Se adjuntó la oferta ${newQuotation.code} (USD ${totalUSD.toLocaleString('en-US')}) a la oportunidad "${existingOpp.title}".`
       );
+      navigateWithContext('comercial', 'view_opportunity', { oppId: existingOpp.id });
     } else {
       createOpportunity({
         title: titleToUse,
@@ -504,8 +505,8 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
         quotations: [newQuotation],
       });
       notify('success', 'Oportunidad Creada en CRM', `La cotización ${newQuotation.code} quedó registrada en el pipeline comercial.`);
+      navigateWithContext('comercial', 'view_opportunity', { query: titleToUse });
     }
-    setActiveModule('comercial');
   };
 
   const handleRemovePackage = (id: string) => {
@@ -522,6 +523,26 @@ export const InternationalCalculator: React.FC<InternationalCalculatorProps> = (
 
   return (
     <div className="w-full max-w-full min-w-0 overflow-x-hidden space-y-4 sm:space-y-6">
+      {/* RETORNO BIDIRECCIONAL AL RADAR DE OPORTUNIDADES */}
+      {initialOpportunity && (
+        <div className="bg-sky-50 border border-sky-200 text-sky-900 px-4 py-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🎯</span>
+            <span>
+              Cotización vinculada a la licitación del Radar: <strong>{initialOpportunity.title}</strong> ({initialOpportunity.entity})
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigateWithContext('radar-oportunidades', 'view_radar', {})}
+            className="text-[#00668F] font-bold hover:underline flex items-center gap-1 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-sky-200"
+          >
+            <span>Volver al Radar</span>
+            <ArrowRight size={11} />
+          </button>
+        </div>
+      )}
+
       {/* 1. BARRA SUPERIOR DE HERRAMIENTAS */}
       <div className="bg-white p-3 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">

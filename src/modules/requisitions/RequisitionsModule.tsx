@@ -38,6 +38,13 @@ export const RequisitionsModule: React.FC = () => {
         });
         setIsModalOpen(true);
         clearNavigationContext();
+      } else if (navigationContext.action === 'open_requisition' || navigationContext.action === 'view_requisition') {
+        const req = navigationContext.data?.req || requisitions.find((r) => r.id === navigationContext.data?.reqId);
+        if (req) {
+          setSelectedReqForDetail(req);
+          setIsDetailModalOpen(true);
+        }
+        clearNavigationContext();
       }
     }
   }, [navigationContext, clearNavigationContext]);
