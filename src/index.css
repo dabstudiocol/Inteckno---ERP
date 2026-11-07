@@ -12,9 +12,9 @@
     --itk-accent-hover: #D98200;
 
     /* Superficies y Neutros estilo Apple */
-    --app-bg: #F0F4F8;
-    --sidebar-dark: #0B1317;
-    --sidebar-hover: #16222A;
+    --app-bg: #E6EDF5;
+    --sidebar-dark: #021B2B;
+    --sidebar-hover: #07283E;
     --card-surface: #FFFFFF;
 
     /* Jerarquía Tipográfica y Contraste de Color (Regla 6) */
@@ -231,7 +231,7 @@ select:focus,
 textarea:focus {
   background-color: #FFFFFF;
   color: #0F172A;
-  box-shadow: 0 0 0 2px rgba(0, 102, 143, 0.25) !important;
+  outline: 2px solid #00668F !important;
 }
 
 /* Manejo explícito de Login e inputs con autofill del navegador */

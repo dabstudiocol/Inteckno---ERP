@@ -17,40 +17,40 @@ interface PastelMetricCardProps {
 
 const colorStyles: Record<PastelColor, { bg: string; border: string; text: string; badgeBg: string; badgeText: string; chartFill: string; chartStroke: string }> = {
   blue: {
-    bg: 'bg-[#EBF5FA]',
+    bg: 'bg-[#005273]',
     border: 'border-[#CFE4F3]',
-    text: 'text-[#085579]',
-    badgeBg: 'bg-[#D1E8F7]',
-    badgeText: 'text-[#06425E]',
-    chartFill: 'rgba(0, 102, 143, 0.12)',
-    chartStroke: '#00668F',
+    text: 'text-white',
+    badgeBg: 'bg-white/20',
+    badgeText: 'text-sky-200',
+    chartFill: 'rgba(255, 255, 255, 0.2)',
+    chartStroke: '#38BDF8',
   },
   purple: {
-    bg: 'bg-[#F2EEFD]',
+    bg: 'bg-[#4338CA]',
     border: 'border-[#DBD1FA]',
-    text: 'text-[#4E3596]',
-    badgeBg: 'bg-[#E0D5FA]',
-    badgeText: 'text-[#3E2880]',
-    chartFill: 'rgba(124, 58, 237, 0.12)',
-    chartStroke: '#7C3AED',
+    text: 'text-white',
+    badgeBg: 'bg-white/20',
+    badgeText: 'text-indigo-200',
+    chartFill: 'rgba(255, 255, 255, 0.2)',
+    chartStroke: '#A5B4FC',
   },
   green: {
-    bg: 'bg-[#EBF7EE]',
+    bg: 'bg-[#047857]',
     border: 'border-[#C8EAD0]',
-    text: 'text-[#186635]',
-    badgeBg: 'bg-[#CCEED4]',
-    badgeText: 'text-[#114D27]',
-    chartFill: 'rgba(16, 185, 129, 0.12)',
-    chartStroke: '#10B981',
+    text: 'text-white',
+    badgeBg: 'bg-white/20',
+    badgeText: 'text-emerald-200',
+    chartFill: 'rgba(255, 255, 255, 0.2)',
+    chartStroke: '#6EE7B7',
   },
   amber: {
-    bg: 'bg-[#FFF7EB]',
+    bg: 'bg-[#D97706]',
     border: 'border-[#FDE0B5]',
-    text: 'text-[#8A4C00]',
-    badgeBg: 'bg-[#FEE5BF]',
-    badgeText: 'text-[#6B3A00]',
-    chartFill: 'rgba(243, 146, 0, 0.15)',
-    chartStroke: '#F39200',
+    text: 'text-white',
+    badgeBg: 'bg-white/20',
+    badgeText: 'text-amber-200',
+    chartFill: 'rgba(255, 255, 255, 0.2)',
+    chartStroke: '#FDE68A',
   },
 };
 
@@ -89,14 +89,14 @@ export const PastelMetricCard: React.FC<PastelMetricCardProps> = ({
     >
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider">{label}</span>
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             if (onClick) onClick();
           }}
-          className="text-slate-400 hover:text-slate-700 transition-colors p-0.5 rounded-md cursor-pointer"
+          className="text-white/70 hover:text-white transition-colors p-0.5 rounded-md cursor-pointer"
           title="Ver detalle"
         >
           <MoreHorizontal size={14} />
@@ -108,7 +108,7 @@ export const PastelMetricCard: React.FC<PastelMetricCardProps> = ({
         <div className={`text-lg sm:text-2xl font-black tracking-tight ${styles.text}`}>
           {value}
         </div>
-        {subtitle && <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-[10px] sm:text-[11px] text-white/80 font-medium truncate mt-0.5">{subtitle}</p>}
       </div>
 
       {/* Pie con icono simétrico armonizado y micrográfica */}
