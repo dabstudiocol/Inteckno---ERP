@@ -876,23 +876,23 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
         </div>
       ) : viewMode === 'table' ? (
         /* TABLE VIEW */
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white rounded-3xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-[#DCE8F6] text-[#07192F] font-black uppercase tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">Código / Proyecto</th>
-                  <th className="py-3 px-4">Cliente</th>
-                  <th className="py-3 px-4">Línea STC</th>
-                  <th className="py-3 px-4">Responsable</th>
-                  <th className="py-3 px-4">Fechas</th>
-                  <th className="py-3 px-4">Presupuesto</th>
-                  <th className="py-3 px-4">Avance</th>
-                  <th className="py-3 px-4">Estado</th>
-                  <th className="py-3 px-4 text-right">Detalle</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Código / Proyecto</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Cliente</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Línea STC</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Responsable</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Fechas</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Presupuesto</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Avance</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Estado</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Detalle</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody>
                 {filteredProjects.map(proj => {
                   const badge = getStatusBadge(proj.status);
                   const progress = proj.budgetPV > 0 
@@ -902,46 +902,46 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                     <tr 
                       key={proj.id} 
                       onClick={() => setSelectedProjectId(proj.id)}
-                      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
+                      className="hover:bg-[#E0F2FE] cursor-pointer transition-colors"
                     >
-                      <td className="py-3 px-4">
-                        <div className="font-mono font-semibold text-[#00668F]">
+                      <td className="py-3.5 px-4 min-w-[210px]">
+                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-[#E0F2FE] text-[#0284C7] font-mono text-[11px] font-black whitespace-nowrap mb-1">
                           {proj.code}
                         </div>
-                        <div className="font-medium text-slate-900 dark:text-slate-100 max-w-xs truncate">
+                        <div className="font-extrabold text-[#050C1A] max-w-xs truncate">
                           {proj.name}
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
+                      <td className="py-3.5 px-4 font-extrabold text-[#050C1A] whitespace-nowrap">
                         {proj.clientName}
                       </td>
-                      <td className="py-3 px-4">
-                        <span className="capitalize px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="capitalize px-3 py-1 rounded-full text-[11px] font-extrabold bg-[#EBF2FA] text-[#035388]">
                           {proj.lineOfBusiness || 'Mantenimiento'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                      <td className="py-3.5 px-4 font-bold text-[#1E293B] whitespace-nowrap">
                         {proj.supervisorName || 'Sin asignar'}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 text-[11px]">
-                        <div>Inicio: {proj.startDate || '-'}</div>
-                        <div>Fin: {proj.endDate || '-'}</div>
+                      <td className="py-3.5 px-4 text-[#334155] font-bold text-[11px] whitespace-nowrap">
+                        <div>Inicio: <span className="font-mono text-[#050C1A]">{proj.startDate || '-'}</span></div>
+                        <div className="mt-0.5">Fin: <span className="font-mono text-[#050C1A]">{proj.endDate || '-'}</span></div>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">
+                      <td className="py-3.5 px-4 font-black text-[#050C1A] whitespace-nowrap tabular-nums">
                         {formatCOP(proj.budgetPV || 0)}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-20 bg-[#DCE8F6] rounded-full h-2 overflow-hidden shrink-0">
                             <div 
-                              className="bg-[#00668F] h-1.5 rounded-full" 
-                              style={{ width: `${Math.min(progress, 100)}%` }} 
+                              className="bg-[#0284C7] h-2 rounded-full transition-all" 
+                              style={{ width: `${Math.max(Math.min(progress, 100), progress > 0 ? 6 : 0)}%` }} 
                             />
                           </div>
-                          <span className="font-mono text-[11px] text-slate-600 dark:text-slate-300">{progress}%</span>
+                          <span className="font-mono font-black text-xs text-[#0284C7]">{progress}%</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 min-w-[150px]" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-3.5 px-4 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
                         <CreatableSelect
                           value={
                             proj.status === 'active' ? 'En ejecución' :
@@ -970,29 +970,28 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                           ]}
                           placeholder="Estado..."
                           allowCustomText={false}
-                          
-                          inputClassName={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.color}`}
+                          inputClassName={`px-3 py-1.5 rounded-full text-[11px] font-extrabold ${badge.color}`}
                         />
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => setDetailProject(proj)}
-                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 hover:text-[#00668F] transition-colors"
+                            className="w-8 h-8 rounded-xl bg-[#EBF2FA] hover:bg-[#0284C7] text-[#0284C7] hover:text-white flex items-center justify-center transition-all cursor-pointer"
                             title="Ver detalles completos del proyecto"
                           >
-                            <Info className="w-3.5 h-3.5" />
+                            <Info className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setProjectToDelete(proj)}
-                            className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors"
+                            className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center transition-all cursor-pointer"
                             title="Eliminar proyecto"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setSelectedProjectId(proj.id)}
-                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-600"
+                            className="w-8 h-8 rounded-xl bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white flex items-center justify-center transition-all cursor-pointer"
                             title="Abrir proyecto"
                           >
                             <ChevronRight className="w-4 h-4" />

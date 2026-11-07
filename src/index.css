@@ -163,18 +163,6 @@
   border-radius: 32px !important;
 }
 
-/* Botones de Marca con Gradiente Tecnológico Vibrante */
-.bg-\[\#00668F\] {
-  background-image: linear-gradient(135deg, #0284C7 0%, #00668F 60%, #035388 100%) !important;
-  background-color: #0284C7 !important;
-}
-
-.bg-\[\#00668F\]:hover,
-.hover\:bg-\[\#005273\]:hover {
-  background-image: linear-gradient(135deg, #0369A1 0%, #005273 100%) !important;
-  background-color: #0369A1 !important;
-}
-
 /* Superficies Interiores Contrastadas (Sin Bordes) */
 main .bg-slate-50,
 main .bg-gray-50 {
@@ -228,11 +216,87 @@ main .text-slate-900 {
 }
 
 /* ==========================================================================
-   TABLAS FUTURISTAS SIN BORDES (CAPSULE DATA GRIDS EN TODOS LOS MÓDULOS)
+   MOTOR UNIVERSAL DE EFECTO HOVER CON CAMBIO DE COLOR EN TODOS LOS BOTONES
+   ========================================================================== */
+button,
+[role="button"] {
+  transition: background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              background-image 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s ease !important;
+}
+
+/* Botones de Marca Primaria */
+.bg-\[\#00668F\],
+.bg-\[\#0284C7\] {
+  background-image: linear-gradient(135deg, #0284C7 0%, #00668F 60%, #035388 100%) !important;
+  background-color: #0284C7 !important;
+  color: #FFFFFF !important;
+}
+
+/* Efecto Hover Global: TODO botón habilitado cambia de color al pasar el cursor */
+button:not(:disabled):hover,
+[role="button"]:not(:disabled):hover {
+  background-image: linear-gradient(135deg, #0EA5E9 0%, #0284C7 60%, #1D4ED8 100%) !important;
+  background-color: #0284C7 !important;
+  color: #FFFFFF !important;
+}
+
+button:not(:disabled):hover span,
+button:not(:disabled):hover svg,
+[role="button"]:not(:disabled):hover span,
+[role="button"]:not(:disabled):hover svg {
+  color: #FFFFFF !important;
+}
+
+/* Hover especializado para botones primarios azules (cambian a Indigo/Cian Eléctrico intenso) */
+button.bg-\[\#00668F\]:not(:disabled):hover,
+button.bg-\[\#0284C7\]:not(:disabled):hover,
+button[class*="from-\[\#0284C7\]"]:not(:disabled):hover,
+button.bg-sky-600:not(:disabled):hover,
+button.bg-blue-600:not(:disabled):hover {
+  background-image: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%) !important;
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+}
+
+/* Hover especializado para botones de Eliminar / Cancelar / Cerrar / Peligro (cambian a Rojo Carmesí) */
+button[class*="rose"]:not(:disabled):hover,
+button[class*="red"]:not(:disabled):hover,
+button[title*="Eliminar"]:not(:disabled):hover,
+button[title*="Borrar"]:not(:disabled):hover,
+button[title*="Descartar"]:not(:disabled):hover,
+button[title*="Cerrar"]:not(:disabled):hover,
+button[title*="Quitar"]:not(:disabled):hover,
+button[title*="Cancelar"]:not(:disabled):hover {
+  background-image: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%) !important;
+  background-color: #E11D48 !important;
+  color: #FFFFFF !important;
+}
+
+/* Hover especializado para botones Esmeralda / Éxito / Confirmación */
+button[class*="emerald"]:not(:disabled):hover,
+button[class*="green"]:not(:disabled):hover {
+  background-image: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+  background-color: #059669 !important;
+  color: #FFFFFF !important;
+}
+
+/* Hover especializado para botones Ámbar / Alertas / Favoritos */
+button[class*="amber"]:not(:disabled):hover,
+button[class*="yellow"]:not(:disabled):hover,
+button[class*="orange"]:not(:disabled):hover {
+  background-image: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+  background-color: #D97706 !important;
+  color: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   TABLAS MODERNAS SIN BORDES Y PERFECTAMENTE ALINEADAS
    ========================================================================== */
 table {
-  border-collapse: separate !important;
-  border-spacing: 0 4px !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
 }
 
 thead tr {
@@ -247,19 +311,9 @@ thead th {
   padding-bottom: 12px !important;
 }
 
-thead th:first-child {
-  border-top-left-radius: 16px !important;
-  border-bottom-left-radius: 16px !important;
-}
-
-thead th:last-child {
-  border-top-right-radius: 16px !important;
-  border-bottom-right-radius: 16px !important;
-}
-
 tbody tr {
   background-color: #FFFFFF;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 tbody tr:nth-child(even) {
@@ -268,16 +322,6 @@ tbody tr:nth-child(even) {
 
 tbody tr:hover {
   background-color: #E0F2FE !important;
-}
-
-tbody td:first-child {
-  border-top-left-radius: 14px !important;
-  border-bottom-left-radius: 14px !important;
-}
-
-tbody td:last-child {
-  border-top-right-radius: 14px !important;
-  border-bottom-right-radius: 14px !important;
 }
 
 /* Custom scrollbars */
@@ -357,7 +401,7 @@ article {
   outline: none !important;
 }
 
-/* Campos de formulario curvos, sin bordes, con fondo sólido contrastado */
+/* Campos de formulario curvos, sin bordes, con foco azul celeste visible sobre fondos blancos */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
@@ -370,13 +414,14 @@ textarea {
   vertical-align: middle;
   color: #050C1A;
   font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
-  background-color: #FFFFFF !important;
-  color: #050C1A !important;
+  background-color: #CFE6FC !important;
+  color: #03152E !important;
   box-shadow: none !important;
 }
 
@@ -428,28 +473,15 @@ span[class*="rounded-full"]:not([class*="h-"]):not([role="progressbar"]) {
   font-weight: 800 !important;
 }
 
-/* Barras de Progreso e Indicadores de Avance: Siempre inician estrictamente en 0% a la izquierda */
+/* Barras de Progreso e Indicadores de Avance */
 .progress-track,
 .progress-bar,
-[role="progressbar"],
-div[class*="rounded-full"]:has(> div),
-div[class*="bg-slate-200"]:has(> div),
-div[class*="bg-gray-200"]:has(> div) {
+[role="progressbar"] {
   display: block !important;
   justify-content: flex-start !important;
   align-items: stretch !important;
   text-align: left !important;
   position: relative !important;
-}
-
-div[class*="rounded-full"]:has(> div) > div,
-div[class*="bg-slate-200"]:has(> div) > div,
-div[class*="bg-gray-200"]:has(> div) > div {
-  margin-left: 0 !important;
-  margin-right: auto !important;
-  display: block !important;
-  position: relative !important;
-  left: 0 !important;
 }
 
 /* ==========================================================================

@@ -186,7 +186,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
             setIsOpen(true);
           }}
           placeholder={placeholder}
-          className={`w-full p-2.5 pr-14 rounded-xl bg-slate-100 text-gray-800 text-xs font-medium focus:bg-white focus:outline-hidden transition-all ${
+          className={`w-full p-2.5 pr-14 rounded-2xl bg-[#E3EDF8] text-[#050C1A] text-xs font-bold focus:bg-[#CFE6FC] focus:outline-hidden transition-all ${
             disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-text'
           } ${inputClassName}`}
         />
@@ -208,9 +208,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 inputRef.current?.focus();
               }}
               title="Limpiar y ver todas las opciones"
-              className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-slate-200/80 transition-colors cursor-pointer"
+              className="p-1 rounded-lg text-[#334155] hover:text-white hover:bg-rose-600 transition-colors cursor-pointer"
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           )}
 
@@ -226,11 +226,11 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 inputRef.current?.focus();
               }
             }}
-            className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-slate-200/60 transition-transform duration-200"
+            className="p-1 rounded-lg text-[#0284C7] hover:text-white hover:bg-[#0284C7] transition-all duration-200 cursor-pointer"
           >
             <ChevronDown
               size={14}
-              className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#00668F]' : ''}`}
+              className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             />
           </button>
         </div>
@@ -248,22 +248,22 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
 
       {/* MENÚ DESPLEGABLE CON FILTRADO Y ESCRITURA LIBRE (Adaptable y Reactivo) */}
       {isOpen && !disabled && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-white rounded-xl p-1.5 space-y-1 max-h-64 overflow-y-auto scrollbar-thin shadow-xl border border-slate-200 min-w-[260px] w-full sm:w-max max-w-md animate-in fade-in-50 zoom-in-95">
+        <div className="absolute left-0 top-full mt-1.5 z-50 bg-[#08172B] text-white rounded-2xl p-2 space-y-1 max-h-64 overflow-y-auto scrollbar-thin min-w-[260px] w-full sm:w-max max-w-md animate-in fade-in-50 zoom-in-95">
           {/* Indicador de escritura rápida */}
           {searchTerm.trim() && !exactMatch && effectiveAllowCustomText && (
-            <div className="p-2 bg-sky-50 rounded-xl space-y-1.5 border border-sky-100">
+            <div className="p-2 bg-[#0F2747] rounded-xl space-y-1.5">
               <button
                 type="button"
                 onClick={handleUseCustomText}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#00668F] hover:bg-sky-100 flex items-center justify-between transition-colors cursor-pointer gap-2"
+                className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-extrabold text-cyan-300 hover:bg-[#0284C7] hover:text-white flex items-center justify-between transition-colors cursor-pointer gap-2"
               >
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="shrink-0">✍️ Usar:</span>
-                  <span className="truncate italic font-extrabold text-gray-900">
+                  <span className="truncate italic font-black text-white">
                     "{searchTerm.trim()}"
                   </span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 bg-white text-[#00668F] rounded-md shadow-2xs font-semibold shrink-0">
+                <span className="text-[10px] px-2 py-0.5 bg-white/15 text-cyan-200 rounded-full font-extrabold shrink-0">
                   Personalizado
                 </span>
               </button>
@@ -272,9 +272,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 <button
                   type="button"
                   onClick={handleSaveToCatalog}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 hover:bg-emerald-100 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-extrabold text-emerald-300 hover:bg-emerald-600 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Plus size={13} className="text-emerald-600 shrink-0" />
+                  <Plus size={13} className="shrink-0" />
                   <span className="truncate">
                     Guardar y usar en catálogo
                   </span>
@@ -285,7 +285,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
 
           {/* Opciones disponibles */}
           {filteredOptions.length > 0 ? (
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {filteredOptions.map((opt) => {
                 const isSelected =
                   value === opt.name ||
@@ -297,39 +297,39 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                     key={opt.id || opt.name}
                     type="button"
                     onClick={() => handleSelectOption(opt)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-extrabold flex items-center justify-between transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-[#00668F] text-white font-bold shadow-2xs'
-                        : 'text-gray-800 hover:bg-slate-100'
+                        ? 'bg-[#0284C7] text-white font-black'
+                        : 'text-sky-100 hover:bg-[#132E52] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">
                       <span className="truncate">{opt.name}</span>
                       {opt.code && (
                         <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
                             isSelected
                               ? 'bg-white/20 text-white'
-                              : 'bg-slate-200/70 text-slate-600'
+                              : 'bg-black/30 text-sky-300'
                           }`}
                         >
                           {opt.code}
                         </span>
                       )}
                     </div>
-                    {isSelected && <Check size={14} className="shrink-0" />}
+                    {isSelected && <Check size={14} className="shrink-0 text-cyan-200" />}
                   </button>
                 );
               })}
             </div>
           ) : !searchTerm.trim() ? (
-            <div className="p-4 text-center text-xs text-gray-400">
+            <div className="p-4 text-center text-xs text-sky-300/80 font-bold">
               No hay opciones configuradas.
             </div>
           ) : (
-            <div className="p-3 text-center text-xs text-gray-500">
+            <div className="p-3 text-center text-xs text-sky-200 font-bold">
               <span>No coincide con opciones existentes.</span>
-              <p className="text-[11px] text-gray-400 mt-1">
+              <p className="text-[11px] text-sky-300/80 mt-1">
                 Puedes seleccionarla arriba como valor personalizado o guardarla en el catálogo.
               </p>
             </div>

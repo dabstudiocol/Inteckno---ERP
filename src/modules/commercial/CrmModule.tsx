@@ -825,6 +825,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
   // Estados interactivos para gestión de etiquetas
   const [newEditTagInput, setNewEditTagInput] = useState('');
   const [newOppTagInput, setNewOppTagInput] = useState('');
+  const [newContactTagInput, setNewContactTagInput] = useState('');
 
   const SUGGESTED_TAGS = [
     'Licitación Pública',
@@ -835,6 +836,36 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
     'Ensayos No Destructivos (END)',
     'Internacional LATAM',
   ];
+
+  const SUGGESTED_CONTACT_TAGS = [
+    'Cliente VIP',
+    'Operador STC',
+    'Gobierno',
+    'Decisor Técnico',
+    'Compras / Licitaciones',
+    'Aliado OEM',
+    'Internacional LATAM',
+  ];
+
+  const handleAddTagToNewContact = (tagToAdd?: string) => {
+    const tag = (tagToAdd || newContactTagInput).trim();
+    if (!tag) return;
+    const currentTags = contactForm.tags || [];
+    if (!currentTags.includes(tag)) {
+      setContactForm({
+        ...contactForm,
+        tags: [...currentTags, tag],
+      });
+    }
+    setNewContactTagInput('');
+  };
+
+  const handleRemoveTagFromNewContact = (tagToRemove: string) => {
+    setContactForm({
+      ...contactForm,
+      tags: (contactForm.tags || []).filter((t) => t !== tagToRemove),
+    });
+  };
 
   const handleAddTagToEditingOpp = (tagToAdd?: string) => {
     const tag = (tagToAdd || newEditTagInput).trim();
@@ -2202,38 +2233,105 @@ export const CrmModule: React.FC<CrmModuleProps> = ({ activeTab: propActiveTab }
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Etiquetas (separadas por comas)</label>
-                  <input
-                    type="text"
-                    placeholder="Cliente VIP, Operador STC, Gobierno"
-                    value={contactForm.tags.join(', ')}
-                    onChange={(e) =>
-                      setContactForm({
-                        ...contactForm,
-                        tags: e.target.value
-                          .split(',')
-                          .map((t) => t.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                    className="w-full text-xs p-2.5 rounded-xl border border-gray-300 focus:outline-hidden focus:border-[#00668F]"
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-extrabold text-[#050C1A]">Etiquetas del Contacto</label>
+                    {contactForm.tags.length > 0 && (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#E0F2FE] text-[#0369A1]">
+                        {contactForm.tags.length} asignada(s)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Input interactivo + Botón Añadir */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Escribir etiqueta y pulsar Enter o Añadir..."
+                      value={newContactTagInput}
+                      onChange={(e) => setNewContactTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTagToNewContact();
+                        }
+                      }}
+                      className="flex-1 text-xs p-2.5 rounded-2xl bg-[#E3EDF8] text-[#050C1A] font-bold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddTagToNewContact()}
+                      className="px-3.5 py-2.5 bg-[#0284C7] hover:bg-[#0369A1] text-white font-black text-xs rounded-2xl transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                    >
+                      <Plus size={14} />
+                      <span>Añadir</span>
+                    </button>
+                  </div>
+
+                  {/* Etiquetas añadidas con botón X para quitar */}
+                  {contactForm.tags && contactForm.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {contactForm.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[#0284C7] text-white"
+                        >
+                          <span>#{tag}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTagFromNewContact(tag)}
+                            className="w-4 h-4 rounded-full bg-white/20 hover:bg-rose-500 text-white flex items-center justify-center transition-colors cursor-pointer"
+                            title="Quitar etiqueta"
+                          >
+                            <X size={10} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sugerencias rápidas de 1 clic */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10.5px] text-[#334155] font-extrabold">Añadir rápido:</span>
+                    {SUGGESTED_CONTACT_TAGS.map((sug) => {
+                      const isSelected = (contactForm.tags || []).includes(sug);
+                      return (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              handleRemoveTagFromNewContact(sug);
+                            } else {
+                              handleAddTagToNewContact(sug);
+                            }
+                          }}
+                          className={`text-[10.5px] px-2.5 py-1 rounded-full font-extrabold transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284C7] text-white'
+                              : 'bg-[#EBF2FA] hover:bg-[#0284C7] text-[#035388] hover:text-white'
+                          }`}
+                        >
+                          {isSelected ? `✓ ${sug}` : `+ ${sug}`}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
               {/* Pie Fijo Siempre Visible */}
-              <div className="flex items-center justify-end gap-2 px-5 py-3 bg-gray-50 border-t border-gray-200/80 shrink-0">
+              <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-[#EBF2FA] shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsNewContactModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200/70 rounded-xl cursor-pointer"
+                  className="px-4 py-2.5 text-xs font-extrabold text-[#050C1A] bg-white hover:bg-rose-600 hover:text-white rounded-2xl transition-all cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold bg-[#00668F] text-white rounded-xl shadow-xs hover:bg-[#005273] cursor-pointer"
+                  className="px-5 py-2.5 text-xs font-black bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-2xl transition-all cursor-pointer"
                 >
                   Guardar Contacto
                 </button>

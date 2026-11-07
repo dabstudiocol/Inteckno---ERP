@@ -101,7 +101,7 @@ export function LightTable<T>({
       </div>
 
       {/* VISTA TABLET & DESKTOP (>= 768px): Tabla Capsule Enterprise */}
-      <div className="hidden md:block w-full max-w-full min-w-0 overflow-x-auto rounded-3xl bg-white p-1">
+      <div className="hidden md:block w-full max-w-full min-w-0 overflow-x-auto rounded-3xl bg-white overflow-hidden">
         <table className="w-full text-left min-w-full">
           <thead>
             <tr className="bg-[#DCE8F6]">
