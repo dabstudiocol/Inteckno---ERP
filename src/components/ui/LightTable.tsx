@@ -110,7 +110,7 @@ export function LightTable<T>({
       <div className="hidden md:block w-full max-w-full min-w-0 overflow-x-auto rounded-xl bg-white shadow-2xs">
         <table className="w-full text-left border-collapse min-w-full">
           <thead>
-            <tr className="bg-[#F8FAFC]">
+            <tr className="bg-[#F8FAFC]/90 backdrop-blur-xs border-b border-slate-200/80">
               {columns.map((col) => (
                 <th
                   key={col.key}

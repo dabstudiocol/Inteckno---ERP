@@ -576,12 +576,16 @@ export const AppShell: React.FC<AppShellProps> = ({
         {/* Parte Superior: Marca Inteckno y Perfil Activo */}
         <div className="flex flex-col h-full overflow-hidden">
           
-          {/* Logo y Encabezado de la Empresa (Logo transparente integrado al fondo del panel) */}
+          {/* Logo y Encabezado de la Empresa (Logo transparente integrado al fondo del panel con indicador de latido cloud) */}
           {(!isSidebarCollapsed || isMobileDrawerOpen) ? (
-            <div className="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between min-h-[76px]">
+            <div className="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between min-h-[76px] bg-[#070E12]">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="h-12 w-14 flex items-center justify-center shrink-0">
+                <div className="h-12 w-14 flex items-center justify-center shrink-0 relative">
                   <img src="/inteckno-icon.png" alt="Inteckno" className="h-full w-auto max-w-full object-contain" />
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2" title="Conexión reactiva en tiempo real">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                  </span>
                 </div>
                 <div className="min-w-0">
                   <span className="text-lg font-black tracking-wider text-white block leading-tight truncate">
@@ -828,7 +832,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                       isSidebarCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2 justify-between'
                     } ${
                       isHubActive
-                        ? 'bg-[#14232F] text-white font-bold shadow-xs'
+                        ? 'bg-[#14232F] text-white font-bold shadow-xs border-l-2 border-[#00668F]'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-[#0E171E]'
                     }`}
                   >
@@ -993,8 +997,8 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* ========================================================================= */}
       <main className="flex-1 w-full max-w-full min-w-0 bg-[#F4F6F9] flex flex-col h-full overflow-hidden relative transition-all duration-300">
         
-        {/* Encabezado Superior con Toggle Rápido del Panel */}
-        <header className="px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-20">
+        {/* Encabezado Superior con Toggle Rápido del Panel - Glassmorphism nítido */}
+        <header className="px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-20">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Botón Hamburger para Móvil / Tablet */}
             <button

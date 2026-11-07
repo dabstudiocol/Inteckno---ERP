@@ -85,7 +85,7 @@ export const PastelMetricCard: React.FC<PastelMetricCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`relative p-3 sm:p-3.5 rounded-xl ${styles.bg} transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden min-h-[110px] sm:min-h-[125px] hover:opacity-95`}
+      className={`relative p-3.5 sm:p-4 rounded-2xl ${styles.bg} transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden min-h-[118px] sm:min-h-[130px] hover:shadow-md hover:-translate-y-0.5`}
     >
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-1">
