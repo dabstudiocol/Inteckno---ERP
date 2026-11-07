@@ -27,8 +27,6 @@ export const RequisitionsModule: React.FC = () => {
     itemConcept?: string;
     itemCode?: string;
     justification?: string;
-    originWorkOrderId?: string;
-    originWorkOrderCode?: string;
     originDdrId?: string;
     originDdrNumber?: string;
     originDdrReporter?: string;
@@ -38,7 +36,7 @@ export const RequisitionsModule: React.FC = () => {
 
   React.useEffect(() => {
     if (navigationContext && navigationContext.targetModule === 'requisiciones') {
-      if (navigationContext.action === 'create_solped' || navigationContext.action === 'create_req_from_ot') {
+      if (navigationContext.action === 'create_solped') {
         const proj = navigationContext.data?.project;
         setInitialModalData({
           projectId: proj?.id || navigationContext.data?.projectId,
@@ -46,8 +44,6 @@ export const RequisitionsModule: React.FC = () => {
           itemConcept: navigationContext.data?.itemConcept,
           itemCode: navigationContext.data?.itemCode,
           justification: navigationContext.data?.justification || navigationContext.data?.description,
-          originWorkOrderId: navigationContext.data?.otId || navigationContext.data?.originWorkOrderId,
-          originWorkOrderCode: navigationContext.data?.otCode || navigationContext.data?.originWorkOrderCode,
           originDdrId: navigationContext.data?.originDdrId,
           originDdrNumber: navigationContext.data?.originDdrNumber,
           originDdrReporter: navigationContext.data?.originDdrReporter,
@@ -286,8 +282,6 @@ export const RequisitionsModule: React.FC = () => {
         initialItemConcept={initialModalData.itemConcept}
         initialItemCode={initialModalData.itemCode}
         initialJustification={initialModalData.justification}
-        originWorkOrderId={initialModalData.originWorkOrderId}
-        originWorkOrderCode={initialModalData.originWorkOrderCode}
         originDdrId={initialModalData.originDdrId}
         originDdrNumber={initialModalData.originDdrNumber}
         originDdrReporter={initialModalData.originDdrReporter}

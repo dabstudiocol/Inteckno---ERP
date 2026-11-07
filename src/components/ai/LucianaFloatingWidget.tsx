@@ -58,7 +58,6 @@ const getModuleFriendlyLabel = (modId: string): string => {
     calendario: 'Calendario',
     documentos: 'Documentos',
     actividades: 'Actividades',
-    articulos: 'Artículos',
     crm: 'CRM',
     contactos: 'Contactos',
     proyectos: 'Proyectos',
@@ -648,7 +647,6 @@ export const LucianaFloatingWidget: React.FC<LucianaFloatingWidgetProps> = ({
   const getModuleQuickPills = (): { label: string; question: string }[] => {
     switch (activeModuleId) {
       case 'crm':
-      case 'ventas':
         return [
           { label: '💼 Crear Oportunidad', question: 'Crea una oportunidad comercial para Inspección Magnetográfica MRT en Teleférico con Consorcio Occidental por $55.000.000 COP' },
           { label: '📇 Registrar Contacto', question: 'Guarda a Carlos Mendoza de Metrocable Medellín como Director de Operaciones STC' },

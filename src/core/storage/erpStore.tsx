@@ -100,16 +100,14 @@ import {
   CalendarEvent,
   CalendarReminderToast,
   TodoItem,
-  WikiArticle,
   InternationalLead,
   EmployeeRecord,
   PayrollNovelty,
-  MaintenancePlan,
   DispatchRemission,
   RemissionItem,
   ChatGroup,
   UserPreferences,
-  InventoryAuditLog,  WorkOrderOT,  ManufacturingOrder,  BenchTestRecord,  SstInspectionRecord,  InventoryWriteOffRequest,  JobPosition,  JobApplicationCandidate,} from '../../types';
+  InventoryAuditLog,  SstInspectionRecord,  InventoryWriteOffRequest,  JobPosition,  JobApplicationCandidate,} from '../../types';
 import { INITIAL_JOB_POSITIONS } from '../../modules/inteckno/CargosModule';
 import {
   SEED_USERS,
@@ -117,8 +115,6 @@ import {
   SEED_EQUIPMENT,
   SEED_CONTACTS,
   SEED_CHAT_GROUPS,
-  SEED_ARTICLES,
-  SEED_MAINTENANCE_PLANS,
 } from '../../seed/intecknoData';
 import { BusinessRulesEngine } from '../rules/businessRules';
 import { domainEventBus } from '../events/eventBus';
@@ -262,9 +258,6 @@ interface ErpState {
 
   // Huella Digital Inmutable de Inventario (Audit Trail)
   inventoryAuditLogs: InventoryAuditLog[];
-  workOrders: WorkOrderOT[];
-  manufacturingOrders: ManufacturingOrder[];
-  benchTests: BenchTestRecord[];
   inventoryWriteOffs: InventoryWriteOffRequest[];
   sstInspections: SstInspectionRecord[];
   jobPositions: JobPosition[];
@@ -281,11 +274,9 @@ interface ErpState {
   documents: DocumentItem[];
   todos: TodoItem[];
   calendarEvents: CalendarEvent[];
-  articles: WikiArticle[];
   leads: InternationalLead[];
   employees: EmployeeRecord[];
   novelties: PayrollNovelty[];
-  maintenancePlans: MaintenancePlan[];
   navigationContext: {
     targetModule: string;
     action: string;
@@ -320,15 +311,6 @@ export interface ErpContextType extends ErpState {
   dismissChatToast: () => void;
   simulateColleagueMessage: (channelId?: string, text?: string) => void;
 
-  // OPERACIONES AVANZADAS (OT, MANUFACTURA, BANCO DE PRUEBAS)
-  createWorkOrder: (ot: Omit<WorkOrderOT, 'id' | 'createdAt'>) => WorkOrderOT;
-  updateWorkOrder: (id: string, data: Partial<WorkOrderOT>) => void;
-  deleteWorkOrder: (id: string) => void;
-  createManufacturingOrder: (mo: Omit<ManufacturingOrder, 'id' | 'createdAt'>) => ManufacturingOrder;
-  updateManufacturingOrder: (id: string, data: Partial<ManufacturingOrder>) => void;
-  deleteManufacturingOrder: (id: string) => void;
-  createBenchTest: (test: Omit<BenchTestRecord, 'id'>) => BenchTestRecord;
-  deleteBenchTest: (id: string) => void;
 
   // BAJAS DE INVENTARIO (KARDEX & GERENCIA)
   createInventoryWriteOff: (solicitud: Omit<InventoryWriteOffRequest, 'id' | 'fechaSolicitud'>) => InventoryWriteOffRequest;
@@ -473,9 +455,6 @@ export interface ErpContextType extends ErpState {
   batchMergeCalendarEvents: (events: CalendarEvent[]) => void;
   triggerCalendarReminderToast: (toast: CalendarReminderToast) => void;
   dismissCalendarReminderToast: () => void;
-  addArticle: (art: Omit<WikiArticle, 'id' | 'updatedAt'>) => void;
-  updateArticle: (id: string, data: Partial<WikiArticle>) => void;
-  deleteArticle: (id: string) => void;
 
   // TALENTO HUMANO & MANTENIMIENTO
   createEmployee: (emp: Omit<EmployeeRecord, 'id'>) => void;
@@ -486,8 +465,6 @@ export interface ErpContextType extends ErpState {
   approvePayrollNovelty: (id: string, approverName: string) => void;
   rejectPayrollNovelty: (id: string, approverName: string, reason?: string) => void;
   deletePayrollNovelty: (id: string) => void;
-  createMaintenancePlan: (plan: Partial<MaintenancePlan>) => void;
-  completeMaintenance: (id: string) => void;
 
   // SISTEMA DESHACER / REHACER (MULTI-USUARIO AISLADO)
   canUndo: boolean;
@@ -572,16 +549,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       documents: [],
       todos: [],
       calendarEvents: [],
-      articles: SEED_ARTICLES,
       leads: [],
       employees: buildInitialEmployeesFromUsers(SEED_USERS),
       novelties: [],
-      maintenancePlans: SEED_MAINTENANCE_PLANS,
       remissions: [],
       inventoryAuditLogs: [],
-      workOrders: [],
-      manufacturingOrders: [],
-      benchTests: [],
       inventoryWriteOffs: [],
       sstInspections: [],
       jobPositions: INITIAL_JOB_POSITIONS,
@@ -705,11 +677,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           documents: Array.isArray(parsed.documents) ? parsed.documents : [],
           todos: Array.isArray(parsed.todos) ? parsed.todos : [],
           calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : [],
-          articles: Array.isArray(parsed.articles) && parsed.articles.length > 0 ? parsed.articles : SEED_ARTICLES,
           leads: Array.isArray(parsed.leads) ? parsed.leads : [],
           employees: Array.isArray(parsed.employees) && parsed.employees.length > 0 ? parsed.employees : buildInitialEmployeesFromUsers(SEED_USERS),
           novelties: Array.isArray(parsed.novelties) ? parsed.novelties : [],
-          maintenancePlans: Array.isArray(parsed.maintenancePlans) && parsed.maintenancePlans.length > 0 ? parsed.maintenancePlans : SEED_MAINTENANCE_PLANS,
           remissions: Array.isArray(parsed.remissions) ? parsed.remissions : [],
           inventoryAuditLogs: Array.isArray(parsed.inventoryAuditLogs) ? parsed.inventoryAuditLogs : [],
         };
@@ -910,12 +880,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.operations.expenses)) { next.expenses = cloudData.operations.expenses; hasChanges = true; }
           if (Array.isArray(cloudData.operations.ddrs)) { next.ddrs = cloudData.operations.ddrs; hasChanges = true; }
           if (Array.isArray(cloudData.operations.remissions)) { next.remissions = cloudData.operations.remissions; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.maintenancePlans)) { next.maintenancePlans = cloudData.operations.maintenancePlans; hasChanges = true; }
           if (Array.isArray(cloudData.operations.employees)) { next.employees = cloudData.operations.employees; hasChanges = true; }
           if (Array.isArray(cloudData.operations.novelties)) { next.novelties = cloudData.operations.novelties; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.workOrders)) { next.workOrders = cloudData.operations.workOrders; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.manufacturingOrders)) { next.manufacturingOrders = cloudData.operations.manufacturingOrders; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.benchTests)) { next.benchTests = cloudData.operations.benchTests; hasChanges = true; }
         }
 
         // HR (Talento Humano & SST)
@@ -954,7 +920,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.productivity.todos)) { next.todos = cloudData.productivity.todos; hasChanges = true; }
           if (Array.isArray(cloudData.productivity.calendarEvents)) { next.calendarEvents = cloudData.productivity.calendarEvents; hasChanges = true; }
           if (Array.isArray(cloudData.productivity.documents)) { next.documents = cloudData.productivity.documents; hasChanges = true; }
-          if (Array.isArray(cloudData.productivity.articles)) { next.articles = cloudData.productivity.articles; hasChanges = true; }
           if (Array.isArray(cloudData.productivity.chatGroups)) { next.chatGroups = cloudData.productivity.chatGroups; hasChanges = true; }
         }
 
@@ -1282,10 +1247,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         expenses: Array.isArray(data.expenses) ? data.expenses : prev.expenses,
         ddrs: Array.isArray(data.ddrs) ? data.ddrs : prev.ddrs,
         remissions: Array.isArray(data.remissions) ? data.remissions : prev.remissions,
-        maintenancePlans: Array.isArray(data.maintenancePlans) ? data.maintenancePlans : prev.maintenancePlans,
-        workOrders: Array.isArray(data.workOrders) ? data.workOrders : prev.workOrders,
-        manufacturingOrders: Array.isArray(data.manufacturingOrders) ? data.manufacturingOrders : prev.manufacturingOrders,
-        benchTests: Array.isArray(data.benchTests) ? data.benchTests : prev.benchTests,
       }));
     });
 
@@ -1301,7 +1262,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
     });
 
-    // 8. Suscribirse a Productividad (Tareas To-Do, Calendario, Documentos, Wiki, Canales de Chat) en tiempo real
+    // 8. Suscribirse a Productividad (Tareas To-Do, Calendario, Documentos, Canales de Chat) en tiempo real
     const unsubProductivity = subscribeToCloudModule('productivity', (data) => {
       if (!isMounted || !data) return;
       isRemoteUpdateRef.current = true;
@@ -1310,7 +1271,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         todos: Array.isArray(data.todos) ? data.todos : prev.todos,
         calendarEvents: Array.isArray(data.calendarEvents) ? data.calendarEvents : prev.calendarEvents,
         documents: Array.isArray(data.documents) ? data.documents : prev.documents,
-        articles: Array.isArray(data.articles) && data.articles.length > 0 ? data.articles : prev.articles,
         chatGroups: Array.isArray(data.chatGroups) && data.chatGroups.length > 0 ? data.chatGroups : prev.chatGroups,
       }));
     });
@@ -1369,10 +1329,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         expenses: state.expenses,
         ddrs: state.ddrs,
         remissions: state.remissions,
-        maintenancePlans: state.maintenancePlans,
-        workOrders: state.workOrders,
-        manufacturingOrders: state.manufacturingOrders,
-        benchTests: state.benchTests,
       }, currentUserId);
 
       syncModuleToCloud('hr', {
@@ -1393,7 +1349,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         todos: state.todos,
         calendarEvents: state.calendarEvents,
         documents: state.documents,
-        articles: state.articles,
         chatGroups: state.chatGroups,
       }, currentUserId);
     }, 1500);
@@ -1411,7 +1366,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.expenses,
     state.ddrs,
     state.remissions,
-    state.maintenancePlans,
     state.employees,
     state.opportunities,
     state.contacts,
@@ -1419,7 +1373,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.todos,
     state.calendarEvents,
     state.documents,
-    state.articles,
     state.chatGroups,
     state.currentUser?.id,
   ]);
@@ -1792,9 +1745,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     contactos: 'contactos',
     contacts: 'contactos',
     clientes: 'contactos',
-    ventas: 'ventas',
-    sales: 'ventas',
-    cotizaciones: 'ventas',
     inventory: 'inventario',
     inventario: 'inventario',
     almacen: 'inventario',
@@ -1838,8 +1788,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     tasks: 'actividades',
     actividades: 'actividades',
     todos: 'actividades',
-    wiki: 'articulos',
-    articulos: 'articulos',
     positions: 'cargos',
     cargos: 'cargos',
     profile: 'perfil',
@@ -1851,13 +1799,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     'hseq-gate': 'encuestas',
     hseq: 'encuestas',
     encuestas: 'encuestas',
-    mantenimiento: 'mantenimiento',
-    reparacion: 'reparacion',
-    manufactura: 'manufactura',
-    taller: 'taller',
-    plm: 'plm',
-    operaciones: 'mantenimiento',
-    operations: 'mantenimiento',
+    operaciones: 'proyectos',
+    operations: 'proyectos',
     gantt: 'planeacion',
     planeacion: 'planeacion',
     planning: 'planeacion',
@@ -2817,30 +2760,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const reportNumber = `DDR-2026-${String(count).padStart(3, '0')}`;
       const ddrId = `DDR-${Date.now()}`;
 
-      // Eje 7: Si se detecta anomalía operativa o vibración crítica, generar Orden de Trabajo Correctiva automática
-      let generatedOt: WorkOrderOT | undefined;
       const hasAnomaly = ddrData.anomalyDetected || ddrData.incidentsReported || (ddrData.incidentNotes && ddrData.incidentNotes.trim().length > 0);
-      if (hasAnomaly) {
-        const otCount = state.workOrders.length + 1;
-        const otCode = `OT-${new Date().getFullYear()}-${String(otCount).padStart(3, '0')}`;
-        generatedOt = {
-          id: `OT-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-          code: otCode,
-          projectId: ddrData.projectId,
-          projectCode: ddrData.projectCode,
-          component: ddrData.anomalyComponent || 'Balancín / Pilona STC',
-          priority: ddrData.anomalySeverity === 'critica' || ddrData.incidentsReported ? 'urgente' : 'alta',
-          technician: 'Ing. Wilson Alzate (USR-18)',
-          description: `[OT Correctiva disparada por DDR ${reportNumber}]: ${ddrData.incidentNotes || ddrData.activitiesDone || 'Anomalía reportada en campo por técnico'}`,
-          status: 'diagnostico',
-          createdAt: new Date().toISOString(),
-          originDdrId: ddrId,
-          originDdrNumber: reportNumber,
-          originReporterName: ddrData.reporterName,
-          originDate: ddrData.date,
-          originFinding: ddrData.incidentNotes || 'Vibración / Anomalía en balancín detectada en inspección',
-        };
-      }
 
       const newDdr: DailyProgressReport = {
         ...ddrData,
@@ -2848,14 +2768,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reportNumber,
         approvedByLeader: false,
         anomalyDetected: hasAnomaly,
-        generatedWorkOrderId: generatedOt?.id,
-        generatedWorkOrderCode: generatedOt?.code,
       };
 
       if (ddrData.weather === 'tormenta_electrica') {
         notify('warning', 'Alerta Climatológica STC', 'Labores en alturas suspendidas por tormenta eléctrica.');
-      } else if (generatedOt) {
-        notify('urgent', 'Alerta Operativa en Campo (Eje 7)', `${reportNumber}: Se disparó OT Correctiva ${generatedOt.code} asignada a Ingeniería.`);
+      } else if (hasAnomaly) {
+        notify('urgent', 'Alerta Operativa en Campo', `${reportNumber}: Se reportó una anomalía operativa. Requiere revisión de Ingeniería.`);
       } else {
         notify('success', 'DDR Enviado', `Reporte ${reportNumber} radicado. En espera de visto bueno del Ingeniero.`);
       }
@@ -2863,10 +2781,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState((prev) => ({
         ...prev,
         ddrs: [newDdr, ...prev.ddrs],
-        workOrders: generatedOt ? [generatedOt, ...prev.workOrders] : prev.workOrders,
       }));
     },
-    [state.ddrs.length, state.workOrders.length, notify]
+    [state.ddrs.length, notify]
   );
 
   const approveDDR = useCallback(
@@ -3398,11 +3315,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
 
-        // Coreografía de Trazabilidad: Eje 5 (Mantenimiento, Activos y HSEQ)
+        // Coreografía de Trazabilidad: Eje 5 (Activos y HSEQ)
         // Si la OC compra una herramienta costosa/activo (ej. torquímetro), se registra en equipment con nextDueDate
-        // y se programa plan preventivo a 30 días antes con notificación HSEQ
+        // y se notifica a HSEQ para su control de calibración
         const newEquipmentTools: EquipmentTool[] = [];
-        const newMaintenancePlans: any[] = [];
         const newNotifications: any[] = [];
 
         po.items.forEach((it, idx) => {
@@ -3429,26 +3345,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               dailyUsageCostCOP: Math.round((it.unitPriceCOP || 100000) * 0.03), // 3% depreciación/uso diario
             });
 
-            // 30 días antes de nextDueDate -> Generar maintenancePlan preventivo automático y notificar HSEQ
-            const advanceAlertDate = new Date(nextDue.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-            newMaintenancePlans.push({
-              id: `MP-AUTO-${Date.now()}-${idx}`,
-              code: `MP-CAL-${eqCode}`,
-              projectCode: po.projectCode || 'TALLER-CENTRAL',
-              systemName: `Metrología y Calibración NDT (${it.name})`,
-              component: 'Pinzas Desembragables',
-              equipmentCode: eqCode,
-              maintenanceType: 'preventivo',
-              scheduledDate: advanceAlertDate,
-              status: 'programado',
-              observations: `Alerta preventiva generada automáticamente: Re-calibración obligatoria antes de ${nextDueDateStr} según Eje 5 HSEQ.`,
-            });
-
             newNotifications.push({
               id: `notif-eq-${Date.now()}-${idx}`,
               type: 'urgent',
               title: 'Metrología y Calibración HSEQ',
-              message: `Herramienta de precisión recibida: ${it.name} (${eqCode}). Próxima calibración obligatoria: ${nextDueDateStr}. Plan preventivo programado.`,
+              message: `Herramienta de precisión recibida: ${it.name} (${eqCode}). Próxima calibración obligatoria: ${nextDueDateStr}. Revisar re-calibración antes de la fecha indicada.`,
               targetRole: 'hseq',
               timestamp: new Date().toISOString(),
               read: false,
@@ -3460,7 +3361,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev,
           products: [...updatedProducts, ...newProductsToAdd],
           equipment: [...prev.equipment, ...newEquipmentTools],
-          maintenancePlans: [...(prev.maintenancePlans || []), ...newMaintenancePlans],
           notifications: [...prev.notifications, ...newNotifications],
           purchaseOrders: prev.purchaseOrders.map((p) =>
             p.id === poId ? { ...p, status: 'received', deliveryStatus: 'entregado', physicalReceiptDone: true, technicalQualityInspectionDone: true } : p
@@ -5856,51 +5756,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
-  const addArticle = useCallback(
-    (artData: Omit<WikiArticle, 'id' | 'updatedAt'>) => {
-      const newArt: WikiArticle = {
-        ...artData,
-        id: `ART-${Date.now()}`,
-        updatedAt: new Date().toISOString().split('T')[0],
-      };
-      setState((prev) => ({
-        ...prev,
-        articles: [newArt, ...prev.articles],
-      }));
-      notify('success', 'Artículo Publicado', `"${newArt.title}" agregado a la Wiki STC.`);
-    },
-    [notify]
-  );
-
-  const updateArticle = useCallback(
-    (id: string, data: Partial<WikiArticle>) => {
-      setState((prev) => ({
-        ...prev,
-        articles: prev.articles.map((a) =>
-          a.id === id
-            ? {
-                ...a,
-                ...data,
-                updatedAt: data.updatedAt || new Date().toISOString().split('T')[0],
-              }
-            : a
-        ),
-      }));
-    },
-    []
-  );
-
-  const deleteArticle = useCallback(
-    (id: string) => {
-      setState((prev) => ({
-        ...prev,
-        articles: prev.articles.filter((a) => a.id !== id),
-      }));
-      notify('info', 'Artículo Retirado', 'Artículo eliminado de la base de conocimiento.');
-    },
-    [notify]
-  );
-
   const updateProject = useCallback((id: string, data: Partial<Project>) => {
     setState((prev) => {
       const nowStr = new Date().toISOString();
@@ -6187,105 +6042,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [notify]
   );
 
-  const createMaintenancePlan = useCallback(
-    (planData: Partial<MaintenancePlan>) => {
-      const newPlan: MaintenancePlan = {
-        id: planData.id || `MP-${Date.now()}`,
-        code: planData.code || `MP-${new Date().getFullYear()}-${String(state.maintenancePlans.length + 1).padStart(3, '0')}`,
-        projectCode: planData.projectCode || 'STC-GENERAL',
-        systemName: planData.systemName || 'Teleférico Monocable Desembragable',
-        component: (planData.component as any) || 'Pinzas Desembragables',
-        frequency: (planData.frequency as any) || 'Semestral',
-        lastDoneDate: planData.lastDoneDate || new Date().toISOString().split('T')[0],
-        nextDueDate: planData.nextDueDate || new Date(Date.now() + 180 * 24 * 3600 * 1000).toISOString().split('T')[0],
-        responsibleTechnician: planData.responsibleTechnician || state.currentUser?.name || 'Técnico Especialista STC',
-        status: (planData.status as any) || 'al_dia',
-      };
-
-      setState((prev) => ({
-        ...prev,
-        maintenancePlans: [newPlan, ...prev.maintenancePlans],
-      }));
-      notify('success', 'Plan de Mantenimiento Creado', `Se programó el mantenimiento ${newPlan.code} para ${newPlan.component}.`);
-    },
-    [state.maintenancePlans, state.currentUser, notify]
-  );
-
-  
   // OPERACIONES AVANZADAS: WORK ORDERS, MANUFACTURA Y BANCO DE PRUEBAS
-  const createWorkOrder = useCallback((otData: Omit<WorkOrderOT, 'id' | 'createdAt'>): WorkOrderOT => {
-    const newOt: WorkOrderOT = {
-      ...otData,
-      id: `OT-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-      createdAt: new Date().toISOString(),
-    };
-    setState((prev) => ({
-      ...prev,
-      workOrders: [newOt, ...prev.workOrders],
-    }));
-    return newOt;
-  }, []);
-
-  const updateWorkOrder = useCallback((id: string, data: Partial<WorkOrderOT>) => {
-    setState((prev) => ({
-      ...prev,
-      workOrders: prev.workOrders.map((ot) => (ot.id === id ? { ...ot, ...data } : ot)),
-    }));
-  }, []);
-
-  const deleteWorkOrder = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      workOrders: prev.workOrders.filter((ot) => ot.id !== id),
-    }));
-  }, []);
-
-  const createManufacturingOrder = useCallback((moData: Omit<ManufacturingOrder, 'id' | 'createdAt'>): ManufacturingOrder => {
-    const newMo: ManufacturingOrder = {
-      ...moData,
-      id: `MO-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-      createdAt: new Date().toISOString(),
-    };
-    setState((prev) => ({
-      ...prev,
-      manufacturingOrders: [newMo, ...prev.manufacturingOrders],
-    }));
-    return newMo;
-  }, []);
-
-  const updateManufacturingOrder = useCallback((id: string, data: Partial<ManufacturingOrder>) => {
-    setState((prev) => ({
-      ...prev,
-      manufacturingOrders: prev.manufacturingOrders.map((mo) => (mo.id === id ? { ...mo, ...data } : mo)),
-    }));
-  }, []);
-
-  const deleteManufacturingOrder = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      manufacturingOrders: prev.manufacturingOrders.filter((mo) => mo.id !== id),
-    }));
-  }, []);
-
-  const createBenchTest = useCallback((testData: Omit<BenchTestRecord, 'id'>): BenchTestRecord => {
-    const newTest: BenchTestRecord = {
-      ...testData,
-      id: `TEST-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-    };
-    setState((prev) => ({
-      ...prev,
-      benchTests: [newTest, ...prev.benchTests],
-    }));
-    return newTest;
-  }, []);
-
-  const deleteBenchTest = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      benchTests: prev.benchTests.filter((t) => t.id !== id),
-    }));
-  }, []);
-
   // BAJAS DE INVENTARIO (KARDEX & GERENCIA)
   const createInventoryWriteOff = useCallback((solicitud: Omit<InventoryWriteOffRequest, 'id' | 'fechaSolicitud'>): InventoryWriteOffRequest => {
     const newReq: InventoryWriteOffRequest = {
@@ -6412,25 +6169,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ),
     }));
   }, []);
-
-  const completeMaintenance = useCallback(
-    (id: string) => {
-      setState((prev) => ({
-        ...prev,
-        maintenancePlans: prev.maintenancePlans.map((m) =>
-          m.id === id
-            ? {
-                ...m,
-                status: 'al_dia',
-                lastDoneDate: new Date().toISOString().split('T')[0],
-              }
-            : m
-        ),
-      }));
-      notify('success', 'Mantenimiento Ejecutado', 'Se registró la inspección técnica y se reprogramó el ciclo.');
-    },
-    [notify]
-  );
 
   const executeUndo = useCallback((): { success: boolean; message: string } => {
     if (!state.currentUser?.id) {
@@ -6878,9 +6616,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         batchMergeCalendarEvents,
         triggerCalendarReminderToast,
         dismissCalendarReminderToast,
-        addArticle,
-        updateArticle,
-        deleteArticle,
         createEmployee,
         updateEmployee,
         seedEmployeesFromUsers,
@@ -6888,16 +6623,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approvePayrollNovelty,
         rejectPayrollNovelty,
         deletePayrollNovelty,
-        createMaintenancePlan,
-        completeMaintenance,
-        createWorkOrder,
-        updateWorkOrder,
-        deleteWorkOrder,
-        createManufacturingOrder,
-        updateManufacturingOrder,
-        deleteManufacturingOrder,
-        createBenchTest,
-        deleteBenchTest,
         createInventoryWriteOff,
         approveInventoryWriteOff,
         rejectInventoryWriteOff,

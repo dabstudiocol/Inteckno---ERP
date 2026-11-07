@@ -24,8 +24,6 @@ interface CreateRequisitionModalProps {
   initialItemConcept?: string;
   initialItemCode?: string;
   initialJustification?: string;
-  originWorkOrderId?: string;
-  originWorkOrderCode?: string;
   originDdrId?: string;
   originDdrNumber?: string;
   originDdrReporter?: string;
@@ -51,8 +49,6 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
   initialItemConcept,
   initialItemCode,
   initialJustification,
-  originWorkOrderId,
-  originWorkOrderCode,
   originDdrId,
   originDdrNumber,
   originDdrReporter,
@@ -270,8 +266,6 @@ export const CreateRequisitionModal: React.FC<CreateRequisitionModalProps> = ({
       requisitionType: effectiveReqType,
       items: formattedItems,
       notes: justification || (isProj ? `Materiales [${effectiveReqType}] para ${selectedProject?.name}` : `Insumos [${effectiveReqType}] para ${department}`),
-      originWorkOrderId,
-      originWorkOrderCode,
       originDdrId,
       originDdrNumber,
       originDdrReporter,

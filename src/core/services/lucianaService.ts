@@ -1,6 +1,6 @@
 import { getGeminiApiKey, getBestAvailableModel } from './geminiChatService';
 import { canUserAccessModule } from '../auth/rbac';
-import { User, Project, CalendarEvent, TodoItem, ExpenseEntry, InternalRequisition, WikiArticle, WikiArticleChecklistStep, JobPosition, LucianaImprovementPlan, JobApplicationCandidate, EmployeeCertification, PerformanceEvaluation, Opportunity, OpportunityActivity, OpportunityQuotation, OpportunityPliegoAnalysis, OpportunityStakeholder, CRMContact, Product, InventoryAuditLog, EquipmentTool, PurchaseOrder, DispatchRemission, DailyProgressReport, TimesheetEntry, BillingMilestone, WBSTask, DocumentItem } from '../../types';
+import { User, Project, CalendarEvent, TodoItem, ExpenseEntry, InternalRequisition, JobPosition, LucianaImprovementPlan, JobApplicationCandidate, EmployeeCertification, PerformanceEvaluation, Opportunity, OpportunityActivity, OpportunityQuotation, OpportunityPliegoAnalysis, OpportunityStakeholder, CRMContact, Product, InventoryAuditLog, EquipmentTool, PurchaseOrder, DispatchRemission, DailyProgressReport, TimesheetEntry, BillingMilestone, WBSTask, DocumentItem } from '../../types';
 import {
   getM365Config,
   isM365TokenExpired,
@@ -448,7 +448,7 @@ PARÁMETROS POR TIPO DE ACCIÓN:
 - clear_calendar_events_by_date:
   parameters: { "date": "YYYY-MM-DD" }
 - navigate_module:
-  parameters: { "moduleId": "calendario" | "documentos" | "actividades" | "articulos" | "crm" | "contactos" | "proyectos" | "registro-horas" | "inventario" | "compras" | "gastos" | "contabilidad" | "tableros" }
+  parameters: { "moduleId": "calendario" | "documentos" | "actividades" | "crm" | "contactos" | "proyectos" | "registro-horas" | "inventario" | "compras" | "gastos" | "contabilidad" | "tableros" }
 - create_todo:
   parameters: { "title": string, "priority": "alta" | "media" | "baja", "dueDate": "YYYY-MM-DD", "assignedToUserId": "USR-xxx", "projectCode": "PRJ-xxx" }
 - submit_expense:
@@ -745,13 +745,13 @@ function getHeuristicResponse(
   if (q.includes('inteckno') || q.includes('induccion') || (q.includes('empresa') && (q.includes('como') || q.includes('funciona') || q.includes('hace')))) {
     return {
       reply: cleanSpecialChars(
-        `Inteckno S.A.S. es la compañía líder en Colombia y Latinoamérica en ingeniería, mantenimiento mayor e inspecciones END de teleféricos y transporte por cable STC (Línea K Metrocable Medellín, TransMiCable Bogotá, Manizales, Megacable Pereira, La Paz). Nuestras áreas clave son Operaciones STC, Almacén de Herramientas, Compras y Logística, Seguridad SST, Contabilidad y Gerencia Técnica. Todo el conocimiento y las rutas de inducción por puesto están disponibles en el módulo de Artículos y Know-How. ¿Deseas que te abra la Wiki corporativa para ver tu ruta de inducción? 🌼`
+        `Inteckno S.A.S. es la compañía líder en Colombia y Latinoamérica en ingeniería, mantenimiento mayor e inspecciones END de teleféricos y transporte por cable STC (Línea K Metrocable Medellín, TransMiCable Bogotá, Manizales, Megacable Pereira, La Paz). Nuestras áreas clave son Operaciones STC, Almacén de Herramientas, Compras y Logística, Seguridad SST, Contabilidad y Gerencia Técnica. Los manuales, planos y certificados están en la Gestión Documental. ¿Deseas que la abra?`
       ),
       action: {
         type: 'navigate_module',
-        targetModule: 'articulos',
-        description: 'Abrir Wiki y Rutas de Inducción Corporativa',
-        parameters: { moduleId: 'articulos' },
+        targetModule: 'documentos',
+        description: 'Abrir Gestión Documental',
+        parameters: { moduleId: 'documentos' },
       },
     };
   }
@@ -760,7 +760,6 @@ function getHeuristicResponse(
   if (q.includes('ir a') || q.includes('llevame a') || q.includes('abre el') || q.includes('abrir')) {
     let targetModule = 'calendario';
     if (q.includes('documento') || q.includes('plano')) targetModule = 'documentos';
-    else if (q.includes('articulo') || q.includes('wiki') || q.includes('saber') || q.includes('manual')) targetModule = 'articulos';
     else if (q.includes('crm') || q.includes('contacto') || q.includes('venta')) targetModule = 'crm';
     else if (q.includes('gasto') || q.includes('viatico')) targetModule = 'gastos';
     else if (q.includes('hora') || q.includes('timesheet')) targetModule = 'registro-horas';
@@ -1805,413 +1804,9 @@ Responde ÚNICAMENTE con un JSON con:
   }
 }
 
-export interface GeneratedWikiArticleDraft {
-  title: string;
-  category: WikiArticle['category'];
-  summary: string;
-  content: string;
-  readTime: string;
-  checklist: WikiArticleChecklistStep[];
-  tags: string[];
-  targetRoles: string[];
-  normativeReferences?: string[];
-}
-
-export interface TechnicalMentorAnswer {
-  answer: string;
-  citedArticleId?: string;
-  citedArticleTitle?: string;
-  confidence: 'alta' | 'media' | 'baja';
-}
-
-// 1. Redacción de artículos y procedimientos técnicos con LUC-IA-NA
-export async function generateWikiArticleWithLuciana(
-  prompt: string,
-  categoryHint?: WikiArticle['category'],
-  projectCodeHint?: string
-): Promise<GeneratedWikiArticleDraft> {
-  const apiKey = getGeminiApiKey();
-
-  // Heurística de respaldo técnica y profesional
-  const buildFallback = (): GeneratedWikiArticleDraft => {
-    let cat: WikiArticle['category'] = categoryHint || 'normativa_stc';
-    const q = prompt.toLowerCase();
-    if (q.includes('cable') || q.includes('mrt') || q.includes('descarte') || q.includes('alambre')) {
-      cat = 'mantenimiento_cables';
-    } else if (q.includes('pinza') || q.includes('mordaza') || q.includes('apriete') || q.includes('resorte')) {
-      cat = 'mordazas_pinzas';
-    } else if (q.includes('balanc') || q.includes('polea') || q.includes('casquillo') || q.includes('forro')) {
-      cat = 'balancines_poleas';
-    } else if (q.includes('altura') || q.includes('arn') || q.includes('eslinga') || q.includes('linea de vida') || q.includes('rescate')) {
-      cat = 'seguridad_alturas';
-    } else if (q.includes('lecci') || q.includes('incidente') || q.includes('falla') || q.includes('caso real')) {
-      cat = 'lecciones_aprendidas';
-    } else if (q.includes('inducci') || q.includes('onboard') || q.includes('nuevo')) {
-      cat = 'induccion_onboarding';
-    }
-
-    const title = prompt.length > 80 ? prompt.slice(0, 77) + '...' : prompt;
-
-    return {
-      title: cleanSpecialChars(title),
-      category: cat,
-      summary: cleanSpecialChars(`Procedimiento estándar de ingeniería STC desarrollado por Inteckno S.A.S. para ${prompt}. Cumple normativas EN 1709 y protocolos del fabricante.`),
-      content: cleanSpecialChars(
-`1. OBJETIVO Y ALCANCE
-Establecer las directrices técnicas obligatorias para la ejecución segura y precisa de la maniobra de ${prompt} en sistemas de transporte por cable aéreo (STC). Aplica para todo el personal técnico de Inteckno S.A.S. en estaciones y pilonas.
-
-2. EQUIPOS, HERRAMIENTAS Y PATRONES CALIBRADOS
-- Torquímetro con certificado de calibración vigente (+/- 4% de exactitud).
-- Galga de espesores y micrómetro centesimal para verificación de holguras.
-- Solvente dieléctrico y desengrasante biodegradable de evaporación rápida.
-- Sistema anticaídas completo: arnés de 4 argollas, doble eslinga con absorbedor y freno para cable de acero.
-- Radio comunicador intrínsecamente seguro con frecuencia de operación local.
-
-3. PROCEDIMIENTO TÉCNICO PASO A PASO
-Paso 1: Coordinar el bloqueo de seguridad mecánico y eléctrico (LOTO) con el operador en consola central.
-Paso 2: Realizar inspección visual inicial para evidenciar deformaciones plásticas, fisuras por fatiga o corrosión bajo tensión.
-Paso 3: Realizar limpieza profunda del conjunto retirando acumulaciones de grasa contaminada o partículas metálicas.
-Paso 4: Ejecutar mediciones dimensionales en los puntos de contacto crítico y cotejar con la cota nominal de diseño.
-Paso 5: Aplicar par de apriete escalonado en cruz respetando la curva de torque indicada por el fabricante.
-Paso 6: Registrar valores obtenidos en el formato digital de aseguramiento de calidad QA-STC-2026.
-
-4. CRITERIOS DE ACEPTACIÓN Y RECHAZO (EN 1709 / EN 12927)
-- Aceptado: Desgaste superficial inferior al 5% del espesor nominal y torque verificado dentro de la banda de tolerancia.
-- Rechazo Inmediato: Presencia de microfisuras detectadas con líquidos penetrantes, pérdida de precarga en pernos o desgaste superior al límite de descarte de 1.2 mm.
-
-5. MEDIDAS DE SEGURIDAD SST Y TRABAJO EN ALTURAS
-- Todo técnico debe contar con certificación vigente de trabajo seguro en alturas (Resolución 4272).
-- Delimitar y señalizar el radio de caída bajo pilona mediante conos y cinta de peligro.
-- Prohibido realizar maniobras en pilona ante tormenta eléctrica o vientos sostenidos superiores a 45 km/h.`
-      ),
-      readTime: '6 min',
-      checklist: [
-        { step: 1, title: 'Bloqueo LOTO', instruction: 'Verificar desenergización de accionamiento y consignación con candado personal', completed: false },
-        { step: 2, title: 'Inspección Visual', instruction: 'Revisar estado de pestañas, rodamientos y tornillería estructural', completed: false },
-        { step: 3, title: 'Limpieza Técnica', instruction: 'Remover grasa vieja con solvente dieléctrico sin dañar elastómeros', completed: false },
-        { step: 4, title: 'Medición con Galga', instruction: 'Medir huelgo y desgaste diametral comparando con la tolerancia nominal', completed: false },
-        { step: 5, title: 'Torque Certificado', instruction: 'Apretar tornillería con torquímetro calibrado según tabla de pares STC', completed: false },
-        { step: 6, title: 'Cierre y Registro', instruction: 'Firmar acta de conformidad técnica y liberar bloqueo de seguridad', completed: false },
-      ],
-      tags: ['STC', 'Procedimiento Oficial', 'EN 1709', 'Inteckno QA'],
-      targetRoles: ['mecanico_lider', 'inspector_end', 'auxiliar_mantenimiento'],
-      normativeReferences: ['Norma EN 1709: Requisitos de Seguridad en Teleféricos', 'Manual Oficial Doppelmayr / Poma', 'Protocolo Inteckno QA-STC-2026'],
-    };
-  };
-
-  const fallback = buildFallback();
-  if (!apiKey) return fallback;
-
-  try {
-    const model = await getBestAvailableModel(apiKey);
-    const systemPrompt = `Eres LUC-IA-NA, Mentora Corporativa, Operativa y de Ingeniería de Inteckno S.A.S., empresa líder en ingeniería y mantenimiento de Sistemas de Transporte por Cable Aéreo (STC: teleféricos, Metrocables, cablebuses y tranvías).
-
-Tu objetivo es redactar un procedimiento corporativo o técnico estructurado, didáctico, claro y formal para la base de conocimiento interna (Wiki y Onboarding), aplicable a cualquier área de la empresa (Ingeniería STC, Operaciones, Compras, Almacén de Herramientas, Contabilidad y Viáticos, o Gestión del ERP).
-Tema solicitado: "${prompt}"
-${projectCodeHint ? `Proyecto de referencia: ${projectCodeHint}` : ''}
-${categoryHint ? `Categoría sugerida: ${categoryHint}` : ''}
-
-REGLAS ESTRICTAS DE RESPUESTA:
-1. Responde ÚNICAMENTE un objeto JSON válido con las siguientes claves:
-{
-  "title": "Título preciso y descriptivo",
-  "category": "induccion_general" | "compras_adquisiciones" | "almacen_herramientas" | "uso_erp" | "viaticos_contabilidad" | "seguridad_alturas" | "mantenimiento_cables" | "mordazas_pinzas" | "balancines_poleas" | "lecciones_aprendidas",
-  "summary": "Resumen conciso de 2-3 líneas con el alcance y objetivo",
-  "content": "Texto completo y didáctico. Si es de compras/almacén/ERP/viáticos/inducción: 1. Objetivo y Alcance, 2. Responsables en Inteckno, 3. Paso a Paso en el ERP y en Campo, 4. Políticas y Tiempos, 5. Puntos de Control y Reglas de Oro. Si es técnico STC: 1. Objetivo, 2. Equipos Calibrados, 3. Paso a Paso Técnico, 4. Tolerancias y Criterios EN/ISO, 5. Seguridad SST.",
-  "readTime": "ej: 5 min",
-  "checklist": [
-    { "step": 1, "title": "Nombre corto del paso", "instruction": "Instrucción clara" }
-  ],
-  "tags": ["Tag1", "Tag2", "Tag3"],
-  "targetRoles": ["induccion_corporativa", "compras_logistica", "mecanico_stc", "inspector_end", "administrativo_contable"],
-  "normativeReferences": ["Procedimiento Inteckno...", "Norma EN...", "Resolución..."]
-}
-2. NO utilices asteriscos en ningún lugar del texto. Utiliza numeraciones y títulos limpios en mayúsculas.
-3. Redacción profesional, clara y aplicable a la realidad operativa de Inteckno.`;
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: systemPrompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.25,
-          maxOutputTokens: 2048,
-          responseMimeType: 'application/json',
-        },
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!res.ok) return fallback;
-
-    const data = await res.json();
-    const rawAnswer = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    const parsed = extractJsonFromModelResponse(rawAnswer);
-
-    if (parsed && parsed.title && parsed.content) {
-      return {
-        title: cleanSpecialChars(parsed.title),
-        category: parsed.category || fallback.category,
-        summary: cleanSpecialChars(parsed.summary || fallback.summary),
-        content: cleanSpecialChars(parsed.content),
-        readTime: parsed.readTime || fallback.readTime,
-        checklist: Array.isArray(parsed.checklist) && parsed.checklist.length > 0
-          ? parsed.checklist.map((c: any, idx: number) => ({
-              step: c.step || idx + 1,
-              title: cleanSpecialChars(c.title || `Paso ${idx + 1}`),
-              instruction: cleanSpecialChars(c.instruction || String(c)),
-              completed: false,
-            }))
-          : fallback.checklist,
-        tags: Array.isArray(parsed.tags) ? parsed.tags.map((t: string) => cleanSpecialChars(t)) : fallback.tags,
-        targetRoles: Array.isArray(parsed.targetRoles) ? parsed.targetRoles : fallback.targetRoles,
-        normativeReferences: Array.isArray(parsed.normativeReferences) ? parsed.normativeReferences.map((r: string) => cleanSpecialChars(r)) : fallback.normativeReferences,
-      };
-    }
-
-    return fallback;
-  } catch (err) {
-    console.warn('Error en generateWikiArticleWithLuciana:', err);
-    return fallback;
-  }
-}
-
-// 2. Generador Automático de "Lecciones Aprendidas de Campo"
-export async function synthesizeLearnedLessonWithLuciana(
-  incidentDetails: string,
-  projectCode?: string
-): Promise<GeneratedWikiArticleDraft> {
-  const apiKey = getGeminiApiKey();
-
-  const buildFallback = (): GeneratedWikiArticleDraft => {
-    return {
-      title: cleanSpecialChars(`Lección Aprendida: ${incidentDetails.slice(0, 60)}`),
-      category: 'lecciones_aprendidas',
-      summary: cleanSpecialChars(`Análisis técnico de causa raíz y regla preventiva de oro para prevenir recurrencias en proyectos STC.`),
-      content: cleanSpecialChars(
-`1. EVENTO O INCIDENTE REPORTADO EN CAMPO
-Descripción técnica del incidente ocurrido durante la intervención:
-${incidentDetails}
-
-2. ANÁLISIS DE CAUSA RAÍZ TÉCNICA (METODOLOGÍA 5 POR QUÉS)
-Se identificó que la desviación se originó por falta de verificación de la precarga en pernos de anclaje y acumulación de partículas abrasivas en la zona de rodadura, lo cual provocó un incremento anómalo en el rozamiento dinámico y disparo del lazo de seguridad.
-
-3. SOLUCIÓN TÉCNICA APLICADA EN SITIO
-- Se procedió con el desmontaje controlado del componente afectado.
-- Reemplazo inmediato de pernería por tornillería de alta resistencia grado 10.9 nueva con lubricación seca de molibdeno.
-- Torquizado con torquímetro certificado a 280 Nm y aplicación de marca testigo de seguridad visible.
-- Pruebas de rodaje en vacío durante 30 minutos monitoreando temperatura con cámara termográfica.
-
-4. REGLA PREVENTIVA DE ORO PARA EL EQUIPO INTECKNO
-Regla Obligatoria: Nunca reutilizar pernos sometidos a cargas cíclicas en cabezales de pilona o balancines. Todo perno desmontado debe desecharse y reemplazarse por nuevo con registro de torque y firma en bitácora antes de reanudar marcha comercial.`
-      ),
-      readTime: '4 min',
-      checklist: [
-        { step: 1, title: 'Descarte de Pernos', instruction: 'Desechar pernos usados y verificar empaque original de pernos 10.9 nuevos', completed: false },
-        { step: 2, title: 'Limpieza de Rosca', instruction: 'Limpiar roscas internas con cepillo de bronce y solvente desengrasante', completed: false },
-        { step: 3, title: 'Torque Cruzado', instruction: 'Apretar en 3 etapas cruzadas: 30%, 70% y 100% del par nominal', completed: false },
-        { step: 4, title: 'Pintura Testigo', instruction: 'Aplicar franja de pintura testigo roja cruzando tuerca y arandela', completed: false },
-      ],
-      tags: ['Lección Aprendida', 'Causa Raíz', 'Seguridad STC', projectCode || 'STC'],
-      targetRoles: ['mecanico_lider', 'inspector_end', 'auxiliar_mantenimiento'],
-      normativeReferences: ['Norma EN 1709', 'Procedimiento de Torque Inteckno STC-TRQ-01'],
-    };
-  };
-
-  const fallback = buildFallback();
-  if (!apiKey) return fallback;
-
-  try {
-    const model = await getBestAvailableModel(apiKey);
-    const systemPrompt = `Eres LUC-IA-NA, Mentora Técnica de Inteckno S.A.S.
-Analiza la bitácora o reporte del siguiente evento de campo y genera un artículo formal de "Lección Aprendida" para la Wiki Técnica:
-Reporte: "${incidentDetails}"
-${projectCode ? `Proyecto STC: ${projectCode}` : ''}
-
-Estructura requerida en JSON con las claves:
-{
-  "title": "Lección Aprendida: Nombre descriptivo del caso",
-  "category": "lecciones_aprendidas",
-  "summary": "Resumen conciso con el qué pasó, causa y regla de oro",
-  "content": "Texto con 4 secciones: 1. EVENTO O INCIDENTE REPORTADO, 2. ANÁLISIS DE CAUSA RAÍZ TÉCNICA, 3. SOLUCIÓN APLICADA EN SITIO, 4. REGLA PREVENTIVA DE ORO",
-  "readTime": "4 min",
-  "checklist": [
-    { "step": 1, "title": "Paso preventivo", "instruction": "Instrucción clara" }
-  ],
-  "tags": ["Lección Aprendida", "Prevención", "STC"],
-  "targetRoles": ["mecanico_lider", "inspector_end"],
-  "normativeReferences": ["EN 1709", "Protocolo Inteckno"]
-}
-NO incluyas asteriscos en la respuesta. Usa numeración limpia y redacción sobria de ingeniería.`;
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' },
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!res.ok) return fallback;
-    const data = await res.json();
-    const rawAnswer = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    const parsed = extractJsonFromModelResponse(rawAnswer);
-
-    if (parsed && parsed.title && parsed.content) {
-      return {
-        title: cleanSpecialChars(parsed.title),
-        category: 'lecciones_aprendidas',
-        summary: cleanSpecialChars(parsed.summary || fallback.summary),
-        content: cleanSpecialChars(parsed.content),
-        readTime: parsed.readTime || '4 min',
-        checklist: Array.isArray(parsed.checklist) && parsed.checklist.length > 0
-          ? parsed.checklist.map((c: any, idx: number) => ({
-              step: c.step || idx + 1,
-              title: cleanSpecialChars(c.title || `Paso ${idx + 1}`),
-              instruction: cleanSpecialChars(c.instruction || String(c)),
-              completed: false,
-            }))
-          : fallback.checklist,
-        tags: Array.isArray(parsed.tags) ? parsed.tags.map((t: string) => cleanSpecialChars(t)) : fallback.tags,
-        targetRoles: Array.isArray(parsed.targetRoles) ? parsed.targetRoles : fallback.targetRoles,
-        normativeReferences: Array.isArray(parsed.normativeReferences) ? parsed.normativeReferences.map((r: string) => cleanSpecialChars(r)) : fallback.normativeReferences,
-      };
-    }
-
-    return fallback;
-  } catch (err) {
-    console.warn('Error en synthesizeLearnedLessonWithLuciana:', err);
-    return fallback;
-  }
-}
-
-// 3. Asistente Mentor Técnico de Consulta Rápida en Campo
-export async function queryTechnicalMentorLuciana(
-  question: string,
-  articles: WikiArticle[]
-): Promise<TechnicalMentorAnswer> {
-  const apiKey = getGeminiApiKey();
-
-  // Heurística de búsqueda local en artículos
-  const qLower = question.toLowerCase();
-  let matchedArticle: WikiArticle | undefined = articles.find((a) => {
-    return (
-      a.title.toLowerCase().includes(qLower) ||
-      a.summary.toLowerCase().includes(qLower) ||
-      (a.tags && a.tags.some((t) => qLower.includes(t.toLowerCase())))
-    );
-  });
-
-  if (!matchedArticle && articles.length > 0) {
-    if (qLower.includes('compra') || qLower.includes('requisic') || qLower.includes('pedir') || qLower.includes('cotiz')) {
-      matchedArticle = articles.find((a) => a.category === 'compras_adquisiciones') || articles.find((a) => a.id === 'ART-08');
-    } else if (qLower.includes('herramienta') || qLower.includes('almacen') || qLower.includes('salida') || qLower.includes('custodia') || qLower.includes('torquimetro')) {
-      matchedArticle = articles.find((a) => a.category === 'almacen_herramientas') || articles.find((a) => a.id === 'ART-09');
-    } else if (qLower.includes('erp') || qLower.includes('actividad') || qLower.includes('tarea') || qLower.includes('kanban') || qLower.includes('como se trabaja') || qLower.includes('evidencia')) {
-      matchedArticle = articles.find((a) => a.category === 'uso_erp') || articles.find((a) => a.id === 'ART-10');
-    } else if (qLower.includes('viatic') || qLower.includes('gasto') || qLower.includes('legaliz') || qLower.includes('factura') || qLower.includes('dian')) {
-      matchedArticle = articles.find((a) => a.category === 'viaticos_contabilidad') || articles.find((a) => a.id === 'ART-11');
-    } else if (qLower.includes('induccion') || qLower.includes('empresa') || qLower.includes('nuevo') || qLower.includes('inteckno') || qLower.includes('funciona')) {
-      matchedArticle = articles.find((a) => a.category === 'induccion_general') || articles.find((a) => a.id === 'ART-07');
-    } else if (qLower.includes('altura') || qLower.includes('arn') || qLower.includes('sst') || qLower.includes('seguridad') || qLower.includes('ats')) {
-      matchedArticle = articles.find((a) => a.category === 'seguridad_alturas') || articles.find((a) => a.id === 'ART-12');
-    } else if (qLower.includes('cable') || qLower.includes('descarte') || qLower.includes('en 12927') || qLower.includes('alambre')) {
-      matchedArticle = articles.find((a) => a.category === 'mantenimiento_cables') || articles[0];
-    } else if (qLower.includes('mordaza') || qLower.includes('pinza')) {
-      matchedArticle = articles.find((a) => a.category === 'mordazas_pinzas') || articles[0];
-    } else if (qLower.includes('balanc') || qLower.includes('polea') || qLower.includes('casquillo')) {
-      matchedArticle = articles.find((a) => a.category === 'balancines_poleas') || articles[0];
-    } else {
-      matchedArticle = articles[0];
-    }
-  }
-
-  const fallback: TechnicalMentorAnswer = {
-    answer: matchedArticle
-      ? cleanSpecialChars(
-          `De acuerdo con el procedimiento corporativo "${matchedArticle.title}": ${matchedArticle.summary} Puedes consultar el artículo completo en la wiki para ver el paso a paso detallado y el checklist de verificación.`
-        )
-      : 'Consulta registrada en la base de conocimientos y procedimientos de Inteckno S.A.S. Te sugiero revisar las guías oficiales en la Wiki o consultar con tu líder de área.',
-    citedArticleId: matchedArticle?.id,
-    citedArticleTitle: matchedArticle?.title,
-    confidence: matchedArticle ? 'alta' : 'media',
-  };
-
-  if (!apiKey) return fallback;
-
-  try {
-    const model = await getBestAvailableModel(apiKey);
-    const articlesContext = articles
-      .slice(0, 12)
-      .map(
-        (a) =>
-          `ID: ${a.id} | Titulo: ${a.title} | Categoria: ${a.category} | Resumen: ${a.summary} | Extracto: ${a.content.slice(0, 350)}`
-      )
-      .join('\n---\n');
-
-    const promptText = `Eres LUC-IA-NA, Mentora Corporativa, Operativa y de Ingeniería STC en Inteckno S.A.S.
-Cualquier colaborador de Inteckno (ingeniero, técnico, almacenista, comprador, administrativo o recién ingresado) te hace la siguiente consulta:
-"${question}"
-
-Base de conocimientos y procedimientos oficiales de Inteckno disponibles:
-${articlesContext}
-
-Instrucciones:
-1. Responde de forma muy precisa, directa y didáctica en 2 o 3 párrafos cortos (máximo 140 palabras).
-2. Explica con exactitud cómo se hace en Inteckno (por ejemplo: cómo pedir al de compras mediante requisición en el ERP, cómo solicitar la salida de herramientas verificando calibración en almacén, cómo registrar o desglosar actividades con fotos en el ERP, cómo legalizar viáticos con fotos de factura, o las normas técnicas STC).
-3. Si la respuesta está fundamentada en alguno de los artículos citados, incluye el ID y título del artículo.
-4. NUNCA uses asteriscos en tu respuesta.
-5. Devuelve ÚNICAMENTE un JSON con:
-{
-  "answer": "Respuesta directa, empática y profesional para el colaborador",
-  "citedArticleId": "ID del articulo si coincide o null",
-  "citedArticleTitle": "Titulo del articulo si coincide o null",
-  "confidence": "alta" | "media" | "baja"
-}`;
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: promptText }] }],
-        generationConfig: { temperature: 0.15, maxOutputTokens: 500, responseMimeType: 'application/json' },
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!res.ok) return fallback;
-    const data = await res.json();
-    const rawAnswer = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    const parsed = extractJsonFromModelResponse(rawAnswer);
-
-    if (parsed && parsed.answer) {
-      return {
-        answer: cleanSpecialChars(parsed.answer),
-        citedArticleId: parsed.citedArticleId || matchedArticle?.id,
-        citedArticleTitle: parsed.citedArticleTitle || matchedArticle?.title,
-        confidence: parsed.confidence || 'alta',
-      };
-    }
-
-    return fallback;
-  } catch (err) {
-    console.warn('Error en queryTechnicalMentorLuciana:', err);
-    return fallback;
-  }
-}
-
 export async function diagnoseJobReadinessWithLuciana(
   user: User,
-  jobPosition: JobPosition,
-  availableArticles?: WikiArticle[]
+  jobPosition: JobPosition
 ): Promise<LucianaImprovementPlan> {
   const apiKey = getGeminiApiKey();
 
@@ -2286,24 +1881,6 @@ export async function diagnoseJobReadinessWithLuciana(
   // Limitar entre 50 y 98 para realismo y coherencia
   const deterministicScore = Math.min(98, Math.max(50, calculatedBaseScore));
 
-  const articles = availableArticles || [];
-  const recommendedArticles = articles
-    .filter((a) => {
-      const titleLower = a.title.toLowerCase();
-      const tags = (a.tags || []).map((t) => t.toLowerCase());
-      return missingSkills.some(
-        (m) =>
-          titleLower.includes(m.toLowerCase()) ||
-          tags.some((t) => t.includes(m.toLowerCase()))
-      );
-    })
-    .slice(0, 3)
-    .map((a) => `${a.id}: ${a.title}`);
-
-  if (recommendedArticles.length === 0 && articles.length > 0) {
-    recommendedArticles.push(`${articles[0].id}: ${articles[0].title}`);
-  }
-
   // Fallback determinista adaptado al departamento
   const deptLower = (jobPosition.department || user.department || '').toLowerCase();
   const isFinanceOrAdmin = deptLower.includes('administrat') || deptLower.includes('financ') || deptLower.includes('contab');
@@ -2356,7 +1933,6 @@ export async function diagnoseJobReadinessWithLuciana(
   const fallback: LucianaImprovementPlan = {
     readinessScore: deterministicScore,
     technicalGaps: defaultGaps,
-    recommendedWikiArticles: recommendedArticles.length > 0 ? recommendedArticles : ['ART-10: Manual del ERP Inteckno'],
     recommendedCourses: defaultCourses,
     promotionalPath: {
       nextRoleTitle: isFinanceOrAdmin
@@ -2406,22 +1982,17 @@ Ficha de Cargo Oficial ITK (${jobPosition.title}):
 CALIFICACIÓN MATEMÁTICA BASE CALCULADA: ${deterministicScore}%
 Debes utilizar EXACTAMENTE ${deterministicScore} como "readinessScore" (o un valor en el rango estricto ${Math.max(50, deterministicScore - 2)} a ${Math.min(98, deterministicScore + 2)}), asegurando consistencia matemática sin variaciones arbitrarias.
 
-Artículos Wiki disponibles:
-${articles.slice(0, 8).map((a) => `${a.id}: ${a.title} (${a.category})`).join('\n')}
-
 Instrucciones Críticas:
 1. Adapta tu vocabulario y recomendaciones al área real del colaborador (${jobPosition.department}): Si es administrativa/financiera habla de DIAN, NIIF, presupuestos; si es logística de inventarios y compras; si es TI de nube y seguridad; si es técnica/STC de teleféricos y normativas EN.
 2. Identifica entre 2 y 4 brechas técnicas prioritarias (technicalGaps).
 3. Recomienda de 2 a 3 cursos de actualización profesional acordes al cargo.
-4. Recomienda de 2 a 3 artículos de la Wiki técnica.
-5. Plantea la ruta promocional (nextRoleTitle y missingRequirements).
-6. Redacta un summary profesional, motivador y formal (máximo 85 palabras).
-7. PROHIBIDO TOTALMENTE usar asteriscos (*).
-8. Devuelve ÚNICAMENTE este JSON:
+4. Plantea la ruta promocional (nextRoleTitle y missingRequirements).
+5. Redacta un summary profesional, motivador y formal (máximo 85 palabras).
+6. PROHIBIDO TOTALMENTE usar asteriscos (*).
+7. Devuelve ÚNICAMENTE este JSON:
 {
   "readinessScore": ${deterministicScore},
   "technicalGaps": string[],
-  "recommendedWikiArticles": string[],
   "recommendedCourses": string[],
   "promotionalPath": {
     "nextRoleTitle": string,
@@ -2454,7 +2025,6 @@ Instrucciones Críticas:
       return {
         readinessScore: Math.abs(finalScore - deterministicScore) <= 3 ? finalScore : deterministicScore,
         technicalGaps: (parsed.technicalGaps && parsed.technicalGaps.length > 0 ? parsed.technicalGaps : fallback.technicalGaps).map(cleanSpecialChars),
-        recommendedWikiArticles: (parsed.recommendedWikiArticles && parsed.recommendedWikiArticles.length > 0 ? parsed.recommendedWikiArticles : fallback.recommendedWikiArticles).map(cleanSpecialChars),
         recommendedCourses: (parsed.recommendedCourses && parsed.recommendedCourses.length > 0 ? parsed.recommendedCourses : fallback.recommendedCourses).map(cleanSpecialChars),
         promotionalPath: {
           nextRoleTitle: cleanSpecialChars(parsed.promotionalPath?.nextRoleTitle || fallback.promotionalPath!.nextRoleTitle),
@@ -2990,7 +2560,7 @@ export async function generateJobPositionDraftWithLuciana(
       cleanSpecialChars('Coordinar con las gerencias y áreas de soporte el flujo oportuno de información y recursos.'),
       cleanSpecialChars('Garantizar el cumplimiento de normativas de calidad, seguridad y salud en el trabajo.'),
       cleanSpecialChars('Elaborar reportes e indicadores de gestión periódicos en el ERP de Inteckno.'),
-      cleanSpecialChars('Participar en la transferencia de conocimiento técnico y lecciones aprendidas en la Wiki corporativa.'),
+      cleanSpecialChars('Participar en la transferencia de conocimiento técnico y lecciones aprendidas en el repositorio documental corporativo.'),
     ],
     academicRequirements: [
       cleanSpecialChars('Título técnico, tecnológico o universitario afín al área del cargo.'),
@@ -3151,7 +2721,7 @@ export async function generatePerformanceEvaluationPreDiagnosticWithLuciana(
       'Disposicion para apoyar labores extraordinarias en paradas tecnicas',
     ],
     suggestedCommitments: [
-      'Profundizar en la documentacion de lecciones aprendidas en la Wiki corporativa',
+      'Profundizar en la documentacion de lecciones aprendidas en el repositorio documental corporativo',
       'Liderar al menos dos charlas tecnicas de 5 minutos sobre inspeccion de cables',
     ],
   };

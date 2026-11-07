@@ -77,7 +77,6 @@ suite.register('T3-XF-02', 'Cross: App.tsx routing seamlessly preserves navigate
     'documentos',
     'calendario',
     'actividades',
-    'articulos',
     'crm',
     'calculadora-precios',
     'empleados',

@@ -803,16 +803,12 @@ export const ProcurementModule: React.FC = () => {
                       <span className="hover:underline cursor-pointer">{req.reqNumber}</span>
                       <DataOriginTooltip
                         trace={{
-                          sourceModule: req.originWorkOrderCode
-                            ? `OT Correctiva ${req.originWorkOrderCode} • Mantenimiento Operativo`
-                            : 'Solicitud Interna de Abastecimiento (SOLPED)',
-                          sourceEntityId: req.originWorkOrderCode ? `${req.originWorkOrderCode} (OT)` : req.id,
+                          sourceModule: 'Solicitud Interna de Abastecimiento (SOLPED)',
+                          sourceEntityId: req.id,
                           sourceUser: req.originDdrReporter || req.requesterName || 'Técnico de Campo STC',
                           sourceTimestamp: req.originDdrDate || req.createdAt,
                           targetModule: `Abastecimiento • Requisición ${req.reqNumber}`,
-                          calculationLogic: req.originWorkOrderCode
-                            ? `Requisición generada por OT Correctiva #${req.originWorkOrderCode} → Origen: Falla reportada en DDR por ${req.originDdrReporter || 'USR-24'} el ${req.originDdrDate || req.createdAt} en ${req.originLocation || 'Pilona STC'}`
-                            : `Solicitud directa de repuestos para ${req.projectCode || 'Almacén Central'}`,
+                          calculationLogic: `Solicitud directa de repuestos para ${req.projectCode || 'Almacén Central'}`,
                           status: 'verified',
                         }}
                       />

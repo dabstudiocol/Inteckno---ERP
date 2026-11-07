@@ -10,10 +10,8 @@ import { ConversacionesModule } from './modules/inteckno/ConversacionesModule';
 import { DocumentosModule } from './modules/inteckno/DocumentosModule';
 import { CalendarioModule } from './modules/inteckno/CalendarioModule';
 import { ActividadesModule } from './modules/inteckno/ActividadesModule';
-import { ArticulosModule } from './modules/inteckno/ArticulosModule';
 import { InternationalModule } from './modules/international/InternationalModule';
 import { TalentoHumanoModule } from './modules/hr/TalentoHumanoModule';
-import { OperacionesAvanzadasModule } from './modules/operations/OperacionesAvanzadasModule';
 import { ProjectsModule } from './modules/projects/ProjectsModule';
 import { ProcurementModule } from './modules/procurement/ProcurementModule';
 import { InventoryModule } from './modules/inventory/InventoryModule';
@@ -87,13 +85,6 @@ const MainContent: React.FC = () => {
           subtitle: 'Control de compromisos, tareas operativas, To-Dos y asignación',
           component: <ActividadesModule />,
         };
-      case 'articulos':
-      case 'wiki':
-        return {
-          title: 'Artículos & Wiki Técnica',
-          subtitle: 'Procedimientos y estándares normativos EN 1709 / EN 12929',
-          component: <ArticulosModule />,
-        };
       case 'cargos':
       case 'positions':
         return {
@@ -143,16 +134,6 @@ const MainContent: React.FC = () => {
           subtitle: 'Directorio de operadores, clientes estratégicos y aliados de teleféricos',
           component: <CrmModule activeTab="contactos" />,
         };
-      case 'ventas':
-      case 'sales':
-      case 'cotizaciones':
-      case 'quotations':
-        return {
-          title: 'Ventas & Cotizaciones STC',
-          subtitle: 'Historial de propuestas técnico-económicas y conversión a proyectos',
-          component: <CrmModule activeTab="ventas" />,
-        };
-
       // 3. INGENIERÍA Y OPERACIONES EN CAMPO
       case 'proyectos':
       case 'projects':
@@ -179,41 +160,6 @@ const MainContent: React.FC = () => {
           subtitle: 'Control de Horas-Hombre (HH) con imputación a proyectos',
           component: <TimesheetModule />,
         };
-      case 'mantenimiento':
-      case 'maintenance':
-        return {
-          title: 'Mantenimiento Preventivo STC',
-          subtitle: 'Planes preventivos por componente crítico según normas EN 1709 / EN 12929',
-          component: <OperacionesAvanzadasModule initialSubTab="mantenimiento" />,
-        };
-      case 'reparacion':
-      case 'repair':
-        return {
-          title: 'Reparación & Órdenes Técnicas (OT)',
-          subtitle: 'Gestión de fallas correctivas, diagnósticos e inspección especializada',
-          component: <OperacionesAvanzadasModule initialSubTab="reparacion" />,
-        };
-      case 'manufactura':
-      case 'manufacturing':
-        return {
-          title: 'Manufactura de Piezas',
-          subtitle: 'Maquinado y fabricación de componentes mecánicos para teleféricos',
-          component: <OperacionesAvanzadasModule initialSubTab="manufactura" />,
-        };
-      case 'taller':
-      case 'workshop':
-        return {
-          title: 'Taller & Banco de Pruebas',
-          subtitle: 'Pruebas de carga, ensayos hidráulicos y calibración de instrumentos',
-          component: <OperacionesAvanzadasModule initialSubTab="taller" />,
-        };
-      case 'plm':
-        return {
-          title: 'PLM & Especificaciones STC',
-          subtitle: 'Gestión del ciclo de vida y especificaciones técnicas normativas',
-          component: <OperacionesAvanzadasModule initialSubTab="plm" />,
-        };
-
       // 4. ABASTECIMIENTO Y LOGÍSTICA
       case 'compras':
       case 'procurement':

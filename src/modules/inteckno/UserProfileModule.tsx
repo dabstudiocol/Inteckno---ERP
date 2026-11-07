@@ -265,7 +265,7 @@ export function getOfficialJobPositionForRole(role: UserRole, user?: ErpUser): J
           'Inspeccionar equipos de protección contra caídas (arneses, líneas de vida, conectores, mosquetones).',
           'Aprobar permisos de trabajo en alturas y análisis de trabajo seguro (ATS) previo a ascensos.',
           'Gestionar los exámenes médicos ocupacionales y la matriz legal de riesgos laborales.',
-          'Investigar incidentes y formular lecciones aprendidas para la Wiki corporativa.',
+          'Investigar incidentes y formular lecciones aprendidas para el repositorio documental corporativo.',
         ],
         academicRequirements: [
           'Profesional o Especialista en Seguridad y Salud en el Trabajo con Licencia SST vigente.',
@@ -322,7 +322,7 @@ export function getOfficialJobPositionForRole(role: UserRole, user?: ErpUser): J
 }
 
 export const UserProfileModule: React.FC = () => {
-  const { currentUser, updateUserProfile, updateUserPreferences, resetUserPassword, notify, articles } = useErp();
+  const { currentUser, updateUserProfile, updateUserPreferences, resetUserPassword, notify } = useErp();
 
   // Cinco Pestañas Oficiales
   const [activeTab, setActiveTab] = useState<'personal' | 'cargo' | 'competencias' | 'evaluaciones' | 'seguridad'>('personal');
@@ -676,7 +676,7 @@ export const UserProfileModule: React.FC = () => {
   const handleDiagnoseWithLuciana = async () => {
     setIsDiagnosingJob(true);
     try {
-      const plan = await diagnoseJobReadinessWithLuciana(currentUser, officialJobPosition, articles);
+      const plan = await diagnoseJobReadinessWithLuciana(currentUser, officialJobPosition);
       setImprovementPlan(plan);
       updateUserProfile(currentUser.id, {
         jobPosition: officialJobPosition,
@@ -1722,23 +1722,6 @@ export const UserProfileModule: React.FC = () => {
                   </ul>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-sky-200">
-                  <h4 className="text-[11px] font-bold text-[#00668F] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <FileCheck size={13} className="text-[#00668F]" />
-                    <span>Artículos Recomendados de la Wiki</span>
-                  </h4>
-                  <div className="space-y-1.5">
-                    {(improvementPlan.recommendedWikiArticles || []).map((art, idx) => (
-                      <div
-                        key={idx}
-                        className="px-2.5 py-1.5 rounded-lg bg-sky-50 text-[11px] font-semibold text-[#00668F] flex items-center justify-between"
-                      >
-                        <span className="truncate">{art}</span>
-                        <ChevronRight size={13} className="shrink-0 text-sky-500 ml-1" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               

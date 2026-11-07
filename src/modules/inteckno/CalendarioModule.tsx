@@ -209,7 +209,6 @@ export const CalendarioModule: React.FC = () => {
     users,
     employees,
     milestones,
-    maintenancePlans,
     novelties,
     triggerCalendarReminderToast,
     notify,
@@ -339,30 +338,6 @@ export const CalendarioModule: React.FC = () => {
       }));
   }, [milestones]);
 
-  // Proyección automática de intervenciones técnicas y paradas de teleférico STC
-  const projectedMaintenanceEvents = useMemo(() => {
-    return (maintenancePlans || [])
-      .filter((mp) => !!mp.nextDueDate)
-      .map((mp): CalendarEvent => ({
-        id: `mp-${mp.id}`,
-        title: `STC: ${mp.systemName} - ${mp.component}`,
-        date: mp.nextDueDate,
-        time: '07:00 AM - 03:00 PM',
-        startTime: '07:00 AM',
-        endTime: '03:00 PM',
-        type: 'parada_tecnica',
-        projectCode: mp.projectCode,
-        projectName: mp.systemName,
-        location: `${mp.systemName} • ${mp.component}`,
-        description: `Plan de Mantenimiento Preventivo STC [${mp.code}]. Frecuencia: ${mp.frequency}. Técnico Responsable: ${mp.responsibleTechnician}.`,
-        creatorId: 'SISTEMA-STC',
-        attendees: [mp.responsibleTechnician || 'Equipo Técnico STC'],
-        attendeeIds: [],
-        meetingMethod: 'presencial',
-        isCompanyWide: true,
-      }));
-  }, [maintenancePlans]);
-
   // Proyección automática de vacaciones y novedades aprobadas de talento humano
   const projectedNoveltyEvents = useMemo(() => {
     return (novelties || [])
@@ -385,14 +360,13 @@ export const CalendarioModule: React.FC = () => {
       }));
   }, [novelties]);
 
-  // Eventos unificados (calendario local + hitos + planes STC + novedades RRHH proyectadas sin duplicados)
+  // Eventos unificados (calendario local + hitos + novedades RRHH proyectadas sin duplicados)
   const combinedEvents = useMemo(() => {
     const existingIds = new Set(calendarEvents.map((e) => e.id));
     const uniqueMilestones = projectedMilestoneEvents.filter((m) => !existingIds.has(m.id));
-    const uniqueMaintenances = projectedMaintenanceEvents.filter((m) => !existingIds.has(m.id));
     const uniqueNovelties = projectedNoveltyEvents.filter((m) => !existingIds.has(m.id));
-    return [...calendarEvents, ...uniqueMilestones, ...uniqueMaintenances, ...uniqueNovelties];
-  }, [calendarEvents, projectedMilestoneEvents, projectedMaintenanceEvents, projectedNoveltyEvents]);
+    return [...calendarEvents, ...uniqueMilestones, ...uniqueNovelties];
+  }, [calendarEvents, projectedMilestoneEvents, projectedNoveltyEvents]);
 
   // Filtrado de eventos con respeto a la privacidad personal
   const isEventVisible = (evt: CalendarEvent) => {

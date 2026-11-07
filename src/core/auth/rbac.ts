@@ -55,7 +55,6 @@ export const ALL_AREAS: { [key in AreaId]: AreaInfo } = {
       { id: 'documentos', label: 'Documentos', description: 'Repositorio documental, planos y certificados' },
       { id: 'calendario', label: 'Calendario', description: 'Cronograma de visitas e hitos de teleférico' },
       { id: 'actividades', label: 'Actividades pendientes', description: 'Mis tareas y compromisos prioritarios' },
-      { id: 'articulos', label: 'Artículos', description: 'Base de conocimiento y manuales técnicos STC' },
       { id: 'cargos', label: 'Cargos y Vacantes', description: 'Estructura organizacional, perfiles ITK y reclutamiento IA' },
       { id: 'perfil', label: 'Mi Perfil', description: 'Datos personales, foto, teléfono y credenciales' },
       { id: 'requisiciones', label: 'Peticiones de Compra', description: 'Solicitar materiales, repuestos o servicios a Compras' },
@@ -71,24 +70,18 @@ export const ALL_AREAS: { [key in AreaId]: AreaInfo } = {
     modules: [
       { id: 'crm', label: 'Gestión de Clientes (CRM)', description: 'Prospección de oportunidades y licitaciones STC' },
       { id: 'contactos', label: 'Contactos', description: 'Directorio de operadores, clientes y aliados' },
-      { id: 'ventas', label: 'Ventas', description: 'Cotizaciones, propuestas y órdenes comerciales' },
     ],
   },
   operaciones: {
     id: 'operaciones',
     name: 'Ingeniería y Operaciones en Campo',
-    tagline: 'Gestión técnica de teleféricos, plan de trabajo, horas y mantenimiento',
+    tagline: 'Gestión técnica de teleféricos, plan de trabajo y horas de campo',
     accentColor: '#16A34A',
     bgBadge: 'bg-emerald-100/70 text-emerald-800',
     modules: [
       { id: 'proyectos', label: 'Proyectos', description: 'Maestro de proyectos STC y control de avance de obra' },
       { id: 'registro-horas', label: 'Registro de horas', description: 'Control de Horas-Hombre de campo' },
       { id: 'planeacion', label: 'Planeación', description: 'Cronograma de actividades, ruta crítica y curva de avance' },
-      { id: 'mantenimiento', label: 'Mantenimiento', description: 'Planes preventivos y predictivos STC' },
-      { id: 'reparacion', label: 'Reparación', description: 'Órdenes técnicas de taller y campo' },
-      { id: 'manufactura', label: 'Manufactura', description: 'Maquinado y fabricación de componentes' },
-      { id: 'taller', label: 'Taller', description: 'Banco de pruebas y calibración' },
-      { id: 'plm', label: 'Fichas de Equipos', description: 'Ciclo de vida y especificaciones técnicas STC' },
     ],
   },
   abastecimiento: {
@@ -148,28 +141,18 @@ export const MODULE_ICONS: { [moduleId: string]: any } = {
   conversaciones: MessageSquare,
   documentos: FileText,
   calendario: Calendar,
-  actividades: CheckSquare,
-  articulos: BookOpen,
-  cargos: Briefcase,
+  actividades: CheckSquare,  cargos: Briefcase,
   perfil: UserCircle2,
   requisiciones: ShoppingCart,
   'usuarios-ti': ShieldCheck,
 
   // Comercial
   crm: Briefcase,
-  contactos: Users,
-  ventas: TrendingUp,
-
+  contactos: Users,
   // Operaciones
   proyectos: FolderKanban,
   'registro-horas': Clock,
-  planeacion: CalendarRange,
-  mantenimiento: Wrench,
-  reparacion: Hammer,
-  manufactura: Factory,
-  taller: Cog,
-  plm: FileCode2,
-
+  planeacion: CalendarRange,
   // Abastecimiento
   compras: ShoppingCart,
   inventario: Package,
@@ -405,7 +388,6 @@ export const SYSTEM_HUBS: SystemHub[] = [
       { id: 'documentos', label: 'Gestión Documental', shortLabel: 'Documentos', description: 'Planos CAD, manuales y certificados STC', icon: FileText },
       { id: 'calendario', label: 'Calendario de Visitas', shortLabel: 'Calendario', description: 'Cronograma de visitas a campo e hitos', icon: Calendar },
       { id: 'actividades', label: 'Actividades & Tareas', shortLabel: 'Tareas', description: 'To-Dos y compromisos operativos', icon: CheckSquare },
-      { id: 'articulos', label: 'Wiki Técnica STC', shortLabel: 'Wiki', description: 'Normas EN 1709 / EN 12929 y procedimientos', icon: BookOpen },
       { id: 'requisiciones', label: 'Pedir Materiales (SOLPED)', shortLabel: 'SOLPED', description: 'Solicitudes de materiales y repuestos', icon: ShoppingCart },
     ],
   },
@@ -421,7 +403,6 @@ export const SYSTEM_HUBS: SystemHub[] = [
     subModules: [
       { id: 'crm', label: 'Pipeline Oportunidades', shortLabel: 'Pipeline', description: 'Licitaciones y embudo comercial STC', icon: Briefcase },
       { id: 'contactos', label: 'Directorio Contactos', shortLabel: 'Contactos', description: 'Operadores, clientes y aliados', icon: Users },
-      { id: 'ventas', label: 'Cotizaciones & Ventas', shortLabel: 'Cotizaciones', description: 'Propuestas comerciales y conversión', icon: TrendingUp },
     ],
   },
   {
@@ -437,23 +418,6 @@ export const SYSTEM_HUBS: SystemHub[] = [
       { id: 'proyectos', label: 'Maestro de Proyectos', shortLabel: 'Proyectos', description: 'Control de proyectos STC y EVM', icon: FolderKanban },
       { id: 'planeacion', label: 'Cronograma Gantt & WBS', shortLabel: 'Gantt WBS', description: 'Ruta crítica y dependencias de obra', icon: CalendarRange },
       { id: 'registro-horas', label: 'Registro de Horas (HH)', shortLabel: 'Horas Campo', description: 'Control de horas-hombre imputadas a WBS', icon: Clock },
-    ],
-  },
-  {
-    id: 'taller_mantenimiento',
-    label: 'Taller & Mantenimiento STC',
-    tagline: 'Mantenimiento preventivo, OT de campo y banco de pruebas',
-    icon: Wrench,
-    areaId: 'operaciones',
-    accentColor: '#059669',
-    bgBadge: 'bg-teal-100/70 text-teal-800',
-    defaultModuleId: 'mantenimiento',
-    subModules: [
-      { id: 'mantenimiento', label: 'Planes Preventivos EN', shortLabel: 'Preventivo', description: 'Normas EN 1709 / EN 12929 por componente', icon: Wrench },
-      { id: 'reparacion', label: 'Órdenes de Trabajo (OT)', shortLabel: 'OT Reparación', description: 'Diagnósticos e intervenciones electromecánicas', icon: Hammer },
-      { id: 'manufactura', label: 'Manufactura de Piezas', shortLabel: 'Manufactura', description: 'Maquinado y tratamientos térmicos', icon: Factory },
-      { id: 'taller', label: 'Banco de Ensayos Pinzas', shortLabel: 'Banco Ensayos', description: 'Calibración y pruebas de fuerza de retención', icon: Cog },
-      { id: 'plm', label: 'Fichas Técnicas PLM', shortLabel: 'PLM', description: 'Ciclo de vida y especificaciones técnicas', icon: FileCode2 },
     ],
   },
   {

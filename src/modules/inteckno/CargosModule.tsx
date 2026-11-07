@@ -625,7 +625,7 @@ export const INITIAL_JOB_POSITIONS: JobPosition[] = [
       'Inspeccionar equipos de protección contra caídas (arneses, líneas de vida, conectores, mosquetones).',
       'Aprobar permisos de trabajo en alturas y análisis de trabajo seguro (ATS) previo a cualquier maniobra.',
       'Gestionar los exámenes médicos ocupacionales y la matriz legal de riesgos laborales.',
-      'Liderar la investigación de incidentes y formular lecciones aprendidas para la Wiki corporativa.',
+      'Liderar la investigación de incidentes y formular lecciones aprendidas para el repositorio documental corporativo.',
       'Coordinar programas de vigilancia epidemiológica y capacitaciones periódicas de seguridad.',
     ],
     academicRequirements: [
@@ -1091,7 +1091,7 @@ export const INITIAL_JOB_POSITIONS: JobPosition[] = [
       'Calibrar sensores electromagnéticos antes de cada jornada de inspección en campo.',
       'Adquirir y procesar las señales magnéticas en el software especializado.',
       'Elaborar el dictamen técnico de descarte de cables según norma europea EN 12927.',
-      'Registrar las bitácoras y hallazgos en la Wiki técnica del ERP Inteckno.',
+      'Registrar las bitácoras y hallazgos en la Gestión Documental del ERP Inteckno.',
     ],
     academicRequirements: [
       'Tecnólogo o Profesional en Electromecánica, Mecánica o Ensayos No Destructivos.',

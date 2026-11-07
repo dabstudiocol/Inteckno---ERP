@@ -114,7 +114,6 @@ export interface JobApplicationCandidate {
 export interface LucianaImprovementPlan {
   readinessScore: number;
   technicalGaps: string[];
-  recommendedWikiArticles: string[];
   recommendedCourses?: string[];
   promotionalPath?: {
     nextRoleTitle: string;
@@ -486,8 +485,6 @@ export interface DailyProgressReport {
   anomalyDetected?: boolean;
   anomalyComponent?: string; // Ej. Pilona 4, Balancín de entrada
   anomalySeverity?: 'baja' | 'media' | 'alta' | 'critica';
-  generatedWorkOrderId?: string;
-  generatedWorkOrderCode?: string;
 }
 
 export interface TimesheetEntry {
@@ -797,7 +794,6 @@ export interface EquipmentTool {
   // Eje 5: Trazabilidad Metrológica y Depreciación / Costo por uso
   dailyUsageCostCOP?: number; // Tarifa diaria de alquiler interno o depreciación
   nextDueDate?: string; // Próxima calibración o mantenimiento programado
-  lastMaintenancePlanId?: string; // Plan preventivo generado automáticamante
   sstInspectionId?: string; // Última inspección de seguridad HSEQ vinculada
 }
 
@@ -1050,8 +1046,6 @@ export interface InternalRequisition {
   sourceDocumentName?: string;
   createdAt: string;
   // Coreografía Eje 7: Trazabilidad de Fallas en Campo y Mantenimiento
-  originWorkOrderId?: string;
-  originWorkOrderCode?: string;
   originDdrId?: string;
   originDdrNumber?: string;
   originDdrReporter?: string;
@@ -1435,7 +1429,6 @@ export interface ChatMessage {
   };
   aiStatus?: 'idle' | 'processing' | 'done' | 'error';
   linkedProjectId?: string;
-  linkedWorkOrderId?: string;
   linkedTaskUuid?: string;
   isEmergency?: boolean;
   createdAt?: number; // Timestamp Unix ms para validación de los 15 minutos
@@ -1504,7 +1497,6 @@ export interface DocumentItem {
     systemId?: string;
     workerId?: string;
     expenseId?: string;
-    workOrderId?: string;
   };
   isFavorite?: boolean;
 }
@@ -1553,7 +1545,6 @@ export interface CalendarEvent {
   m365EventId?: string;
   isOvernight?: boolean; // Para ventanas operativas nocturnas STC (ej: 22:30 a 04:30)
   linkedProjectId?: string;
-  linkedWorkOrderId?: string;
   syncStatus?: 'local_only' | 'synced_m365' | 'sync_error';
   lastSyncedAt?: string;
   isExternalOutlook?: boolean; // Evento importado desde Outlook
@@ -1601,67 +1592,6 @@ export interface TodoItem {
   completedBy?: string;
   calendarEventId?: string;
   createdAt?: string;
-}
-
-export interface WikiArticleChecklistStep {
-  step: number;
-  title: string;
-  instruction: string;
-  completed?: boolean;
-}
-
-export interface WikiArticleMediaItem {
-  id: string;
-  title: string;
-  url: string;
-  type: 'image' | 'video' | 'drawing';
-  description?: string;
-  compareUrl?: string;
-  compareDescription?: string;
-}
-
-export interface WikiArticle {
-  id: string;
-  title: string;
-  category:
-    | 'mantenimiento_cables'
-    | 'mordazas_pinzas'
-    | 'balancines_poleas'
-    | 'seguridad_alturas'
-    | 'normativa_stc'
-    | 'lecciones_aprendidas'
-    | 'induccion_onboarding'
-    | 'induccion_general'
-    | 'compras_adquisiciones'
-    | 'almacen_herramientas'
-    | 'uso_erp'
-    | 'viaticos_contabilidad';
-  summary: string;
-  content: string;
-  author: string;
-  readTime: string;
-  updatedAt: string;
-  status?: 'borrador' | 'en_revision' | 'aprobado';
-  generatedByLuciana?: boolean;
-  reviewedBy?: string;
-  reviewedAt?: string;
-  interactiveChecklist?: WikiArticleChecklistStep[];
-  mediaUrls?: WikiArticleMediaItem[];
-  targetRoles?: string[];
-  readByUsers?: string[];
-  sharepointSyncUrl?: string;
-  sharepointDocUrl?: string;
-  tags?: string[];
-  pdfDownloadName?: string;
-  learningPathOrder?: number;
-  learningPathRole?:
-    | 'mecanico_stc'
-    | 'inspector_end'
-    | 'electricista_stc'
-    | 'transversal'
-    | 'induccion_corporativa'
-    | 'compras_logistica'
-    | 'administrativo_contable';
 }
 
 // 3. NEGOCIOS INTERNACIONALES
@@ -1759,20 +1689,6 @@ export interface PayrollNovelty {
 }
 
 export type LeaveRequest = PayrollNovelty;
-
-// 5. OPERACIONES Y MANTENIMIENTO TÉCNICO
-export interface MaintenancePlan {
-  id: string;
-  code: string;
-  projectCode: string;
-  systemName: string;
-  component: 'Cable Portador-Tractor' | 'Pilonas y Balancines' | 'Pinzas Desembragables' | 'Grupo Motriz y Freno';
-  frequency: 'Mensual' | 'Trimestral' | 'Semestral' | 'Anual';
-  lastDoneDate: string;
-  nextDueDate: string;
-  responsibleTechnician: string;
-  status: 'al_dia' | 'proximo_a_vencer' | 'vencido';
-}
 
 // DEFINICIÓN DE ÁREAS Y CONTROL DE ACCESO BASADO EN ROLES (RBAC)
 export type AreaId =
@@ -1927,56 +1843,6 @@ export interface DianPayrollDocument {
 }
 
 export * from './InventorySchema';
-
-export interface WorkOrderOT {
-  id: string;
-  code: string;
-  projectId: string;
-  projectCode: string;
-  itemCode?: string;
-  component: string;
-  priority: 'baja' | 'media' | 'alta' | 'urgente';
-  technician: string;
-  description: string;
-  status: 'diagnostico' | 'en_reparacion' | 'pruebas_banco' | 'completada';
-  createdAt: string;
-  // Coreografía Eje 7: Trazabilidad de Fallas en Campo y Mantenimiento
-  originDdrId?: string;
-  originDdrNumber?: string;
-  originReporterName?: string;
-  originDate?: string;
-  originFinding?: string;
-  generatedRequisitionId?: string;
-  generatedRequisitionNumber?: string;
-}
-
-export interface ManufacturingOrder {
-  id: string;
-  code: string;
-  partName: string;
-  material: string;
-  quantity: number;
-  projectCode: string;
-  projectId?: string;
-  itemCode?: string;
-  stage: 'corte' | 'torno_cnc' | 'fresado' | 'tratamiento_termico' | 'listo_almacen';
-  createdAt: string;
-}
-
-export interface BenchTestRecord {
-  id: string;
-  testCode: string;
-  projectId?: string;
-  projectCode?: string;
-  itemCode?: string;
-  gripSerial: string;
-  gripType: string;
-  clampingForceKN: number;
-  requiredForceKN: number;
-  verdict: 'conforme' | 'no_conforme';
-  technician: string;
-  testDate: string;
-}
 
 export interface SstInspectionRecord {
   id: string;

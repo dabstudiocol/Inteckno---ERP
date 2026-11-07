@@ -228,7 +228,6 @@ export async function syncChatMessageToCloud(message: ChatMessage): Promise<bool
     if (message.aiAnalysis) payload.aiAnalysis = message.aiAnalysis;
     if (message.aiStatus) payload.aiStatus = message.aiStatus;
     if (message.linkedProjectId) payload.linkedProjectId = message.linkedProjectId;
-    if (message.linkedWorkOrderId) payload.linkedWorkOrderId = message.linkedWorkOrderId;
     if (message.linkedTaskUuid) payload.linkedTaskUuid = message.linkedTaskUuid;
     if (typeof message.isEmergency === 'boolean') payload.isEmergency = message.isEmergency;
     if (message.createdAt) payload.createdAt = message.createdAt;

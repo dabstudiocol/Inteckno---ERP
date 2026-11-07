@@ -605,56 +605,6 @@ export const DEFAULT_MODULE_CONFIGS: Record<string, ModuleConfigGroup> = {
     },
   },
 
-  // 8. MANTENIMIENTO Y OPERACIONES AVANZADAS
-  mantenimiento: {
-    moduleId: 'mantenimiento',
-    moduleName: 'Mantenimiento y Operaciones Avanzadas',
-    catalogs: {
-      criticalComponents: {
-        key: 'criticalComponents',
-        title: 'Componentes Críticos de Cable (Normas EN 1709 / EN 12929)',
-        description: 'Elementos de seguridad crítica sujetos a planes preventivos.',
-        hasCode: true,
-        codeLabel: 'Subsistema',
-        items: [
-          { id: 'cc-1', name: 'Cable Portador-Tractor (Empalme & Almas)', code: 'LINEA', isActive: true },
-          { id: 'cc-2', name: 'Pinzas / Mordazas Desembragables (Resortes & Levas)', code: 'VEHICULO', isActive: true },
-          { id: 'cc-3', name: 'Balancines de Apoyo & Poleas de Guía', code: 'PILONA', isActive: true },
-          { id: 'cc-4', name: 'Reductor Mecánico Principal & Corona Dentada', code: 'ESTACION', isActive: true },
-          { id: 'cc-5', name: 'Motor Diésel Auxiliar de Evacuación', code: 'RESPALDO', isActive: true },
-          { id: 'cc-6', name: 'Freno de Emergencia Hidráulico sobre Polea Motriz', code: 'SEGURIDAD', isActive: true },
-          { id: 'cc-7', name: 'Circuito de Seguridad Eléctrico & Parada de Emergencia', code: 'AUTOMACION', isActive: true },
-        ],
-      },
-      frequencies: {
-        key: 'frequencies',
-        title: 'Frecuencias de Inspección Programadas',
-        description: 'Periodicidad de rutinas técnicas según manuales STC.',
-        hasCode: false,
-        items: [
-          { id: 'fq-1', name: 'Diaria / Antes de Apertura al Público (8h)', isActive: true },
-          { id: 'fq-2', name: 'Semanal / Rutina Básica (50h)', isActive: true },
-          { id: 'fq-3', name: 'Mensual / Lubricación y Ajustes (200h)', isActive: true },
-          { id: 'fq-4', name: 'Trimestral / Verificación NDT (500h)', isActive: true },
-          { id: 'fq-5', name: 'Semestral / Revisión Mayor de Pilonas (1.000h)', isActive: true },
-          { id: 'fq-6', name: 'Anual / Parada Mayor Normativa (2.000h)', isActive: true },
-        ],
-      },
-      otPriorities: {
-        key: 'otPriorities',
-        title: 'Prioridades de Órdenes de Trabajo (OT)',
-        description: 'Niveles de urgencia para atención en taller y campo.',
-        hasCode: false,
-        items: [
-          { id: 'otp-1', name: 'Crítica (Parada de Operación o Riesgo Alto)', isActive: true },
-          { id: 'otp-2', name: 'Alta (Atención requerida ≤ 24 Horas)', isActive: true },
-          { id: 'otp-3', name: 'Media (Programable en Ventana Nocturna)', isActive: true },
-          { id: 'otp-4', name: 'Baja (Mantenimiento Estándar)', isActive: true },
-        ],
-      },
-    },
-  },
-
   // 9. GESTIÓN DOCUMENTAL
   documentos: {
     moduleId: 'documentos',
@@ -812,42 +762,6 @@ export const DEFAULT_MODULE_CONFIGS: Record<string, ModuleConfigGroup> = {
           { id: 'pr-2', name: 'Alta', isActive: true },
           { id: 'pr-3', name: 'Media', isActive: true },
           { id: 'pr-4', name: 'Baja', isActive: true },
-        ],
-      },
-    },
-  },
-
-  // 12. ARTÍCULOS & WIKI TÉCNICA
-  articulos: {
-    moduleId: 'articulos',
-    moduleName: 'Artículos & Wiki Técnica',
-    catalogs: {
-      categories: {
-        key: 'categories',
-        title: 'Categorías Técnicas de la Wiki',
-        description: 'Temáticas especializadas en transporte por cable y normas EN/ISO.',
-        hasCode: true,
-        codeLabel: 'Clave',
-        items: [
-          { id: 'wk-1', name: 'Cables & Ensayos MRT', code: 'mantenimiento_cables', isActive: true },
-          { id: 'wk-2', name: 'Pinzas & Mordazas Desembragables', code: 'mordazas_pinzas', isActive: true },
-          { id: 'wk-3', name: 'Poleas & Balancines', code: 'balancines_poleas', isActive: true },
-          { id: 'wk-4', name: 'Seguridad en Alturas SST', code: 'seguridad_alturas', isActive: true },
-          { id: 'wk-5', name: 'Normativa EN 1709 / EN 12929', code: 'normativa_stc', isActive: true },
-          { id: 'wk-6', name: 'Procedimientos Operativos Estándar (POE)', code: 'procedimientos_poe', isActive: true },
-        ],
-      },
-      readTimes: {
-        key: 'readTimes',
-        title: 'Tiempos Estimados de Lectura',
-        description: 'Duración promedio de consulta del artículo técnico.',
-        hasCode: false,
-        items: [
-          { id: 'rt-1', name: '3 min', isActive: true },
-          { id: 'rt-2', name: '5 min', isActive: true },
-          { id: 'rt-3', name: '10 min', isActive: true },
-          { id: 'rt-4', name: '15 min', isActive: true },
-          { id: 'rt-5', name: '30 min', isActive: true },
         ],
       },
     },
@@ -1273,7 +1187,6 @@ export const MODULE_ALIASES: Record<string, string> = {
   procurement: 'compras',
   // CRM & Comercial
   contactos: 'crm',
-  ventas: 'crm',
   commercial: 'crm',
   // Talento Humano & Personal
   vacaciones: 'empleados',
@@ -1287,11 +1200,6 @@ export const MODULE_ALIASES: Record<string, string> = {
   expenses: 'gastos',
   timesheet: 'registro-horas',
   dashboard: 'contabilidad',
-  // Mantenimiento & Operaciones
-  reparacion: 'mantenimiento',
-  manufactura: 'mantenimiento',
-  taller: 'mantenimiento',
-  plm: 'mantenimiento',
   // Internacional
   'calculadora-precios': 'international',
   'leads-internacionales': 'radar-oportunidades',

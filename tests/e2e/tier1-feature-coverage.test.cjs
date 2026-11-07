@@ -80,7 +80,7 @@ suite.register('T1-F1-04', 'Absence of 3 pruned empty directories', {
   assertDirDoesNotExist('src/modules/projects/types', 'Empty directory src/modules/projects/types/ must be pruned');
 });
 
-suite.register('T1-F1-05', 'Presence and reachability of all 20 business modules', {
+suite.register('T1-F1-05', 'Presence and reachability of all active business modules', {
   tier: 1,
   feature: 'F1',
   milestone: 'M1',
@@ -100,14 +100,12 @@ suite.register('T1-F1-05', 'Presence and reachability of all 20 business modules
     'src/modules/expenses/ExpensesModule.tsx',
     'src/modules/timesheet/TimesheetModule.tsx',
     'src/modules/hr/TalentoHumanoModule.tsx',
-    'src/modules/operations/OperacionesAvanzadasModule.tsx',
     'src/modules/dashboard/DashboardModule.tsx',
     'src/modules/international/InternationalModule.tsx',
     'src/modules/inteckno/ConversacionesModule.tsx',
     'src/modules/inteckno/DocumentosModule.tsx',
     'src/modules/inteckno/CalendarioModule.tsx',
     'src/modules/inteckno/ActividadesModule.tsx',
-    'src/modules/inteckno/ArticulosModule.tsx',
     'src/modules/inteckno/UserProfileModule.tsx',
     'src/modules/inteckno/UserManagementModule.tsx',
     'src/modules/inteckno/CargosModule.tsx'

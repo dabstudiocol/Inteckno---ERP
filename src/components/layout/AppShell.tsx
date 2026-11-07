@@ -317,13 +317,13 @@ export const AppShell: React.FC<AppShellProps> = ({
     gerente_administrativa: ['dashboard', 'gastos', 'contabilidad', 'conversaciones'],
     gerente_proyectos: ['dashboard', 'proyectos', 'planeacion', 'conversaciones'],
     lider_proyectos: ['dashboard', 'proyectos', 'planeacion', 'conversaciones'],
-    lider_ingenieria: ['dashboard', 'proyectos', 'plm', 'conversaciones'],
+    lider_ingenieria: ['dashboard', 'proyectos', 'planeacion', 'conversaciones'],
     ingeniero_proyectos: ['dashboard', 'proyectos', 'registro-horas', 'conversaciones'],
-    supervisor_tecnico: ['dashboard', 'mantenimiento', 'registro-horas', 'conversaciones'],
-    tecnico_stc: ['dashboard', 'mantenimiento', 'registro-horas', 'conversaciones'],
+    supervisor_tecnico: ['dashboard', 'proyectos', 'registro-horas', 'conversaciones'],
+    tecnico_stc: ['dashboard', 'proyectos', 'registro-horas', 'conversaciones'],
     coord_compras: ['dashboard', 'compras', 'inventario', 'conversaciones'],
     almacenista: ['dashboard', 'inventario', 'codigo-barras', 'conversaciones'],
-    coord_comercial: ['dashboard', 'crm', 'ventas', 'conversaciones'],
+    coord_comercial: ['dashboard', 'crm', 'contactos', 'conversaciones'],
     asistente_negocios_internacionales: ['dashboard', 'crm', 'radar-oportunidades', 'conversaciones'],
     hseq: ['dashboard', 'proyectos', 'actividades', 'conversaciones'],
     contador_externo: ['dashboard', 'gastos', 'contabilidad', 'conversaciones'],
@@ -400,14 +400,11 @@ export const AppShell: React.FC<AppShellProps> = ({
       gastos: 'Gastos',
       contabilidad: 'Finanzas',
       planeacion: 'Planeación',
-      plm: 'Ingeniería',
       'registro-horas': 'Horas',
-      mantenimiento: 'Mantenim.',
       compras: 'Compras',
       inventario: 'Inventario',
       'codigo-barras': 'Código QR',
       crm: 'CRM',
-      ventas: 'Ventas',
       'radar-oportunidades': 'Radar',
       actividades: 'Actividades',
       calendario: 'Agenda',
@@ -511,7 +508,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         text.includes('stock') ||
         text.includes('repuesto')
       ) {
-        targetModule = 'articulos';
+        targetModule = 'inventario';
       } else if (
         text.includes('hseq') ||
         text.includes('seguridad') ||
@@ -519,12 +516,6 @@ export const AppShell: React.FC<AppShellProps> = ({
         text.includes('epp')
       ) {
         targetModule = 'hseq-inspecciones';
-      } else if (
-        text.includes('mantenimiento') ||
-        text.includes('operaciones') ||
-        text.includes('ot')
-      ) {
-        targetModule = 'operaciones-mantenimiento';
       } else if (
         text.includes('factura') ||
         text.includes('pago') ||
