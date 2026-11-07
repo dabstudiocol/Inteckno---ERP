@@ -32,17 +32,17 @@ export function LightTable<T>({
 }: LightTableProps<T>) {
   if (data.length === 0) {
     return (
-      <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-200 space-y-1">
-        <p className="text-xs text-slate-700 font-bold">{emptyMessage}</p>
+      <div className="p-8 text-center bg-[#EBF2FA] rounded-3xl space-y-1.5">
+        <p className="text-xs sm:text-sm text-[#050C1A] font-black">{emptyMessage}</p>
         {emptySubtitle && (
-          <p className="text-[11px] text-slate-400 max-w-sm mx-auto">{emptySubtitle}</p>
+          <p className="text-xs text-[#334155] font-semibold max-w-sm mx-auto">{emptySubtitle}</p>
         )}
         {emptyAction && (
-          <div className="pt-2">
+          <div className="pt-2.5">
             <button
               type="button"
               onClick={emptyAction.onClick}
-              className="px-3.5 py-1.5 rounded-xl bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-2xl bg-gradient-to-r from-[#0284C7] to-[#035388] hover:opacity-95 text-white text-xs font-black transition-all inline-flex items-center gap-1.5 cursor-pointer"
             >
               <span>{emptyAction.label}</span>
             </button>
@@ -54,9 +54,7 @@ export function LightTable<T>({
 
   return (
     <div className="w-full max-w-full min-w-0">
-      {/* ========================================================================= */}
-      {/* VISTA MÓVIL (< 768px): Tarjetas de Datos Táctiles (Mobile-First / Fitts Law) */}
-      {/* ========================================================================= */}
+      {/* VISTA MÓVIL (< 768px): Tarjetas de Datos Táctiles Curvas */}
       <div className="md:hidden space-y-2.5">
         {data.map((item) => {
           const key = keyExtractor(item);
@@ -68,11 +66,10 @@ export function LightTable<T>({
             <div
               key={key}
               onClick={() => onRowClick && onRowClick(item)}
-              className={`bg-white rounded-xl p-3.5 space-y-2.5 transition-colors shadow-2xs ${
-                onRowClick ? 'cursor-pointer active:bg-slate-50/90' : ''
+              className={`bg-[#EBF2FA] rounded-2xl p-4 space-y-2.5 transition-colors ${
+                onRowClick ? 'cursor-pointer active:bg-[#DCE9F8]' : ''
               }`}
             >
-              {/* Fila Primaria: Columna Principal + Estado/Acción Final */}
               <div className="flex items-center justify-between gap-2.5">
                 <div className="min-w-0 flex-1">
                   {firstCol.render ? firstCol.render(item) : (item as any)[firstCol.key]}
@@ -84,15 +81,14 @@ export function LightTable<T>({
                 )}
               </div>
 
-              {/* Fila Secundaria: Columnas Intermedias en Rejilla Compacta */}
               {middleCols.length > 0 && (
-                <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
+                <div className="pt-2 grid grid-cols-2 gap-2.5 text-xs">
                   {middleCols.map((col) => (
                     <div key={col.key} className={`min-w-0 ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'}`}>
-                      <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">
+                      <span className="text-[10px] text-[#334155] block font-black uppercase tracking-wider">
                         {col.header}
                       </span>
-                      <div className="mt-0.5 truncate text-slate-700 font-medium">
+                      <div className="mt-0.5 truncate text-[#050C1A] font-bold">
                         {col.render ? col.render(item) : (item as any)[col.key]}
                       </div>
                     </div>
@@ -104,17 +100,15 @@ export function LightTable<T>({
         })}
       </div>
 
-      {/* ========================================================================= */}
-      {/* VISTA TABLET & DESKTOP (>= 768px): Tabla Compacta Enterprise Limpia */}
-      {/* ========================================================================= */}
-      <div className="hidden md:block w-full max-w-full min-w-0 overflow-x-auto rounded-xl bg-white shadow-2xs">
-        <table className="w-full text-left border-collapse min-w-full">
+      {/* VISTA TABLET & DESKTOP (>= 768px): Tabla Capsule Enterprise */}
+      <div className="hidden md:block w-full max-w-full min-w-0 overflow-x-auto rounded-3xl bg-white p-1">
+        <table className="w-full text-left min-w-full">
           <thead>
-            <tr className="bg-[#F8FAFC]/90 backdrop-blur-xs border-b border-slate-200/80">
+            <tr className="bg-[#DCE8F6]">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`py-2.5 px-3 sm:px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider ${
+                  className={`py-3 px-4 text-[11px] font-black text-[#07192F] uppercase tracking-wider ${
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                   } ${col.className || ''}`}
                 >
@@ -130,14 +124,14 @@ export function LightTable<T>({
                 <tr
                   key={key}
                   onClick={() => onRowClick && onRowClick(item)}
-                  className={`group transition-colors duration-150 hover:bg-slate-50/80 ${
+                  className={`group transition-colors duration-150 hover:bg-[#E0F2FE] ${
                     onRowClick ? 'cursor-pointer' : ''
                   }`}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`py-2.5 px-3 sm:px-4 text-xs text-[#1D1D1F] align-middle ${
+                      className={`py-3 px-4 text-xs font-bold text-[#050C1A] align-middle ${
                         col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                       } ${col.className || ''}`}
                     >

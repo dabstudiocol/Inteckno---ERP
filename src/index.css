@@ -5,42 +5,42 @@
     --font-sans: 'SF Pro Display', 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'SF Pro Display', 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
 
-    /* Colores Marca Inteckno */
-    --itk-primary: #00668F;
-    --itk-primary-hover: #005073;
-    --itk-accent: #F39200;
-    --itk-accent-hover: #D98200;
+    /* Colores Marca Inteckno High-Tech Aerospace */
+    --itk-primary: #0284C7;
+    --itk-primary-hover: #0369A1;
+    --itk-accent: #F59E0B;
+    --itk-accent-hover: #D97706;
 
-    /* Superficies y Neutros estilo Apple */
-    --app-bg: #F0F4F8;
-    --sidebar-dark: #0B1317;
-    --sidebar-hover: #16222A;
+    /* Superficies Contrastadas Cero-Bordes */
+    --app-bg: #DCE6F2;
+    --sidebar-dark: #050E1D;
+    --sidebar-hover: #0F233F;
     --card-surface: #FFFFFF;
 
-    /* Jerarquía Tipográfica y Contraste de Color (Regla 6) */
-    --text-primary: #0F172A;   /* Slate 900 - Títulos, valores clave, texto primario */
-    --text-secondary: #475569; /* Slate 600 - Subtítulos, descripciones, campos */
-    --text-tertiary: #64748B;  /* Slate 500 - Metadatos, timestamps, leyendas */
-    
-    /* Pasteles Corporativos */
-    --pastel-blue-bg: #EAF4FA;
-    --pastel-blue-border: #D2E7F5;
-    --pastel-blue-text: #0B5375;
+    /* Jerarquía Tipográfica de Alto Impacto */
+    --text-primary: #050C1A;
+    --text-secondary: #1E293B;
+    --text-tertiary: #334155;
 
-    --pastel-purple-bg: #F2EEFD;
-    --pastel-purple-border: #DED6FA;
-    --pastel-purple-text: #503799;
+    /* Superficies Tonalizadas Corporativas */
+    --pastel-blue-bg: #DFF0FA;
+    --pastel-blue-border: transparent;
+    --pastel-blue-text: #035388;
 
-    --pastel-green-bg: #EBF7EE;
-    --pastel-green-border: #D0EED6;
-    --pastel-green-text: #196836;
+    --pastel-purple-bg: #EAE4FD;
+    --pastel-purple-border: transparent;
+    --pastel-purple-text: #432899;
 
-    --pastel-amber-bg: #FFF7EB;
-    --pastel-amber-border: #FEE7C4;
-    --pastel-amber-text: #8E5000;
+    --pastel-green-bg: #DCF5E6;
+    --pastel-green-border: transparent;
+    --pastel-green-text: #0D5C31;
+
+    --pastel-amber-bg: #FEF0D6;
+    --pastel-amber-border: transparent;
+    --pastel-amber-text: #854400;
   }
 
-  /* Regla 9: Disciplina tipográfica única para todo el ERP: SF PRO DISPLAY */
+  /* Regla 9 & 15: Disciplina tipográfica única para todo el ERP: SF PRO DISPLAY */
   :root, html, body, button, input, select, textarea, div, span, p, h1, h2, h3, h4, h5, h6, label, code, pre, kbd, a, table, tr, th, td, [class] {
     font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif !important;
   }
@@ -49,93 +49,235 @@
     font-family: var(--font-sans);
     background-color: var(--app-bg);
     color: var(--text-primary);
+    font-weight: 500;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
-    line-height: 1.5; /* Regla 3: Leading estándar óptimo */
+    line-height: 1.5;
   }
 
   /* ==========================================================================
-     SISTEMA TIPOGRÁFICO UI PROFESIONAL (10 REGLAS MAESTRAS DE UI DESIGN)
+     SISTEMA TIPOGRÁFICO HIGH-TECH (PESOS FUERTES, TRAZADO NÍTIDO Y CONTRASTE)
      ========================================================================== */
 
-  /* Regla 1 & 3 & 4: Escala Modular, Interlineado Proporcional y Tracking */
   h1, .h1 {
-    font-size: 1.5rem; /* 24px en móvil / tablet */
-    line-height: 1.2;
-    letter-spacing: -0.025em; /* Tracking ajustado para títulos grandes */
-    font-weight: 700;
+    font-size: 1.55rem;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    font-weight: 900 !important;
+    color: #050C1A;
   }
 
   @media (min-width: 768px) {
     h1, .h1 {
-      font-size: 1.75rem; /* 28px en desktop */
-      line-height: 1.2;
+      font-size: 1.8rem;
+      line-height: 1.15;
     }
   }
 
   h2, .h2 {
-    font-size: 1.25rem; /* 20px */
-    line-height: 1.25;
-    letter-spacing: -0.02em;
-    font-weight: 700;
+    font-size: 1.3rem;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    font-weight: 800 !important;
+    color: #050C1A;
   }
 
   h3, .h3 {
-    font-size: 1.05rem; /* ~16.8px */
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-    font-weight: 600;
+    font-size: 1.08rem;
+    line-height: 1.28;
+    letter-spacing: -0.015em;
+    font-weight: 800 !important;
   }
 
   h4, .h4 {
-    font-size: 0.925rem; /* ~14.8px */
+    font-size: 0.95rem;
     line-height: 1.35;
-    letter-spacing: normal;
-    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-weight: 700 !important;
   }
 
-  /* Regla 2: Contraste de Peso y Jerarquía */
   .text-lead {
     font-size: 1rem;
     line-height: 1.6;
-    font-weight: 400;
+    font-weight: 600;
     color: var(--text-secondary);
   }
 
   .text-body {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
     line-height: 1.55;
+    font-weight: 500;
   }
 
   .text-small {
-    font-size: 0.75rem; /* 12px */
+    font-size: 0.78rem;
     line-height: 1.45;
+    font-weight: 600;
     color: var(--text-secondary);
   }
 
   .text-micro {
-    font-size: 0.6875rem; /* 11px */
+    font-size: 0.7rem;
     line-height: 1.3;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
+    font-weight: 700;
   }
 
-  /* Regla 4: Tracking amplio para etiquetas mayúsculas / table headers */
   .text-overline, th, .uppercase-label {
-    letter-spacing: 0.05em;
-    font-weight: 600;
+    letter-spacing: 0.06em;
+    font-weight: 800 !important;
   }
 
-  /* Regla 5: Longitud de Línea Óptima para Lectura (Measure 55-75 chars) */
   p, .prose-block {
-    max-width: 72ch;
+    max-width: 75ch;
   }
 
   /* Regla 8: Tabular figures para cifras financieras y números */
   .tabular-nums, .font-mono, td[class*="text-right"], [class*="tabular"] {
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* ==========================================================================
+   GEOMETRÍA CURVA RADICAL Y REORGANIZACIÓN VISUAL GLOBAL (SQUIRCLES)
+   ========================================================================== */
+.rounded-md {
+  border-radius: 12px !important;
+}
+
+.rounded-lg {
+  border-radius: 16px !important;
+}
+
+.rounded-xl {
+  border-radius: 22px !important;
+}
+
+.rounded-2xl {
+  border-radius: 26px !important;
+}
+
+.rounded-3xl {
+  border-radius: 32px !important;
+}
+
+/* Botones de Marca con Gradiente Tecnológico Vibrante */
+.bg-\[\#00668F\] {
+  background-image: linear-gradient(135deg, #0284C7 0%, #00668F 60%, #035388 100%) !important;
+  background-color: #0284C7 !important;
+}
+
+.bg-\[\#00668F\]:hover,
+.hover\:bg-\[\#005273\]:hover {
+  background-image: linear-gradient(135deg, #0369A1 0%, #005273 100%) !important;
+  background-color: #0369A1 !important;
+}
+
+/* Superficies Interiores Contrastadas (Sin Bordes) */
+main .bg-slate-50,
+main .bg-gray-50 {
+  background-color: #EBF2FA !important;
+}
+
+main .bg-slate-100,
+main .bg-gray-100 {
+  background-color: #DDE8F5 !important;
+}
+
+/* Mayor Grosor y Contraste de Letras en Todo el ERP */
+main .font-normal {
+  font-weight: 500 !important;
+}
+
+main .font-medium {
+  font-weight: 600 !important;
+}
+
+main .font-semibold {
+  font-weight: 700 !important;
+}
+
+main .font-bold {
+  font-weight: 800 !important;
+}
+
+main .text-gray-400,
+main .text-slate-400 {
+  color: #475569 !important;
+}
+
+main .text-gray-500,
+main .text-slate-500 {
+  color: #334155 !important;
+}
+
+main .text-gray-600,
+main .text-slate-600 {
+  color: #1E293B !important;
+}
+
+main .text-gray-700,
+main .text-slate-700,
+main .text-gray-800,
+main .text-slate-800,
+main .text-gray-900,
+main .text-slate-900 {
+  color: #050C1A !important;
+}
+
+/* ==========================================================================
+   TABLAS FUTURISTAS SIN BORDES (CAPSULE DATA GRIDS EN TODOS LOS MÓDULOS)
+   ========================================================================== */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 4px !important;
+}
+
+thead tr {
+  background-color: #DCE8F6 !important;
+}
+
+thead th {
+  color: #07192F !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+thead th:first-child {
+  border-top-left-radius: 16px !important;
+  border-bottom-left-radius: 16px !important;
+}
+
+thead th:last-child {
+  border-top-right-radius: 16px !important;
+  border-bottom-right-radius: 16px !important;
+}
+
+tbody tr {
+  background-color: #FFFFFF;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #F3F8FD;
+}
+
+tbody tr:hover {
+  background-color: #E0F2FE !important;
+}
+
+tbody td:first-child {
+  border-top-left-radius: 14px !important;
+  border-bottom-left-radius: 14px !important;
+}
+
+tbody td:last-child {
+  border-top-right-radius: 14px !important;
+  border-bottom-right-radius: 14px !important;
 }
 
 /* Custom scrollbars */
@@ -147,21 +289,23 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #94A3B8;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #64748B;
 }
 
 /* Glassmorphism sutil y nítido */
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-/* Regla Maestra Global de Cero Sombreados (Erradicación Total de Box-Shadows) */
+/* ==========================================================================
+   REGLA MAESTRA: CERO SOMBREADOS Y CERO BORDES EN ABSOLUTAMENTE TODO EL ERP
+   ========================================================================== */
 *, *::before, *::after, [class*="shadow"], [class*="shadow-"] {
   box-shadow: none !important;
   text-shadow: none !important;
@@ -174,7 +318,6 @@
   -webkit-box-shadow: none !important;
 }
 
-/* Erradicación Total y Absoluta de Bordes y Líneas Divisoras en TODO el ERP */
 *,
 *::before,
 *::after,
@@ -185,6 +328,7 @@ button,
 [class*="border"],
 [class*="divide-"] > *,
 [class*="divide"] > *,
+[class*="ring-"],
 div,
 span,
 p,
@@ -213,33 +357,35 @@ article {
   outline: none !important;
 }
 
-/* Campos de formulario sin bordes, con fondo sólido y contraste garantizado */
-input,
+/* Campos de formulario curvos, sin bordes, con fondo sólido contrastado */
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   border: 0 !important;
   border-width: 0 !important;
   border-style: none !important;
   outline: none !important;
-  background-color: #F1F5F9;
+  background-color: #E3EDF8;
+  border-radius: 16px !important;
   vertical-align: middle;
-  color: #0F172A;
+  color: #050C1A;
+  font-weight: 600;
 }
 
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
-  background-color: #FFFFFF;
-  color: #0F172A;
-  box-shadow: 0 0 0 2px rgba(0, 102, 143, 0.25) !important;
+  background-color: #FFFFFF !important;
+  color: #050C1A !important;
+  box-shadow: none !important;
 }
 
 /* Manejo explícito de Login e inputs con autofill del navegador */
 .login-input,
 .login-input:focus {
   background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  -webkit-text-fill-color: #0F172A !important;
+  color: #050C1A !important;
+  -webkit-text-fill-color: #050C1A !important;
 }
 
 .login-input:-webkit-autofill,
@@ -248,7 +394,7 @@ textarea:focus {
 .login-input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
   box-shadow: 0 0 0 1000px #FFFFFF inset !important;
-  -webkit-text-fill-color: #0F172A !important;
+  -webkit-text-fill-color: #050C1A !important;
   transition: background-color 5000s ease-in-out 0s;
 }
 
@@ -279,6 +425,7 @@ span[class*="rounded-full"]:not([class*="h-"]):not([role="progressbar"]) {
   justify-content: center !important;
   line-height: 1 !important;
   flex-shrink: 0 !important;
+  font-weight: 800 !important;
 }
 
 /* Barras de Progreso e Indicadores de Avance: Siempre inician estrictamente en 0% a la izquierda */
@@ -308,11 +455,9 @@ div[class*="bg-gray-200"]:has(> div) > div {
 /* ==========================================================================
    DENSIDAD DE FILAS Y TABLAS (CÓMODA vs COMPACTA)
    ========================================================================== */
-
-/* Densidad Compacta: Comprime encabezados, celdas y filas en todas las tablas */
 html[data-density="compact"] table th {
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
   padding-left: 10px !important;
   padding-right: 10px !important;
   font-size: 10.5px !important;
@@ -320,8 +465,8 @@ html[data-density="compact"] table th {
 }
 
 html[data-density="compact"] table td {
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
   padding-left: 10px !important;
   padding-right: 10px !important;
   font-size: 11px !important;
@@ -329,28 +474,27 @@ html[data-density="compact"] table td {
 }
 
 html[data-density="compact"] table tr {
-  height: 34px !important;
+  height: 36px !important;
 }
 
-/* Densidad Cómoda (Estándar): Más respiro y confort visual */
 html[data-density="comfortable"] table th {
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
   padding-left: 16px !important;
   padding-right: 16px !important;
   font-size: 11px !important;
 }
 
 html[data-density="comfortable"] table td {
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
   padding-left: 16px !important;
   padding-right: 16px !important;
-  font-size: 12px !important;
+  font-size: 12.5px !important;
 }
 
 html[data-density="comfortable"] table tr {
-  height: 48px !important;
+  height: 50px !important;
 }
 
 /* ==========================================================================
@@ -361,10 +505,9 @@ html[data-font-size="normal"] {
 }
 
 html[data-font-size="large"] {
-  font-size: 106.25%; /* ~17px base */
+  font-size: 106.25%;
 }
 
 html[data-font-size="larger"] {
-  font-size: 112.5%; /* ~18px base */
+  font-size: 112.5%;
 }
-

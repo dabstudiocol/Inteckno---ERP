@@ -2168,124 +2168,136 @@ export const ConversacionesModule: React.FC = () => {
       />
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Contenedor Principal tipo WhatsApp Web STC */}
-      <div className="flex-1 w-full bg-white rounded-xl overflow-hidden flex flex-col md:flex-row min-h-0 h-full max-h-full">
+      {/* Contenedor Principal Split-Island High-Tech STC */}
+      <div className="flex-1 w-full overflow-hidden flex flex-col md:flex-row gap-3 sm:gap-3.5 min-h-0 h-full max-h-full">
         
-        {/* PANEL IZQUIERDO: Chats, Grupos, Personas y Búsqueda Global */}
-        <div className={`w-full md:w-[340px] lg:w-[360px] bg-slate-50 flex flex-col justify-between shrink-0 p-3 sm:p-3.5 min-h-0 h-full overflow-hidden ${
+        {/* ISLA IZQUIERDA: Chats, Grupos, Personas y Búsqueda Global */}
+        <div className={`w-full md:w-[350px] lg:w-[375px] bg-white rounded-3xl flex flex-col justify-between shrink-0 p-3.5 sm:p-4 min-h-0 h-full overflow-hidden ${
           mobileChatView === 'chat' ? 'hidden md:flex' : 'flex h-full'
         }`}>
-          <div className="flex-1 flex flex-col min-h-0 space-y-2.5">
+          <div className="flex-1 flex flex-col min-h-0 space-y-3">
             
-            {/* Header del Panel: Botones de Acción Rápida con Espaciado Armónico y Reactivo */}
-            <div className="flex items-center justify-between gap-1.5 pb-0.5">
-              <span className="text-xs font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-                <MessageSquare size={15} className="text-[#00668F]" />
-                <span>Chats</span>
-              </span>
+            {/* Header del Panel: Botones de Acción Rápida en Cápsulas */}
+            <div className="flex items-center justify-between gap-2 pb-0.5">
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shrink-0">
+                  <MessageSquare size={17} />
+                </div>
+                <span className="text-sm font-black text-[#050C1A] uppercase tracking-tight">
+                  Canales
+                </span>
+              </div>
 
-              <div className="flex items-center gap-1 shrink-0 ml-auto">
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                 {totalUnreadTodos > 0 && (
                   <button
                     onClick={() => markAllChatsAsRead(currentUser.id)}
                     title="Marcar todos los mensajes como leídos"
-                    className="p-1.5 bg-emerald-100/80 hover:bg-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+                    className="p-2 bg-[#DCF5E6] hover:bg-emerald-300 text-[#0D5C31] rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center shrink-0"
                   >
-                    <CheckCheck size={14} />
+                    <CheckCheck size={15} />
                   </button>
                 )}
 
                 <button
                   onClick={() => setIsNewDirectModalOpen(true)}
                   title="Nuevo chat directo con un colaborador"
-                  className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-gray-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0"
+                  className="px-3 py-2 bg-[#EBF2FA] hover:bg-[#0284C7] text-[#0369A1] hover:text-white rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
                 >
-                  <UserPlus size={13} className="text-[#00668F]" />
-                  <span>Chat</span>
+                  <UserPlus size={14} />
+                  <span>Directo</span>
                 </button>
 
                 <button
                   onClick={() => setIsNewGroupModalOpen(true)}
                   title="Crear un nuevo grupo"
-                  className="px-2.5 py-1.5 bg-[#00668F] hover:bg-[#005273] text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-2xs transition-all cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
+                  className="px-3.5 py-2 bg-gradient-to-r from-[#0284C7] to-[#035388] hover:opacity-95 text-white rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
                 >
-                  <Plus size={13} />
+                  <Plus size={14} />
                   <span>Grupo</span>
                 </button>
               </div>
             </div>
 
-            {/* BUSCADOR POTENTE ESTILO WHATSAPP: Busca grupos, personas y mensajes */}
+            {/* BUSCADOR POTENTE ESTILO WHATSAPP */}
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
+              <Search size={15} className="absolute left-3.5 top-3 text-[#0284C7]" />
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Buscar chats, personas o mensajes..."
-                className="w-full text-xs pl-8 pr-7 py-2 rounded-xl bg-white text-gray-800 placeholder-gray-400 focus:outline-hidden shadow-2xs transition-all"
+                className="w-full text-xs font-bold pl-9 pr-8 py-2.5 rounded-2xl bg-[#EBF2FA] text-[#050C1A] placeholder-[#475569] focus:outline-hidden transition-all"
               />
               {searchFilter && (
                 <button
                   onClick={() => setSearchFilter('')}
-                  className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  className="absolute right-3 top-2.5 text-[#475569] hover:text-[#050C1A] cursor-pointer"
                 >
-                  <X size={13} />
+                  <X size={14} />
                 </button>
               )}
             </div>
 
             {/* Pestañas de Filtro (Todos / Proyectos / Grupos / Directos) */}
             {!searchFilter && (
-              <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl text-[10px] sm:text-[10.5px] font-bold">
+              <div className="flex items-center gap-1 bg-[#EBF2FA] p-1.5 rounded-2xl text-[10.5px] sm:text-[11px] font-extrabold">
                 <button
                   onClick={() => setChatTab('todos')}
-                  className={`flex-1 py-1 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                    chatTab === 'todos' ? 'bg-white text-[#00668F] shadow-2xs' : 'text-gray-600 hover:text-gray-900'
+                  className={`flex-1 py-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    chatTab === 'todos'
+                      ? 'bg-gradient-to-r from-[#0284C7] to-[#035388] text-white font-black'
+                      : 'text-[#334155] hover:text-[#050C1A]'
                   }`}
                 >
                   <span>Todos</span>
                   {totalUnreadTodos > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-emerald-500 text-white">
+                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-black bg-emerald-400 text-[#041022]">
                       {totalUnreadTodos}
                     </span>
                   )}
                 </button>
                 <button
                   onClick={() => setChatTab('proyectos')}
-                  className={`flex-1 py-1 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                    chatTab === 'proyectos' ? 'bg-white text-[#00668F] shadow-2xs' : 'text-gray-600 hover:text-gray-900'
+                  className={`flex-1 py-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    chatTab === 'proyectos'
+                      ? 'bg-gradient-to-r from-[#0284C7] to-[#035388] text-white font-black'
+                      : 'text-[#334155] hover:text-[#050C1A]'
                   }`}
                 >
                   <span>Proyectos</span>
                   {totalUnreadProyectos > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-emerald-500 text-white">
+                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-black bg-emerald-400 text-[#041022]">
                       {totalUnreadProyectos}
                     </span>
                   )}
                 </button>
                 <button
                   onClick={() => setChatTab('grupos')}
-                  className={`flex-1 py-1 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                    chatTab === 'grupos' ? 'bg-white text-[#00668F] shadow-2xs' : 'text-gray-600 hover:text-gray-900'
+                  className={`flex-1 py-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    chatTab === 'grupos'
+                      ? 'bg-gradient-to-r from-[#0284C7] to-[#035388] text-white font-black'
+                      : 'text-[#334155] hover:text-[#050C1A]'
                   }`}
                 >
                   <span>Grupos</span>
                   {totalUnreadGrupos > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-emerald-500 text-white">
+                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-black bg-emerald-400 text-[#041022]">
                       {totalUnreadGrupos}
                     </span>
                   )}
                 </button>
                 <button
                   onClick={() => setChatTab('directos')}
-                  className={`flex-1 py-1 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                    chatTab === 'directos' ? 'bg-white text-[#00668F] shadow-2xs' : 'text-gray-600 hover:text-gray-900'
+                  className={`flex-1 py-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    chatTab === 'directos'
+                      ? 'bg-gradient-to-r from-[#0284C7] to-[#035388] text-white font-black'
+                      : 'text-[#334155] hover:text-[#050C1A]'
                   }`}
                 >
                   <span>Directos</span>
                   {totalUnreadDirectos > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-emerald-500 text-white">
+                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-black bg-emerald-400 text-[#041022]">
                       {totalUnreadDirectos}
                     </span>
                   )}
@@ -2294,36 +2306,36 @@ export const ConversacionesModule: React.FC = () => {
             )}
 
             {/* RESULTADOS DE BÚSQUEDA O LISTA DE CHATS */}
-            <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 pr-1 scrollbar-thin">
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 scrollbar-thin">
               {searchFilter ? (
                 // MODO RESULTADOS DE BÚSQUEDA GLOBAL
                 <div className="space-y-3">
                   {/* Personas encontradas */}
                   {searchMatchingUsers.length > 0 && (
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-1 block mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#334155] px-1 block mb-1.5">
                         Personas ({searchMatchingUsers.length}):
                       </span>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         {searchMatchingUsers.map((u) => (
                           <div
                             key={u.id}
                             onClick={() => handleStartDirectChat(u.id)}
-                            className="p-2 rounded-xl bg-white shadow-2xs hover:bg-sky-50 flex items-center justify-between cursor-pointer transition-colors"
+                            className="p-2.5 rounded-2xl bg-[#EBF2FA] hover:bg-[#E0F2FE] flex items-center justify-between cursor-pointer transition-colors"
                           >
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               <div
-                                className="w-7 h-7 rounded-lg text-white text-[10px] font-bold flex items-center justify-center shrink-0"
-                                style={{ backgroundColor: u.avatarColor || '#00668F' }}
+                                className="w-8 h-8 rounded-2xl text-white text-[11px] font-black flex items-center justify-center shrink-0"
+                                style={{ backgroundColor: u.avatarColor || '#0284C7' }}
                               >
                                 {u.avatar}
                               </div>
                               <div className="min-w-0">
-                                <div className="text-xs font-bold text-gray-900 truncate">{u.name}</div>
-                                <div className="text-[10px] text-gray-400 truncate">{u.roleLabel}</div>
+                                <div className="text-xs font-extrabold text-[#050C1A] truncate">{u.name}</div>
+                                <div className="text-[10.5px] font-semibold text-[#334155] truncate">{u.roleLabel}</div>
                               </div>
                             </div>
-                            <span className="text-[10px] font-bold text-[#00668F] bg-sky-50 px-2 py-0.5 rounded-md">
+                            <span className="text-[10px] font-black text-white bg-[#0284C7] px-2.5 py-1 rounded-full">
                               Chatear
                             </span>
                           </div>
@@ -2335,10 +2347,10 @@ export const ConversacionesModule: React.FC = () => {
                   {/* Grupos encontrados */}
                   {searchMatchingGroups.length > 0 && (
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-1 block mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#334155] px-1 block mb-1.5">
                         Grupos ({searchMatchingGroups.length}):
                       </span>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         {searchMatchingGroups.map((g) => (
                           <div
                             key={g.id}
@@ -2347,10 +2359,10 @@ export const ConversacionesModule: React.FC = () => {
                               setSearchFilter('');
                               setMobileChatView('chat');
                             }}
-                            className="p-2 rounded-xl bg-white hover:bg-sky-50 cursor-pointer"
+                            className="p-2.5 rounded-2xl bg-[#EBF2FA] hover:bg-[#E0F2FE] cursor-pointer"
                           >
-                            <div className="text-xs font-bold text-gray-900">{g.name}</div>
-                            <div className="text-[10px] text-gray-500 line-clamp-1">{g.description}</div>
+                            <div className="text-xs font-extrabold text-[#050C1A]">{g.name}</div>
+                            <div className="text-[10.5px] font-semibold text-[#334155] line-clamp-1">{g.description}</div>
                           </div>
                         ))}
                       </div>
@@ -2360,10 +2372,10 @@ export const ConversacionesModule: React.FC = () => {
                   {/* Mensajes globales encontrados */}
                   {searchMatchingMessages.length > 0 && (
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-1 block mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#334155] px-1 block mb-1.5">
                         Mensajes Encontrados ({searchMatchingMessages.length}):
                       </span>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         {searchMatchingMessages.map((msg) => {
                           const grp = chatGroups.find((g) => g.id === msg.channel);
                           return (
@@ -2374,14 +2386,14 @@ export const ConversacionesModule: React.FC = () => {
                                 setSearchFilter('');
                                 setMobileChatView('chat');
                               }}
-                              className="p-2.5 rounded-xl bg-white hover:bg-sky-50/50 cursor-pointer transition-all"
+                              className="p-3 rounded-2xl bg-[#EBF2FA] hover:bg-[#E0F2FE] cursor-pointer transition-all"
                             >
-                              <div className="flex items-center justify-between text-[10px] text-gray-400 mb-0.5">
-                                <span className="font-bold text-[#00668F]">{grp?.name || 'Chat'}</span>
-                                <span>{msg.timestamp}</span>
+                              <div className="flex items-center justify-between text-[10px] text-[#334155] mb-0.5">
+                                <span className="font-extrabold text-[#0284C7]">{grp?.name || 'Chat'}</span>
+                                <span className="font-bold">{msg.timestamp}</span>
                               </div>
-                              <div className="text-[11px] font-semibold text-gray-900">{msg.senderName}:</div>
-                              <p className="text-[11px] text-gray-600 line-clamp-2 italic">"{msg.text}"</p>
+                              <div className="text-[11px] font-extrabold text-[#050C1A]">{msg.senderName}:</div>
+                              <p className="text-[11px] font-semibold text-[#334155] line-clamp-2 italic">"{msg.text}"</p>
                             </div>
                           );
                         })}
@@ -2392,10 +2404,10 @@ export const ConversacionesModule: React.FC = () => {
                   {searchMatchingUsers.length === 0 &&
                     searchMatchingGroups.length === 0 &&
                     searchMatchingMessages.length === 0 && (
-                      <div className="p-6 text-center text-gray-400">
-                        <Search size={28} className="mx-auto mb-1.5 opacity-40" />
-                        <p className="text-xs font-bold text-gray-600">No se encontraron resultados</p>
-                        <p className="text-[10px] mt-0.5">Prueba con otra palabra clave o nombre.</p>
+                      <div className="p-6 text-center rounded-2xl bg-[#EBF2FA]">
+                        <Search size={28} className="mx-auto mb-1.5 text-[#0284C7]" />
+                        <p className="text-xs font-extrabold text-[#050C1A]">No se encontraron resultados</p>
+                        <p className="text-[10.5px] font-semibold text-[#334155] mt-0.5">Prueba con otra palabra clave o nombre.</p>
                       </div>
                     )}
                 </div>
@@ -2423,7 +2435,7 @@ export const ConversacionesModule: React.FC = () => {
 
                     const displayName = group.isDirect && partner ? partner.name : group.name;
                     const displayAvatar = group.isDirect && partner ? partner.avatar : null;
-                    const displayColor = group.isDirect && partner ? partner.avatarColor : '#00668F';
+                    const displayColor = group.isDirect && partner ? partner.avatarColor : '#0284C7';
 
                     return (
                       <button
@@ -2436,59 +2448,59 @@ export const ConversacionesModule: React.FC = () => {
                           setAttachedFile(null);
                           setMobileChatView('chat');
                         }}
-                        className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer flex flex-col gap-0.5 ${
+                        className={`w-full text-left p-3.5 rounded-2xl transition-all cursor-pointer flex flex-col gap-1 ${
                           isActive
                             ? isEmergencyChannel
-                              ? 'bg-rose-700 text-white shadow-md border-l-4 border-amber-300'
-                              : 'bg-[#00668F] text-white shadow-xs'
+                              ? 'bg-rose-700 text-white'
+                              : 'bg-gradient-to-r from-[#041428] via-[#072242] to-[#0284C7] text-white'
                             : isEmergencyChannel
-                            ? 'bg-rose-50/90 hover:bg-rose-100 text-rose-950 border border-rose-200'
-                            : 'bg-white hover:bg-slate-200/70 text-gray-800 shadow-2xs'
+                            ? 'bg-rose-100 hover:bg-rose-200 text-rose-950'
+                            : 'bg-[#EBF2FA] hover:bg-[#DCE9F8] text-[#050C1A]'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
                             {group.isDirect ? (
                               <div
-                                className="w-7 h-7 rounded-lg text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-2xs"
+                                className="w-8 h-8 rounded-2xl text-white text-[11px] font-black flex items-center justify-center shrink-0"
                                 style={{ backgroundColor: displayColor }}
                               >
                                 {displayAvatar}
                               </div>
                             ) : isEmergencyChannel ? (
-                              <span className="w-5 h-5 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0 text-[10px] animate-pulse">
+                              <span className="w-6 h-6 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 text-[11px] animate-pulse">
                                 🚨
                               </span>
                             ) : (
                               <span
-                                className={`w-2 h-2 rounded-full shrink-0 ${
-                                  isActive ? 'bg-sky-200' : 'bg-[#00668F]'
+                                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                  isActive ? 'bg-cyan-300' : 'bg-[#0284C7]'
                                 }`}
                               />
                             )}
-                            <span className={`text-xs font-bold truncate ${
-                              isActive ? 'text-white' : isEmergencyChannel ? 'text-rose-900' : 'text-gray-900'
+                            <span className={`text-xs font-black truncate ${
+                              isActive ? 'text-white' : isEmergencyChannel ? 'text-rose-950' : 'text-[#050C1A]'
                             }`}>
                               {displayName}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             {group.linkedProjectId && (
-                              <span className={`text-[8.5px] px-1 py-0.2 rounded-md font-black ${
-                                isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-[#00668F]'
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-black ${
+                                isActive ? 'bg-white/20 text-white' : 'bg-[#0284C7]/15 text-[#035388]'
                               }`}>
                                 {group.linkedProjectId}
                               </span>
                             )}
                             {unreadCount > 0 ? (
-                              <span className="min-w-[19px] h-[19px] px-1 rounded-full font-bold text-[9px] shrink-0 aspect-square bg-emerald-600 text-white shadow-2xs flex items-center justify-center animate-in zoom-in-75 leading-none">
+                              <span className="min-w-[20px] h-[20px] px-1.5 rounded-full font-black text-[9.5px] shrink-0 aspect-square bg-emerald-500 text-white flex items-center justify-center animate-in zoom-in-75 leading-none">
                                 {unreadCount > 99 ? '99+' : unreadCount}
                               </span>
                             ) : (
                               <span
-                                className={`text-[10px] font-medium shrink-0 ${
-                                  isActive ? 'text-sky-100' : 'text-gray-400'
+                                className={`text-[10px] font-bold shrink-0 ${
+                                  isActive ? 'text-cyan-200' : 'text-[#334155]'
                                 }`}
                               >
                                 {lastMsg ? lastMsg.timestamp.replace('Hoy ', '') : `${groupMessages.length} msgs`}
@@ -2498,12 +2510,12 @@ export const ConversacionesModule: React.FC = () => {
                         </div>
 
                         <p
-                          className={`text-[10px] line-clamp-1 pl-4 ${
+                          className={`text-[11px] line-clamp-1 pl-5 ${
                             isActive
-                              ? 'text-white/80'
+                              ? 'text-sky-100 font-semibold'
                               : isEmergencyChannel
-                              ? 'text-rose-700/80 font-medium'
-                              : 'text-gray-400'
+                              ? 'text-rose-800 font-bold'
+                              : 'text-[#334155] font-semibold'
                           }`}
                         >
                           {lastMsg ? `${lastMsg.senderName.split(' ')[0]}: ${lastMsg.text}` : group.description}
@@ -2514,23 +2526,23 @@ export const ConversacionesModule: React.FC = () => {
 
                   {/* VINCULACIÓN DIRECTA DE PROYECTOS STC */}
                   {chatTab === 'proyectos' && projects && (
-                    <div className="mt-3 pt-2.5 border-t border-slate-200">
-                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 px-1 flex items-center justify-between">
+                    <div className="mt-3 pt-2.5">
+                      <div className="text-[10px] font-black text-[#334155] uppercase tracking-wider mb-1.5 px-1 flex items-center justify-between">
                         <span>Proyectos STC Registrados</span>
-                        <span className="text-[9px] text-[#00668F]">1-Clic Crear</span>
+                        <span className="text-[9.5px] text-[#0284C7] font-black">1-Clic Crear</span>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         {projects
                           .filter((p) => !chatGroups.some((g) => g.linkedProjectId === p.code))
                           .map((p) => (
                             <div
                               key={p.id}
                               onClick={() => handleSelectOrCreateProjectChannel(p.code, p.name)}
-                              className="p-2 rounded-xl bg-white border border-slate-200 hover:border-sky-300 hover:bg-sky-50/70 cursor-pointer transition-all flex items-center justify-between shadow-2xs"
+                              className="p-2.5 rounded-2xl bg-[#EBF2FA] hover:bg-[#DCE9F8] cursor-pointer transition-all flex items-center justify-between"
                             >
                               <div className="min-w-0 pr-2">
-                                <div className="text-xs font-bold text-gray-800 truncate">{p.name}</div>
-                                <div className="text-[10px] text-gray-400 truncate">{p.code} • {p.clientName}</div>
+                                <div className="text-xs font-extrabold text-[#050C1A] truncate">{p.name}</div>
+                                <div className="text-[10.5px] font-semibold text-[#334155] truncate">{p.code} • {p.clientName}</div>
                               </div>
                               <button
                                 type="button"
@@ -2538,7 +2550,7 @@ export const ConversacionesModule: React.FC = () => {
                                   e.stopPropagation();
                                   handleSelectOrCreateProjectChannel(p.code, p.name);
                                 }}
-                                className="px-2 py-0.5 rounded-lg bg-[#00668F] hover:bg-[#005273] text-white text-[10px] font-bold shrink-0 transition-colors cursor-pointer"
+                                className="px-2.5 py-1 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-[10px] font-black shrink-0 transition-colors cursor-pointer"
                               >
                                 + Canal
                               </button>
@@ -2553,48 +2565,48 @@ export const ConversacionesModule: React.FC = () => {
           </div>
         </div>
 
-        {/* PANEL DERECHO: Área de Conversación Exclusiva */}
-        <div className={`flex-1 flex flex-col min-w-0 min-h-0 h-full max-h-full overflow-hidden bg-[#EBF1F6] ${
+        {/* ISLA DERECHA: Área de Conversación Exclusiva */}
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 h-full max-h-full overflow-hidden bg-white rounded-3xl p-2 sm:p-3 gap-2.5 ${
           mobileChatView === 'list' ? 'hidden md:flex' : 'flex'
         }`}>
           
-          {/* Header del Chat Fijado */}
-          <div className="p-2.5 sm:p-3.5 bg-white flex items-center justify-between shrink-0 z-10 border-b border-slate-100">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+          {/* Header del Chat en Cápsula Tonalizada */}
+          <div className="p-3 sm:p-4 rounded-2xl bg-[#EBF2FA] flex items-center justify-between shrink-0 z-10">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
               {/* Botón Volver a la Lista en Móvil */}
               <button
                 type="button"
                 onClick={() => setMobileChatView('list')}
-                className="md:hidden p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-0.5 text-xs font-bold shrink-0 cursor-pointer active:scale-95"
+                className="md:hidden px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#0284C7] text-[#050C1A] hover:text-white transition-colors flex items-center gap-1 text-xs font-extrabold shrink-0 cursor-pointer active:scale-95"
                 title="Volver a lista de chats"
               >
                 <ChevronLeft size={16} />
-                <span>Chats</span>
+                <span>Canales</span>
               </button>
 
               <div
                 onClick={() => setIsGroupInfoModalOpen(true)}
-                className="cursor-pointer group flex items-center gap-2.5 min-w-0 flex-1"
+                className="cursor-pointer group flex items-center gap-3 min-w-0 flex-1"
                 title="Ver detalles, participantes, fotos y documentos"
               >
                 <div
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-white flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition-transform"
-                  style={{ backgroundColor: directPartner?.avatarColor || '#00668F' }}
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl text-white flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-transform"
+                  style={{ backgroundColor: directPartner?.avatarColor || '#0284C7' }}
                 >
-                  {directPartner ? directPartner.avatar : <Users size={16} />}
+                  {directPartner ? directPartner.avatar : <Users size={18} />}
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-black text-gray-900 text-xs sm:text-sm tracking-tight group-hover:text-[#00668F] transition-colors truncate">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-black text-[#050C1A] text-sm sm:text-base tracking-tight group-hover:text-[#0284C7] transition-colors truncate">
                       {directPartner ? directPartner.name : currentGroup.name}
                     </h3>
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
-                      <Radio size={10} className="animate-pulse text-emerald-600" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full bg-[#DCF5E6] text-[#0D5C31] shrink-0">
+                      <Radio size={11} className="animate-pulse text-emerald-600" />
                       En Línea
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-gray-500 truncate">
+                  <p className="text-[11px] sm:text-xs font-bold text-[#334155] truncate mt-0.5">
                     {directPartner
                       ? `${directPartner.roleLabel} • ${directPartner.department}`
                       : `${currentGroupMembers.length} participantes • Toca para ver info`}
@@ -2603,16 +2615,16 @@ export const ConversacionesModule: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0 ml-1">
+            <div className="flex items-center gap-2 shrink-0 ml-2">
               {/* Botón Gemini Key: Solo visible para Sistemas y roles con acceso total a módulos */}
               {canManageGeminiKey && (
                 <button
                   type="button"
                   onClick={() => setIsApiKeyModalOpen(true)}
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-amber-200"
+                  className="p-2 sm:px-3.5 sm:py-2 rounded-2xl bg-[#FEF0D6] hover:bg-[#F59E0B] text-[#854400] hover:text-white text-xs font-extrabold transition-colors flex items-center gap-1.5 cursor-pointer"
                   title="Configuración de Clave API Google Gemini (Solo TI / Gerencia)"
                 >
-                  <Key size={14} className="text-amber-600" />
+                  <Key size={14} />
                   <span className="hidden md:inline">Gemini Key</span>
                 </button>
               )}
@@ -2620,19 +2632,19 @@ export const ConversacionesModule: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleOpenSummarize()}
-                className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#00668F] text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs border border-sky-200"
+                className="p-2 sm:px-3.5 sm:py-2 rounded-2xl bg-gradient-to-r from-[#0284C7] to-[#4F46E5] hover:opacity-95 text-white text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Generar resumen inteligente del canal con Google Gemini"
               >
-                <Sparkles size={14} className="text-[#00668F]" />
+                <Sparkles size={14} className="text-cyan-200" />
                 <span className="hidden sm:inline">Resumir Canal IA</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsGroupInfoModalOpen(true)}
-                className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-gray-700 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="p-2 sm:px-3.5 sm:py-2 rounded-2xl bg-white hover:bg-[#0284C7] text-[#050C1A] hover:text-white text-xs font-extrabold transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                <Info size={14} className="text-[#00668F]" />
+                <Info size={14} />
                 <span className="hidden sm:inline">Info</span>
               </button>
             </div>
@@ -2701,7 +2713,7 @@ export const ConversacionesModule: React.FC = () => {
           )}
 
           {/* Área de Mensajes con Scroll Aislado y Alto Contraste */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-5 space-y-3 min-h-0 h-full scrollbar-thin">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-3.5 min-h-0 h-full rounded-2xl bg-[#E3EDF8] scrollbar-thin">
             {activeChatMessages.length > 0 ? (
               activeChatMessages.map((msg) => {
                 const isMe =
@@ -2720,25 +2732,25 @@ export const ConversacionesModule: React.FC = () => {
                       setContextMenu({ msg, x: e.clientX, y: e.clientY });
                       setActiveDropdownMsgId(null);
                     }}
-                    className={`flex items-end gap-2 group relative ${
+                    className={`flex items-end gap-2.5 group relative ${
                       isMe ? 'flex-row-reverse justify-start' : 'flex-row justify-start'
                     }`}
                   >
                     {/* Avatar del emisor */}
                     <div
-                      className="w-8 h-8 rounded-full shrink-0 aspect-square text-white text-xs font-bold flex items-center justify-center shadow-2xs mb-0.5"
-                      style={{ backgroundColor: msg.avatarColor || (isMe ? currentUser.avatarColor : '#64748B') }}
+                      className="w-8 h-8 rounded-2xl shrink-0 aspect-square text-white text-xs font-black flex items-center justify-center mb-0.5"
+                      style={{ backgroundColor: msg.avatarColor || (isMe ? currentUser.avatarColor : '#0284C7') }}
                       title={`${msg.senderName} (${msg.senderRole})`}
                     >
                       {msg.senderName.slice(0, 2).toUpperCase()}
                     </div>
 
-                    {/* Globo del Mensaje WhatsApp (Hora y chulitos juntos abajo a la derecha) */}
+                    {/* Globo del Mensaje WhatsApp */}
                     <div
-                      className={`max-w-[85%] sm:max-w-lg p-3 transition-all shadow-sm relative ${
+                      className={`max-w-[85%] sm:max-w-lg p-3.5 transition-all relative ${
                         isMe
-                          ? 'bg-[#00668F] text-white rounded-[20px] rounded-br-xs'
-                          : 'bg-white text-gray-900 shadow-2xs rounded-[20px] rounded-bl-xs'
+                          ? 'bg-gradient-to-br from-[#0284C7] to-[#035388] text-white rounded-[24px] rounded-br-sm'
+                          : 'bg-white text-[#050C1A] rounded-[24px] rounded-bl-sm'
                       }`}
                     >
                       {/* Distintivo de Reenviado */}
@@ -3167,10 +3179,16 @@ export const ConversacionesModule: React.FC = () => {
                 );
               })
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8 text-gray-400">
-                <Hash size={36} className="text-gray-300 mb-2" />
-                <p className="text-xs font-semibold text-gray-600">No hay mensajes en este chat todavía</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Inicia la conversación técnica, etiqueta compañeros con @ o toma fotos.</p>
+              <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                <div className="bg-white rounded-3xl p-8 max-w-md flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-3xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center mb-3">
+                    <Hash size={32} />
+                  </div>
+                  <p className="text-sm font-black text-[#050C1A]">No hay mensajes en este canal todavía</p>
+                  <p className="text-xs font-semibold text-[#334155] mt-1">
+                    Inicia la conversación técnica, etiqueta compañeros con @ o adjunta fotos de campo.
+                  </p>
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -3298,13 +3316,13 @@ export const ConversacionesModule: React.FC = () => {
           )}
 
           {/* BARRA DE ENTRADA: Grabación de Voz / Adjuntos / Texto */}
-          <div className="p-2 sm:p-3 pr-20 sm:pr-24 md:pr-28 bg-white shrink-0 border-t border-slate-200/60">
+          <div className="p-2.5 sm:p-3 pr-20 sm:pr-24 md:pr-28 bg-[#EBF2FA] rounded-2xl shrink-0">
             {isVoiceRecording ? (
-              <div className="flex items-center gap-2 w-full p-2 bg-slate-50 border border-slate-200/90 rounded-2xl animate-fadeIn shadow-2xs">
+              <div className="flex items-center gap-2 w-full p-2 bg-white rounded-2xl animate-fadeIn">
                 {/* Indicador de Tiempo y Estado ERP */}
                 <div
-                  className={`flex items-center gap-2 px-3 py-1.5 text-white rounded-xl text-xs font-bold font-mono shrink-0 transition-colors shadow-2xs ${
-                    isVoicePaused ? 'bg-amber-500' : 'bg-[#00668F]'
+                  className={`flex items-center gap-2 px-3 py-1.5 text-white rounded-xl text-xs font-black font-mono shrink-0 transition-colors ${
+                    isVoicePaused ? 'bg-amber-500' : 'bg-[#0284C7]'
                   }`}
                 >
                   <span
@@ -3325,17 +3343,17 @@ export const ConversacionesModule: React.FC = () => {
                 {/* Visualizador de Ondas / Mensaje de Estado */}
                 <div className="flex-1 flex items-center justify-center gap-1.5 h-8">
                   {isVoicePaused ? (
-                    <span className="text-xs font-semibold text-amber-700">
+                    <span className="text-xs font-bold text-amber-700">
                       Grabación en pausa. Pulsa 'Continuar' para reanudar.
                     </span>
                   ) : (
                     <>
-                      <div className="w-1 h-3 bg-[#00668F]/60 rounded-full animate-bounce" />
-                      <div className="w-1 h-5 bg-[#00668F]/80 rounded-full animate-bounce [animation-delay:150ms]" />
-                      <div className="w-1 h-7 bg-[#00668F] rounded-full animate-bounce [animation-delay:300ms]" />
-                      <div className="w-1 h-4 bg-[#00668F]/80 rounded-full animate-bounce [animation-delay:450ms]" />
-                      <div className="w-1 h-6 bg-[#00668F] rounded-full animate-bounce [animation-delay:200ms]" />
-                      <span className="text-xs font-medium text-slate-600 ml-2 hidden sm:inline">
+                      <div className="w-1 h-3 bg-[#0284C7]/60 rounded-full animate-bounce" />
+                      <div className="w-1 h-5 bg-[#0284C7]/80 rounded-full animate-bounce [animation-delay:150ms]" />
+                      <div className="w-1 h-7 bg-[#0284C7] rounded-full animate-bounce [animation-delay:300ms]" />
+                      <div className="w-1 h-4 bg-[#0284C7]/80 rounded-full animate-bounce [animation-delay:450ms]" />
+                      <div className="w-1 h-6 bg-[#0284C7] rounded-full animate-bounce [animation-delay:200ms]" />
+                      <span className="text-xs font-bold text-[#334155] ml-2 hidden sm:inline">
                         Grabando audio con transcripción Gemini...
                       </span>
                     </>
@@ -3344,12 +3362,11 @@ export const ConversacionesModule: React.FC = () => {
 
                 {/* Acciones: Pausar / Continuar, Cancelar, Enviar */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Botón Pausar / Continuar */}
                   {isVoicePaused ? (
                     <button
                       type="button"
                       onClick={handleResumeVoiceRecord}
-                      className="px-2.5 py-1.5 bg-[#00668F] hover:bg-[#005273] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                      className="px-3 py-1.5 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                       title="Continuar grabación"
                     >
                       <Play size={13} className="fill-current" />
@@ -3359,7 +3376,7 @@ export const ConversacionesModule: React.FC = () => {
                     <button
                       type="button"
                       onClick={handlePauseVoiceRecord}
-                      className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                      className="px-3 py-1.5 bg-[#EBF2FA] hover:bg-slate-300 text-[#050C1A] rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                       title="Pausar grabación"
                     >
                       <Pause size={13} className="fill-current" />
@@ -3367,21 +3384,19 @@ export const ConversacionesModule: React.FC = () => {
                     </button>
                   )}
 
-                  {/* Cancelar / Descartar */}
                   <button
                     type="button"
                     onClick={handleCancelVoiceRecord}
-                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    className="p-2 rounded-xl text-[#475569] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     title="Descartar grabación"
                   >
                     <Trash2 size={16} />
                   </button>
 
-                  {/* Enviar */}
                   <button
                     type="button"
                     onClick={handleStopVoiceRecord}
-                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                     title="Enviar nota de voz"
                   >
                     <Send size={13} />
@@ -3390,13 +3405,13 @@ export const ConversacionesModule: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSendMessage} onPaste={handlePaste} className="flex items-center gap-1 sm:gap-2">
+              <form onSubmit={handleSendMessage} onPaste={handlePaste} className="flex items-center gap-1.5 sm:gap-2">
                 {/* Adjuntar Documento */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   title="Adjuntar documento o plano (PDF, DWG, XLSX)"
-                  className="p-1.5 sm:p-2.5 rounded-lg text-slate-500 hover:text-[#00668F] hover:bg-slate-100 transition-colors cursor-pointer shrink-0 outline-none focus:outline-none"
+                  className="w-10 h-10 rounded-2xl bg-white text-[#0284C7] hover:bg-[#0284C7] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 >
                   <Paperclip size={17} />
                 </button>
@@ -3406,7 +3421,7 @@ export const ConversacionesModule: React.FC = () => {
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
                   title="Adjuntar foto o imagen de la galería"
-                  className="p-1.5 sm:p-2.5 rounded-lg text-slate-500 hover:text-[#00668F] hover:bg-slate-100 transition-colors cursor-pointer shrink-0 outline-none focus:outline-none"
+                  className="w-10 h-10 rounded-2xl bg-white text-[#0284C7] hover:bg-[#0284C7] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 >
                   <ImageIcon size={17} />
                 </button>
@@ -3416,7 +3431,7 @@ export const ConversacionesModule: React.FC = () => {
                   type="button"
                   onClick={() => startCamera()}
                   title="Tomar foto con la cámara"
-                  className="p-1.5 sm:p-2.5 rounded-lg text-slate-500 hover:text-[#00668F] hover:bg-slate-100 transition-colors cursor-pointer shrink-0 outline-none focus:outline-none"
+                  className="w-10 h-10 rounded-2xl bg-white text-[#0284C7] hover:bg-[#0284C7] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 >
                   <Camera size={17} />
                 </button>
@@ -3426,7 +3441,7 @@ export const ConversacionesModule: React.FC = () => {
                   type="button"
                   onClick={handleStartVoiceRecord}
                   title="Grabar nota de voz con transcripción Gemini"
-                  className="p-1.5 sm:p-2.5 rounded-lg text-slate-500 hover:text-[#00668F] hover:bg-slate-100 transition-colors cursor-pointer shrink-0 outline-none focus:outline-none"
+                  className="w-10 h-10 rounded-2xl bg-white text-[#0284C7] hover:bg-[#0284C7] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 >
                   <Mic size={17} />
                 </button>
@@ -3446,13 +3461,13 @@ export const ConversacionesModule: React.FC = () => {
                       ? `Responde a ${replyingTo.senderName}...`
                       : `Mensaje en ${directPartner ? directPartner.name : currentGroup.name} (o pega una imagen)...`
                   }
-                  className="flex-1 min-w-0 h-10 sm:h-11 text-xs px-3.5 py-0 rounded-xl bg-slate-100 text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#00668F]/30 border-0 leading-normal transition-all"
+                  className="flex-1 min-w-0 h-11 text-xs font-bold px-4 py-0 rounded-2xl bg-white text-[#050C1A] placeholder-[#475569] focus:bg-white border-0 leading-normal transition-all"
                 />
 
                 <button
                   type="submit"
                   disabled={!chatInput.trim() && !attachedFile}
-                  className="px-3 sm:px-5 py-2 sm:py-2.5 bg-[#00668F] hover:bg-[#005273] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0 outline-none focus:outline-none shadow-2xs"
+                  className="px-4 sm:px-5 h-11 bg-gradient-to-r from-[#0284C7] to-[#035388] hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0"
                 >
                   <span>{editingMessage ? 'Guardar' : 'Enviar'}</span>
                   {editingMessage ? <Check size={14} strokeWidth={2.5} /> : <Send size={13} />}

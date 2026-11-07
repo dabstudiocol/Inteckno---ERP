@@ -555,7 +555,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       : accessibleAreas.filter((a) => a.id === selectedAreaFilter);
 
   return (
-    <div className="h-screen h-[100dvh] w-screen flex bg-[#0B1317] font-sans antialiased selection:bg-[#00668F] selection:text-white overflow-hidden">
+    <div className="h-screen h-[100dvh] w-screen flex bg-[#DCE6F2] font-sans antialiased selection:bg-[#0284C7] selection:text-white overflow-hidden">
       
       {/* Overlay Backdrop Móvil */}
       {isMobileDrawerOpen && (
@@ -569,30 +569,30 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* BARRA LATERAL RETRÁCTIL / REACTIVA (Desktop + Mobile Drawer) */}
       {/* ========================================================================= */}
       <aside
-        className={`bg-[#091116] border-r border-slate-800/80 flex flex-col justify-between shrink-0 select-none transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0 ${
+        className={`bg-gradient-to-b from-[#040D1A] via-[#07162C] to-[#040B16] flex flex-col justify-between shrink-0 select-none transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0 md:m-2.5 md:mr-0 md:rounded-3xl overflow-hidden ${
           isMobileDrawerOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
-        } ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64 lg:w-72'}`}
+        } ${isSidebarCollapsed ? 'md:w-20' : 'md:w-68 lg:w-72'}`}
       >
         {/* Parte Superior: Marca Inteckno y Perfil Activo */}
         <div className="flex flex-col h-full overflow-hidden">
           
-          {/* Logo y Encabezado de la Empresa (Logo transparente integrado al fondo del panel con indicador de latido cloud) */}
+          {/* Logo y Encabezado de la Empresa */}
           {(!isSidebarCollapsed || isMobileDrawerOpen) ? (
-            <div className="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between min-h-[76px] bg-[#070E12]">
+            <div className="px-4 py-4 flex items-center justify-between min-h-[80px] bg-[#030914]/60">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="h-12 w-14 flex items-center justify-center shrink-0 relative">
+                <div className="h-12 w-14 rounded-2xl bg-[#0B1E38] p-1.5 flex items-center justify-center shrink-0 relative">
                   <img src="/inteckno-icon.png" alt="Inteckno" className="h-full w-auto max-w-full object-contain" />
-                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2" title="Conexión reactiva en tiempo real">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5" title="Conexión reactiva en tiempo real">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400"></span>
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <span className="text-lg font-black tracking-wider text-white block leading-tight truncate">
+                  <span className="text-lg font-black tracking-wider text-white block leading-none truncate">
                     INTECKNO
                   </span>
-                  <span className="text-[11px] text-sky-400 block font-bold uppercase tracking-wider truncate mt-0.5">
-                    ERP Corporativo
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#0284C7]/25 text-[#38BDF8] text-[9.5px] font-black uppercase tracking-widest mt-1.5">
+                    ERP OS 3.0
                   </span>
                 </div>
               </div>
@@ -604,7 +604,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                     type="button"
                     onClick={() => setIsMobileDrawerOpen(false)}
                     title="Cerrar menú móvil"
-                    className="md:hidden text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer"
+                    className="md:hidden text-sky-300 hover:text-white transition-colors p-2 rounded-2xl bg-[#0B1E38] hover:bg-[#132E52] cursor-pointer"
                   >
                     <X size={18} />
                   </button>
@@ -612,9 +612,9 @@ export const AppShell: React.FC<AppShellProps> = ({
               </div>
             </div>
           ) : (
-            <div className="p-3 border-b border-slate-800/80 flex items-center justify-center min-h-[76px]">
+            <div className="p-3 flex items-center justify-center min-h-[80px] bg-[#030914]/60">
               <div
-                className="h-12 w-12 flex items-center justify-center shrink-0 transition-transform hover:scale-110 cursor-pointer"
+                className="h-12 w-12 rounded-2xl bg-[#0B1E38] p-1.5 flex items-center justify-center shrink-0 transition-transform hover:scale-110 cursor-pointer"
                 onClick={() => setIsSidebarCollapsed(false)}
                 title="Expandir panel lateral INTECKNO"
               >
@@ -623,40 +623,40 @@ export const AppShell: React.FC<AppShellProps> = ({
             </div>
           )}
 
-          {/* Tarjeta del Usuario con Bordes Armónicos (Outer 12px, Inner 6px, Padding 10px) */}
+          {/* Tarjeta del Usuario Estilizada */}
           {(!isSidebarCollapsed || isMobileDrawerOpen) ? (
-            <div className="p-2.5 mx-2.5 mt-2.5 rounded-xl bg-[#101C24] border border-slate-800/80 flex items-center justify-between gap-2 group">
+            <div className="p-3 mx-3 mt-2 rounded-2xl bg-[#0B1E38] flex items-center justify-between gap-2.5 group">
               <button
                 type="button"
                 onClick={() => {
                   setActiveModule('perfil');
                   setIsMobileDrawerOpen(false);
                 }}
-                className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer hover:opacity-95 transition-opacity"
                 title="Configurar y ver mi perfil"
               >
                 {currentUser.photoUrl ? (
                   <img
                     src={currentUser.photoUrl}
                     alt={currentUser.name}
-                    className="w-7 h-7 rounded-lg object-cover shrink-0"
+                    className="w-9 h-9 rounded-2xl object-cover shrink-0"
                   />
                 ) : (
                   <div
-                    className="w-7 h-7 rounded-lg text-white text-[11px] font-bold flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: currentUser.avatarColor || '#00668F' }}
+                    className="w-9 h-9 rounded-2xl text-white text-xs font-black flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: currentUser.avatarColor || '#0284C7' }}
                   >
                     {currentUser.avatar}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div
-                    className="text-xs font-bold text-white leading-tight truncate group-hover:text-sky-300 transition-colors"
+                    className="text-xs font-extrabold text-white leading-tight truncate group-hover:text-cyan-300 transition-colors"
                     title={currentUser.name}
                   >
                     {currentUser.name}
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate mt-0.5" title={currentUser.roleLabel}>
+                  <div className="text-[10.5px] font-semibold text-sky-300/80 truncate mt-0.5" title={currentUser.roleLabel}>
                     {currentUser.roleLabel}
                   </div>
                 </div>
@@ -666,7 +666,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 type="button"
                 onClick={logout}
                 title="Cerrar Sesión"
-                className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800/80 transition-colors shrink-0 cursor-pointer"
+                className="text-sky-300 hover:text-white p-2 rounded-xl bg-[#132C4E] hover:bg-rose-600 transition-colors shrink-0 cursor-pointer"
               >
                 <LogOut size={15} />
               </button>
@@ -683,12 +683,12 @@ export const AppShell: React.FC<AppShellProps> = ({
                   <img
                     src={currentUser.photoUrl}
                     alt={currentUser.name}
-                    className="w-8 h-8 rounded-lg object-cover"
+                    className="w-9 h-9 rounded-2xl object-cover"
                   />
                 ) : (
                   <div
-                    className="w-8 h-8 rounded-lg text-white text-xs font-bold flex items-center justify-center"
-                    style={{ backgroundColor: currentUser.avatarColor || '#00668F' }}
+                    className="w-9 h-9 rounded-2xl text-white text-xs font-black flex items-center justify-center"
+                    style={{ backgroundColor: currentUser.avatarColor || '#0284C7' }}
                   >
                     {currentUser.avatar}
                   </div>
@@ -697,18 +697,18 @@ export const AppShell: React.FC<AppShellProps> = ({
             </div>
           )}
 
-          {/* Selector y Filtro de Área Responsivo (Sin barras horizontales rotas ni cortes) */}
+          {/* Selector y Filtro de Área Responsivo */}
           {!isSidebarCollapsed && accessibleAreas.length > 1 && (
             <div className="px-3 pt-3 relative" ref={areaDropdownRef}>
-              <div className="flex items-center justify-between mb-1.5 px-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Filter size={11} className="text-[#00668F]" />
+              <div className="flex items-center justify-between mb-1.5 px-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-sky-400/90 flex items-center gap-1.5">
+                  <Filter size={11} className="text-cyan-400" />
                   <span>Área Operativa</span>
                 </span>
                 {selectedAreaFilter !== 'all' && (
                   <button
                     onClick={() => setSelectedAreaFilter('all')}
-                    className="text-[10px] font-bold text-sky-400 hover:text-sky-300 transition-colors cursor-pointer"
+                    className="text-[10px] font-black text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
                   >
                     Mostrar todas
                   </button>
@@ -719,10 +719,10 @@ export const AppShell: React.FC<AppShellProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAreaDropdownOpen((prev) => !prev)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all cursor-pointer ${
                   isAreaDropdownOpen
-                    ? 'bg-[#14232E] border-[#00668F] text-white shadow-xs'
-                    : 'bg-[#101C24] border-slate-700/60 text-slate-200 hover:bg-[#14232E] hover:border-slate-600'
+                    ? 'bg-[#0284C7] text-white'
+                    : 'bg-[#0B1E38] text-sky-100 hover:bg-[#122B4D]'
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -731,8 +731,8 @@ export const AppShell: React.FC<AppShellProps> = ({
                     style={{
                       backgroundColor:
                         selectedAreaFilter === 'all'
-                          ? '#00668F'
-                          : accessibleAreas.find((a) => a.id === selectedAreaFilter)?.accentColor || '#00668F',
+                          ? '#38BDF8'
+                          : accessibleAreas.find((a) => a.id === selectedAreaFilter)?.accentColor || '#38BDF8',
                     }}
                   />
                   <span className="truncate">
@@ -743,37 +743,35 @@ export const AppShell: React.FC<AppShellProps> = ({
                 </div>
                 <ChevronDown
                   size={14}
-                  className={`text-slate-400 transition-transform duration-200 shrink-0 ${
-                    isAreaDropdownOpen ? 'rotate-180 text-sky-400' : ''
+                  className={`text-sky-300 transition-transform duration-200 shrink-0 ${
+                    isAreaDropdownOpen ? 'rotate-180 text-white' : ''
                   }`}
                 />
               </button>
 
-              {/* Menú Desplegable con TODAS las Áreas (Fácil de navegar, 100% visible, sin cortes) */}
+              {/* Menú Desplegable con TODAS las Áreas */}
               {isAreaDropdownOpen && (
-                <div className="absolute left-3 right-3 top-full mt-1.5 z-40 bg-[#0F1B22] border border-slate-700/90 rounded-2xl shadow-2xl p-1.5 space-y-0.5 animate-in fade-in-50 zoom-in-95 max-h-64 overflow-y-auto scrollbar-thin">
+                <div className="absolute left-3 right-3 top-full mt-2 z-40 bg-[#08172B] rounded-2xl p-2 space-y-1 animate-in fade-in-50 zoom-in-95 max-h-64 overflow-y-auto scrollbar-thin">
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedAreaFilter('all');
                       setIsAreaDropdownOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
                       selectedAreaFilter === 'all'
-                        ? 'bg-[#00668F] text-white'
-                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        ? 'bg-[#0284C7] text-white'
+                        : 'text-sky-200 hover:bg-[#112746] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-sky-300 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-cyan-300 shrink-0" />
                       <span className="truncate">Todas las áreas</span>
                     </div>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/30 text-slate-300 font-mono">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-sky-200 font-mono">
                       {accessibleAreas.reduce((sum, a) => sum + a.modules.length, 0)}
                     </span>
                   </button>
-
-                  <div className="h-px bg-slate-800 my-1" />
 
                   {accessibleAreas.map((area) => {
                     const isSelected = selectedAreaFilter === area.id;
@@ -785,10 +783,10 @@ export const AppShell: React.FC<AppShellProps> = ({
                           setSelectedAreaFilter(area.id);
                           setIsAreaDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
                           isSelected
-                            ? 'bg-[#00668F] text-white font-bold'
-                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium'
+                            ? 'bg-[#0284C7] text-white font-extrabold'
+                            : 'text-sky-200 hover:bg-[#112746] hover:text-white font-semibold'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -798,7 +796,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                           />
                           <span className="truncate">{area.name}</span>
                         </div>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/30 text-slate-300 font-mono">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-sky-200 font-mono">
                           {area.modules.length}
                         </span>
                       </button>
@@ -810,14 +808,14 @@ export const AppShell: React.FC<AppShellProps> = ({
           )}
 
           {/* Lista de Módulos Autorizados con Scroll Cómodo */}
-          <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-2 scrollbar-none">
+          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-2 scrollbar-none">
             {/* Lista de Espacios de Trabajo / Hubs */}
             {accessibleHubs.map((hub) => {
               const HubIcon = hub.icon;
               const isHubActive = activeHub?.id === hub.id;
 
               return (
-                <div key={hub.id} className="space-y-1">
+                <div key={hub.id} className="space-y-1.5">
                   {/* Botón Principal del Hub */}
                   <button
                     type="button"
@@ -828,61 +826,55 @@ export const AppShell: React.FC<AppShellProps> = ({
                       setIsMobileDrawerOpen(false);
                     }}
                     title={hub.label}
-                    className={`w-full text-left rounded-xl transition-all cursor-pointer group flex items-center relative ${
-                      isSidebarCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2 justify-between'
+                    className={`w-full text-left rounded-2xl transition-all cursor-pointer group flex items-center relative ${
+                      isSidebarCollapsed ? 'p-3 justify-center' : 'px-3.5 py-2.5 justify-between'
                     } ${
                       isHubActive
-                        ? 'bg-[#14232F] text-white font-bold shadow-xs border-l-2 border-[#00668F]'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-[#0E171E]'
+                        ? 'bg-gradient-to-r from-[#0284C7] to-[#035388] text-white font-black'
+                        : 'text-slate-300 hover:text-white hover:bg-[#0B1E38]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="relative shrink-0 flex items-center justify-center">
                         <HubIcon
                           size={18}
-                          style={{ color: isHubActive ? hub.accentColor : undefined }}
+                          style={{ color: isHubActive ? '#FFFFFF' : undefined }}
                           className={`shrink-0 transition-colors ${
-                            isHubActive ? '' : 'text-slate-400 group-hover:text-slate-200'
+                            isHubActive ? 'text-white' : 'text-sky-400/80 group-hover:text-cyan-300'
                           }`}
                         />
                         {isSidebarCollapsed && hub.id === 'empresa' && unreadChatCount > 0 && (
-                          <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-1 bg-emerald-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-slate-900 shadow-xs animate-pulse">
+                          <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-1 bg-emerald-500 text-white text-[8px] font-black rounded-full flex items-center justify-center animate-pulse">
                             {unreadChatCount > 9 ? '9+' : unreadChatCount}
                           </span>
                         )}
                       </div>
                       {!isSidebarCollapsed && (
-                        <span className="truncate text-xs font-bold">{hub.label}</span>
+                        <span className="truncate text-xs font-extrabold tracking-tight">{hub.label}</span>
                       )}
                     </div>
 
                     {!isSidebarCollapsed && (
                       <div className="flex items-center gap-1.5 shrink-0">
                         {hub.id === 'empresa' && unreadChatCount > 0 && (
-                          <span className="px-1.5 py-0.2 rounded-full font-black text-[9.5px] bg-emerald-500 text-white shadow-xs">
+                          <span className="px-2 py-0.5 rounded-full font-black text-[9.5px] bg-emerald-400 text-[#041022]">
                             {unreadChatCount}
                           </span>
                         )}
                         <span
-                          className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md transition-colors ${
-                            isHubActive ? 'bg-black/40 text-slate-200 font-bold' : 'text-slate-500'
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full transition-colors ${
+                            isHubActive ? 'bg-black/30 text-white font-black' : 'bg-[#0B1E38] text-sky-300/80 font-bold'
                           }`}
                         >
                           {hub.subModules.length}
                         </span>
-                        {isHubActive && (
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0 shadow-xs"
-                            style={{ backgroundColor: hub.accentColor }}
-                          />
-                        )}
                       </div>
                     )}
                   </button>
 
-                  {/* Submódulos Contextuales del Hub Activo (Solo cuando está expandido) */}
+                  {/* Submódulos Contextuales del Hub Activo */}
                   {!isSidebarCollapsed && isHubActive && hub.subModules.length > 1 && (
-                    <div className="pl-5 pr-1 py-1 space-y-0.5 border-l border-slate-800/80 ml-4 animate-in fade-in-50 duration-200">
+                    <div className="p-1.5 rounded-2xl bg-[#030A14]/80 space-y-1 animate-in fade-in-50 duration-200">
                       {hub.subModules.map((sub) => {
                         const SubIcon = sub.icon;
                         const isSubActive = activeModuleId === sub.id;
@@ -895,22 +887,21 @@ export const AppShell: React.FC<AppShellProps> = ({
                               setIsMobileDrawerOpen(false);
                             }}
                             title={sub.description}
-                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all flex items-center justify-between cursor-pointer ${
+                            className={`w-full text-left px-3 py-2 rounded-xl text-[11.5px] transition-all flex items-center justify-between cursor-pointer ${
                               isSubActive
-                                ? 'bg-[#1C2C39] text-white font-bold shadow-2xs'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-[#121E27]'
+                                ? 'bg-white text-[#041022] font-black'
+                                : 'text-sky-200/80 hover:text-white hover:bg-[#0B1E38] font-semibold'
                             }`}
                           >
                             <div className="flex items-center gap-2 min-w-0">
                               <SubIcon
-                                size={13}
-                                style={{ color: isSubActive ? hub.accentColor : undefined }}
-                                className={isSubActive ? '' : 'text-slate-500'}
+                                size={14}
+                                className={isSubActive ? 'text-[#0284C7] shrink-0' : 'text-sky-400/70 shrink-0'}
                               />
                               <span className="truncate">{sub.label}</span>
                             </div>
                             {sub.id === 'conversaciones' && unreadChatCount > 0 && (
-                              <span className="px-1 py-0.1 rounded-full text-[8.5px] font-black bg-emerald-500 text-white shadow-2xs">
+                              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white">
                                 {unreadChatCount}
                               </span>
                             )}
@@ -925,24 +916,24 @@ export const AppShell: React.FC<AppShellProps> = ({
 
             {/* Acceso Rápido a Usuarios TI para Administradores */}
             {canAccessUserMgmt && !isSidebarCollapsed && (
-              <div className="pt-3 mt-3 border-t border-slate-800/80">
+              <div className="pt-2 mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setActiveModule('usuarios-ti');
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                  className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center justify-between cursor-pointer ${
                     activeModuleId === 'usuarios-ti'
-                      ? 'bg-[#14232F] text-white shadow-xs'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-[#0E171E]'
+                      ? 'bg-gradient-to-r from-[#0284C7] to-[#035388] text-white'
+                      : 'bg-[#0B1E38]/70 text-sky-200 hover:text-white hover:bg-[#112A4A]'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Shield size={16} className="text-sky-400" />
+                    <Shield size={16} className="text-cyan-400" />
                     <span>Administración TI & Accesos</span>
                   </div>
-                  <span className="text-[9px] bg-sky-950 text-sky-400 border border-sky-800/60 px-1.5 py-0.5 rounded-md font-mono">
+                  <span className="text-[9px] bg-cyan-400/20 text-cyan-300 px-2 py-0.5 rounded-full font-black">
                     ADMIN
                   </span>
                 </button>
@@ -950,9 +941,8 @@ export const AppShell: React.FC<AppShellProps> = ({
             )}
           </nav>
 
-          {/* Pie de la Barra Lateral: Resumen de Permisos y Botón Personalizar Barra Móvil */}
-          <div className="p-3 bg-[#070D11] text-[10px] text-slate-400 space-y-2">
-            {/* Botón Personalizar Barra Móvil: ÚNICAMENTE visible en Móvil (Cajón Móvil), NUNCA en PC */}
+          {/* Pie de la Barra Lateral */}
+          <div className="p-3.5 bg-[#030914] text-[10.5px] text-sky-300/80 space-y-2">
             {isMobileDrawerOpen && (
               <button
                 type="button"
@@ -960,31 +950,33 @@ export const AppShell: React.FC<AppShellProps> = ({
                   setIsMobileDrawerOpen(false);
                   setIsCustomizeShortcutsOpen(true);
                 }}
-                className="md:hidden w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#101C24] hover:bg-[#162733] text-sky-400 transition-colors cursor-pointer active:scale-95"
+                className="md:hidden w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-[#0B1E38] hover:bg-[#143056] text-cyan-300 transition-colors cursor-pointer active:scale-95"
               >
-                <span className="flex items-center gap-2 font-bold text-xs">
-                  <Smartphone size={13} />
+                <span className="flex items-center gap-2 font-extrabold text-xs">
+                  <Smartphone size={14} />
                   <span>Personalizar barra móvil</span>
                 </span>
-                <span className="text-[10px] bg-sky-950 px-2 py-0.5 rounded text-sky-300 font-mono">
+                <span className="text-[10px] bg-cyan-950 px-2 py-0.5 rounded-full text-cyan-300 font-mono">
                   {mobileShortcuts.length}/4
                 </span>
               </button>
             )}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between font-bold">
               {!isSidebarCollapsed ? (
                 <>
                   <span className="flex items-center gap-1.5 truncate">
-                    <Shield size={12} className="text-[#38BDF8] shrink-0" />
+                    <Shield size={13} className="text-cyan-400 shrink-0" />
                     <span className="truncate">
                       {isSuperAdmin ? 'Permisos: Acceso Total' : `Áreas: ${accessibleAreas.length}`}
                     </span>
                   </span>
-                  <span className="text-slate-500 font-semibold shrink-0">v2.4</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#0B1E38] text-cyan-300 text-[9.5px] font-black shrink-0">
+                    v3.0
+                  </span>
                 </>
               ) : (
                 <div className="w-full flex justify-center" title={isSuperAdmin ? 'Acceso Total' : 'Acceso Restringido'}>
-                  <Shield size={14} className="text-[#38BDF8]" />
+                  <Shield size={15} className="text-cyan-400" />
                 </div>
               )}
             </div>
@@ -993,83 +985,88 @@ export const AppShell: React.FC<AppShellProps> = ({
       </aside>
 
       {/* ========================================================================= */}
-      {/* LIENZO PRINCIPAL DEL ERP (Full-Screen reactivo) */}
+      {/* LIENZO PRINCIPAL DEL ERP (Full-Screen reactivo con Isla Superior Clara) */}
       {/* ========================================================================= */}
-      <main className="flex-1 w-full max-w-full min-w-0 bg-[#F4F6F9] flex flex-col h-full overflow-hidden relative transition-all duration-300">
+      <main className="flex-1 w-full max-w-full min-w-0 bg-[#DCE6F2] flex flex-col h-full overflow-hidden relative transition-all duration-300">
         
-        {/* Encabezado Superior con Toggle Rápido del Panel - Glassmorphism nítido */}
-        <header className="px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-20">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        {/* Encabezado Superior Flotante Claro y Curvo */}
+        <header className="mx-2.5 sm:mx-4 mt-2.5 sm:mt-3 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center justify-between bg-white sticky top-2.5 z-20">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             {/* Botón Hamburger para Móvil / Tablet */}
             <button
               type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
               title="Abrir menú de módulos"
-              className="md:hidden w-9 h-9 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+              className="md:hidden w-10 h-10 rounded-2xl bg-[#E0F2FE] text-[#0284C7] hover:bg-[#0284C7] hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer"
             >
-              <Menu size={18} />
+              <Menu size={19} />
             </button>
 
             {/* Botón Plegar en Escritorio */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               title={isSidebarCollapsed ? 'Expandir panel lateral' : 'Plegar panel lateral'}
-              className="hidden md:flex w-9 h-9 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 items-center justify-center transition-all active:scale-95 cursor-pointer"
+              className="hidden md:flex w-10 h-10 rounded-2xl bg-[#EBF2FA] text-[#0284C7] hover:bg-[#0284C7] hover:text-white items-center justify-center transition-all active:scale-95 cursor-pointer"
             >
-              {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {isSidebarCollapsed ? <ChevronRight size={19} /> : <ChevronLeft size={19} />}
             </button>
 
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
+            <div className="min-w-0 flex items-center gap-2.5">
+              {activeHub && (
+                <span className="hidden lg:inline-flex items-center px-3 py-1 rounded-full bg-[#E0F2FE] text-[#0369A1] text-[10px] font-black uppercase tracking-widest shrink-0">
+                  {activeHub.label}
+                </span>
+              )}
+              <h1 className="text-base sm:text-xl font-black text-[#050C1A] tracking-tight truncate">
                 {activeTitle}
               </h1>
             </div>
           </div>
 
-          {/* Acciones y Herramientas Limpias y Despejadas */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* TRM Oficial Colombia en Vivo - Solo visible en módulos financieros/operativos que lo requieren */}
+          {/* Acciones y Herramientas en Cápsulas Coloridas */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* TRM Oficial Colombia en Vivo */}
             {showTrmBadge && (
               <div
-                className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold shadow-2xs select-none"
+                className="flex items-center gap-1.5 h-10 px-3.5 rounded-2xl bg-[#DCF5E6] text-[#0D5C31] text-xs font-extrabold select-none"
                 title="Tasa Representativa del Mercado Oficial (Haga clic para ver o ajustar)"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                <span className="hidden sm:inline text-[10px] text-emerald-700 font-bold uppercase tracking-wider">TRM Hoy:</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
+                <span className="hidden sm:inline text-[10px] text-[#0D5C31] font-black uppercase tracking-wider">TRM:</span>
                 <button
                   type="button"
                   onClick={() => {
                     setCustomTrmInput(trmRate.toString());
                     setIsTrmModalOpen(true);
                   }}
-                  className="font-mono font-black text-xs text-emerald-950 hover:underline cursor-pointer flex items-center gap-1"
+                  className="font-mono font-black text-xs text-[#063F20] hover:underline cursor-pointer flex items-center gap-1"
                   title="Clic para cambiar la TRM manualmente"
                 >
                   ${formatTRM(trmRate)} COP
-                  <Edit3 size={11} className="text-emerald-700 hover:text-emerald-950" />
+                  <Edit3 size={11} className="text-[#0D5C31]" />
                 </button>
                 <button
                   type="button"
                   onClick={handleRefreshTrm}
                   title="Actualizar TRM oficial del día automáticamente"
-                  className="p-1 hover:bg-emerald-100 rounded text-emerald-700 hover:text-emerald-950 transition-colors cursor-pointer"
+                  className="p-1 hover:bg-emerald-200/70 rounded-xl text-[#0D5C31] transition-colors cursor-pointer"
                 >
                   <RotateCcw size={12} className={isRefreshingTrm ? 'animate-spin' : ''} />
                 </button>
               </div>
             )}
 
-            {/* Botones Deshacer y Rehacer (Undo / Redo) Aislados por Usuario */}
-            <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 shadow-2xs">
+            {/* Botones Deshacer y Rehacer */}
+            <div className="flex items-center gap-1 bg-[#EBF2FA] rounded-2xl p-1">
               <button
                 type="button"
                 onClick={handleOpenUndo}
                 disabled={!canUndo}
                 title={canUndo ? 'Deshacer tu último cambio (Solicita confirmación)' : 'No hay cambios recientes tuyos para deshacer'}
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
                   canUndo
-                    ? 'text-slate-700 hover:text-[#00668F] hover:bg-white active:scale-95 cursor-pointer shadow-2xs'
-                    : 'text-slate-300 cursor-not-allowed opacity-40'
+                    ? 'text-[#050C1A] hover:text-white hover:bg-[#0284C7] active:scale-95 cursor-pointer'
+                    : 'text-slate-400 cursor-not-allowed opacity-40'
                 }`}
               >
                 <Undo2 size={15} />
@@ -1079,45 +1076,45 @@ export const AppShell: React.FC<AppShellProps> = ({
                 onClick={handleOpenRedo}
                 disabled={!canRedo}
                 title={canRedo ? 'Rehacer tu último cambio deshecho' : 'No hay cambios para rehacer'}
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
                   canRedo
-                    ? 'text-slate-700 hover:text-[#00668F] hover:bg-white active:scale-95 cursor-pointer shadow-2xs'
-                    : 'text-slate-300 cursor-not-allowed opacity-40'
+                    ? 'text-[#050C1A] hover:text-white hover:bg-[#0284C7] active:scale-95 cursor-pointer'
+                    : 'text-slate-400 cursor-not-allowed opacity-40'
                 }`}
               >
                 <Redo2 size={15} />
               </button>
             </div>
 
-            {/* Botón Universal Configuración del Módulo Activo (Icono en móvil, con texto en Desktop) */}
+            {/* Botón Universal Configuración del Módulo Activo */}
             <button
               type="button"
               onClick={() => setIsModuleConfigOpen(true)}
               title={`Configurar opciones desplegables y catálogos de ${activeTitle}`}
-              className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg bg-slate-100 hover:bg-[#EBF5FA] hover:text-[#00668F] text-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer group"
+              className="flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-2xl bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-xs font-extrabold transition-all active:scale-95 cursor-pointer group"
             >
-              <Settings size={15} className="text-[#00668F] group-hover:rotate-90 transition-transform duration-500 shrink-0" />
+              <Settings size={15} className="group-hover:rotate-90 transition-transform duration-500 shrink-0" />
               <span className="hidden sm:inline">Configurar Módulo</span>
             </button>
 
-            {/* Buscador Spotlight (Móvil y Escritorio) */}
+            {/* Buscador Spotlight */}
             <button
               onClick={() => setIsSpotlightOpen(true)}
               title="Buscar (⌘K / Ctrl+K)"
-              className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-95 cursor-pointer group"
+              className="w-10 h-10 rounded-2xl bg-[#EBF2FA] hover:bg-[#0284C7] text-[#0369A1] hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer group"
             >
-              <Search size={16} className="group-hover:scale-110 transition-transform duration-200" />
+              <Search size={17} className="group-hover:scale-110 transition-transform duration-200" />
             </button>
 
-            {/* Notificaciones y Acciones del Usuario (Abre Pop-up Central Completo) */}
+            {/* Notificaciones y Acciones del Usuario */}
             <button
               onClick={() => setIsUserAlertsModalOpen(true)}
               title="Notificaciones y Tareas Pendientes"
-              className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all relative active:scale-95 cursor-pointer group shrink-0 aspect-square"
+              className="w-10 h-10 rounded-2xl bg-[#FEF0D6] hover:bg-[#F59E0B] text-[#9A4E00] hover:text-white flex items-center justify-center transition-all relative active:scale-95 cursor-pointer group shrink-0 aspect-square"
             >
-              <Bell size={16} className="group-hover:-rotate-12 transition-transform duration-200 shrink-0" />
+              <Bell size={17} className="group-hover:-rotate-12 transition-transform duration-200 shrink-0" />
               {totalAlertBadgeCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-[#F39200] text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-xs leading-none aspect-square shrink-0">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 bg-rose-600 text-white text-[10px] font-black rounded-full flex items-center justify-center leading-none aspect-square shrink-0">
                   {totalAlertBadgeCount > 99 ? '99+' : totalAlertBadgeCount}
                 </span>
               )}
@@ -1125,12 +1122,12 @@ export const AppShell: React.FC<AppShellProps> = ({
           </div>
         </header>
 
-        {/* Área de Visualización y Contenido Reactivo con Padding Compacto y Seguro para Móvil */}
+        {/* Área de Visualización y Contenido Reactivo */}
         <div
           id="erp-main-scroll-area"
           className={`flex-1 w-full max-w-full min-w-0 min-h-0 flex flex-col overscroll-y-contain ${
             activeModuleId === 'conversaciones'
-              ? 'overflow-hidden p-2 sm:p-3 md:p-4 h-full max-h-full'
+              ? 'overflow-hidden p-2.5 sm:p-4 h-full max-h-full'
               : 'overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 md:p-5'
           }`}
           style={{ WebkitOverflowScrolling: 'touch' }}

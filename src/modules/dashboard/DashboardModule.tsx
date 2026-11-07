@@ -211,126 +211,126 @@ export const DashboardModule: React.FC = () => {
   const cta = getContextualCTA();
 
   return (
-    <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-200">
+    <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
       
-      {/* Saludo Personalizado y Resumen de Estado */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+      {/* Saludo Personalizado y Resumen de Estado en Isla Blanca */}
+      <div className="bg-white rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#1D1D1F] tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-[#050C1A] tracking-tight">
             Hola, {currentUser.name.split(' ')[0]} 👋
           </h2>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            {currentUser.roleLabel} • Aquí está tu panorama y prioridades para hoy.
+          <p className="text-xs sm:text-sm text-[#334155] font-bold mt-0.5">
+            {currentUser.roleLabel} • Aquí está tu panorama y prioridades operativas para hoy.
           </p>
         </div>
 
         {/* Chip de Única Fuente de Verdad */}
         <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#DCF5E6] text-[#0D5C31] text-xs font-extrabold">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
             <span>Única Fuente de Verdad Conectada</span>
           </div>
 
           <button
             onClick={() => setIsBackupsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-[#041022] to-[#0284C7] text-white hover:opacity-95 text-xs font-extrabold transition-all cursor-pointer"
             title="Ver instantáneas de respaldo y puntos de control (Regla 14)"
           >
-            <ShieldCheck size={14} className="text-emerald-400" />
+            <ShieldCheck size={15} className="text-cyan-300" />
             <span>Guardián de Datos</span>
           </button>
         </div>
       </div>
 
       {/* SECCIÓN EJECUTIVA: EBITDA CORPORATIVO Y CASCADA DE RENTABILIDAD */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-[#003B5C] text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-700/60 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700/80">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-white/10 text-emerald-400 backdrop-blur-xs">
-              <Coins size={22} />
+      <div className="bg-gradient-to-br from-[#041022] via-[#071D3B] to-[#026AA7] text-white rounded-3xl p-5 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-white/15 text-cyan-300">
+              <Coins size={24} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-extrabold tracking-tight">EBITDA & Desempeño Operacional</h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="text-base sm:text-xl font-black tracking-tight text-white">EBITDA & Desempeño Operacional</h3>
+                <span className="text-[10.5px] font-black px-3 py-1 rounded-full bg-emerald-400 text-[#041022]">
                   Margen {ebitdaMarginPercent.toFixed(1)}%
                 </span>
               </div>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs font-semibold text-sky-200 mt-0.5">
                 Utilidad Operacional antes de impuestos, depreciaciones y amortizaciones consolidada en tiempo real.
               </p>
             </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-[11px] text-slate-400 block font-medium">TRM Aplicada: {formatCOP(trm)}</span>
-            <span className="text-xs text-emerald-400 font-bold">1 USD = ${trm.toLocaleString('es-CO')} COP</span>
+          <div className="text-right bg-black/25 px-3.5 py-2 rounded-2xl self-start sm:self-auto">
+            <span className="text-[11px] text-sky-200 block font-bold">TRM Aplicada: {formatCOP(trm)}</span>
+            <span className="text-xs text-emerald-300 font-black">1 USD = ${trm.toLocaleString('es-CO')} COP</span>
           </div>
         </div>
 
         {/* Rejilla de Métricas EBITDA */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
-            <span className="text-[11px] font-semibold text-slate-300 block">EBITDA Consolidado</span>
-            <div className="text-lg sm:text-xl font-extrabold text-white">{formatCOP(ebitdaCOP)}</div>
-            <div className="text-[11px] text-emerald-400 font-semibold">{formatUSD(ebitdaUSD)}</div>
+          <div className="p-4 rounded-2xl bg-white/10 space-y-1">
+            <span className="text-[11px] font-extrabold text-sky-200 uppercase tracking-wider block">EBITDA Consolidado</span>
+            <div className="text-lg sm:text-2xl font-black text-white">{formatCOP(ebitdaCOP)}</div>
+            <div className="text-xs text-emerald-300 font-extrabold">{formatUSD(ebitdaUSD)}</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
-            <span className="text-[11px] font-semibold text-slate-300 block">Ingresos Operacionales</span>
-            <div className="text-lg sm:text-xl font-extrabold text-sky-300">{formatCOP(effectiveRevenueCOP)}</div>
-            <div className="text-[11px] text-slate-400">
+          <div className="p-4 rounded-2xl bg-white/10 space-y-1">
+            <span className="text-[11px] font-extrabold text-sky-200 uppercase tracking-wider block">Ingresos Operacionales</span>
+            <div className="text-lg sm:text-2xl font-black text-cyan-300">{formatCOP(effectiveRevenueCOP)}</div>
+            <div className="text-[11px] font-semibold text-sky-200">
               {totalInvoicedRevenueCOP > 0 ? 'Facturación expedida DIAN' : 'Base contractual proyectos'}
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
-            <span className="text-[11px] font-semibold text-slate-300 block">Costos Directos (COGS)</span>
-            <div className="text-lg sm:text-xl font-extrabold text-rose-300">{formatCOP(totalDirectCostsCOP)}</div>
-            <div className="text-[11px] text-slate-400">Materiales + M.O. Ley 2101 + Equipos</div>
+          <div className="p-4 rounded-2xl bg-white/10 space-y-1">
+            <span className="text-[11px] font-extrabold text-sky-200 uppercase tracking-wider block">Costos Directos (COGS)</span>
+            <div className="text-lg sm:text-2xl font-black text-rose-300">{formatCOP(totalDirectCostsCOP)}</div>
+            <div className="text-[11px] font-semibold text-sky-200">Materiales + M.O. Ley 2101 + Equipos</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
-            <span className="text-[11px] font-semibold text-slate-300 block">Utilidad Bruta (Margen {grossMarginPercent.toFixed(1)}%)</span>
-            <div className="text-lg sm:text-xl font-extrabold text-amber-300">{formatCOP(grossProfitCOP)}</div>
-            <div className="text-[11px] text-slate-400">OPEX: -{formatCOP(totalOperatingExpensesCOP)}</div>
+          <div className="p-4 rounded-2xl bg-white/10 space-y-1">
+            <span className="text-[11px] font-extrabold text-sky-200 uppercase tracking-wider block">Utilidad Bruta ({grossMarginPercent.toFixed(1)}%)</span>
+            <div className="text-lg sm:text-2xl font-black text-amber-300">{formatCOP(grossProfitCOP)}</div>
+            <div className="text-[11px] font-semibold text-sky-200">OPEX: -{formatCOP(totalOperatingExpensesCOP)}</div>
           </div>
         </div>
 
         {/* Cascada de Margen Operacional (Waterfall Bridge) */}
-        <div className="p-3 rounded-xl bg-black/20 border border-white/5 space-y-2">
-          <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+        <div className="p-4 rounded-2xl bg-black/25 space-y-2.5">
+          <span className="text-[11px] font-black text-cyan-200 uppercase tracking-widest block">
             Cascada Financiera de Margen (Waterfall Bridge)
           </span>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-            <div className="p-2 rounded-lg bg-sky-950/60 border border-sky-800/40">
-              <span className="text-[10px] text-sky-300 font-semibold block">1. Ingresos</span>
-              <span className="font-bold text-white text-[11px]">{formatCOP(effectiveRevenueCOP)}</span>
-              <span className="text-[9px] text-sky-400 block mt-0.5">100.0%</span>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-center text-xs">
+            <div className="p-2.5 rounded-2xl bg-sky-950/80">
+              <span className="text-[10px] text-sky-300 font-extrabold block">1. Ingresos</span>
+              <span className="font-black text-white text-xs">{formatCOP(effectiveRevenueCOP)}</span>
+              <span className="text-[9.5px] text-sky-400 font-bold block mt-0.5">100.0%</span>
             </div>
-            <div className="p-2 rounded-lg bg-rose-950/60 border border-rose-800/40">
-              <span className="text-[10px] text-rose-300 font-semibold block">2. (-) COGS Directo</span>
-              <span className="font-bold text-rose-200 text-[11px]">-{formatCOP(totalDirectCostsCOP)}</span>
-              <span className="text-[9px] text-rose-400 block mt-0.5">
+            <div className="p-2.5 rounded-2xl bg-rose-950/80">
+              <span className="text-[10px] text-rose-300 font-extrabold block">2. (-) COGS Directo</span>
+              <span className="font-black text-rose-200 text-xs">-{formatCOP(totalDirectCostsCOP)}</span>
+              <span className="text-[9.5px] text-rose-400 font-bold block mt-0.5">
                 {effectiveRevenueCOP > 0 ? `-${((totalDirectCostsCOP / effectiveRevenueCOP) * 100).toFixed(1)}%` : '0%'}
               </span>
             </div>
-            <div className="p-2 rounded-lg bg-amber-950/60 border border-amber-800/40">
-              <span className="text-[10px] text-amber-300 font-semibold block">3. (=) Utilidad Bruta</span>
-              <span className="font-bold text-amber-200 text-[11px]">{formatCOP(grossProfitCOP)}</span>
-              <span className="text-[9px] text-amber-400 block mt-0.5">{grossMarginPercent.toFixed(1)}%</span>
+            <div className="p-2.5 rounded-2xl bg-amber-950/80">
+              <span className="text-[10px] text-amber-300 font-extrabold block">3. (=) Utilidad Bruta</span>
+              <span className="font-black text-amber-200 text-xs">{formatCOP(grossProfitCOP)}</span>
+              <span className="text-[9.5px] text-amber-400 font-bold block mt-0.5">{grossMarginPercent.toFixed(1)}%</span>
             </div>
-            <div className="p-2 rounded-lg bg-purple-950/60 border border-purple-800/40">
-              <span className="text-[10px] text-purple-300 font-semibold block">4. (-) Gastos OPEX</span>
-              <span className="font-bold text-purple-200 text-[11px]">-{formatCOP(totalOperatingExpensesCOP)}</span>
-              <span className="text-[9px] text-purple-400 block mt-0.5">
+            <div className="p-2.5 rounded-2xl bg-purple-950/80">
+              <span className="text-[10px] text-purple-300 font-extrabold block">4. (-) Gastos OPEX</span>
+              <span className="font-black text-purple-200 text-xs">-{formatCOP(totalOperatingExpensesCOP)}</span>
+              <span className="text-[9.5px] text-purple-400 font-bold block mt-0.5">
                 {effectiveRevenueCOP > 0 ? `-${((totalOperatingExpensesCOP / effectiveRevenueCOP) * 100).toFixed(1)}%` : '0%'}
               </span>
             </div>
-            <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 col-span-2 sm:col-span-1">
-              <span className="text-[10px] text-emerald-300 font-semibold block">5. (=) EBITDA</span>
-              <span className="font-bold text-emerald-200 text-[11px]">{formatCOP(ebitdaCOP)}</span>
-              <span className="text-[9px] text-emerald-400 block mt-0.5 font-bold">{ebitdaMarginPercent.toFixed(1)}%</span>
+            <div className="p-2.5 rounded-2xl bg-emerald-950/80 col-span-2 sm:col-span-1">
+              <span className="text-[10px] text-emerald-300 font-extrabold block">5. (=) EBITDA</span>
+              <span className="font-black text-emerald-200 text-xs">{formatCOP(ebitdaCOP)}</span>
+              <span className="text-[9.5px] text-emerald-400 block mt-0.5 font-black">{ebitdaMarginPercent.toFixed(1)}%</span>
             </div>
           </div>
         </div>
@@ -393,22 +393,22 @@ export const DashboardModule: React.FC = () => {
       </div>
 
       {/* FILA 2: Proyectos en Curso (Tabla Ligera) + Tarjeta Oscura de Acento CTA */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         
         {/* Columna Izquierda (2/3): Proyectos Clave STC con Semáforos */}
-        <div className="lg:col-span-2 bg-white rounded-xl p-3.5 sm:p-4 space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="lg:col-span-2 bg-white rounded-3xl p-4 sm:p-5 space-y-3.5">
+          <div className="flex items-center justify-between pb-1">
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+              <h3 className="text-base sm:text-lg font-black text-[#050C1A] tracking-tight">
                 Cartera de Proyectos STC (Avance y Salud)
               </h3>
-              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-[#334155] font-bold mt-0.5">
                 Seguimiento por Valor Ganado (EV), SPI, CPI y Margen Real.
               </p>
             </div>
             <button
               onClick={() => setActiveModule('projects')}
-              className="text-xs font-semibold text-[#00668F] hover:underline flex items-center gap-1"
+              className="px-3.5 py-2 rounded-2xl bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer"
             >
               <span>Ver todos</span>
               <ArrowUpRight size={14} />
@@ -544,30 +544,32 @@ export const DashboardModule: React.FC = () => {
           />
 
           {/* Tarjeta de Alertas y Notificaciones Rápidas */}
-          <div className="bg-white rounded-xl p-3.5 sm:p-4 space-y-3">
+          <div className="bg-white rounded-3xl p-4 sm:p-5 space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              <span className="text-xs font-black text-[#050C1A] uppercase tracking-wider">
                 Compuertas de Calidad Activas
               </span>
-              <ShieldCheck size={16} className="text-[#00668F]" />
+              <div className="w-8 h-8 rounded-2xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
+                <ShieldCheck size={16} />
+              </div>
             </div>
 
-            <div className="space-y-1.5 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">
-                <span className="text-slate-600 font-medium">Compuerta de Seguridad y Salud (SST) Personal</span>
-                <span className={`font-bold ${totalStaffCount === 0 ? 'text-slate-400' : validStaffCount === totalStaffCount ? 'text-emerald-600' : 'text-amber-600'}`}>
+            <div className="space-y-2 text-xs">
+              <div className="p-3 rounded-2xl bg-[#EBF2FA] flex items-center justify-between">
+                <span className="text-[#050C1A] font-extrabold">Compuerta SST Personal</span>
+                <span className={`font-black px-2.5 py-1 rounded-full text-[11px] ${totalStaffCount === 0 ? 'bg-white text-[#334155]' : validStaffCount === totalStaffCount ? 'bg-[#DCF5E6] text-[#0D5C31]' : 'bg-[#FEF0D6] text-[#854400]'}`}>
                   {totalStaffCount > 0 ? `${validStaffCount} / ${totalStaffCount} Vigentes` : '0 / 0 Registrados'}
                 </span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">
-                <span className="text-slate-600 font-medium">Calibración Equipos END</span>
-                <span className={`font-bold ${totalEquipCount === 0 ? 'text-slate-400' : validEquipCount === totalEquipCount ? 'text-emerald-600' : 'text-amber-600'}`}>
+              <div className="p-3 rounded-2xl bg-[#EBF2FA] flex items-center justify-between">
+                <span className="text-[#050C1A] font-extrabold">Calibración Equipos END</span>
+                <span className={`font-black px-2.5 py-1 rounded-full text-[11px] ${totalEquipCount === 0 ? 'bg-white text-[#334155]' : validEquipCount === totalEquipCount ? 'bg-[#DCF5E6] text-[#0D5C31]' : 'bg-[#FEF0D6] text-[#854400]'}`}>
                   {totalEquipCount > 0 ? `${validEquipCount} / ${totalEquipCount} Calibrados` : '0 / 0 Registrados'}
                 </span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between">
-                <span className="text-slate-600 font-medium">Proveedores Homologados</span>
-                <span className={`font-bold ${totalPartnersCount === 0 ? 'text-slate-400' : approvedPartnersCount === totalPartnersCount ? 'text-emerald-600' : 'text-amber-600'}`}>
+              <div className="p-3 rounded-2xl bg-[#EBF2FA] flex items-center justify-between">
+                <span className="text-[#050C1A] font-extrabold">Proveedores Homologados</span>
+                <span className={`font-black px-2.5 py-1 rounded-full text-[11px] ${totalPartnersCount === 0 ? 'bg-white text-[#334155]' : approvedPartnersCount === totalPartnersCount ? 'bg-[#DCF5E6] text-[#0D5C31]' : 'bg-[#FEF0D6] text-[#854400]'}`}>
                   {totalPartnersCount > 0 ? `${approvedPartnersCount} / ${totalPartnersCount} Aprobados` : '0 / 0 Registrados'}
                 </span>
               </div>

@@ -15,42 +15,63 @@ interface PastelMetricCardProps {
   onClick?: () => void;
 }
 
-const colorStyles: Record<PastelColor, { bg: string; border: string; text: string; badgeBg: string; badgeText: string; chartFill: string; chartStroke: string }> = {
+const colorStyles: Record<
+  PastelColor,
+  {
+    bg: string;
+    text: string;
+    labelColor: string;
+    subColor: string;
+    iconBox: string;
+    badgeBg: string;
+    badgeText: string;
+    chartFill: string;
+    chartStroke: string;
+  }
+> = {
   blue: {
-    bg: 'bg-[#EBF5FA]',
-    border: 'border-[#CFE4F3]',
-    text: 'text-[#085579]',
-    badgeBg: 'bg-[#D1E8F7]',
-    badgeText: 'text-[#06425E]',
-    chartFill: 'rgba(0, 102, 143, 0.12)',
-    chartStroke: '#00668F',
+    bg: 'bg-gradient-to-br from-[#D8EEFE] via-[#E3F3FF] to-[#CCE7FD]',
+    text: 'text-[#033F6B]',
+    labelColor: 'text-[#035388]',
+    subColor: 'text-[#075985]',
+    iconBox: 'bg-[#0284C7] text-white',
+    badgeBg: 'bg-[#0284C7]/15',
+    badgeText: 'text-[#03406A]',
+    chartFill: 'rgba(2, 132, 199, 0.20)',
+    chartStroke: '#0284C7',
   },
   purple: {
-    bg: 'bg-[#F2EEFD]',
-    border: 'border-[#DBD1FA]',
-    text: 'text-[#4E3596]',
-    badgeBg: 'bg-[#E0D5FA]',
-    badgeText: 'text-[#3E2880]',
-    chartFill: 'rgba(124, 58, 237, 0.12)',
-    chartStroke: '#7C3AED',
+    bg: 'bg-gradient-to-br from-[#E5DEFF] via-[#EDE8FF] to-[#D9CEFF]',
+    text: 'text-[#371B85]',
+    labelColor: 'text-[#4C28B0]',
+    subColor: 'text-[#5B21B6]',
+    iconBox: 'bg-[#6D28D9] text-white',
+    badgeBg: 'bg-[#6D28D9]/15',
+    badgeText: 'text-[#3B188C]',
+    chartFill: 'rgba(109, 40, 217, 0.20)',
+    chartStroke: '#6D28D9',
   },
   green: {
-    bg: 'bg-[#EBF7EE]',
-    border: 'border-[#C8EAD0]',
-    text: 'text-[#186635]',
-    badgeBg: 'bg-[#CCEED4]',
-    badgeText: 'text-[#114D27]',
-    chartFill: 'rgba(16, 185, 129, 0.12)',
-    chartStroke: '#10B981',
+    bg: 'bg-gradient-to-br from-[#CFF5E0] via-[#DCF8E9] to-[#BCEED3]',
+    text: 'text-[#064E28]',
+    labelColor: 'text-[#0A6836]',
+    subColor: 'text-[#065F46]',
+    iconBox: 'bg-[#059669] text-white',
+    badgeBg: 'bg-[#059669]/15',
+    badgeText: 'text-[#064E28]',
+    chartFill: 'rgba(5, 150, 105, 0.20)',
+    chartStroke: '#059669',
   },
   amber: {
-    bg: 'bg-[#FFF7EB]',
-    border: 'border-[#FDE0B5]',
-    text: 'text-[#8A4C00]',
-    badgeBg: 'bg-[#FEE5BF]',
-    badgeText: 'text-[#6B3A00]',
-    chartFill: 'rgba(243, 146, 0, 0.15)',
-    chartStroke: '#F39200',
+    bg: 'bg-gradient-to-br from-[#FDE8C4] via-[#FEF0D6] to-[#FCDCA8]',
+    text: 'text-[#703800]',
+    labelColor: 'text-[#8F4700]',
+    subColor: 'text-[#92400E]',
+    iconBox: 'bg-[#D97706] text-white',
+    badgeBg: 'bg-[#D97706]/15',
+    badgeText: 'text-[#703800]',
+    chartFill: 'rgba(217, 119, 6, 0.22)',
+    chartStroke: '#D97706',
   },
 };
 
@@ -61,7 +82,6 @@ export const PastelMetricCard: React.FC<PastelMetricCardProps> = ({
   subtitle,
   icon,
   badgeText,
-  badgePositive = true,
   trendData = [40, 48, 45, 52, 50, 60, 58, 65, 70],
   onClick,
 }) => {
@@ -85,42 +105,47 @@ export const PastelMetricCard: React.FC<PastelMetricCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`relative p-3.5 sm:p-4 rounded-2xl ${styles.bg} transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden min-h-[118px] sm:min-h-[130px] hover:shadow-md hover:-translate-y-0.5`}
+      className={`relative p-4 sm:p-5 rounded-3xl ${styles.bg} transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden min-h-[126px] sm:min-h-[140px] hover:-translate-y-0.5`}
     >
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
+        <span className={`text-[10.5px] sm:text-xs font-black uppercase tracking-wider ${styles.labelColor}`}>
+          {label}
+        </span>
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             if (onClick) onClick();
           }}
-          className="text-slate-400 hover:text-slate-700 transition-colors p-0.5 rounded-md cursor-pointer"
+          className={`${styles.labelColor} opacity-75 hover:opacity-100 transition-opacity p-1 rounded-xl bg-white/50 cursor-pointer`}
           title="Ver detalle"
         >
-          <MoreHorizontal size={14} />
+          <MoreHorizontal size={15} />
         </button>
       </div>
 
       {/* Cifra Grande */}
-      <div className="my-0.5">
-        <div className={`text-lg sm:text-2xl font-black tracking-tight ${styles.text}`}>
+      <div className="my-1">
+        <div className={`text-xl sm:text-3xl font-black tracking-tight ${styles.text}`}>
           {value}
         </div>
-        {subtitle && <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate mt-0.5">{subtitle}</p>}
+        {subtitle && (
+          <p className={`text-[11px] sm:text-xs ${styles.subColor} font-bold truncate mt-0.5`}>
+            {subtitle}
+          </p>
+        )}
       </div>
 
-      {/* Pie con icono simétrico armonizado y micrográfica */}
-      <div className="relative mt-1.5 flex items-end justify-between">
-        <div className="flex items-center gap-1.5">
-          {/* Inner icon R = 8px (rounded-lg) perfectamente armónico con Outer R = 12px y Padding 12px */}
-          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white/90 flex items-center justify-center text-slate-700 shrink-0">
+      {/* Pie con icono simétrico y micrográfica */}
+      <div className="relative mt-2 flex items-end justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-2xl ${styles.iconBox} flex items-center justify-center shrink-0 [&_svg]:!text-white`}>
             {icon}
           </div>
           {badgeText && (
             <span
-              className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md ${styles.badgeBg} ${styles.badgeText} truncate max-w-[80px] sm:max-w-none`}
+              className={`text-[10px] sm:text-[11px] font-black px-2.5 py-1 rounded-full ${styles.badgeBg} ${styles.badgeText} truncate max-w-[95px] sm:max-w-none`}
             >
               {badgeText}
             </span>
@@ -128,10 +153,10 @@ export const PastelMetricCard: React.FC<PastelMetricCardProps> = ({
         </div>
 
         {/* Micrográfica fluida */}
-        <div className="w-16 sm:w-20 h-7 sm:h-8 opacity-75 shrink-0">
+        <div className="w-16 sm:w-20 h-7 sm:h-8 opacity-85 shrink-0">
           <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
             <path d={pathD} fill={styles.chartFill} />
-            <path d={lineD} fill="none" stroke={styles.chartStroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={lineD} fill="none" stroke={styles.chartStroke} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       </div>
