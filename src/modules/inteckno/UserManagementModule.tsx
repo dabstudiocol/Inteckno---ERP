@@ -928,37 +928,6 @@ export const UserManagementModule: React.FC = () => {
 
             <button
               type="button"
-              onClick={handleAutoAlignHseqByJob}
-              className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Ajustar automáticamente: roles de oficina como 'No requerido' y campo como 'Apto alturas' (Res. 4272)"
-            >
-              <HardHat size={13} />
-              <span>Homologar HSEQ</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsM365TenantModalOpen(true)}
-              className="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-[#00668F] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Administrar conexión corporativa con Microsoft 365 / Azure Entra ID"
-            >
-              <Cloud size={13} />
-              <span>Tenant M365</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSyncM365Directly}
-              disabled={isSyncingM365}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-60"
-              title="Sincronizar cuentas con Microsoft Entra ID (Azure AD)"
-            >
-              <RefreshCw size={13} className={isSyncingM365 ? 'animate-spin' : ''} />
-              <span>{isSyncingM365 ? 'Sincronizando...' : 'Azure AD'}</span>
-            </button>
-
-            <button
-              type="button"
               onClick={handleExportDirectory}
               className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
               title="Exportar archivo CSV compatible con Excel para licitaciones"
