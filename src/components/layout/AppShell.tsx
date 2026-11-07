@@ -555,7 +555,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       : accessibleAreas.filter((a) => a.id === selectedAreaFilter);
 
   return (
-    <div className="h-screen h-[100dvh] w-screen flex bg-[#021B2B] font-sans antialiased selection:bg-[#00668F] selection:text-white overflow-hidden">
+    <div className="h-screen h-[100dvh] w-screen flex bg-[#0B1317] font-sans antialiased selection:bg-[#00668F] selection:text-white overflow-hidden">
       
       {/* Overlay Backdrop Móvil */}
       {isMobileDrawerOpen && (
@@ -569,7 +569,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* BARRA LATERAL RETRÁCTIL / REACTIVA (Desktop + Mobile Drawer) */}
       {/* ========================================================================= */}
       <aside
-        className={`bg-[#021B2B] border-r border-slate-800/80 flex flex-col justify-between shrink-0 select-none transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0 ${
+        className={`bg-[#091116] border-r border-slate-800/80 flex flex-col justify-between shrink-0 select-none transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0 ${
           isMobileDrawerOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
         } ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64 lg:w-72'}`}
       >
@@ -578,7 +578,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           
           {/* Logo y Encabezado de la Empresa (Logo transparente integrado al fondo del panel con indicador de latido cloud) */}
           {(!isSidebarCollapsed || isMobileDrawerOpen) ? (
-            <div className="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between min-h-[76px] bg-[#011421]">
+            <div className="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between min-h-[76px] bg-[#070E12]">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="h-12 w-14 flex items-center justify-center shrink-0 relative">
                   <img src="/inteckno-icon.png" alt="Inteckno" className="h-full w-auto max-w-full object-contain" />
@@ -995,17 +995,17 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* ========================================================================= */}
       {/* LIENZO PRINCIPAL DEL ERP (Full-Screen reactivo) */}
       {/* ========================================================================= */}
-      <main className="flex-1 w-full max-w-full min-w-0 bg-[#E6EDF5] flex flex-col h-full overflow-hidden relative transition-all duration-300">
+      <main className="flex-1 w-full max-w-full min-w-0 bg-[#F4F6F9] flex flex-col h-full overflow-hidden relative transition-all duration-300">
         
         {/* Encabezado Superior con Toggle Rápido del Panel - Glassmorphism nítido */}
-        <header className="px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between bg-[#021B2B] text-white sticky top-0 z-20">
+        <header className="px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-20">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Botón Hamburger para Móvil / Tablet */}
             <button
               type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
               title="Abrir menú de módulos"
-              className="md:hidden w-9 h-9 rounded-lg text-slate-200 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+              className="md:hidden w-9 h-9 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition-all active:scale-95 cursor-pointer"
             >
               <Menu size={18} />
             </button>
@@ -1014,7 +1014,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               title={isSidebarCollapsed ? 'Expandir panel lateral' : 'Plegar panel lateral'}
-              className="hidden md:flex w-9 h-9 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 items-center justify-center transition-all active:scale-95 cursor-pointer"
+              className="hidden md:flex w-9 h-9 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 items-center justify-center transition-all active:scale-95 cursor-pointer"
             >
               {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
