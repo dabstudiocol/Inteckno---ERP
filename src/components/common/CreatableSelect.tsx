@@ -186,12 +186,12 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
             setIsOpen(true);
           }}
           placeholder={placeholder}
-          className={`w-full p-2.5 pr-14 rounded-2xl bg-[#E3EDF8] text-[#050C1A] text-xs font-bold focus:bg-[#CFE6FC] focus:outline-hidden transition-all ${
+          className={`w-full py-2 pl-3 !pr-12 rounded-xl bg-[#EBF2FA] text-[#0F172A] text-xs font-bold focus:bg-[#DCEBFA] focus:outline-hidden transition-all truncate ${
             disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-text'
           } ${inputClassName}`}
         />
 
-        <div className="absolute right-2 flex items-center gap-1 z-10">
+        <div className="absolute right-1.5 flex items-center gap-0.5 z-10">
           {(value || searchTerm) && !disabled && isClearable && (
             <button
               type="button"
@@ -208,9 +208,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 inputRef.current?.focus();
               }}
               title="Limpiar y ver todas las opciones"
-              className="p-1 rounded-lg text-[#334155] hover:text-white hover:bg-rose-600 transition-colors cursor-pointer"
+              className="p-1 rounded-md text-[#475569] hover:text-white hover:bg-rose-600 transition-colors cursor-pointer"
             >
-              <X size={13} />
+              <X size={12} />
             </button>
           )}
 
@@ -226,10 +226,10 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 inputRef.current?.focus();
               }
             }}
-            className="p-1 rounded-lg text-[#0284C7] hover:text-white hover:bg-[#0284C7] transition-all duration-200 cursor-pointer"
+            className="p-1 rounded-md text-[#0284C7] hover:text-white hover:bg-[#0284C7] transition-all duration-200 cursor-pointer"
           >
             <ChevronDown
-              size={14}
+              size={13}
               className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             />
           </button>

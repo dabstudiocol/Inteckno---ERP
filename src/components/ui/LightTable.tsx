@@ -101,14 +101,14 @@ export function LightTable<T>({
       </div>
 
       {/* VISTA TABLET & DESKTOP (>= 768px): Tabla Capsule Enterprise */}
-      <div className="hidden md:block w-full max-w-full min-w-0 overflow-x-auto rounded-3xl bg-white overflow-hidden">
+      <div className="hidden md:block w-full max-w-full min-w-0 overflow-x-auto rounded-2xl bg-white p-3">
         <table className="w-full text-left min-w-full">
           <thead>
-            <tr className="bg-[#DCE8F6]">
+            <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`py-3 px-4 text-[11px] font-black text-[#07192F] uppercase tracking-wider ${
+                  className={`py-3 px-3 text-[11px] font-black text-white uppercase tracking-wider ${
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                   } ${col.className || ''}`}
                 >
@@ -124,14 +124,14 @@ export function LightTable<T>({
                 <tr
                   key={key}
                   onClick={() => onRowClick && onRowClick(item)}
-                  className={`group transition-colors duration-150 hover:bg-[#E0F2FE] ${
+                  className={`group transition-colors duration-150 hover:bg-[#EBF4FF] ${
                     onRowClick ? 'cursor-pointer' : ''
                   }`}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`py-3 px-4 text-xs font-bold text-[#050C1A] align-middle ${
+                      className={`py-3 px-3 text-xs font-bold text-[#0F172A] align-middle ${
                         col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                       } ${col.className || ''}`}
                     >

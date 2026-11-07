@@ -12,7 +12,7 @@
     --itk-accent-hover: #D97706;
 
     /* Superficies Contrastadas Cero-Bordes */
-    --app-bg: #DCE6F2;
+    --app-bg: #EBF1F8;
     --sidebar-dark: #050E1D;
     --sidebar-hover: #0F233F;
     --card-surface: #FFFFFF;
@@ -141,26 +141,26 @@
 }
 
 /* ==========================================================================
-   GEOMETRÍA CURVA RADICAL Y REORGANIZACIÓN VISUAL GLOBAL (SQUIRCLES)
+   GEOMETRÍA CURVA PROPORCIONAL Y REORGANIZACIÓN VISUAL GLOBAL
    ========================================================================== */
 .rounded-md {
-  border-radius: 12px !important;
+  border-radius: 8px !important;
 }
 
 .rounded-lg {
-  border-radius: 16px !important;
+  border-radius: 11px !important;
 }
 
 .rounded-xl {
-  border-radius: 22px !important;
+  border-radius: 14px !important;
 }
 
 .rounded-2xl {
-  border-radius: 26px !important;
+  border-radius: 18px !important;
 }
 
 .rounded-3xl {
-  border-radius: 32px !important;
+  border-radius: 22px !important;
 }
 
 /* Superficies Interiores Contrastadas (Sin Bordes) */
@@ -300,15 +300,25 @@ table {
 }
 
 thead tr {
-  background-color: #DCE8F6 !important;
+  background-color: #0B1E38 !important;
 }
 
 thead th {
-  color: #07192F !important;
+  color: #FFFFFF !important;
   font-weight: 800 !important;
-  letter-spacing: 0.06em !important;
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
+  letter-spacing: 0.05em !important;
+  padding-top: 11px !important;
+  padding-bottom: 11px !important;
+}
+
+thead th:first-child {
+  border-top-left-radius: 10px !important;
+  border-bottom-left-radius: 10px !important;
+}
+
+thead th:last-child {
+  border-top-right-radius: 10px !important;
+  border-bottom-right-radius: 10px !important;
 }
 
 tbody tr {
@@ -317,11 +327,11 @@ tbody tr {
 }
 
 tbody tr:nth-child(even) {
-  background-color: #F3F8FD;
+  background-color: #F6F9FD;
 }
 
 tbody tr:hover {
-  background-color: #E0F2FE !important;
+  background-color: #EBF4FF !important;
 }
 
 /* Custom scrollbars */

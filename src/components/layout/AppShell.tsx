@@ -987,10 +987,10 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* ========================================================================= */}
       {/* LIENZO PRINCIPAL DEL ERP (Full-Screen reactivo con Isla Superior Clara) */}
       {/* ========================================================================= */}
-      <main className="flex-1 w-full max-w-full min-w-0 bg-[#DCE6F2] flex flex-col h-full overflow-hidden relative transition-all duration-300">
+      <main className="flex-1 w-full max-w-full min-w-0 bg-[#EBF1F8] flex flex-col h-full overflow-hidden relative transition-all duration-300">
         
         {/* Encabezado Superior Flotante Claro y Curvo */}
-        <header className="mx-2.5 sm:mx-4 mt-2.5 sm:mt-3 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center justify-between bg-white sticky top-2.5 z-20">
+        <header className="mx-2.5 sm:mx-4 mt-2.5 sm:mt-3 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-2xl flex items-center justify-between bg-white sticky top-2.5 z-20">
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             {/* Botón Hamburger para Móvil / Tablet */}
             <button

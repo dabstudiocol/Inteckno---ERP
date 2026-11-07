@@ -1,5 +1,5 @@
 // Service Worker for Inteckno ERP PWA
-const CACHE_NAME = 'inteckno-erp-v4';
+const CACHE_NAME = 'inteckno-erp-v5';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

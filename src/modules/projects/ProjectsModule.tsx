@@ -876,20 +876,31 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
         </div>
       ) : viewMode === 'table' ? (
         /* TABLE VIEW */
-        <div className="bg-white rounded-3xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#DCE8F6] text-[#07192F] font-black uppercase tracking-wider">
+        <div className="bg-white rounded-2xl p-3">
+          <div className="w-full">
+            <table className="w-full table-fixed text-left text-xs">
+              <colgroup>
+                <col className="w-[16%]" />
+                <col className="w-[13%]" />
+                <col className="w-[11%]" />
+                <col className="w-[13%]" />
+                <col className="w-[11%]" />
+                <col className="w-[10%]" />
+                <col className="w-[8%]" />
+                <col className="w-[145px]" />
+                <col className="w-[98px]" />
+              </colgroup>
+              <thead>
                 <tr>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Código / Proyecto</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Cliente</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Línea STC</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Responsable</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Fechas</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Presupuesto</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Avance</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Estado</th>
-                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Detalle</th>
+                  <th className="py-3 px-2.5">Código / Proyecto</th>
+                  <th className="py-3 px-2.5">Cliente</th>
+                  <th className="py-3 px-2.5">Línea STC</th>
+                  <th className="py-3 px-2.5">Responsable</th>
+                  <th className="py-3 px-2.5">Fechas</th>
+                  <th className="py-3 px-2.5">Presupuesto</th>
+                  <th className="py-3 px-2.5">Avance</th>
+                  <th className="py-3 px-2.5">Estado</th>
+                  <th className="py-3 px-2.5 text-right">Detalle</th>
                 </tr>
               </thead>
               <tbody>
@@ -902,46 +913,46 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                     <tr 
                       key={proj.id} 
                       onClick={() => setSelectedProjectId(proj.id)}
-                      className="hover:bg-[#E0F2FE] cursor-pointer transition-colors"
+                      className="hover:bg-[#EBF4FF] cursor-pointer transition-colors"
                     >
-                      <td className="py-3.5 px-4 min-w-[210px]">
-                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-[#E0F2FE] text-[#0284C7] font-mono text-[11px] font-black whitespace-nowrap mb-1">
+                      <td className="py-3 px-2.5">
+                        <div className="font-mono text-[11px] font-black text-[#0284C7] truncate" title={proj.code}>
                           {proj.code}
                         </div>
-                        <div className="font-extrabold text-[#050C1A] max-w-xs truncate">
+                        <div className="font-bold text-[#0F172A] truncate mt-0.5" title={proj.name}>
                           {proj.name}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-extrabold text-[#050C1A] whitespace-nowrap">
+                      <td className="py-3 px-2.5 font-bold text-[#0F172A] truncate" title={proj.clientName}>
                         {proj.clientName}
                       </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="capitalize px-3 py-1 rounded-full text-[11px] font-extrabold bg-[#EBF2FA] text-[#035388]">
+                      <td className="py-3 px-2.5">
+                        <span className="inline-block max-w-full truncate capitalize px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#E0F2FE] text-[#0369A1]">
                           {proj.lineOfBusiness || 'Mantenimiento'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-[#1E293B] whitespace-nowrap">
+                      <td className="py-3 px-2.5 font-semibold text-[#1E293B] truncate" title={proj.supervisorName || 'Sin asignar'}>
                         {proj.supervisorName || 'Sin asignar'}
                       </td>
-                      <td className="py-3.5 px-4 text-[#334155] font-bold text-[11px] whitespace-nowrap">
-                        <div>Inicio: <span className="font-mono text-[#050C1A]">{proj.startDate || '-'}</span></div>
-                        <div className="mt-0.5">Fin: <span className="font-mono text-[#050C1A]">{proj.endDate || '-'}</span></div>
+                      <td className="py-3 px-2.5 text-[#334155] font-semibold text-[11px] whitespace-nowrap leading-tight">
+                        <div>Ini: <span className="font-mono font-bold text-[#0F172A]">{proj.startDate || '-'}</span></div>
+                        <div className="mt-0.5">Fin: <span className="font-mono font-bold text-[#0F172A]">{proj.endDate || '-'}</span></div>
                       </td>
-                      <td className="py-3.5 px-4 font-black text-[#050C1A] whitespace-nowrap tabular-nums">
+                      <td className="py-3 px-2.5 font-extrabold text-[#0F172A] whitespace-nowrap tabular-nums">
                         {formatCOP(proj.budgetPV || 0)}
                       </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-20 bg-[#DCE8F6] rounded-full h-2 overflow-hidden shrink-0">
+                      <td className="py-3 px-2.5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-12 bg-[#E2E8F0] rounded-full h-2 overflow-hidden shrink-0">
                             <div 
                               className="bg-[#0284C7] h-2 rounded-full transition-all" 
                               style={{ width: `${Math.max(Math.min(progress, 100), progress > 0 ? 6 : 0)}%` }} 
                             />
                           </div>
-                          <span className="font-mono font-black text-xs text-[#0284C7]">{progress}%</span>
+                          <span className="font-mono font-bold text-[11px] text-[#0284C7]">{progress}%</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-3 px-2" onClick={(e) => e.stopPropagation()}>
                         <CreatableSelect
                           value={
                             proj.status === 'active' ? 'En ejecución' :
@@ -970,31 +981,31 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                           ]}
                           placeholder="Estado..."
                           allowCustomText={false}
-                          inputClassName={`px-3 py-1.5 rounded-full text-[11px] font-extrabold ${badge.color}`}
+                          inputClassName={`py-1.5 pl-2.5 rounded-lg text-[11px] font-bold ${badge.color}`}
                         />
                       </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-3 pl-1 pr-2 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => setDetailProject(proj)}
-                            className="w-8 h-8 rounded-xl bg-[#EBF2FA] hover:bg-[#0284C7] text-[#0284C7] hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                            className="w-7 h-7 rounded-lg bg-[#EBF2FA] hover:bg-[#0284C7] text-[#0284C7] hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
                             title="Ver detalles completos del proyecto"
                           >
-                            <Info className="w-4 h-4" />
+                            <Info className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setProjectToDelete(proj)}
-                            className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                            className="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
                             title="Eliminar proyecto"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setSelectedProjectId(proj.id)}
-                            className="w-8 h-8 rounded-xl bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                            className="w-7 h-7 rounded-lg bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
                             title="Abrir proyecto"
                           >
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
