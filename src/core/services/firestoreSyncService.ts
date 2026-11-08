@@ -140,7 +140,16 @@ export function markEntityAsDeletedPermanent(idsOrEmails: (string | undefined)[]
   }
 }
 
+const PROTECTED_SYSTEM_IDENTIFIERS = new Set([
+  'sistemas@inteckno.com',
+  'usr-99',
+  'emp-usr-99',
+  'sistemas',
+]);
+
 export function isEntityDeletedPermanent(id?: string, email?: string): boolean {
+  if (id && PROTECTED_SYSTEM_IDENTIFIERS.has(id.toLowerCase().trim())) return false;
+  if (email && PROTECTED_SYSTEM_IDENTIFIERS.has(email.toLowerCase().trim())) return false;
   const set = getDeletedEntityIds();
   if (id && (set.has(id) || set.has(id.toLowerCase()))) return true;
   if (email && (set.has(email) || set.has(email.toLowerCase().trim()))) return true;

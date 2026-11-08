@@ -929,12 +929,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         seedUsers.forEach((su) => {
           if (
-            !isEntityDeletedPermanent(su.id, su.email) &&
+            (!isEntityDeletedPermanent(su.id, su.email) || su.email.toLowerCase() === 'sistemas@inteckno.com') &&
             !mergedUsers.some((mu) => mu.id === su.id || mu.email.toLowerCase() === su.email.toLowerCase())
           ) {
             mergedUsers.push(su);
           }
         });
+
+        // Garantía absoluta: el usuario Sistemas Inteckno siempre debe estar presente
+        const sistemasSeed = SEED_USERS.find((su) => su.email === 'sistemas@inteckno.com');
+        if (sistemasSeed && !mergedUsers.some((u) => u.email.toLowerCase() === 'sistemas@inteckno.com')) {
+          mergedUsers.unshift(sistemasSeed);
+        }
 
         const resolvedActiveUser =
           (activeUser?.id && mergedUsers.find((u) => u.id === activeUser.id)) ||
@@ -1096,6 +1102,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Cargar datos durables desde IndexedDB y suscribirse a Cloud Firestore en tiempo real
   useEffect(() => {
     let isMounted = true;
+
+    // Desbloquear y limpiar tombstone accidental de la cuenta de Sistemas Inteckno
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const rawDel = localStorage.getItem('ITK_DELETED_ENTITY_IDS_V1');
+        if (rawDel) {
+          const arr = JSON.parse(rawDel);
+          if (Array.isArray(arr)) {
+            const cleaned = arr.filter((x) => {
+              const s = String(x).toLowerCase().trim();
+              return s !== 'sistemas@inteckno.com' && s !== 'usr-99' && s !== 'emp-usr-99' && s !== 'sistemas';
+            });
+            if (cleaned.length !== arr.length) {
+              localStorage.setItem('ITK_DELETED_ENTITY_IDS_V1', JSON.stringify(cleaned));
+            }
+          }
+        }
+      }
+    } catch {}
 
     // 0. CARGA INICIAL FORZADA DESDE GOOGLE CLOUD FIRESTORE (CLOUD-FIRST):
     // Garantiza que cualquier navegador, PC o celular descargue la base de datos central antes de cualquier cosa.
@@ -2233,6 +2258,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteUserAccount = useCallback((userId: string) => {
     setState((prev) => {
       const targetUser = prev.users.find((u) => u.id === userId);
+      if (targetUser?.email?.toLowerCase().trim() === 'sistemas@inteckno.com' || userId === 'USR-99') {
+        notify('warning', 'Acción Protegida', 'La cuenta raíz de Administrador de Sistemas no puede ser eliminada.');
+        return prev;
+      }
       const targetEmail = targetUser?.email?.toLowerCase().trim();
 
       // Registrar tombstone permanente (ID, correo y ficha de empleado vinculada)

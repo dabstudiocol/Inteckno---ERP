@@ -129,8 +129,8 @@ export const LoginView: React.FC = () => {
                     Mínimo 6 caracteres
                   </span>
                 </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 z-10">
+                <div className="relative flex items-stretch rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-[#00668F]">
+                  <div className="pl-3.5 flex items-center pointer-events-none text-slate-500 z-10 shrink-0">
                     <Lock size={16} />
                   </div>
                   <input
@@ -139,13 +139,14 @@ export const LoginView: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="login-input w-full pl-10 pr-11 py-3 bg-white text-slate-900 font-semibold text-sm rounded-xl placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[#00668F] focus:bg-white transition-all"
+                    className="login-input w-full pl-2.5 pr-2 py-3 bg-white text-slate-900 font-semibold text-sm placeholder:text-slate-400 placeholder:font-normal focus:outline-none transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-700 transition-colors z-10 cursor-pointer"
+                    className="px-3.5 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-50 transition-colors z-10 cursor-pointer border-l border-slate-100 shrink-0"
                     tabIndex={-1}
+                    title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>

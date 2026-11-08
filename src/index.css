@@ -443,6 +443,19 @@ textarea:focus {
   -webkit-text-fill-color: #050C1A !important;
 }
 
+/* Ocultar iconos nativos de revelar contraseña de Edge/IE y Chrome para evitar doble ojo y superposición azul */
+.login-input::-ms-reveal,
+.login-input::-ms-clear {
+  display: none !important;
+}
+
+.login-input::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+}
+
 .login-input:-webkit-autofill,
 .login-input:-webkit-autofill:hover,
 .login-input:-webkit-autofill:focus,
