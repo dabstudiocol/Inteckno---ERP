@@ -195,7 +195,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
             </div>
           </div>
           <div className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-            {assignments.length} {assignments.length === 1 ? 'Colaborador' : 'Colaboradores'}
+            {assignments.length} {assignments.length === 1 ? 'Empleado' : 'Empleados'}
           </div>
           <p className="mt-2 text-[11px] text-slate-500">
             {assignments.length > 0 ? 'Asignados al cronograma de obra' : 'Sin asignaciones registradas'}
@@ -253,7 +253,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
             <Search className="absolute left-3 top-2.5 text-slate-400" size={15} />
             <input
               type="text"
-              placeholder="Buscar colaborador, cargo, proyecto o ubicación..."
+              placeholder="Buscar empleado, cargo, proyecto o ubicación..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#00668F] font-medium"
@@ -297,7 +297,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
               className="px-4 py-2 rounded-xl bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
             >
               <Plus size={15} />
-              <span>Asignar Colaborador</span>
+              <span>Asignar Empleado</span>
             </button>
           </div>
         </div>
@@ -319,7 +319,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
         <table className="w-full text-xs text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold">
-              <th className="py-2.5 px-3 min-w-[200px]">Colaborador / Cargo</th>
+              <th className="py-2.5 px-3 min-w-[200px]">Empleado / Cargo</th>
               <th className="py-2.5 px-3 min-w-[140px]">Frente / Ubicación</th>
               <th className="py-2.5 px-2 text-center min-w-[80px]">Dedicación</th>
               {weekList.map((wk) => (
@@ -338,7 +338,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
                     <Users size={32} className="text-slate-300 stroke-[1.5]" />
                     <p className="text-sm font-semibold text-slate-600">Sin asignaciones de cuadrilla para este proyecto</p>
                     <p className="text-xs text-slate-400 max-w-md">
-                      Haz clic en "Asignar Colaborador" para programar el personal técnico y de ingeniería en las semanas correspondientes.
+                      Haz clic en "Asignar Empleado" para programar el personal técnico y de ingeniería en las semanas correspondientes.
                     </p>
                   </div>
                 </td>
@@ -421,7 +421,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
           isOpen={true}
           title="Eliminar Asignación de Cuadrilla"
           itemName={`${assignmentToDelete.employeeName} (${assignmentToDelete.role})`}
-          description="¿Estás seguro de eliminar este colaborador del cronograma semanal de obra? Esta acción no se puede deshacer."
+          description="¿Estás seguro de eliminar este empleado del cronograma semanal de obra? Esta acción no se puede deshacer."
           confirmWord="BORRAR"
           requireConfirmWord={true}
           onConfirm={() => handleDeleteAssignment(assignmentToDelete.id)}
@@ -429,14 +429,14 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
         />
       )}
 
-      {/* MODAL DE ASIGNACIÓN DE COLABORADOR */}
+      {/* MODAL DE ASIGNACIÓN DE EMPLEADO */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
           <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Users className="text-[#00668F]" size={20} />
-                <h3 className="text-base font-bold text-slate-900">Asignar Colaborador al Cronograma</h3>
+                <h3 className="text-base font-bold text-slate-900">Asignar Empleado al Cronograma</h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -448,7 +448,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
 
             <form onSubmit={handleCreateAssignment} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Colaborador / Personal de Nómina *</label>
+                <label className="block font-bold text-slate-700 mb-1">Empleado / Personal de Nómina *</label>
                 <CreatableSelect
                   value={empName}
                   onChange={(val) => {
@@ -472,7 +472,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
                       code: s.department || s.role,
                     };
                   })}
-                  placeholder="Seleccionar colaborador de nómina o escribir..."
+                  placeholder="Seleccionar empleado de nómina o escribir..."
                   allowCustomText={true}
                   inputClassName="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                 />
@@ -495,7 +495,7 @@ export const TabCuadrilla: React.FC<TabCuadrillaProps> = ({ project, onUpdatePro
                         <strong>{selectedStaffNovelty.endDate}</strong> ({selectedStaffNovelty.daysCount} días).
                       </p>
                       <p className="text-[10px] text-amber-600 italic">
-                        Puedes continuar con la asignación si el colaborador prestará apoyo fuera del período de su descanso.
+                        Puedes continuar con la asignación si el empleado prestará apoyo fuera del período de su descanso.
                       </p>
                     </div>
                   );

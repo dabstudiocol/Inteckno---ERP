@@ -974,12 +974,12 @@ export const ExpensesModule: React.FC = () => {
                         </div>
                         <div>
                           <SmartEmployeeSelect
-                            label="Colaborador Responsable del Gasto"
+                            label="Empleado Responsable del Gasto"
                             value={selectedUserId}
                             onChange={(empId, empObj) =>
                               setSelectedUserId(empObj ? `${empObj.name} (${empObj.jobTitle})` : empId)
                             }
-                            placeholder="Seleccionar colaborador de campo..."
+                            placeholder="Seleccionar empleado de campo..."
                           />
                         </div>
                       </div>
@@ -1034,7 +1034,7 @@ export const ExpensesModule: React.FC = () => {
                       </div>
                       <div>
                         <CreatableSelect
-                          label="Colaborador Responsable del Gasto"
+                          label="Empleado Responsable del Gasto"
                           required
                           value={selectedUserId}
                           onChange={(val) => setSelectedUserId(val)}
@@ -1043,7 +1043,7 @@ export const ExpensesModule: React.FC = () => {
                             name: `${collab.name} (${collab.role})`,
                             code: collab.role,
                           }))}
-                          placeholder="Seleccionar colaborador administrativo..."
+                          placeholder="Seleccionar empleado administrativo..."
                           inputClassName="bg-white"
                         />
                       </div>

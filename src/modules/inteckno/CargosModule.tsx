@@ -1555,7 +1555,7 @@ export const CargosModule: React.FC = () => {
           missing.length > 0
             ? missing
             : ['Profundización en normativas europeas EN 1709 y EN 12927 para teleféricos'],
-        summary: `El colaborador ${emp.name} presenta un nivel de adecuación del ${score}% para el cargo de ${job.title}. Cumple satisfactoriamente con los pilares base y se recomienda capacitación focalizada en los aspectos pendientes para alcanzar el 100%.`,
+        summary: `El empleado ${emp.name} presenta un nivel de adecuación del ${score}% para el cargo de ${job.title}. Cumple satisfactoriamente con los pilares base y se recomienda capacitación focalizada en los aspectos pendientes para alcanzar el 100%.`,
       });
       setIsAnalyzingGap(false);
     }, 600);
@@ -2934,6 +2934,7 @@ export const CargosModule: React.FC = () => {
                           const isAlreadyInThisJob = (e.jobPositionId && (e.jobPositionId === editingPosition.id || e.jobPositionId === editingPosition.code)) || (!e.jobPositionId && e.role !== 'Sin cargo asignado' && e.role?.toLowerCase() === editingPosition.title?.toLowerCase());
                           return {
                             id: e.id,
+                            value: e.id,
                             name: isAlreadyInThisJob ? `${e.name} [Ya asignado a este cargo]` : `${e.name} (Cargo actual: ${e.role || 'Sin cargo'} - ${e.department || 'Sin dpto'})`,
                           };
                         })}
@@ -3233,7 +3234,7 @@ export const CargosModule: React.FC = () => {
                           <Users size={13} className="text-[#00668F]" />
                           <div>
                             <span className="font-bold text-gray-900 block">{occ.name}</span>
-                            <span className="text-[10px] text-gray-500">{occ.email || occ.documentId || 'Colaborador ITK'}</span>
+                            <span className="text-[10px] text-gray-500">{occ.email || occ.documentId || 'Empleado ITK'}</span>
                           </div>
                         </div>
                         <button
@@ -3260,6 +3261,7 @@ export const CargosModule: React.FC = () => {
                 value={selectedCollabToAssign}
                 options={employees.map((e) => ({
                   id: e.id,
+                  value: e.id,
                   name: `${e.name} (${e.role || 'Sin cargo'} - ${e.department || 'Sin dpto'})`,
                 }))}
                 onChange={(val) => setSelectedCollabToAssign(val)}

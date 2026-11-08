@@ -38,7 +38,7 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
   isHeightTask = false,
   requiredCompetencyId,
   label,
-  placeholder = 'Buscar y seleccionar colaborador...',
+  placeholder = 'Buscar y seleccionar empleado...',
   disabled = false,
   showHourlyCostBadge = false,
   className = '',
@@ -251,7 +251,7 @@ export const SmartEmployeeSelect: React.FC<SmartEmployeeSelectProps> = ({
         <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-64 overflow-y-auto divide-y divide-slate-100">
           {filtered.length === 0 ? (
             <div className="p-3 text-xs text-slate-400 text-center">
-              No se encontraron colaboradores coincidentes.
+              No se encontraron empleados coincidentes.
             </div>
           ) : (
             filtered.map((emp) => {

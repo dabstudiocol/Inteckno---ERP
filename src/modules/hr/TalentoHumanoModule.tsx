@@ -465,7 +465,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
     }
     const isDuplicate = employees.some((emp) => emp.documentId.trim() === empForm.documentId.trim());
     if (isDuplicate) {
-      notify?.('urgent', 'Documento Duplicado', `Ya existe un colaborador registrado con la cédula ${empForm.documentId}.`);
+      notify?.('urgent', 'Documento Duplicado', `Ya existe un empleado registrado con la cédula ${empForm.documentId}.`);
       return;
     }
 
@@ -753,7 +753,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               <div className="w-16 h-16 rounded-2xl bg-sky-50 text-[#00668F] flex items-center justify-center mx-auto">
                 <Users size={32} />
               </div>
-              <h4 className="text-sm font-bold text-gray-800">No hay colaboradores registrados en el directorio</h4>
+              <h4 className="text-sm font-bold text-gray-800">No hay empleados registrados en el directorio</h4>
               <p className="text-xs text-gray-500 max-w-md mx-auto">
                 Registra ingenieros, supervisores y técnicos especialistas de teleféricos para gestionar sus certificaciones, licencias en alturas y liquidación de nómina.
               </p>
@@ -778,7 +778,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
             </div>
           ) : filteredEmployees.length === 0 ? (
             <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-xs text-gray-500">
-              No se encontraron colaboradores que coincidan con la búsqueda o filtro seleccionado.
+              No se encontraron empleados que coincidan con la búsqueda o filtro seleccionado.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -981,7 +981,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                 </div>
               </div>
               <div className="mt-2 text-2xl font-black text-slate-900">
-                {activeApprovedNoveltiesCount} {activeApprovedNoveltiesCount === 1 ? 'Colaborador' : 'Colaboradores'}
+                {activeApprovedNoveltiesCount} {activeApprovedNoveltiesCount === 1 ? 'Empleado' : 'Empleados'}
               </div>
               <p className="mt-1 text-[11px] text-slate-500">En período de disfrute o incapacidad</p>
             </div>
@@ -1025,7 +1025,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Balance de Vacaciones por Colaborador ({employees.length})
+                  Balance de Vacaciones por Empleado ({employees.length})
                 </button>
               </div>
 
@@ -1083,7 +1083,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
                     <tr>
                       <th className="p-3">Radicado / Fecha</th>
-                      <th className="p-3">Colaborador</th>
+                      <th className="p-3">Empleado</th>
                       <th className="p-3">Tipo de Novedad</th>
                       <th className="p-3">Período (Desde - Hasta)</th>
                       <th className="p-3 text-center">Días</th>
@@ -1322,14 +1322,14 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
 
                 <form onSubmit={handleCreateNovelty} className="p-5 overflow-y-auto space-y-3.5 text-xs">
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Colaborador / Personal de Nómina *</label>
+                    <label className="block font-bold text-gray-700 mb-1">Empleado / Personal de Nómina *</label>
                     <select
                       required
                       value={noveltyEmpId}
                       onChange={(e) => setNoveltyEmpId(e.target.value)}
                       className="w-full p-2.5 rounded-xl border border-gray-300 font-medium text-gray-800 bg-white"
                     >
-                      <option value="">Seleccionar colaborador...</option>
+                      <option value="">Seleccionar empleado...</option>
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
                           {emp.name} ({emp.role}) — {emp.vacationDaysAvailable} días vac. disp.
@@ -1418,7 +1418,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                           <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
                             <AlertTriangle size={15} className="text-amber-600 shrink-0" />
                             <span>
-                              Atención: El colaborador cuenta con <strong>{available} días</strong> disponibles y se están solicitando <strong>{noveltyDaysCount} días</strong>.
+                              Atención: El empleado cuenta con <strong>{available} días</strong> disponibles y se están solicitando <strong>{noveltyDaysCount} días</strong>.
                             </span>
                           </div>
                         );
@@ -1428,7 +1428,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   )}
 
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Colaborador de Relevo / Sustituto (Opcional)</label>
+                    <label className="block font-bold text-gray-700 mb-1">Empleado de Relevo / Sustituto (Opcional)</label>
                     <select
                       value={noveltyReplacementId}
                       onChange={(e) => setNoveltyReplacementId(e.target.value)}
@@ -1790,7 +1790,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
             <table className="w-full text-xs text-left min-w-[850px]">
               <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-200">
                 <tr>
-                  <th className="p-3">Colaborador / C.C.</th>
+                  <th className="p-3">Empleado / C.C.</th>
                   <th className="p-3">Cargo</th>
                   <th className="p-3 text-right">Base Quincenal</th>
                   <th className="p-3 text-center">Horas Base</th>
@@ -1806,7 +1806,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                   <tr>
                     <td colSpan={9} className="p-12 text-center text-gray-400">
                       <Coins size={36} className="mx-auto mb-2 text-[#00668F] opacity-40" />
-                      <p className="text-xs font-bold text-gray-700">Sin colaboradores para liquidar</p>
+                      <p className="text-xs font-bold text-gray-700">Sin empleados para liquidar</p>
                       <p className="text-[11px] text-gray-400 mt-0.5">
                         Registra el personal técnico para calcular sus aportes de ley y horas extras.
                       </p>
@@ -1817,7 +1817,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                           className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer inline-flex items-center gap-1.5"
                         >
                           <Sparkles size={14} className="text-amber-400" />
-                          <span>Importar Colaboradores Base</span>
+                          <span>Importar Empleados Base</span>
                         </button>
                       </div>
                     </td>
@@ -2182,7 +2182,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
               {/* Datos del Trabajador */}
               <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                 <div>
-                  <span className="text-[10px] text-gray-400 block font-bold">Colaborador:</span>
+                  <span className="text-[10px] text-gray-400 block font-bold">Empleado:</span>
                   <span className="font-bold text-gray-900 block">{selectedPayrollEmp.name}</span>
                   <span className="text-[11px] text-gray-500">C.C. {selectedPayrollEmp.documentId || 'S/N'}</span>
                 </div>
@@ -2317,7 +2317,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
                     }));
                   }}
                   title="Escanear Cédula o Certificado Alturas SST"
-                  description="La IA extrae automáticamente los datos del colaborador y vigencias de curso de alturas."
+                  description="La IA extrae automáticamente los datos del empleado y vigencias de curso de alturas."
                 />
                 <div className="flex items-center gap-2">
                   <button
@@ -2722,7 +2722,7 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
         </div>
       )}
 
-      {/* Modal de Eliminación de Colaborador con Poka-Yoke BORRAR */}
+      {/* Modal de Eliminación de Empleado con Poka-Yoke BORRAR */}
       <ConfirmDeleteModal
         isOpen={!!employeeToDelete}
         onClose={() => setEmployeeToDelete(null)}
@@ -2732,8 +2732,8 @@ export const TalentoHumanoModule: React.FC<TalentoHumanoProps> = ({ initialTab =
             setEmployeeToDelete(null);
           }
         }}
-        title="Eliminar Colaborador del Directorio"
-        message={`¿Estás seguro de eliminar a ${employeeToDelete?.name || 'este colaborador'} de la base de talento humano? Esta acción no se puede deshacer.`}
+        title="Eliminar Empleado del Directorio"
+        message={`¿Estás seguro de eliminar a ${employeeToDelete?.name || 'este empleado'} de la base de talento humano? Esta acción no se puede deshacer.`}
         requireConfirmWord={true}
         confirmWord="BORRAR"
       />

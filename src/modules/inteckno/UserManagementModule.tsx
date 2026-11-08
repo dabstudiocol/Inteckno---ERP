@@ -1192,7 +1192,7 @@ export const UserManagementModule: React.FC = () => {
                 <table className="w-full text-left text-xs text-gray-600">
                   <thead className="bg-slate-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-slate-200">
                     <tr>
-                      <th className="py-3 px-4">Colaborador</th>
+                      <th className="py-3 px-4">Empleado</th>
                       <th className="py-3 px-4">Cargo & Ficha ITK</th>
                       <th className="py-3 px-4">Contacto & Ciudad</th>
                       <th className="py-3 px-4">Seguridad HSEQ</th>
@@ -1349,7 +1349,7 @@ export const UserManagementModule: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditUser(u)}
-                                  title="Editar Ficha del Colaborador"
+                                  title="Editar Ficha del Empleado"
                                   className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-gray-600 hover:text-amber-800 transition-colors cursor-pointer"
                                 >
                                   <Edit3 size={13} />
@@ -1397,7 +1397,7 @@ export const UserManagementModule: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {filteredUsers.length === 0 ? (
                 <div className="col-span-full py-12 text-center text-gray-400 bg-white rounded-2xl border border-slate-200">
-                  No se encontraron colaboradores en la búsqueda.
+                  No se encontraron empleados en la búsqueda.
                 </div>
               ) : (
                 filteredUsers.map((u) => {
@@ -1986,7 +1986,7 @@ export const UserManagementModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-gray-900">
-                    Aprovisionamiento Oficial de Nuevo Colaborador
+                    Aprovisionamiento Oficial de Nuevo Empleado
                   </h3>
                   <p className="text-[11px] text-gray-500">
                     Paso {createStep} de 4 • Gobernanza de Identidad & Talento ITK
@@ -2267,7 +2267,7 @@ export const UserManagementModule: React.FC = () => {
                 ) : (
                   <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
                     <Check size={14} className="text-emerald-600 shrink-0" />
-                    <span>Colaborador de Oficina: Marcado como <strong>"No requerido"</strong>. No se exigirán cursos de alturas.</span>
+                    <span>Empleado de Oficina: Marcado como <strong>"No requerido"</strong>. No se exigirán cursos de alturas.</span>
                   </div>
                 )}
 
@@ -2565,7 +2565,7 @@ export const UserManagementModule: React.FC = () => {
             </div>
 
             <p className="text-xs text-gray-700 leading-relaxed">
-              El colaborador <strong>{deactivationTargetUser.name}</strong> tiene compromisos activos que deben ser reasignados para evitar retrasos en obra o auditorías pendientes:
+              El empleado <strong>{deactivationTargetUser.name}</strong> tiene compromisos activos que deben ser reasignados para evitar retrasos en obra o auditorías pendientes:
             </p>
 
             {pendingUserTasks && pendingUserTasks.length > 0 && (
@@ -3158,7 +3158,7 @@ export const UserManagementModule: React.FC = () => {
               <div className="flex justify-between items-center text-gray-600">
                 <span className="font-semibold">Cuentas @inteckno.com:</span>
                 <span className="font-bold text-[#00668F]">
-                  {users.filter((u) => u.email.toLowerCase().endsWith('@inteckno.com')).length} colaboradores vinculados
+                  {users.filter((u) => u.email.toLowerCase().endsWith('@inteckno.com')).length} empleados vinculados
                 </span>
               </div>
             </div>

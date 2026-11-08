@@ -7206,14 +7206,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!targetPos) return prev;
 
       const targetEmp = prev.employees.find(
-        (e) => e.id === employeeOrUserId || e.userId === employeeOrUserId || e.employeeId === employeeOrUserId
+        (e) =>
+          e.id === employeeOrUserId ||
+          e.userId === employeeOrUserId ||
+          e.employeeId === employeeOrUserId ||
+          (typeof employeeOrUserId === 'string' && employeeOrUserId.startsWith(e.name))
       );
       const targetUser = prev.users.find(
         (u) => u.id === employeeOrUserId || (targetEmp?.userId && u.id === targetEmp.userId) || (targetEmp?.id && u.employeeId === targetEmp.id)
       );
 
       const nextEmployees = prev.employees.map((e) => {
-        const isMatch = e.id === employeeOrUserId || (targetUser && (e.userId === targetUser.id || e.id === targetUser.employeeId));
+        const isMatch =
+          e.id === employeeOrUserId ||
+          (targetEmp && e.id === targetEmp.id) ||
+          (targetUser && (e.userId === targetUser.id || e.id === targetUser.employeeId));
         if (!isMatch) return e;
         return {
           ...e,
@@ -7226,7 +7233,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       let syncedUser: User | null = null;
       const nextUsers = prev.users.map((u) => {
-        const isMatch = u.id === employeeOrUserId || (targetEmp && (u.id === targetEmp.userId || u.employeeId === targetEmp.id));
+        const isMatch =
+          u.id === employeeOrUserId ||
+          (targetUser && u.id === targetUser.id) ||
+          (targetEmp && (u.id === targetEmp.userId || u.employeeId === targetEmp.id));
         if (!isMatch) return u;
         const updatedU: User = {
           ...u,
@@ -7264,14 +7274,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const unassignJobPosition = useCallback((employeeOrUserId: string) => {
     setState((prev) => {
       const targetEmp = prev.employees.find(
-        (e) => e.id === employeeOrUserId || e.userId === employeeOrUserId || e.employeeId === employeeOrUserId
+        (e) =>
+          e.id === employeeOrUserId ||
+          e.userId === employeeOrUserId ||
+          e.employeeId === employeeOrUserId ||
+          (typeof employeeOrUserId === 'string' && employeeOrUserId.startsWith(e.name))
       );
       const targetUser = prev.users.find(
         (u) => u.id === employeeOrUserId || (targetEmp?.userId && u.id === targetEmp.userId) || (targetEmp?.id && u.employeeId === targetEmp.id)
       );
 
       const nextEmployees = prev.employees.map((e) => {
-        const isMatch = e.id === employeeOrUserId || (targetUser && (e.userId === targetUser.id || e.id === targetUser.employeeId));
+        const isMatch =
+          e.id === employeeOrUserId ||
+          (targetEmp && e.id === targetEmp.id) ||
+          (targetUser && (e.userId === targetUser.id || e.id === targetUser.employeeId));
         if (!isMatch) return e;
         return {
           ...e,
@@ -7283,7 +7300,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       let syncedUser: User | null = null;
       const nextUsers = prev.users.map((u) => {
-        const isMatch = u.id === employeeOrUserId || (targetEmp && (u.id === targetEmp.userId || u.employeeId === targetEmp.id));
+        const isMatch =
+          u.id === employeeOrUserId ||
+          (targetUser && u.id === targetUser.id) ||
+          (targetEmp && (u.id === targetEmp.userId || u.employeeId === targetEmp.id));
         if (!isMatch) return u;
         const updatedU: User = {
           ...u,
