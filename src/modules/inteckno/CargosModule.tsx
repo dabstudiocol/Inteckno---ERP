@@ -1480,15 +1480,12 @@ export const CargosModule: React.FC = () => {
     }
   };
 
-  // Persistir cambios tanto en caché local como en Google Cloud Firestore vía erpStore
+  // Persistir en almacenamiento local para acceso inmediato
   useEffect(() => {
     try {
       localStorage.setItem('itk_job_positions', JSON.stringify(jobPositions));
-      if (jobPositions.length > 0) {
-        jobPositions.forEach((pos) => saveJobPosition(pos));
-      }
     } catch {}
-  }, [jobPositions, saveJobPosition]);
+  }, [jobPositions]);
 
   useEffect(() => {
     try {
@@ -1685,16 +1682,21 @@ export const CargosModule: React.FC = () => {
   // Cambiar estado de vacante
   const handleToggleVacancy = (posId: string) => {
     if (!canManage) return;
-    setJobPositions(
-      jobPositions.map((p) => {
-        if (p.id === posId) {
-          const nextStatus = p.status === 'vacante_abierta' ? 'activo' : 'vacante_abierta';
-          return { ...p, status: nextStatus, updatedAt: new Date().toISOString().split('T')[0] };
-        }
-        return p;
-      })
+    const targetPos = jobPositions.find((p) => p.id === posId);
+    if (!targetPos) return;
+
+    const nextStatus = targetPos.status === 'vacante_abierta' ? 'activo' : 'vacante_abierta';
+    const updatedPos: JobPosition = {
+      ...targetPos,
+      status: nextStatus,
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    saveJobPosition(updatedPos);
+    setJobPositions((prev) =>
+      prev.map((p) => (p.id === posId ? updatedPos : p))
     );
-    notify('success', 'Estado Actualizado', 'El estado de la vacante ha sido modificado.');
+    notify('success', 'Estado Actualizado', `La vacante de ${targetPos.title} ahora está ${nextStatus === 'vacante_abierta' ? 'abierta' : 'cerrada'}.`);
   };
 
   // Pre-diagnóstico de Evaluación de Desempeño
