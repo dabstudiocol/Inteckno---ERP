@@ -399,6 +399,8 @@ export interface ErpContextType extends ErpState {
   createSstInspection: (insp: Omit<SstInspectionRecord, 'id' | 'createdAt'>) => SstInspectionRecord;
   deleteSstInspection: (id: string) => void;
   saveJobPosition: (pos: JobPosition) => void;
+  assignJobPosition: (posId: string, employeeOrUserId: string) => void;
+  unassignJobPosition: (employeeOrUserId: string) => void;
   deleteJobPosition: (id: string) => void;
   saveCandidate: (cand: JobApplicationCandidate) => void;
   updateCandidateStage: (id: string, stage: JobApplicationCandidate['stage']) => void;
@@ -7198,6 +7200,119 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
+  const assignJobPosition = useCallback((posId: string, employeeOrUserId: string) => {
+    setState((prev) => {
+      const targetPos = prev.jobPositions.find((p) => p.id === posId || p.code === posId);
+      if (!targetPos) return prev;
+
+      const targetEmp = prev.employees.find(
+        (e) => e.id === employeeOrUserId || e.userId === employeeOrUserId || e.employeeId === employeeOrUserId
+      );
+      const targetUser = prev.users.find(
+        (u) => u.id === employeeOrUserId || (targetEmp?.userId && u.id === targetEmp.userId) || (targetEmp?.id && u.employeeId === targetEmp.id)
+      );
+
+      const nextEmployees = prev.employees.map((e) => {
+        const isMatch = e.id === employeeOrUserId || (targetUser && (e.userId === targetUser.id || e.id === targetUser.employeeId));
+        if (!isMatch) return e;
+        return {
+          ...e,
+          role: targetPos.title,
+          position: targetPos.title,
+          department: targetPos.department || e.department,
+          jobPositionId: targetPos.id,
+        };
+      });
+
+      let syncedUser: User | null = null;
+      const nextUsers = prev.users.map((u) => {
+        const isMatch = u.id === employeeOrUserId || (targetEmp && (u.id === targetEmp.userId || u.employeeId === targetEmp.id));
+        if (!isMatch) return u;
+        const updatedU: User = {
+          ...u,
+          roleLabel: targetPos.title,
+          position: targetPos.title,
+          department: targetPos.department || u.department,
+          jobPositionId: targetPos.id,
+          jobPosition: targetPos,
+        };
+        syncedUser = updatedU;
+        return updatedU;
+      });
+
+      if (syncedUser) {
+        syncUserToCloud(syncedUser).catch(console.warn);
+      }
+
+      syncModuleToCloud('hr', {
+        employees: nextEmployees,
+        novelties: prev.novelties || [],
+        sstInspections: prev.sstInspections || [],
+        jobPositions: prev.jobPositions || [],
+        candidates: prev.candidates || [],
+      }, prev.currentUser?.id).catch(console.warn);
+
+      return {
+        ...prev,
+        employees: nextEmployees,
+        users: nextUsers,
+      };
+    });
+    notify('success', 'Cargo Asignado', 'El colaborador ha sido vinculado al cargo oficial.');
+  }, [notify]);
+
+  const unassignJobPosition = useCallback((employeeOrUserId: string) => {
+    setState((prev) => {
+      const targetEmp = prev.employees.find(
+        (e) => e.id === employeeOrUserId || e.userId === employeeOrUserId || e.employeeId === employeeOrUserId
+      );
+      const targetUser = prev.users.find(
+        (u) => u.id === employeeOrUserId || (targetEmp?.userId && u.id === targetEmp.userId) || (targetEmp?.id && u.employeeId === targetEmp.id)
+      );
+
+      const nextEmployees = prev.employees.map((e) => {
+        const isMatch = e.id === employeeOrUserId || (targetUser && (e.userId === targetUser.id || e.id === targetUser.employeeId));
+        if (!isMatch) return e;
+        return {
+          ...e,
+          jobPositionId: undefined,
+        };
+      });
+
+      let syncedUser: User | null = null;
+      const nextUsers = prev.users.map((u) => {
+        const isMatch = u.id === employeeOrUserId || (targetEmp && (u.id === targetEmp.userId || u.employeeId === targetEmp.id));
+        if (!isMatch) return u;
+        const updatedU: User = {
+          ...u,
+          jobPositionId: undefined,
+          jobPosition: undefined,
+        };
+        syncedUser = updatedU;
+        return updatedU;
+      });
+
+      if (syncedUser) {
+        syncUserToCloud(syncedUser).catch(console.warn);
+      }
+
+      syncModuleToCloud('hr', {
+        employees: nextEmployees,
+        novelties: prev.novelties || [],
+        sstInspections: prev.sstInspections || [],
+        jobPositions: prev.jobPositions || [],
+        candidates: prev.candidates || [],
+      }, prev.currentUser?.id).catch(console.warn);
+
+      return {
+        ...prev,
+        employees: nextEmployees,
+        users: nextUsers,
+      };
+    });
+    notify('info', 'Asignación Removida', 'El colaborador fue desvinculado del cargo.');
+  }, [notify]);
+
   const executeUndo = useCallback((): { success: boolean; message: string } => {
     if (!state.currentUser?.id) {
       return { success: false, message: 'Usuario no autenticado.' };
@@ -7660,6 +7775,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteSstInspection,
         saveJobPosition,
         deleteJobPosition,
+        assignJobPosition,
+        unassignJobPosition,
         saveCandidate,
         updateCandidateStage,
 

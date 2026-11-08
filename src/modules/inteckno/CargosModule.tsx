@@ -1244,6 +1244,8 @@ export const CargosModule: React.FC = () => {
     updateUserProfile,
     saveJobPosition,
     deleteJobPosition,
+    assignJobPosition,
+    unassignJobPosition,
     saveCandidate,
   } = useErp();
   const [positionToDelete, setPositionToDelete] = useState<JobPosition | null>(null);
@@ -1302,6 +1304,8 @@ export const CargosModule: React.FC = () => {
 
   // Modales
   const [isNewPositionModalOpen, setIsNewPositionModalOpen] = useState(false);
+  const [assignModalPosition, setAssignModalPosition] = useState<JobPosition | null>(null);
+  const [selectedCollabToAssign, setSelectedCollabToAssign] = useState<string>('');
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [generatedOfferText, setGeneratedOfferText] = useState('');
@@ -1592,6 +1596,22 @@ export const CargosModule: React.FC = () => {
     } finally {
       setIsAnalyzingCv(false);
     }
+  };
+
+  // Asignar colaborador al cargo
+  const handleConfirmAssignment = (job: JobPosition, personId: string) => {
+    if (!personId) {
+      notify('warning', 'Selección Requerida', 'Por favor selecciona un colaborador para asignarlo a este cargo.');
+      return;
+    }
+    assignJobPosition(job.id || job.code, personId);
+    setAssignModalPosition(null);
+    setSelectedCollabToAssign('');
+  };
+
+  // Desvincular colaborador del cargo
+  const handleUnassignOccupant = (personId: string, cargoTitle?: string) => {
+    unassignJobPosition(personId);
   };
 
   // Crear o Actualizar Ficha de Cargo Oficial (8 Pilares)
@@ -1968,19 +1988,49 @@ export const CargosModule: React.FC = () => {
                           e.position?.toLowerCase() === job.title?.toLowerCase() ||
                           (job.code && e.jobPositionId === job.code)
                       );
-                      if (occupants.length === 0) return null;
                       return (
                         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                           <span className="text-[10px] font-bold text-slate-500">Colaboradores:</span>
-                          {occupants.map((occ) => (
-                            <span
-                              key={occ.id}
-                              className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200 flex items-center gap-1"
+                          {occupants.length > 0 ? (
+                            occupants.map((occ) => (
+                              <span
+                                key={occ.id}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200 flex items-center gap-1 group/occ hover:bg-sky-100 transition-all"
+                              >
+                                <Users size={10} className="text-sky-600" />
+                                <span className="truncate max-w-[130px]">{occ.name}</span>
+                                {canManage && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUnassignOccupant(occ.id, job.title);
+                                    }}
+                                    className="text-slate-400 hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-50 cursor-pointer ml-0.5 transition-colors"
+                                    title="Desvincular colaborador de este cargo"
+                                  >
+                                    <X size={10} />
+                                  </button>
+                                )}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">Sin colaboradores asignados</span>
+                          )}
+                          {canManage && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAssignModalPosition(job);
+                                setSelectedCollabToAssign('');
+                              }}
+                              className="px-2 py-0.5 rounded-md text-[10px] font-bold text-[#00668F] hover:bg-sky-50 border border-dashed border-sky-300 flex items-center gap-1 cursor-pointer transition-all hover:border-[#00668F]"
+                              title="Asignar colaborador a este cargo"
                             >
-                              <Users size={10} className="text-sky-600" />
-                              <span className="truncate max-w-[130px]">{occ.name}</span>
-                            </span>
-                          ))}
+                              <Plus size={10} />
+                              <span>Asignar</span>
+                            </button>
+                          )}
                         </div>
                       );
                     })()}
@@ -2038,6 +2088,19 @@ export const CargosModule: React.FC = () => {
 
                     {canManage && (
                       <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAssignModalPosition(job);
+                            setSelectedCollabToAssign('');
+                          }}
+                          className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-[#00668F] text-[11px] font-bold rounded-lg flex items-center gap-1 cursor-pointer transition-all"
+                          title="Asignar colaborador a este cargo"
+                        >
+                          <UserCheck size={12} />
+                          <span>Asignar</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => handleOpenEditPositionModal(job)}
@@ -2827,6 +2890,67 @@ export const CargosModule: React.FC = () => {
                 </button>
               </div>
 
+              {/* Sección de Asignación de Colaboradores en la Ficha */}
+              {editingPosition && (
+                <div className="p-3.5 bg-sky-50/60 rounded-xl border border-sky-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-sky-950 flex items-center gap-1.5">
+                      <Users size={14} className="text-[#00668F]" />
+                      <span>Colaboradores Asignados a este Cargo:</span>
+                    </label>
+                    <span className="text-[11px] text-sky-700">
+                      {employees.filter((e) => e.jobPositionId === editingPosition.id || e.role?.toLowerCase() === editingPosition.title?.toLowerCase() || (editingPosition.code && e.jobPositionId === editingPosition.code)).length} ocupante(s)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {employees
+                      .filter((e) => e.jobPositionId === editingPosition.id || e.role?.toLowerCase() === editingPosition.title?.toLowerCase() || (editingPosition.code && e.jobPositionId === editingPosition.code))
+                      .map((occ) => (
+                        <span
+                          key={occ.id}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-sky-900 border border-sky-200 shadow-xs flex items-center gap-1.5"
+                        >
+                          <Users size={11} className="text-sky-600" />
+                          <span>{occ.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUnassignOccupant(occ.id, editingPosition.title)}
+                            className="text-slate-400 hover:text-rose-600 rounded-full hover:bg-rose-50 p-0.5 cursor-pointer"
+                            title="Desvincular"
+                          >
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+                    {employees.filter((e) => e.jobPositionId === editingPosition.id || e.role?.toLowerCase() === editingPosition.title?.toLowerCase() || (editingPosition.code && e.jobPositionId === editingPosition.code)).length === 0 && (
+                      <span className="text-xs text-slate-400 italic">No hay colaboradores asignados actualmente a este cargo.</span>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-sky-100 flex items-center gap-2">
+                    <div className="flex-1">
+                      <CreatableSelect
+                        value=""
+                        options={employees
+                          .filter((e) => e.jobPositionId !== editingPosition.id && e.role?.toLowerCase() !== editingPosition.title?.toLowerCase() && (!editingPosition.code || e.jobPositionId !== editingPosition.code))
+                          .map((e) => ({
+                            id: e.id,
+                            name: `${e.name} (${e.role || 'Sin cargo'} - ${e.department || 'Sin dpto'})`,
+                          }))}
+                        onChange={(val) => {
+                          if (val) {
+                            assignJobPosition(editingPosition.id || editingPosition.code, val);
+                          }
+                        }}
+                        placeholder="+ Vincular otro colaborador a este cargo..."
+                        isClearable={true}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Código Oficial:</label>
@@ -3045,6 +3169,135 @@ export const CargosModule: React.FC = () => {
         }}
         onCancel={() => setCandidateToDelete(null)}
       />
+
+      {/* Modal Dedicado de Asignación de Cargo a Colaborador */}
+      {assignModalPosition && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-xl border border-slate-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <UserCheck size={18} className="text-[#00668F]" />
+                <h3 className="text-sm font-bold text-gray-900">
+                  Asignar Colaborador al Cargo
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAssignModalPosition(null);
+                  setSelectedCollabToAssign('');
+                }}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-3 bg-sky-50 rounded-xl border border-sky-100">
+              <span className="text-[10px] font-bold text-sky-800 uppercase tracking-wider block">Cargo Oficial ITK:</span>
+              <p className="text-sm font-bold text-gray-900 mt-0.5">
+                {assignModalPosition.code} - {assignModalPosition.title}
+              </p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                {assignModalPosition.department}
+              </p>
+            </div>
+
+            {/* Ocupantes Actuales */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Ocupantes Actuales:
+              </label>
+              {(() => {
+                const currentOccupants = employees.filter(
+                  (e) =>
+                    e.jobPositionId === assignModalPosition.id ||
+                    e.role?.toLowerCase() === assignModalPosition.title?.toLowerCase() ||
+                    e.position?.toLowerCase() === assignModalPosition.title?.toLowerCase() ||
+                    (assignModalPosition.code && e.jobPositionId === assignModalPosition.code)
+                );
+
+                if (currentOccupants.length === 0) {
+                  return (
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 italic text-center">
+                      No hay colaboradores asignados actualmente a este cargo.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                    {currentOccupants.map((occ) => (
+                      <div
+                        key={occ.id}
+                        className="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Users size={13} className="text-[#00668F]" />
+                          <div>
+                            <span className="font-bold text-gray-900 block">{occ.name}</span>
+                            <span className="text-[10px] text-gray-500">{occ.email || occ.documentId || 'Colaborador ITK'}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleUnassignOccupant(occ.id, assignModalPosition.title)}
+                          className="px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
+                          title="Desvincular del cargo"
+                        >
+                          Desvincular
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Seleccionar Colaborador para Asignar */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <label className="block text-xs font-bold text-gray-700">
+                Seleccionar Colaborador para Asignar:
+              </label>
+              <CreatableSelect
+                value={selectedCollabToAssign}
+                options={employees.map((e) => ({
+                  id: e.id,
+                  name: `${e.name} (${e.role || 'Sin cargo'} - ${e.department || 'Sin dpto'})`,
+                }))}
+                onChange={(val) => setSelectedCollabToAssign(val)}
+                placeholder="Buscar por nombre, cargo actual o área..."
+                isClearable={true}
+              />
+              <p className="text-[11px] text-slate-500">
+                Al asignar el cargo, se actualizará automáticamente el rol del colaborador en Talento Humano, en Usuarios del ERP y se sincronizará con Google Cloud Firestore.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setAssignModalPosition(null);
+                  setSelectedCollabToAssign('');
+                }}
+                className="px-3.5 py-2 text-xs text-gray-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmAssignment(assignModalPosition, selectedCollabToAssign)}
+                disabled={!selectedCollabToAssign}
+                className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <UserCheck size={14} />
+                <span>Confirmar Asignación</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <UniversalModuleConfigModal
         isOpen={isConfigModalOpen}
