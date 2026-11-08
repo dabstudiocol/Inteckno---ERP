@@ -7258,7 +7258,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         users: nextUsers,
       };
     });
-    notify('success', 'Cargo Asignado', 'El colaborador ha sido vinculado al cargo oficial.');
+    notify('success', 'Cargo Asignado', 'El empleado ha sido vinculado al cargo oficial.');
   }, [notify]);
 
   const unassignJobPosition = useCallback((employeeOrUserId: string) => {
@@ -7275,6 +7275,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!isMatch) return e;
         return {
           ...e,
+          role: 'Sin cargo asignado',
+          position: 'Sin cargo asignado',
           jobPositionId: undefined,
         };
       });
@@ -7285,6 +7287,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!isMatch) return u;
         const updatedU: User = {
           ...u,
+          roleLabel: 'Sin cargo asignado',
+          position: 'Sin cargo asignado',
           jobPositionId: undefined,
           jobPosition: undefined,
         };
@@ -7310,7 +7314,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         users: nextUsers,
       };
     });
-    notify('info', 'Asignación Removida', 'El colaborador fue desvinculado del cargo.');
+    notify('info', 'Asignación Removida', 'El empleado fue desvinculado del cargo.');
   }, [notify]);
 
   const executeUndo = useCallback((): { success: boolean; message: string } => {

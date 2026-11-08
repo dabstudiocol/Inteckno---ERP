@@ -1601,7 +1601,7 @@ export const CargosModule: React.FC = () => {
   // Asignar colaborador al cargo
   const handleConfirmAssignment = (job: JobPosition, personId: string) => {
     if (!personId) {
-      notify('warning', 'Selección Requerida', 'Por favor selecciona un colaborador para asignarlo a este cargo.');
+      notify('warning', 'Selección Requerida', 'Por favor selecciona un empleado para asignarlo a este cargo.');
       return;
     }
     assignJobPosition(job.id || job.code, personId);
@@ -1983,14 +1983,12 @@ export const CargosModule: React.FC = () => {
                     {(() => {
                       const occupants = employees.filter(
                         (e) =>
-                          e.jobPositionId === job.id ||
-                          e.role?.toLowerCase() === job.title?.toLowerCase() ||
-                          e.position?.toLowerCase() === job.title?.toLowerCase() ||
-                          (job.code && e.jobPositionId === job.code)
+                          (e.jobPositionId && (e.jobPositionId === job.id || e.jobPositionId === job.code)) ||
+                          (!e.jobPositionId && e.role !== 'Sin cargo asignado' && (e.role?.toLowerCase() === job.title?.toLowerCase() || e.position?.toLowerCase() === job.title?.toLowerCase()))
                       );
                       return (
                         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                          <span className="text-[10px] font-bold text-slate-500">Colaboradores:</span>
+                          <span className="text-[10px] font-bold text-slate-500">Empleados:</span>
                           {occupants.length > 0 ? (
                             occupants.map((occ) => (
                               <span
@@ -2007,7 +2005,7 @@ export const CargosModule: React.FC = () => {
                                       handleUnassignOccupant(occ.id, job.title);
                                     }}
                                     className="text-slate-400 hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-50 cursor-pointer ml-0.5 transition-colors"
-                                    title="Desvincular colaborador de este cargo"
+                                    title="Desvincular empleado de este cargo"
                                   >
                                     <X size={10} />
                                   </button>
@@ -2015,7 +2013,7 @@ export const CargosModule: React.FC = () => {
                               </span>
                             ))
                           ) : (
-                            <span className="text-[10px] text-slate-400 italic">Sin colaboradores asignados</span>
+                            <span className="text-[10px] text-slate-400 italic">Sin empleados asignados</span>
                           )}
                           {canManage && (
                             <button
@@ -2025,7 +2023,7 @@ export const CargosModule: React.FC = () => {
                                 setSelectedCollabToAssign('');
                               }}
                               className="px-2 py-0.5 rounded-md text-[10px] font-bold text-[#00668F] hover:bg-sky-50 border border-dashed border-sky-300 flex items-center gap-1 cursor-pointer transition-all hover:border-[#00668F]"
-                              title="Asignar colaborador a este cargo"
+                              title="Asignar empleado a este cargo"
                             >
                               <Plus size={10} />
                               <span>Asignar</span>
@@ -2095,7 +2093,7 @@ export const CargosModule: React.FC = () => {
                             setSelectedCollabToAssign('');
                           }}
                           className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-[#00668F] text-[11px] font-bold rounded-lg flex items-center gap-1 cursor-pointer transition-all"
-                          title="Asignar colaborador a este cargo"
+                          title="Asignar empleado a este cargo"
                         >
                           <UserCheck size={12} />
                           <span>Asignar</span>
@@ -2437,7 +2435,7 @@ export const CargosModule: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Seleccionar Colaborador para Evaluar:</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Seleccionar Empleado para Evaluar:</label>
               <CreatableSelect
                 value={gapSelectedUser?.id || ''}
                 options={users.map((u) => ({
@@ -2449,7 +2447,7 @@ export const CargosModule: React.FC = () => {
                   setGapSelectedUser(u || null);
                   setGapResult(null);
                 }}
-                placeholder="Buscar colaborador a evaluar..."
+                placeholder="Buscar empleado a evaluar..."
                 isClearable={true}
               />
             </div>
@@ -2704,7 +2702,7 @@ export const CargosModule: React.FC = () => {
             <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Colaborador a Evaluar:</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Empleado a Evaluar:</label>
                   <CreatableSelect
                     value={evalEmployeeId}
                     options={users.map((u) => ({
@@ -2712,7 +2710,7 @@ export const CargosModule: React.FC = () => {
                       name: `${u.name} (${u.roleLabel})`,
                     }))}
                     onChange={(val) => setEvalEmployeeId(val || '')}
-                    placeholder="Seleccionar colaborador..."
+                    placeholder="Seleccionar empleado..."
                     
                   />
                 </div>
@@ -2836,7 +2834,7 @@ export const CargosModule: React.FC = () => {
                 onClick={handleSaveEvaluation}
                 className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs"
               >
-                Guardar y Notificar al Colaborador
+                Guardar y Notificar al Empleado
               </button>
             </div>
           </div>
@@ -2896,10 +2894,10 @@ export const CargosModule: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold text-sky-950 flex items-center gap-1.5">
                       <Users size={14} className="text-[#00668F]" />
-                      <span>Colaboradores Asignados a este Cargo:</span>
+                      <span>Empleados Asignados a este Cargo:</span>
                     </label>
                     <span className="text-[11px] text-sky-700">
-                      {employees.filter((e) => e.jobPositionId === editingPosition.id || e.role?.toLowerCase() === editingPosition.title?.toLowerCase() || (editingPosition.code && e.jobPositionId === editingPosition.code)).length} ocupante(s)
+                      {employees.filter((e) => (e.jobPositionId && (e.jobPositionId === editingPosition.id || e.jobPositionId === editingPosition.code)) || (!e.jobPositionId && e.role !== 'Sin cargo asignado' && (e.role?.toLowerCase() === editingPosition.title?.toLowerCase() || e.position?.toLowerCase() === editingPosition.title?.toLowerCase()))).length} ocupante(s)
                     </span>
                   </div>
 
@@ -2923,8 +2921,8 @@ export const CargosModule: React.FC = () => {
                           </button>
                         </span>
                       ))}
-                    {employees.filter((e) => e.jobPositionId === editingPosition.id || e.role?.toLowerCase() === editingPosition.title?.toLowerCase() || (editingPosition.code && e.jobPositionId === editingPosition.code)).length === 0 && (
-                      <span className="text-xs text-slate-400 italic">No hay colaboradores asignados actualmente a este cargo.</span>
+                    {employees.filter((e) => (e.jobPositionId && (e.jobPositionId === editingPosition.id || e.jobPositionId === editingPosition.code)) || (!e.jobPositionId && e.role !== 'Sin cargo asignado' && (e.role?.toLowerCase() === editingPosition.title?.toLowerCase() || e.position?.toLowerCase() === editingPosition.title?.toLowerCase()))).length === 0 && (
+                      <span className="text-xs text-slate-400 italic">No hay empleados asignados actualmente a este cargo.</span>
                     )}
                   </div>
 
@@ -2932,18 +2930,19 @@ export const CargosModule: React.FC = () => {
                     <div className="flex-1">
                       <CreatableSelect
                         value=""
-                        options={employees
-                          .filter((e) => e.jobPositionId !== editingPosition.id && e.role?.toLowerCase() !== editingPosition.title?.toLowerCase() && (!editingPosition.code || e.jobPositionId !== editingPosition.code))
-                          .map((e) => ({
+                        options={employees.map((e) => {
+                          const isAlreadyInThisJob = (e.jobPositionId && (e.jobPositionId === editingPosition.id || e.jobPositionId === editingPosition.code)) || (!e.jobPositionId && e.role !== 'Sin cargo asignado' && e.role?.toLowerCase() === editingPosition.title?.toLowerCase());
+                          return {
                             id: e.id,
-                            name: `${e.name} (${e.role || 'Sin cargo'} - ${e.department || 'Sin dpto'})`,
-                          }))}
+                            name: isAlreadyInThisJob ? `${e.name} [Ya asignado a este cargo]` : `${e.name} (Cargo actual: ${e.role || 'Sin cargo'} - ${e.department || 'Sin dpto'})`,
+                          };
+                        })}
                         onChange={(val) => {
                           if (val) {
                             assignJobPosition(editingPosition.id || editingPosition.code, val);
                           }
                         }}
-                        placeholder="+ Vincular otro colaborador a este cargo..."
+                        placeholder="+ Asignar o transferir empleado a este cargo..."
                         isClearable={true}
                       />
                     </div>
@@ -3178,7 +3177,7 @@ export const CargosModule: React.FC = () => {
               <div className="flex items-center gap-2">
                 <UserCheck size={18} className="text-[#00668F]" />
                 <h3 className="text-sm font-bold text-gray-900">
-                  Asignar Colaborador al Cargo
+                  Asignar Empleado al Cargo
                 </h3>
               </div>
               <button
@@ -3211,16 +3210,14 @@ export const CargosModule: React.FC = () => {
               {(() => {
                 const currentOccupants = employees.filter(
                   (e) =>
-                    e.jobPositionId === assignModalPosition.id ||
-                    e.role?.toLowerCase() === assignModalPosition.title?.toLowerCase() ||
-                    e.position?.toLowerCase() === assignModalPosition.title?.toLowerCase() ||
-                    (assignModalPosition.code && e.jobPositionId === assignModalPosition.code)
+                    (e.jobPositionId && (e.jobPositionId === assignModalPosition.id || e.jobPositionId === assignModalPosition.code)) ||
+                    (!e.jobPositionId && e.role !== 'Sin cargo asignado' && (e.role?.toLowerCase() === assignModalPosition.title?.toLowerCase() || e.position?.toLowerCase() === assignModalPosition.title?.toLowerCase()))
                 );
 
                 if (currentOccupants.length === 0) {
                   return (
                     <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 italic text-center">
-                      No hay colaboradores asignados actualmente a este cargo.
+                      No hay empleados asignados actualmente a este cargo.
                     </div>
                   );
                 }
@@ -3257,7 +3254,7 @@ export const CargosModule: React.FC = () => {
             {/* Seleccionar Colaborador para Asignar */}
             <div className="space-y-1.5 pt-2 border-t border-slate-100">
               <label className="block text-xs font-bold text-gray-700">
-                Seleccionar Colaborador para Asignar:
+                Seleccionar Empleado para Asignar:
               </label>
               <CreatableSelect
                 value={selectedCollabToAssign}
@@ -3270,7 +3267,7 @@ export const CargosModule: React.FC = () => {
                 isClearable={true}
               />
               <p className="text-[11px] text-slate-500">
-                Al asignar el cargo, se actualizará automáticamente el rol del colaborador en Talento Humano, en Usuarios del ERP y se sincronizará con Google Cloud Firestore.
+                Al asignar el cargo, se actualizará automáticamente el rol del empleado en Talento Humano, en Usuarios del ERP y se sincronizará con Google Cloud Firestore.
               </p>
             </div>
 
