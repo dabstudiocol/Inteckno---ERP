@@ -557,6 +557,221 @@ export interface ErpContextType extends ErpState {
 const ErpContext = createContext<ErpContextType | undefined>(undefined);
 
 
+export function resolveUserRoleFromTitle(title: string): User['role'] {
+  const t = (title || '').toLowerCase();
+  if (t.includes('sistemas') || t.includes('ti') || t.includes('cloud')) return 'admin_sistemas';
+  if (t.includes('gerente general') || t.includes('director general')) return 'gerente_general';
+  if (t.includes('gerente administrativa') || t.includes('financier')) return 'gerente_administrativa';
+  if (t.includes('lider') && (t.includes('proyecto') || t.includes('tecnico') || t.includes('técnico'))) return 'lider_proyectos';
+  if (t.includes('lider') && (t.includes('ingenier') || t.includes('mecanic') || t.includes('mecánic'))) return 'lider_ingenieria';
+  if (t.includes('sst') || t.includes('hseq') || t.includes('seguridad')) return 'hseq';
+  if (t.includes('talento') || t.includes('rrhh') || t.includes('humano')) return 'coord_talento_humano';
+  if (t.includes('compra') || t.includes('logistica') || t.includes('logística') || t.includes('almacen') || t.includes('almacén')) return 'coord_compras';
+  if (t.includes('comercial') || t.includes('negocio') || t.includes('licitacion')) return 'coord_comercial';
+  if (t.includes('administrativ') || t.includes('contable')) return 'auxiliar_administrativo';
+  if (t.includes('ingenier') || t.includes('residente')) return 'ingeniero_proyectos';
+  return 'tecnico_stc';
+}
+
+export function ensureJobPositionForRole(
+  roleTitle: string,
+  department?: string,
+  baseSalaryCOP?: number,
+  currentPositions: JobPosition[] = []
+): { jobPosition: JobPosition; updatedPositions: JobPosition[]; wasCreated: boolean } {
+  const cleanTitle = (roleTitle || 'Especialista Técnico STC').trim();
+  const cleanDept = (department || 'Ingeniería y Proyectos').trim();
+  const titleLower = cleanTitle.toLowerCase();
+
+  const existing = currentPositions.find(
+    (p) =>
+      p.title?.trim().toLowerCase() === titleLower ||
+      p.code?.trim().toLowerCase() === titleLower ||
+      p.id?.trim().toLowerCase() === titleLower
+  );
+
+  if (existing) {
+    // Si tiene salario real reportado y el rango estaba vacío, enriquecerlo
+    if (baseSalaryCOP && baseSalaryCOP > 0 && (!existing.salaryRange || typeof existing.salaryRange !== 'object' || !existing.salaryRange.min)) {
+      const enriched: JobPosition = {
+        ...existing,
+        department: existing.department || cleanDept,
+        salaryRange: {
+          min: baseSalaryCOP,
+          max: Math.round(baseSalaryCOP * 1.25),
+          currency: 'COP',
+          isConfidential: true,
+        },
+      };
+      return {
+        jobPosition: enriched,
+        updatedPositions: currentPositions.map((p) => (p.id === existing.id ? enriched : p)),
+        wasCreated: false,
+      };
+    }
+    return { jobPosition: existing, updatedPositions: currentPositions, wasCreated: false };
+  }
+
+  // Buscar plantilla base en INITIAL_JOB_POSITIONS si aplica
+  const matchedTemplate = INITIAL_JOB_POSITIONS.find(
+    (t) =>
+      t.title.toLowerCase() === titleLower ||
+      titleLower.includes(t.title.toLowerCase()) ||
+      t.title.toLowerCase().includes(titleLower) ||
+      (titleLower.includes('ingeniero residente') && t.title.toLowerCase().includes('ingeniero'))
+  );
+
+  const initials = cleanTitle
+    .split(/[\s\(\)\/\-]+/)
+    .filter((w) => w.length > 1 && !['de', 'en', 'el', 'la', 'los', 'las', 'y', 'del', 'para'].includes(w.toLowerCase()))
+    .map((w) => w[0]?.toUpperCase() || '')
+    .join('')
+    .slice(0, 4) || 'STC';
+
+  const generatedCode = `ITK-CAR-${initials}`;
+  const generatedId = `POS-${cleanTitle.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 22)}`;
+  const minSal = baseSalaryCOP && baseSalaryCOP > 0
+    ? baseSalaryCOP
+    : typeof matchedTemplate?.salaryRange === 'object' && matchedTemplate.salaryRange
+    ? matchedTemplate.salaryRange.min
+    : 3800000;
+  const maxSal = baseSalaryCOP && baseSalaryCOP > 0
+    ? Math.round(baseSalaryCOP * 1.25)
+    : typeof matchedTemplate?.salaryRange === 'object' && matchedTemplate.salaryRange
+    ? matchedTemplate.salaryRange.max
+    : 5200000;
+
+  const newPos: JobPosition = {
+    id: generatedId,
+    code: generatedCode,
+    title: cleanTitle,
+    department: cleanDept || matchedTemplate?.department || 'Ingeniería y Proyectos',
+    purpose:
+      matchedTemplate?.purpose ||
+      `Planificar, ejecutar y supervisar las actividades técnicas, operativas y de ingeniería correspondientes al cargo de ${cleanTitle} dentro del departamento de ${cleanDept}, garantizando la confiabilidad electromecánica, seguridad HSEQ y cumplimiento normativo (EN 1709 / EN 12927) en los proyectos de Inteckno S.A.S.`,
+    responsibilities: matchedTemplate?.responsibilities || [
+      `Ejecutar y liderar las labores asignadas al rol de ${cleanTitle} en frentes de obra y sede técnica.`,
+      'Cumplir estrictamente los protocolos de seguridad en alturas (Res. 4272) y lineamientos HSEQ.',
+      'Registrar avances técnicos, horas laboradas y bitácoras operativas en el ERP Inteckno.',
+      'Velar por el cuidado de herramientas de precisión, equipos de medición y activos asignados.',
+    ],
+    academicRequirements: matchedTemplate?.academicRequirements || [
+      'Formación profesional, tecnológica o técnica certificada afín al área de desempeño.',
+      'Certificación vigente de Trabajo Seguro en Alturas (cuando aplique a labores de campo).',
+    ],
+    experienceRequired: matchedTemplate?.experienceRequired || 'Mínimo 2 años de experiencia certificada en sistemas electromecánicos, transporte por cable o afines.',
+    technicalSkills: matchedTemplate?.technicalSkills || [
+      'Normatividad técnica de sistemas de transporte por cable (EN 1709 / EN 12927)',
+      'Gestión operativa y trazabilidad en ERP Inteckno',
+      'Protocolos de mantenimiento preventivo, correctivo y seguridad industrial',
+    ],
+    softSkills: matchedTemplate?.softSkills || [
+      'Trabajo en equipo y comunicación asertiva en campo',
+      'Rigurosidad técnica y orientación al detalle',
+      'Compromiso con la seguridad y excelencia operativa',
+    ],
+    workConditions: matchedTemplate?.workConditions || [
+      'Operación en sede técnica Medellín y/o proyectos STC nacionales e internacionales.',
+    ],
+    salaryRange: {
+      min: minSal,
+      max: maxSal,
+      currency: 'COP',
+      isConfidential: true,
+    },
+    status: 'activo',
+    createdAt: new Date().toISOString().split('T')[0],
+    updatedAt: new Date().toISOString().split('T')[0],
+  };
+
+  // Si este ID o código estuvo antes en la lista de eliminados, rehabilitarlo porque se acaba de asignar o crear
+  try {
+    const rawDel = localStorage.getItem('ITK_DELETED_ENTITY_IDS_V1');
+    if (rawDel) {
+      const parsedDel: string[] = JSON.parse(rawDel);
+      if (Array.isArray(parsedDel)) {
+        const filteredDel = parsedDel.filter(
+          (x) =>
+            String(x).toLowerCase() !== generatedId.toLowerCase() &&
+            String(x).toLowerCase() !== generatedCode.toLowerCase()
+        );
+        if (filteredDel.length !== parsedDel.length) {
+          localStorage.setItem('ITK_DELETED_ENTITY_IDS_V1', JSON.stringify(filteredDel));
+        }
+      }
+    }
+  } catch {}
+
+  const updatedPositions = [...currentPositions, newPos];
+  try {
+    localStorage.setItem('itk_job_positions', JSON.stringify(updatedPositions));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('inteckno:job-positions-updated'));
+    }
+  } catch {}
+
+  return { jobPosition: newPos, updatedPositions, wasCreated: true };
+}
+
+export function buildUserFromEmployee(
+  emp: EmployeeRecord,
+  jobPosition?: JobPosition,
+  existingUser?: User
+): User {
+  const cleanName = (emp.name || emp.fullName || existingUser?.name || 'Colaborador Inteckno').trim();
+  const initials = cleanName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || '')
+    .join('') || 'IT';
+
+  const generatedEmail =
+    emp.email ||
+    existingUser?.email ||
+    `${cleanName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '.')
+      .replace(/^\.|\.$/g, '')}@inteckno.com`;
+
+  const resolvedRole = existingUser?.role || resolveUserRoleFromTitle(emp.role || emp.position || jobPosition?.title || '');
+  const resolvedRoleLabel = emp.role || emp.position || jobPosition?.title || existingUser?.roleLabel || 'Especialista STC';
+  const resolvedDept = emp.department || jobPosition?.department || existingUser?.department || 'Ingeniería y Proyectos';
+  const isHeightValid = emp.heightCertStatus === 'vigente';
+  const isEmpActive = (emp as any).status !== 'inactivo';
+
+  return {
+    ...(existingUser || {}),
+    id: existingUser?.id || emp.userId || emp.id,
+    employeeId: emp.employeeId || emp.id,
+    name: cleanName,
+    email: generatedEmail,
+    role: resolvedRole,
+    roleLabel: resolvedRoleLabel,
+    position: resolvedRoleLabel,
+    department: resolvedDept,
+    avatar: existingUser?.avatar || initials,
+    avatarColor: existingUser?.avatarColor || '#00668F',
+    password: existingUser?.password || 'Inteckno2026*',
+    isActive: isEmpActive ? (existingUser?.isActive ?? true) : false,
+    accountStatus: isEmpActive ? (existingUser?.accountStatus || 'activa') : 'suspendida',
+    nationalId: emp.documentId || existingUser?.nationalId || '',
+    phone: emp.phone || emp.emergencyPhone || existingUser?.phone || '',
+    city: emp.city || existingUser?.city || 'Medellín, Antioquia',
+    emergencyContactName: emp.emergencyContact || existingUser?.emergencyContactName || 'Contacto Familiar',
+    emergencyContactPhone: emp.emergencyPhone || existingUser?.emergencyContactPhone || '',
+    hseqStatus: isHeightValid ? 'valid' : 'expired',
+    hseqExpiresAt: emp.heightCertExpiry || existingUser?.hseqExpiresAt || '2026-12-31',
+    canWorkHeights: isHeightValid,
+    jobPositionId: jobPosition?.id || emp.jobPositionId || existingUser?.jobPositionId,
+    jobPosition: jobPosition || existingUser?.jobPosition,
+    competencies: emp.competencyIds || existingUser?.competencies || ['SKILL-001', 'SKILL-004'],
+    competencyIds: emp.competencyIds || existingUser?.competencyIds || ['SKILL-001', 'SKILL-004'],
+  };
+}
+
 export function buildInitialEmployeesFromUsers(usersList: User[]): EmployeeRecord[] {
   const todayIso = new Date().toISOString().slice(0, 10);
   return usersList.map((u, idx) => {
@@ -564,7 +779,11 @@ export function buildInitialEmployeesFromUsers(usersList: User[]): EmployeeRecor
     const isLider = u.role.includes('lider');
     const isIng = u.role.includes('ingeniero') || u.role.includes('coord') || u.role.includes('admin');
     const isTec = u.role.includes('tecnico') || u.role.includes('supervisor');
-    const salary = isGerente ? 6500000 : isLider ? 4800000 : isIng ? 3800000 : isTec ? 3100000 : 2500000;
+    const salaryFromJob =
+      u.jobPosition?.salaryRange && typeof u.jobPosition.salaryRange === 'object'
+        ? u.jobPosition.salaryRange.min
+        : 0;
+    const salary = salaryFromJob > 0 ? salaryFromJob : isGerente ? 6500000 : isLider ? 4800000 : isIng ? 3800000 : isTec ? 3100000 : 2500000;
     const expiry = u.hseqExpiresAt || '2027-12-31';
     const isExpired = u.hseqStatus === 'expired' || expiry < todayIso;
     const empIdCode = u.employeeId || `EMP-${u.id}`;
@@ -1591,6 +1810,87 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isRemoteUpdateRef.current = false;
     }
   });
+
+  // Reconciliación Reactiva Bidireccional Automática: Empleados <-> Usuarios TI <-> Cargos
+  // Si existe un empleado creado en Talento Humano que aún no figure en Consola TI (users) o cuyo cargo
+  // no tenga ficha oficial en Gestión de Cargos (jobPositions), se auto-sintetiza y sincroniza en segundo plano.
+  useEffect(() => {
+    if (!state.employees || state.employees.length === 0) return;
+
+    let needsUserUpdate = false;
+    let nextUsers = [...state.users];
+    let nextJobPositions = [...state.jobPositions];
+    let positionsChanged = false;
+    const usersToSync: User[] = [];
+
+    for (const emp of state.employees) {
+      if (isEntityDeletedPermanent(emp.id, emp.email) || isEntityDeletedPermanent(emp.userId)) continue;
+
+      // 1. Asegurar cargo en jobPositions
+      const roleName = emp.role || emp.position || 'Especialista Técnico STC';
+      const { jobPosition, updatedPositions, wasCreated } = ensureJobPositionForRole(
+        roleName,
+        emp.department,
+        emp.baseSalaryCOP,
+        nextJobPositions
+      );
+      if (wasCreated || updatedPositions !== nextJobPositions) {
+        nextJobPositions = updatedPositions;
+        positionsChanged = true;
+      }
+
+      // 2. Verificar existencia en users
+      const empNameClean = (emp.name || emp.fullName || '').trim().toLowerCase();
+      const existingUser = nextUsers.find(
+        (u) =>
+          u.id === emp.id ||
+          u.id === emp.userId ||
+          u.employeeId === emp.id ||
+          (emp.email && u.email && u.email.toLowerCase() === emp.email.toLowerCase()) ||
+          (emp.documentId && u.nationalId && u.nationalId === emp.documentId) ||
+          (empNameClean && u.name.trim().toLowerCase() === empNameClean)
+      );
+
+      if (!existingUser) {
+        const synthesizedUser = buildUserFromEmployee(emp, jobPosition);
+        nextUsers.push(synthesizedUser);
+        usersToSync.push(synthesizedUser);
+        needsUserUpdate = true;
+      } else if (!existingUser.jobPositionId || !existingUser.jobPosition) {
+        // Enlazar ficha de cargo si faltaba
+        const enrichedUser: User = {
+          ...existingUser,
+          jobPositionId: jobPosition.id,
+          jobPosition: jobPosition,
+        };
+        nextUsers = nextUsers.map((u) => (u.id === existingUser.id ? enrichedUser : u));
+        usersToSync.push(enrichedUser);
+        needsUserUpdate = true;
+      }
+    }
+
+    if (needsUserUpdate || positionsChanged) {
+      setState((prev) => ({
+        ...prev,
+        users: needsUserUpdate ? nextUsers : prev.users,
+        jobPositions: positionsChanged ? nextJobPositions : prev.jobPositions,
+      }));
+
+      usersToSync.forEach((u) => {
+        syncUserToCloud(u).catch(console.warn);
+      });
+
+      if (positionsChanged) {
+        syncModuleToCloud('hr', {
+          employees: state.employees,
+          novelties: state.novelties || [],
+          sstInspections: state.sstInspections || [],
+          jobPositions: nextJobPositions,
+          candidates: state.candidates || [],
+        }, state.currentUser?.id || 'USR-01').catch(console.warn);
+      }
+    }
+  }, [state.employees]);
 
   const notify = useCallback(
     (type: AppNotification['type'], title: string, message: string, extra?: Partial<AppNotification>) => {
@@ -2696,9 +2996,47 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteEmployee = useCallback(
     (id: string) => {
-      markEntityAsDeletedPermanent([id]);
+      let targetEmp: EmployeeRecord | undefined;
+      let targetUser: User | undefined;
+
       setState((prev) => {
-        const nextEmployees = prev.employees.filter((e) => e.id !== id);
+        targetEmp = prev.employees.find((e) => e.id === id);
+        targetUser = prev.users.find(
+          (u) =>
+            u.id === id ||
+            u.id === targetEmp?.userId ||
+            u.employeeId === id ||
+            (targetEmp && u.email && targetEmp.email && u.email.toLowerCase() === targetEmp.email.toLowerCase()) ||
+            (targetEmp && u.nationalId && targetEmp.documentId && u.nationalId === targetEmp.documentId)
+        );
+
+        const idsToMark = [
+          id,
+          targetEmp?.userId,
+          targetEmp?.employeeId,
+          targetEmp?.documentId,
+          targetEmp?.email,
+          targetUser?.id,
+          targetUser?.employeeId,
+          targetUser?.email,
+          targetUser?.nationalId,
+        ].filter(Boolean) as string[];
+
+        markEntityAsDeletedPermanent(idsToMark);
+
+        const nextEmployees = prev.employees.filter((e) => e.id !== id && e.userId !== targetUser?.id);
+        const nextUsers = prev.users.filter(
+          (u) =>
+            u.id !== id &&
+            u.id !== targetEmp?.userId &&
+            u.employeeId !== id &&
+            (!targetUser || u.id !== targetUser.id)
+        );
+
+        if (targetUser) {
+          deleteUserFromCloud(targetUser.id, targetUser.email).catch(console.warn);
+        }
+
         syncModuleToCloud('hr', {
           employees: nextEmployees,
           novelties: prev.novelties || [],
@@ -2706,12 +3044,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           jobPositions: prev.jobPositions || [],
           candidates: prev.candidates || [],
         }, prev.currentUser?.id).catch(console.warn);
+
         return {
           ...prev,
           employees: nextEmployees,
+          users: nextUsers,
         };
       });
-      notify('info', 'Empleado Eliminado', 'El registro de talento humano ha sido retirado.');
+      notify('info', 'Empleado Eliminado', 'El registro de talento humano y su usuario TI han sido retirados.');
     },
     [notify]
   );
@@ -6504,25 +6844,54 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createEmployee = useCallback(
     (empData: Omit<EmployeeRecord, 'id'>) => {
-      const newEmp: EmployeeRecord = {
-        ...empData,
-        id: `EMP-${Date.now()}`,
-      };
+      const newEmpId = `EMP-${Date.now()}`;
+      let createdUser: User | null = null;
+
       setState((prev) => {
+        // 1. Asegurar ficha técnica de cargo oficial en jobPositions (8 Pilares)
+        const { jobPosition, updatedPositions } = ensureJobPositionForRole(
+          empData.role || empData.position || 'Especialista Técnico STC',
+          empData.department,
+          empData.baseSalaryCOP,
+          prev.jobPositions
+        );
+
+        const newEmp: EmployeeRecord = {
+          ...empData,
+          id: newEmpId,
+          employeeId: newEmpId,
+          userId: newEmpId,
+          jobPositionId: jobPosition.id,
+        };
+
+        // 2. Crear y sincronizar el usuario TI correspondiente
+        const newUser = buildUserFromEmployee(newEmp, jobPosition);
+        createdUser = newUser;
+
         const nextEmployees = [newEmp, ...prev.employees];
+        const nextUsers = [...prev.users.filter((u) => u.id !== newUser.id && u.email !== newUser.email), newUser];
+
         syncModuleToCloud('hr', {
           employees: nextEmployees,
           novelties: prev.novelties || [],
           sstInspections: prev.sstInspections || [],
-          jobPositions: prev.jobPositions || [],
+          jobPositions: updatedPositions,
           candidates: prev.candidates || [],
         }, prev.currentUser?.id).catch(console.warn);
+
         return {
           ...prev,
           employees: nextEmployees,
+          users: nextUsers,
+          jobPositions: updatedPositions,
         };
       });
-      notify('success', 'Empleado Registrado', `${newEmp.name} agregado al sistema de Talento Humano.`);
+
+      if (createdUser) {
+        syncUserToCloud(createdUser).catch(console.warn);
+      }
+
+      notify('success', 'Empleado y Usuario TI Registrados', `${empData.name} vinculado en Talento Humano, Consola TI y Gestión de Cargos.`);
     },
     [notify]
   );

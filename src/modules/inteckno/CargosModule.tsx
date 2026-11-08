@@ -1235,7 +1235,17 @@ const parseBulletList = (text: string): string[] => {
 };
 
 export const CargosModule: React.FC = () => {
-  const { currentUser, users, notify, updateUserProfile, saveJobPosition, deleteJobPosition, saveCandidate } = useErp();
+  const {
+    currentUser,
+    users,
+    employees = [],
+    jobPositions: storeJobPositions = [],
+    notify,
+    updateUserProfile,
+    saveJobPosition,
+    deleteJobPosition,
+    saveCandidate,
+  } = useErp();
   const [positionToDelete, setPositionToDelete] = useState<JobPosition | null>(null);
   const [candidateToDelete, setCandidateToDelete] = useState<JobApplicationCandidate | null>(null);
 
@@ -1251,10 +1261,29 @@ export const CargosModule: React.FC = () => {
   // Pestañas del módulo
   const [activeTab, setActiveTab] = useState<'cargos' | 'vacantes' | 'postulantes' | 'evaluaciones'>('cargos');
 
-  // Estado de Cargos
+  // Estado de Cargos fusionado y reactivo con storeJobPositions
   const [jobPositions, setJobPositions] = useState<JobPosition[]>(() => {
-    return getStoredJobPositions();
+    const stored = getStoredJobPositions();
+    if (storeJobPositions && storeJobPositions.length > 0) {
+      const mergedMap = new Map(stored.map((p) => [p.id, p]));
+      storeJobPositions.forEach((sp) => mergedMap.set(sp.id, { ...(mergedMap.get(sp.id) || {}), ...sp }));
+      return Array.from(mergedMap.values());
+    }
+    return stored;
   });
+
+  // Reaccionar cuando cambien los cargos globales en el store
+  useEffect(() => {
+    if (storeJobPositions && storeJobPositions.length > 0) {
+      setJobPositions((prev) => {
+        const map = new Map(prev.map((p) => [p.id, p]));
+        storeJobPositions.forEach((sp) => {
+          map.set(sp.id, { ...(map.get(sp.id) || {}), ...sp });
+        });
+        return Array.from(map.values());
+      });
+    }
+  }, [storeJobPositions]);
 
   // Estado de Postulantes (ATS)
   const [candidates, setCandidates] = useState<JobApplicationCandidate[]>(() => {
@@ -1727,10 +1756,15 @@ export const CargosModule: React.FC = () => {
   // Filtrado de cargos
   const filteredPositions = jobPositions.filter((p) => {
     const matchesSearch =
+      !searchQuery.trim() ||
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.department || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDept = selectedDeptFilter === 'all' || p.department === selectedDeptFilter;
+    const matchesDept =
+      !selectedDeptFilter ||
+      selectedDeptFilter === 'all' ||
+      selectedDeptFilter.toLowerCase() === 'todos los departamentos' ||
+      p.department?.toLowerCase() === selectedDeptFilter.toLowerCase();
     return matchesSearch && matchesDept;
   });
 
@@ -1922,6 +1956,32 @@ export const CargosModule: React.FC = () => {
                       <h3 className="text-sm font-bold text-gray-900 leading-snug">{job.title}</h3>
                       <p className="text-[11px] text-gray-500">{job.department}</p>
                     </div>
+
+                    {/* Colaboradores ocupantes del cargo en tiempo real */}
+                    {(() => {
+                      const occupants = employees.filter(
+                        (e) =>
+                          e.jobPositionId === job.id ||
+                          e.role?.toLowerCase() === job.title?.toLowerCase() ||
+                          e.position?.toLowerCase() === job.title?.toLowerCase() ||
+                          (job.code && e.jobPositionId === job.code)
+                      );
+                      if (occupants.length === 0) return null;
+                      return (
+                        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                          <span className="text-[10px] font-bold text-slate-500">Colaboradores:</span>
+                          {occupants.map((occ) => (
+                            <span
+                              key={occ.id}
+                              className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200 flex items-center gap-1"
+                            >
+                              <Users size={10} className="text-sky-600" />
+                              <span className="truncate max-w-[130px]">{occ.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
 
                     <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{job.purpose}</p>
 

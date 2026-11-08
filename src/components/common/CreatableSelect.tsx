@@ -59,24 +59,48 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   const normalizedOptions = useMemo(() => {
     return options.map((opt) => {
       if (typeof opt === 'string') {
-        return { id: opt, name: opt, isActive: true };
+        return { id: opt, name: opt, explicitValue: undefined as string | undefined, isActive: true };
       }
       const resolvedName = opt.name || opt.label || opt.value || opt.id || '';
+      const hasExplicitValue = opt.value !== undefined || opt.id === 'all';
+      const explicitValue = opt.value !== undefined ? opt.value : opt.id === 'all' ? 'all' : undefined;
       return {
         id: opt.id || opt.value || resolvedName,
         name: resolvedName,
+        explicitValue: hasExplicitValue ? explicitValue : undefined,
         code: opt.code,
         isActive: opt.isActive !== false,
       };
     });
   }, [options]);
 
-  // Sincronizar texto de búsqueda con valor seleccionado
+  // Opción actualmente seleccionada (por valor explícito, id, código o nombre)
+  const selectedOption = useMemo(() => {
+    if (!value) return null;
+    const valLower = String(value).trim().toLowerCase();
+    return (
+      normalizedOptions.find(
+        (opt) =>
+          (opt.explicitValue !== undefined && opt.explicitValue.toLowerCase() === valLower) ||
+          opt.id.toLowerCase() === valLower ||
+          opt.name.toLowerCase() === valLower ||
+          (opt.code && opt.code.toLowerCase() === valLower)
+      ) || null
+    );
+  }, [normalizedOptions, value]);
+
+  const displayLabel = useMemo(() => {
+    if (selectedOption) return selectedOption.name;
+    if (value === 'all') return '';
+    return value || '';
+  }, [selectedOption, value]);
+
+  // Sincronizar texto de búsqueda con etiqueta visible del valor seleccionado
   useEffect(() => {
     if (!isOpen) {
-      setSearchTerm(value || '');
+      setSearchTerm(displayLabel);
     }
-  }, [value, isOpen]);
+  }, [displayLabel, isOpen]);
 
   // Cerrar al hacer clic fuera
   useEffect(() => {
@@ -89,10 +113,14 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Opciones filtradas
+  // Opciones filtradas (si el texto coincide con la opción actual sin editar, mostrar todas las opciones)
   const filteredOptions = useMemo(() => {
     const query = (searchTerm || '').trim().toLowerCase();
-    if (!query) return normalizedOptions.filter((o) => o.isActive !== false);
+    const currentLabelLower = (displayLabel || '').trim().toLowerCase();
+    const currentValLower = String(value || '').trim().toLowerCase();
+    if (!query || query === currentLabelLower || query === currentValLower || query === 'all') {
+      return normalizedOptions.filter((o) => o.isActive !== false);
+    }
 
     return normalizedOptions.filter(
       (opt) =>
@@ -100,7 +128,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
         (opt.name.toLowerCase().includes(query) ||
           (opt.code && opt.code.toLowerCase().includes(query)))
     );
-  }, [normalizedOptions, searchTerm]);
+  }, [normalizedOptions, searchTerm, displayLabel, value]);
 
   // Verificar si el término actual coincide exactamente con una opción
   const exactMatch = useMemo(() => {
@@ -109,12 +137,14 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     return normalizedOptions.find(
       (opt) =>
         opt.name.toLowerCase() === query ||
+        (opt.explicitValue && opt.explicitValue.toLowerCase() === query) ||
         (opt.code && opt.code.toLowerCase() === query)
     );
   }, [normalizedOptions, searchTerm]);
 
-  const handleSelectOption = (opt: { id: string; name: string; code?: string; isActive: boolean }) => {
-    onChange(opt.name);
+  const handleSelectOption = (opt: { id: string; name: string; explicitValue?: string; code?: string; isActive: boolean }) => {
+    const emittedValue = opt.explicitValue !== undefined ? opt.explicitValue : opt.name;
+    onChange(emittedValue);
     setSearchTerm(opt.name);
     setIsOpen(false);
   };
@@ -173,7 +203,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
           ref={inputRef}
           type="text"
           disabled={disabled}
-          value={isOpen ? searchTerm : value || ''}
+          value={isOpen ? searchTerm : displayLabel}
           onChange={(e) => {
             setSearchTerm(e.target.value);
             if (!isOpen) setIsOpen(true);
@@ -182,7 +212,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
             }
           }}
           onFocus={() => {
-            setSearchTerm(value || '');
+            setSearchTerm(displayLabel);
             setIsOpen(true);
           }}
           placeholder={placeholder}
@@ -192,7 +222,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
         />
 
         <div className="absolute right-1.5 flex items-center gap-0.5 z-10">
-          {(value || searchTerm) && !disabled && isClearable && (
+          {(displayLabel || searchTerm) && !disabled && isClearable && (
             <button
               type="button"
               onMouseDown={(e) => {
@@ -221,7 +251,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
               if (isOpen) {
                 setIsOpen(false);
               } else {
-                setSearchTerm(value || '');
+                setSearchTerm(displayLabel);
                 setIsOpen(true);
                 inputRef.current?.focus();
               }
