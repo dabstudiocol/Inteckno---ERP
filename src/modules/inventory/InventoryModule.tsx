@@ -1468,7 +1468,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
             <div className="overflow-x-auto w-full max-w-full">
               <table className="w-full text-left text-xs border-collapse min-w-[760px]">
                 <thead>
-                  <tr className="bg-slate-50 text-gray-700 font-bold text-[11px] border-b border-gray-200">
+                  <tr className="bg-[#0B1E38] text-white font-bold text-[11px]">
                     {/* 1. Código Referencia */}
                     <th className="p-2 relative select-none">
                       <div className="flex items-center justify-between gap-1">
@@ -3151,7 +3151,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
             <div className="overflow-x-auto w-full max-w-full">
               <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                 <thead>
-                  <tr className="bg-slate-50 text-gray-600 font-bold text-[11px]">
+                  <tr className="bg-[#0B1E38] text-white font-bold text-[11px]">
                     <th className="p-3">Remisión Salida</th>
                     <th className="p-3">Remisión Reingreso</th>
                     <th className="p-3">Proyecto STC</th>
@@ -3752,7 +3752,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                 <h4 className="font-bold text-slate-900 text-xs">Artículos Despachados y Conciliación:</h4>
                 <div className="border border-slate-200 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[11px]">
+                    <thead className="bg-[#0B1E38] text-white font-bold text-[11px]">
                       <tr>
                         <th className="p-2.5">Artículo / SKU</th>
                         <th className="p-2.5 text-center">Despachado</th>

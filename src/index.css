@@ -299,16 +299,52 @@ table {
   border-spacing: 0 !important;
 }
 
-thead tr {
+thead tr,
+main thead tr,
+table thead tr,
+main table thead tr {
   background-color: #0B1E38 !important;
 }
 
-thead th {
+thead th,
+main thead th,
+table thead th,
+main table thead th,
+thead th span,
+main thead th span,
+thead th div,
+main thead th div {
   color: #FFFFFF !important;
   font-weight: 800 !important;
   letter-spacing: 0.05em !important;
   padding-top: 11px !important;
   padding-bottom: 11px !important;
+}
+
+thead th button,
+main thead th button {
+  background-color: transparent !important;
+  color: #FFFFFF !important;
+}
+
+thead th button:hover,
+main thead th button:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  background-image: none !important;
+}
+
+thead th svg,
+main thead th svg,
+thead th button svg,
+main thead th button svg {
+  stroke: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
+thead th button.font-black,
+main thead th button.font-black {
+  background-color: #0284C7 !important;
+  color: #FFFFFF !important;
 }
 
 thead th:first-child {
