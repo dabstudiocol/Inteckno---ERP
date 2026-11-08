@@ -17,6 +17,7 @@ import {
   UserCheck,
   Settings,
   ShoppingCart,
+  Package,
 } from 'lucide-react';
 import { InternalRequisition, InternalRequisitionItem } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
@@ -34,7 +35,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
   onClose,
   requisition,
 }) => {
-  const { updateRequisition, setActiveModule, notify, currentUser, users, navigateWithContext } = useErp();
+  const { updateRequisition, setActiveModule, notify, currentUser, users, products, navigateWithContext } = useErp();
 
   // Catálogos dinámicos configurables por el usuario
   const urgencyOptions = useModuleCatalog('requisitions', 'urgencies');
@@ -142,6 +143,42 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
 
   const currentApprover = approverOptions.find((a) => a.id === selectedApproverId) || approverOptions[0];
 
+  // Cruce en tiempo real con el stock disponible en Bodega (Inventario)
+  const resolvedItems = useMemo(() => {
+    return items.map((item) => {
+      const matchedProduct = (products || []).find(
+        (p) =>
+          (item.productId && p.id === item.productId) ||
+          (item.productSku && p.sku.toLowerCase() === item.productSku.trim().toLowerCase()) ||
+          (item.productName && p.name.toLowerCase() === item.productName.trim().toLowerCase())
+      );
+      const liveAvailableStock = matchedProduct ? Math.max(0, matchedProduct.availableStock || 0) : 0;
+      const qtyReq = Math.max(1, Number(item.qtyRequested) || 1);
+      const qtyFromStock = Math.min(qtyReq, liveAvailableStock);
+      const qtyToPurchase = Math.max(0, qtyReq - qtyFromStock);
+
+      return {
+        ...item,
+        productId: matchedProduct?.id || item.productId,
+        productSku: matchedProduct?.sku || item.productSku,
+        inStock: liveAvailableStock > 0,
+        availableStock: liveAvailableStock,
+        qtyFromStock,
+        qtyToPurchase,
+      };
+    });
+  }, [items, products]);
+
+  const totalQtyFromStock = useMemo(
+    () => resolvedItems.reduce((acc, it) => acc + (it.qtyFromStock || 0), 0),
+    [resolvedItems]
+  );
+
+  const totalQtyToPurchase = useMemo(
+    () => resolvedItems.reduce((acc, it) => acc + (it.qtyToPurchase || 0), 0),
+    [resolvedItems]
+  );
+
   const handleSaveChanges = (
     newStatus?: InternalRequisition['status'],
     approver?: typeof approverOptions[0]
@@ -160,7 +197,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
 
     setIsSubmitting(true);
     const updatedData: Partial<InternalRequisition> = {
-      items,
+      items: resolvedItems,
       priority,
       requisitionType,
       neededDate,
@@ -254,15 +291,23 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
 
           {/* Botones de acción cabecera */}
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('inteckno:open-module-config'))}
-              className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 transition-colors cursor-pointer text-xs font-semibold"
-              title="Configurar opciones de requisiciones"
-            >
-              <Settings size={14} />
-              <span>Configuración</span>
-            </button>
+            {requisition.projectId && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  navigateWithContext('proyectos', 'view_project_tab', {
+                    projectId: requisition.projectId,
+                    tab: 'costos',
+                  });
+                }}
+                className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 transition-colors cursor-pointer text-xs font-semibold"
+                title="Volver al Proyecto origen"
+              >
+                <Building size={14} />
+                <span>Ver Proyecto</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -390,10 +435,10 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-slate-900 text-xs">
-                  Materiales e Insumos de la Petición ({items.length})
+                  Materiales e Insumos de la Petición ({resolvedItems.length})
                 </h4>
                 <p className="text-[11px] text-slate-500">
-                  Puedes editar descripciones, referencias o cantidades directamente.
+                  Cruce automático con Bodega: <span className="font-bold text-emerald-700">{totalQtyFromStock} unid. disponibles en stock</span> y <span className="font-bold text-amber-700">{totalQtyToPurchase} unid. faltantes por comprar</span>.
                 </p>
               </div>
               <button
@@ -408,18 +453,19 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
 
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
               <div className="grid grid-cols-12 bg-slate-100 p-2.5 font-bold text-slate-700 text-[11px] border-b border-slate-200">
-                <div className="col-span-3">SKU / Ref</div>
-                <div className="col-span-4">Descripción del Material</div>
-                <div className="col-span-2">Medidas / Especificación</div>
-                <div className="col-span-1 text-center">Unidad</div>
-                <div className="col-span-1 text-center">Cant.</div>
+                <div className="col-span-2">SKU / Ref</div>
+                <div className="col-span-3">Descripción del Material</div>
+                <div className="col-span-2">Medidas / Especif.</div>
+                <div className="col-span-1 text-center">Unid.</div>
+                <div className="col-span-1 text-center">Pedida</div>
+                <div className="col-span-2 text-center">Bodega / Faltante</div>
                 <div className="col-span-1 text-center">Acción</div>
               </div>
 
               <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
-                {items.map((item, idx) => (
+                {resolvedItems.map((item, idx) => (
                   <div key={item.id || idx} className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-slate-50/60">
-                    <div className="col-span-3">
+                    <div className="col-span-2">
                       <input
                         type="text"
                         value={item.productSku || ''}
@@ -429,7 +475,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
                       />
                     </div>
 
-                    <div className="col-span-4">
+                    <div className="col-span-3">
                       <input
                         type="text"
                         required
@@ -463,10 +509,22 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
                       <input
                         type="number"
                         min="1"
-                        value={item.qtyRequested || 1}
-                        onChange={(e) => handleItemChange(idx, 'qtyRequested', Number(e.target.value) || 1)}
+                        value={item.qtyRequested || ''}
+                        placeholder="0"
+                        onChange={(e) => handleItemChange(idx, 'qtyRequested', Number(e.target.value) || 0)}
                         className="w-full h-8 px-1 text-center font-mono font-bold rounded-lg border border-slate-300 bg-white text-xs"
                       />
+                    </div>
+
+                    <div className="col-span-2 flex flex-col items-center justify-center gap-0.5 text-[10px]">
+                      <span className={`px-1.5 py-0.5 rounded font-bold ${item.availableStock > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'}`}>
+                        En Bodega: {item.availableStock} ({item.qtyFromStock} desp.)
+                      </span>
+                      {(item.qtyToPurchase || 0) > 0 && (
+                        <span className="px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          Comprar: {item.qtyToPurchase}
+                        </span>
+                      )}
                     </div>
 
                     <div className="col-span-1 text-center">
@@ -508,7 +566,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
             Fecha de Creación: <span className="font-mono text-slate-700">{requisition.createdAt}</span>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             <button
               type="button"
               onClick={onClose}
@@ -527,25 +585,44 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
               <span>Guardar Cambios</span>
             </button>
 
+            {totalQtyFromStock > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleSaveChanges();
+                  onClose();
+                  navigateWithContext('inventario', 'create_dispatch_from_req', {
+                    requisition: {
+                      ...requisition,
+                      items: resolvedItems,
+                    },
+                  });
+                }}
+                className="px-3.5 py-2 rounded-xl bg-[#00668F] hover:bg-[#005273] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                title="Preparar Remisión de Salida de Almacén con los ítems disponibles en stock"
+              >
+                <Package size={14} />
+                <span>Despachar de Bodega ({totalQtyFromStock})</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {
                 handleSaveChanges();
                 onClose();
-                handleSaveChanges();
-                      onClose();
-                      navigateWithContext('compras', 'create_po_from_req', {
-                        requisition: {
-                          ...requisition,
-                          items,
-                        },
-                      });
+                navigateWithContext('compras', 'create_po_from_req', {
+                  requisition: {
+                    ...requisition,
+                    items: resolvedItems,
+                  },
+                });
               }}
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
-              title="Convertir esta SOLPED en Orden de Compra con ítems prellenados"
+              title="Convertir esta SOLPED en Orden de Compra con las cantidades faltantes prellenadas"
             >
               <ShoppingCart size={14} />
-              <span>Generar OC desde SOLPED</span>
+              <span>Generar OC desde SOLPED{totalQtyToPurchase > 0 ? ` (${totalQtyToPurchase} falt.)` : ''}</span>
             </button>
 
             {/* SELECTOR DE APROBADOR Y NOTIFICACIÓN FORMAL */}

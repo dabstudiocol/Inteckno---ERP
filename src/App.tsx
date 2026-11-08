@@ -4,25 +4,25 @@ import { AppShell } from './components/layout/AppShell';
 import { LoginView } from './components/auth/LoginView';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
-// Módulos Especializados
-import { CrmModule } from './modules/commercial/CrmModule';
-import { ConversacionesModule } from './modules/inteckno/ConversacionesModule';
-import { DocumentosModule } from './modules/inteckno/DocumentosModule';
-import { CalendarioModule } from './modules/inteckno/CalendarioModule';
-import { ActividadesModule } from './modules/inteckno/ActividadesModule';
-import { InternationalModule } from './modules/international/InternationalModule';
-import { TalentoHumanoModule } from './modules/hr/TalentoHumanoModule';
-import { ProjectsModule } from './modules/projects/ProjectsModule';
-import { ProcurementModule } from './modules/procurement/ProcurementModule';
-import { InventoryModule } from './modules/inventory/InventoryModule';
-import { TimesheetModule } from './modules/timesheet/TimesheetModule';
-import { ExpensesModule } from './modules/expenses/ExpensesModule';
-import { BillingModule } from './modules/billing/BillingModule';
-import { DashboardModule } from './modules/dashboard/DashboardModule';
-import { UserProfileModule } from './modules/inteckno/UserProfileModule';
-import { UserManagementModule } from './modules/inteckno/UserManagementModule';
-import { CargosModule } from './modules/inteckno/CargosModule';
-import { RequisitionsModule } from './modules/requisitions/RequisitionsModule';
+// Módulos Especializados con Code-Splitting Dinámico (React.lazy) para Carga Instantánea en Firebase Hosting
+const CrmModule = React.lazy(() => import('./modules/commercial/CrmModule').then((m) => ({ default: m.CrmModule })));
+const ConversacionesModule = React.lazy(() => import('./modules/inteckno/ConversacionesModule').then((m) => ({ default: m.ConversacionesModule })));
+const DocumentosModule = React.lazy(() => import('./modules/inteckno/DocumentosModule').then((m) => ({ default: m.DocumentosModule })));
+const CalendarioModule = React.lazy(() => import('./modules/inteckno/CalendarioModule').then((m) => ({ default: m.CalendarioModule })));
+const ActividadesModule = React.lazy(() => import('./modules/inteckno/ActividadesModule').then((m) => ({ default: m.ActividadesModule })));
+const InternationalModule = React.lazy(() => import('./modules/international/InternationalModule').then((m) => ({ default: m.InternationalModule })));
+const TalentoHumanoModule = React.lazy(() => import('./modules/hr/TalentoHumanoModule').then((m) => ({ default: m.TalentoHumanoModule })));
+const ProjectsModule = React.lazy(() => import('./modules/projects/ProjectsModule').then((m) => ({ default: m.ProjectsModule })));
+const ProcurementModule = React.lazy(() => import('./modules/procurement/ProcurementModule').then((m) => ({ default: m.ProcurementModule })));
+const InventoryModule = React.lazy(() => import('./modules/inventory/InventoryModule').then((m) => ({ default: m.InventoryModule })));
+const TimesheetModule = React.lazy(() => import('./modules/timesheet/TimesheetModule').then((m) => ({ default: m.TimesheetModule })));
+const ExpensesModule = React.lazy(() => import('./modules/expenses/ExpensesModule').then((m) => ({ default: m.ExpensesModule })));
+const BillingModule = React.lazy(() => import('./modules/billing/BillingModule').then((m) => ({ default: m.BillingModule })));
+const DashboardModule = React.lazy(() => import('./modules/dashboard/DashboardModule').then((m) => ({ default: m.DashboardModule })));
+const UserProfileModule = React.lazy(() => import('./modules/inteckno/UserProfileModule').then((m) => ({ default: m.UserProfileModule })));
+const UserManagementModule = React.lazy(() => import('./modules/inteckno/UserManagementModule').then((m) => ({ default: m.UserManagementModule })));
+const CargosModule = React.lazy(() => import('./modules/inteckno/CargosModule').then((m) => ({ default: m.CargosModule })));
+const RequisitionsModule = React.lazy(() => import('./modules/requisitions/RequisitionsModule').then((m) => ({ default: m.RequisitionsModule })));
 
 import { Forbidden403View } from './components/common/Forbidden403View';
 import { canUserAccessModule } from './core/auth/rbac';
@@ -294,7 +294,15 @@ const MainContent: React.FC = () => {
   return (
     <AppShell activeTitle={current.title} activeSubtitle={current.subtitle}>
       <ErrorBoundary fallbackTitle={`Error en ${current.title}`}>
-        {current.component}
+        <React.Suspense
+          fallback={
+            <div className="flex items-center justify-center py-20 text-xs font-semibold text-slate-500">
+              Cargando módulo {current.title}...
+            </div>
+          }
+        >
+          {current.component}
+        </React.Suspense>
       </ErrorBoundary>
     </AppShell>
   );

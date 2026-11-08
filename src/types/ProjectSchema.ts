@@ -351,6 +351,11 @@ export interface CostMatrixItem {
   splitWithProjectCode?: string; // Proyecto con el que se comparte (ej. P25-21)
   receiptPhotoFileId?: string; // ID de objeto en Storage para evitar binarios Base64 pesados (ej: DOC-9923)
   receiptPhotos?: string[]; // URLs públicas/firmadas del comprobante (nunca Data URLs Base64 pesadas)
+  // Trazabilidad Analítica ERP (Single Source of Truth hacia el documento origen)
+  sourceType?: 'manual' | 'purchase_order' | 'expense' | 'timesheet' | 'remission' | 'equipment_usage';
+  sourceId?: string; // ID inmutable del documento origen (PO, EXP, TS, REM)
+  sourceCode?: string; // Código legible del documento origen (ej. PO-2026-001, REM-OUT-2026-001)
+  committedAmount?: number; // Costo comprometido en tránsito / en campo antes de recepción o liquidación
 }
 
 // Facturación asociada a un ITEM (Hojas de Facturación Inteckno)

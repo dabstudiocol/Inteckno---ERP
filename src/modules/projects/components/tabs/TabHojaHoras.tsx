@@ -38,7 +38,7 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
   onUpdateProject,
   onUpdateTask,
 }) => {
-  const { employees, submitTimesheet, notify } = useErp();
+  const { employees, timesheets, submitTimesheet, approveTimesheet, navigateWithContext, notify } = useErp();
 
   // Lista combinada de colaboradores para asignación en el proyecto
   const unifiedStaff = React.useMemo(() => {
@@ -69,10 +69,56 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
   });
 
   useEffect(() => {
-    if ((project as any)?.timesheetEntries) {
-      setEntries((project as any).timesheetEntries);
-    }
-  }, [(project as any)?.timesheetEntries]);
+    const localEntries: ProjectTimesheetEntry[] = (project as any)?.timesheetEntries || [];
+    const globalForProject = (timesheets || []).filter(
+      (t) => !t.isDeleted && (t.projectId === project.id || (project.code && t.projectCode === project.code))
+    );
+
+    const map = new Map<string, ProjectTimesheetEntry>();
+    localEntries.forEach((e) => map.set(e.id, e));
+    globalForProject.forEach((gt) => {
+      // Evitar duplicar si ya existe por mismo usuario, fecha, tarea y horas
+      const alreadyExists = Array.from(map.values()).some(
+        (le) =>
+          le.id === gt.id ||
+          (le.userId === gt.userId && le.date === gt.date && le.taskName === gt.taskName && Number(le.hours) === Number(gt.hours))
+      );
+      if (!alreadyExists) {
+        map.set(gt.id, {
+          id: gt.id,
+          projectId: project.id,
+          taskId: gt.taskId || '',
+          taskName: gt.taskName || 'Actividad General',
+          itemCode: gt.itemCode,
+          userId: gt.userId,
+          userName: gt.userName,
+          userRole: gt.userRole,
+          date: gt.date,
+          hours: gt.hours,
+          isEndTask: false,
+          isCertValid: true,
+          workDescription: gt.description || 'Registrado desde módulo general de Horas',
+          status: gt.status === 'approved' ? 'aprobado' : gt.status === 'rejected' ? 'rechazado' : 'borrador',
+          createdAt: gt.date,
+        });
+      } else {
+        // Sincronizar estado si fue aprobado en el módulo global
+        for (const [k, le] of map.entries()) {
+          if (
+            le.id === gt.id ||
+            (le.userId === gt.userId && le.date === gt.date && le.taskName === gt.taskName && Number(le.hours) === Number(gt.hours))
+          ) {
+            map.set(k, {
+              ...le,
+              status: gt.status === 'approved' ? 'aprobado' : gt.status === 'rejected' ? 'rechazado' : le.status,
+            });
+          }
+        }
+      }
+    });
+
+    setEntries(Array.from(map.values()));
+  }, [(project as any)?.timesheetEntries, timesheets, project.id, project.code]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<string>('Esperando captura');
@@ -450,16 +496,25 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
 
       {/* Tabla de Horas Registradas */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-[#00668F]" />
             <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
               Registro Diario de Horas y Control END
             </h3>
           </div>
-          <span className="text-xs text-slate-500 font-medium">
-            {entries.length} registros auditados
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-500 font-medium">
+              {entries.length} registros auditados
+            </span>
+            <button
+              type="button"
+              onClick={() => navigateWithContext('horas', 'filter_project', { projectId: project.id, projectCode: project.code })}
+              className="text-xs font-bold text-[#00668F] hover:underline cursor-pointer"
+            >
+              Ver en Módulo Global de Horas →
+            </button>
+          </div>
         </div>
 
         {entries.length === 0 ? (
@@ -533,6 +588,16 @@ export const TabHojaHoras: React.FC<TabHojaHorasProps> = ({
                     </td>
                     <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
+                        {entry.status === 'borrador' && (
+                          <button
+                            type="button"
+                            onClick={() => approveTimesheet(entry.id)}
+                            className="px-2 py-1 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors cursor-pointer mr-1"
+                            title="Aprobar horas e imputar costo laboral al proyecto"
+                          >
+                            Aprobar
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setSelectedEntryDetail(entry)}

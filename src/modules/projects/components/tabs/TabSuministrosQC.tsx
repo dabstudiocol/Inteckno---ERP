@@ -32,7 +32,33 @@ interface TabSuministrosQCProps {
 }
 
 export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onUpdateProject }) => {
-  const { users, employees, partners, products, currentUser } = useErp();
+  const {
+    users,
+    employees,
+    partners,
+    products,
+    requisitions,
+    purchaseOrders,
+    remissions,
+    equipment,
+    navigateWithContext,
+    currentUser,
+  } = useErp();
+
+  const projectRequisitions = React.useMemo(
+    () => (requisitions || []).filter((r) => !r.isDeleted && (r.projectId === project.id || (project.code && r.projectCode === project.code))),
+    [requisitions, project.id, project.code]
+  );
+
+  const projectPurchaseOrders = React.useMemo(
+    () => (purchaseOrders || []).filter((po) => !po.isDeleted && (po.projectId === project.id || (project.code && po.projectCode === project.code))),
+    [purchaseOrders, project.id, project.code]
+  );
+
+  const projectRemissions = React.useMemo(
+    () => (remissions || []).filter((rem) => !(rem as any).isDeleted && (rem.projectId === project.id || (project.code && rem.projectCode === project.code))),
+    [remissions, project.id, project.code]
+  );
   const staffOptions = React.useMemo(() => {
     const map = new Map<string, string>();
     users.forEach((u) => map.set(u.name, `${u.name} (${u.roleLabel || 'Personal ITK'})`));
@@ -288,6 +314,78 @@ export const TabSuministrosQC: React.FC<TabSuministrosQCProps> = ({ project, onU
         <EngineeringBomFunnel project={project} />
       ) : (
         <>
+      {/* SECCIÓN 0: TRAZABILIDAD EN VIVO DE ABASTECIMIENTO Y BODEGA (SOLPED -> OC -> REMISIÓN) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+              <span className="font-semibold">Requisiciones (SOLPED)</span>
+              <FileText className="w-4 h-4 text-[#00668F]" />
+            </div>
+            <div className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {projectRequisitions.length}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {projectRequisitions.filter((r) => r.status === 'fulfilled' || r.status === 'auto_po_generated' || r.status === 'approved_for_quotation').length} aprobadas / convertidas
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigateWithContext('requisitions', 'filter_project', { projectId: project.id, projectCode: project.code })}
+            className="mt-3 text-left text-[11px] font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Ver SOLPEDs del Proyecto</span>
+            <ExternalLink size={11} />
+          </button>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+              <span className="font-semibold">Órdenes de Compra (OC)</span>
+              <FileCheck2 className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {projectPurchaseOrders.length}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {projectPurchaseOrders.filter((po) => po.status === 'received').length} recibidas en almacén
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigateWithContext('compras', 'filter_project', { projectId: project.id, projectCode: project.code })}
+            className="mt-3 text-left text-[11px] font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Ir a Órdenes de Compra</span>
+            <ExternalLink size={11} />
+          </button>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+              <span className="font-semibold">Remisiones de Bodega en Obra</span>
+              <PackageCheck className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {projectRemissions.length}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {projectRemissions.filter((rem) => rem.status === 'en_campo').length} activas en campo
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigateWithContext('inventario', 'create_dispatch', { projectId: project.id, projectCode: project.code })}
+            className="mt-3 text-left text-[11px] font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Gestionar Despachos / Retornos</span>
+            <ExternalLink size={11} />
+          </button>
+        </div>
+      </div>
+
       {/* SECCIÓN 1: EQUIPOS DE INSPECCIÓN (MRT, ULTRASONIDO, CALIBRACIÓN) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

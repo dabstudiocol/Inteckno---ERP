@@ -29,6 +29,7 @@ import {
   Sliders,
   BadgePercent,
   Settings,
+  Trash2,
 } from 'lucide-react';
 import { GlobalOpportunity, OpportunityCategory } from '../types';
 import {
@@ -39,6 +40,7 @@ import { useErp } from '../../../core/storage/erpStore';
 import { getGeminiApiKey } from '../../../core/services/aiVisionExpenseService';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { UniversalModuleConfigModal } from '../../../components/common/UniversalModuleConfigModal';
+import { ConfirmDeleteModal } from '../../../components/common/ConfirmDeleteModal';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
 import {
   fetchLiveExchangeRates,
@@ -83,6 +85,15 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [verifyingOpportunity, setVerifyingOpportunity] = useState<GlobalOpportunity | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [radarOppToDelete, setRadarOppToDelete] = useState<GlobalOpportunity | null>(null);
+  const [deletedRadarIds, setDeletedRadarIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('ITK_DELETED_RADAR_OPPS');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const hasGeminiApiKey = Boolean(getGeminiApiKey());
 
@@ -595,7 +606,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
 
       {/* Grid de Oportunidades */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredOpportunities.map((opp) => {
+        {filteredOpportunities.filter((o) => !deletedRadarIds.includes(o.id)).map((opp) => {
           const isConverted = convertedIds[opp.id] || opp.isConvertedToCrm;
           const isCodeCopied = copiedCode === opp.procurementCode;
           const directTargetUrl = opp.directSourceUrl || opp.sourceUrl;
@@ -784,6 +795,15 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                       <span>Cotizar</span>
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => setRadarOppToDelete(opp)}
+                    className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition-colors cursor-pointer"
+                    title="Descartar / Eliminar Oportunidad del Radar"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -1010,6 +1030,29 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
         isOpen={isConfigModalOpen}
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="radar-oportunidades"
+      />
+
+      {/* Modal de Confirmación Escrita Obligatoria ('BORRAR') para Descartar Oportunidad del Radar */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(radarOppToDelete)}
+        title="Eliminar Oportunidad del Radar"
+        itemName={radarOppToDelete ? `${radarOppToDelete.title} (${radarOppToDelete.country})` : ''}
+        description="Esta acción retirará permanentemente esta licitación del Radar de Oportunidades."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (radarOppToDelete) {
+            const nextDel = Array.from(new Set([...deletedRadarIds, radarOppToDelete.id]));
+            setDeletedRadarIds(nextDel);
+            try {
+              localStorage.setItem('ITK_DELETED_RADAR_OPPS', JSON.stringify(nextDel));
+            } catch {}
+            setOpportunities((prev) => prev.filter((o) => o.id !== radarOppToDelete.id));
+            notify('info', 'Oportunidad Retirada', `Se eliminó "${radarOppToDelete.title}" del Radar.`);
+            setRadarOppToDelete(null);
+          }
+        }}
+        onCancel={() => setRadarOppToDelete(null)}
       />
     </div>
   );

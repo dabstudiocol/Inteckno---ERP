@@ -28,6 +28,7 @@ import {
   storeApiKey,
   testApiKey,
 } from '../../core/services/aiVisionExpenseService';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface UniversalModuleConfigModalProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export const UniversalModuleConfigModal: React.FC<UniversalModuleConfigModalProp
   const [config, setConfig] = useState<ModuleConfigGroup>(() => getModuleCatalogs(resolvedId));
   const [activeCatalogKey, setActiveCatalogKey] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [itemToDelete, setItemToDelete] = useState<{ catalogKey: string; item: CatalogItem } | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
@@ -117,10 +119,11 @@ export const UniversalModuleConfigModal: React.FC<UniversalModuleConfigModalProp
     const cat = config.catalogs[catalogKey];
     if (!cat) return;
     const item = cat.items.find((i) => i.id === itemId);
-    if (!window.confirm(`¿Seguro que deseas eliminar la opción "${item?.name || 'seleccionada'}"?`)) {
-      return;
-    }
+    if (!item) return;
+    setItemToDelete({ catalogKey, item });
+  };
 
+  const executeDeleteItem = (catalogKey: string, itemId: string) => {
     const updatedCatalogs = { ...config.catalogs };
     updatedCatalogs[catalogKey].items = updatedCatalogs[catalogKey].items.filter(
       (it) => it.id !== itemId
@@ -655,6 +658,22 @@ export const UniversalModuleConfigModal: React.FC<UniversalModuleConfigModalProp
             <span>Listo</span>
           </button>
         </div>
+
+        <ConfirmDeleteModal
+          isOpen={Boolean(itemToDelete)}
+          title="Eliminar Opción del Catálogo"
+          itemName={itemToDelete ? itemToDelete.item.name : ''}
+          description="Esta opción será retirada de los selectores desplegables de este módulo."
+          requireConfirmWord={true}
+          confirmWord="BORRAR"
+          onConfirm={() => {
+            if (itemToDelete) {
+              executeDeleteItem(itemToDelete.catalogKey, itemToDelete.item.id);
+              setItemToDelete(null);
+            }
+          }}
+          onCancel={() => setItemToDelete(null)}
+        />
 
       </div>
     </div>

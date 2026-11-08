@@ -172,7 +172,7 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
     onClose();
   };
 
-  const handleSaveReceipt = (e: React.FormEvent) => {
+  const handleSaveReceipt = (e: React.FormEvent, dispatchToProjectAfter = false) => {
     e.preventDefault();
     if (!selectedPO) return;
 
@@ -210,6 +210,13 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
 
     setHasUnsavedChanges(false);
     onClose();
+
+    if (dispatchToProjectAfter && selectedPO.projectId) {
+      erpStore.navigateWithContext('inventario', 'create_dispatch_from_po', {
+        po: selectedPO,
+        receiptsPayload,
+      });
+    }
   };
 
   return (
@@ -546,6 +553,17 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
               >
                 Cancelar
               </button>
+              {selectedPO?.projectId && (
+                <button
+                  type="button"
+                  onClick={(e) => handleSaveReceipt(e, true)}
+                  className="px-4 py-2.5 rounded-xl bg-[#00668F] hover:bg-[#005273] text-white font-bold flex items-center gap-1.5 cursor-pointer shadow-xs text-xs"
+                  title="Ingresar la mercancía a bodega y abrir inmediatamente la Remisión de Despacho hacia el Proyecto"
+                >
+                  <Building size={15} />
+                  <span>Ingresar y Remisionar a Obra ({selectedPO.projectCode || 'Proyecto'})</span>
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={!selectedPO}

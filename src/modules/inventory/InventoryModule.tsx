@@ -146,35 +146,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
     }
   }, [initialTab, activeModuleId]);
 
-  // Autopista Determinista de Navegación Inter-Módulo (Regla 16)
-  React.useEffect(() => {
-    if (navigationContext && (navigationContext.targetModule === 'inventario' || navigationContext.targetModule === 'almacen' || navigationContext.targetModule === 'bodega')) {
-      if (navigationContext.action === 'open_po_receipt') {
-        setActiveTab('unified');
-        if (navigationContext.data?.poId) {
-          setPreselectedPoIdForReceipt(navigationContext.data.poId);
-        }
-        setIsWarehouseReceiptModalOpen(true);
-        clearNavigationContext();
-      } else if (navigationContext.action === 'create_dispatch') {
-        setActiveTab('dispatch');
-        clearNavigationContext();
-      } else if (navigationContext.action === 'create_return') {
-        setActiveTab('return');
-        clearNavigationContext();
-      } else if (navigationContext.action === 'barcode') {
-        setActiveTab('barcode');
-        clearNavigationContext();
-      } else if (navigationContext.action === 'view_product') {
-        setActiveTab('unified');
-        if (navigationContext.data?.sku || navigationContext.data?.query) {
-          setSearchQuery(navigationContext.data.sku || navigationContext.data.query);
-        }
-        clearNavigationContext();
-      }
-    }
-  }, [navigationContext, clearNavigationContext]);
-
   // Escuchar evento para abrir recepción de mercancía desde notificaciones
   React.useEffect(() => {
     const handleOpenReceipt = () => {
@@ -411,6 +382,117 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
       approvedCostCOP?: number;
     }[]
   >([]);
+
+  // Autopista Determinista de Navegación Inter-Módulo (Regla 16)
+  React.useEffect(() => {
+    if (navigationContext && (navigationContext.targetModule === 'inventario' || navigationContext.targetModule === 'almacen' || navigationContext.targetModule === 'bodega')) {
+      if (navigationContext.action === 'open_po_receipt') {
+        setActiveTab('unified');
+        if (navigationContext.data?.poId) {
+          setPreselectedPoIdForReceipt(navigationContext.data.poId);
+        }
+        setIsWarehouseReceiptModalOpen(true);
+        clearNavigationContext();
+      } else if (navigationContext.action === 'create_dispatch') {
+        setActiveTab('dispatch');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'create_dispatch_from_req') {
+        setActiveTab('dispatch');
+        const req = navigationContext.data?.requisition;
+        if (req) {
+          if (req.projectId) setDispatchProjectId(req.projectId);
+          if (req.itemCode) setDispatchItemCode(req.itemCode);
+          if (req.requesterId) setDispatchTechId(req.requesterId);
+          setDispatchNotes(`Despacho originado desde Requisición ${req.requisitionNumber}${req.notes ? ` — ${req.notes}` : ''}`);
+          const prefilled = (req.items || [])
+            .map((it: any, idx: number) => {
+              const prod = products.find(
+                (p) =>
+                  (it.productId && p.id === it.productId) ||
+                  (it.productSku && p.sku.toLowerCase() === it.productSku.trim().toLowerCase()) ||
+                  (it.productName && p.name.toLowerCase() === it.productName.trim().toLowerCase())
+              );
+              const qtyToDispatch = Number(it.qtyFromStock) || Number(it.qtyRequested) || 0;
+              if (!prod || qtyToDispatch <= 0) return null;
+              const cop = prod.costPriceCOP || Math.round((prod.costPriceUSD || 0) * currentTRM);
+              const usd = prod.costPriceUSD || Number((cop / (currentTRM || 4200)).toFixed(2));
+              return {
+                id: `disp-req-${idx}-${Date.now()}`,
+                productId: prod.id,
+                sku: prod.sku,
+                name: prod.name,
+                unit: prod.unit || it.unit || 'unid',
+                category: prod.category || 'Repuestos y Componentes',
+                qtyDispatched: Math.min(qtyToDispatch, Math.max(1, prod.availableStock || qtyToDispatch)),
+                unitCostUSD: usd,
+                unitCostCOP: cop,
+                suggestedUnitCostCOP: cop,
+                approvedCostCOP: cop,
+              };
+            })
+            .filter(Boolean) as any[];
+          if (prefilled.length > 0) {
+            setDispatchItems(prefilled);
+            notify('info', 'Remisión Prellenada desde SOLPED', `Se cargaron ${prefilled.length} ítems disponibles en stock para despachar a obra.`);
+          }
+        }
+        clearNavigationContext();
+      } else if (navigationContext.action === 'create_dispatch_from_po') {
+        setActiveTab('dispatch');
+        const po = navigationContext.data?.po;
+        const receiptsPayload = navigationContext.data?.receiptsPayload || [];
+        if (po) {
+          if (po.projectId) setDispatchProjectId(po.projectId);
+          if (po.itemCode) setDispatchItemCode(po.itemCode);
+          setDispatchNotes(`Despacho directo tras recepción de Orden de Compra ${po.orderNumber}`);
+          const prefilled = (po.items || [])
+            .map((it: any, idx: number) => {
+              const prod = products.find(
+                (p) =>
+                  (it.productId && p.id === it.productId) ||
+                  (it.sku && p.sku.toLowerCase() === it.sku.trim().toLowerCase())
+              );
+              const receiptMatch = receiptsPayload.find((r: any) => r.sku === it.sku);
+              const qtyEntered = receiptMatch ? Number(receiptMatch.receivedQty) : (Number(it.orderedQty) || Number(it.qty) || 0);
+              if (qtyEntered <= 0) return null;
+              const cop = it.unitPriceCOP || prod?.costPriceCOP || 0;
+              const usd = it.unitPriceUSD || prod?.costPriceUSD || Number((cop / (currentTRM || 4200)).toFixed(2));
+              return {
+                id: `disp-po-${idx}-${Date.now()}`,
+                productId: prod?.id || it.productId || `PROD-${it.sku}`,
+                sku: prod?.sku || it.sku,
+                name: prod?.name || it.name,
+                unit: prod?.unit || it.unit || 'unid',
+                category: prod?.category || 'Repuestos y Componentes',
+                qtyDispatched: qtyEntered,
+                unitCostUSD: usd,
+                unitCostCOP: cop,
+                suggestedUnitCostCOP: cop,
+                approvedCostCOP: cop,
+              };
+            })
+            .filter(Boolean) as any[];
+          if (prefilled.length > 0) {
+            setDispatchItems(prefilled);
+            notify('info', 'Remisión Prellenada desde OC Recibida', `Verifica las cantidades y firma la salida hacia el proyecto ${po.projectCode || ''}.`);
+          }
+        }
+        clearNavigationContext();
+      } else if (navigationContext.action === 'create_return') {
+        setActiveTab('return');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'barcode') {
+        setActiveTab('barcode');
+        clearNavigationContext();
+      } else if (navigationContext.action === 'view_product') {
+        setActiveTab('unified');
+        if (navigationContext.data?.sku || navigationContext.data?.query) {
+          setSearchQuery(navigationContext.data.sku || navigationContext.data.query);
+        }
+        clearNavigationContext();
+      }
+    }
+  }, [navigationContext, clearNavigationContext, products, currentTRM]);
 
   // --------------------------------------------------------------------------
   // ESTADO PARA REMISIÓN DE REINGRESO (RETORNO Y LIQUIDACIÓN)

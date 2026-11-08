@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { DocumentItem } from '../../types';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import {
   openMicrosoftAuthPopup,
   fetchSharePointFilesFromGraph,
@@ -1055,10 +1056,16 @@ export const DocumentosModule: React.FC = () => {
     setSelectedFolderId(newFolder.id);
   };
 
+  const [folderToDelete, setFolderToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null);
+
   // Manejadores de acciones sobre carpetas (Eliminar, Favoritos, Editar, Adjuntar a Proyecto)
   const handleDeleteFolder = (folderId: string, folderName: string) => {
-    if (!window.confirm(`¿Estás seguro de eliminar la carpeta "${folderName}"?`)) return;
+    setFolderToDelete({ id: folderId, name: folderName });
+    setActiveMenuFolderId(null);
+  };
 
+  const executeDeleteFolder = (folderId: string) => {
     // Si es una carpeta custom, la quitamos de customFolders
     const updatedCustom = customFolders.filter((f) => f.id !== folderId);
     if (updatedCustom.length !== customFolders.length) {
@@ -2353,9 +2360,11 @@ export const DocumentosModule: React.FC = () => {
               {/* Botonera de Acciones */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={() => {
-                    deleteDocument(previewDoc.id);
+                    const target = previewDoc;
                     setPreviewDoc(null);
+                    setDocToDelete(target);
                   }}
                   className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
@@ -3267,9 +3276,7 @@ export const DocumentosModule: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        if (window.confirm(`¿Estás seguro de eliminar el documento "${doc.title}"?`)) {
-                          deleteDocument(doc.id);
-                        }
+                        setDocToDelete(doc);
                         setFloatingMenu(null);
                       }}
                       className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer font-bold"
@@ -3284,6 +3291,40 @@ export const DocumentosModule: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Modal de Confirmación Escrita Obligatoria ('BORRAR') para Eliminar Carpeta */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(folderToDelete)}
+        title="Eliminar Carpeta Documental"
+        itemName={folderToDelete ? folderToDelete.name : ''}
+        description="Esta acción ocultará y retirará permanentemente la carpeta de la vista del repositorio."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (folderToDelete) {
+            executeDeleteFolder(folderToDelete.id);
+            setFolderToDelete(null);
+          }
+        }}
+        onCancel={() => setFolderToDelete(null)}
+      />
+
+      {/* Modal de Confirmación Escrita Obligatoria ('BORRAR') para Eliminar Documento */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(docToDelete)}
+        title="Eliminar Documento Técnico"
+        itemName={docToDelete ? `${docToDelete.title} (${docToDelete.projectCode || 'General'})` : ''}
+        description="Esta acción retirará permanentemente el documento del repositorio del ERP."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (docToDelete) {
+            deleteDocument(docToDelete.id);
+            setDocToDelete(null);
+          }
+        }}
+        onCancel={() => setDocToDelete(null)}
+      />
 
       {/* Modal Universal de Configuración de Gestión Documental */}
       <UniversalModuleConfigModal

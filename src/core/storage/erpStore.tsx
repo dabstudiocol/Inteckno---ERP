@@ -78,6 +78,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { getStoredTRM } from '../services/trmService';
 import { getProjectTaxRate } from '../services/taxService';
 import { getLaborRates } from '../services/moduleConfigService';
+import { reconcileProjectAnalyticalCosts } from '../services/projectFinancialEngine';
 import {
   User,
   Project,
@@ -143,6 +144,9 @@ import {
   recordKardexEntryCloud,
   subscribeToCloudKardex,
   atomicStockTransaction,
+  deleteUserFromCloud,
+  markEntityAsDeletedPermanent,
+  isEntityDeletedPermanent,
 } from '../services/firestoreSyncService';
 import { recordAuditEvent } from '../services/auditService';
 import { undoRedoService, UserUndoAction, SupportedCollection } from '../services/undoRedoService';
@@ -294,6 +298,7 @@ export interface ErpContextType extends ErpState {
   updateUserPreferences: (prefs: Partial<UserPreferences>) => void;
   resetUserPassword: (userId: string, newPassword: string) => void;
   createUserAccount: (user: Omit<User, 'id'>) => User;
+  deleteUserAccount: (userId: string) => void;
   toggleUserStatus: (userId: string) => void;
   setActiveModule: (moduleId: string) => void;
   navigateWithContext: (targetModule: string, action: string, data?: any) => void;
@@ -593,8 +598,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (parsed.isAuthenticated !== undefined) activeAuth = parsed.isAuthenticated ?? false;
         }
 
-        const seedUsers = defaultState.users;
-        const mergedUsers: User[] = (parsed.users && Array.isArray(parsed.users) ? parsed.users : seedUsers).map((u: User) => {
+        const seedUsers = defaultState.users.filter((su) => !isEntityDeletedPermanent(su.id, su.email));
+        const mergedUsers: User[] = (parsed.users && Array.isArray(parsed.users) ? parsed.users : seedUsers)
+          .filter((u: User) => !isEntityDeletedPermanent(u?.id, u?.email))
+          .map((u: User) => {
           const seed = seedUsers.find((su) => su.id === u.id || su.email?.toLowerCase() === u.email?.toLowerCase());
           return {
             ...seed,
@@ -628,7 +635,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         seedUsers.forEach((su) => {
-          if (!mergedUsers.some((mu) => mu.id === su.id || mu.email.toLowerCase() === su.email.toLowerCase())) {
+          if (
+            !isEntityDeletedPermanent(su.id, su.email) &&
+            !mergedUsers.some((mu) => mu.id === su.id || mu.email.toLowerCase() === su.email.toLowerCase())
+          ) {
             mergedUsers.push(su);
           }
         });
@@ -648,7 +658,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         }
 
-        // Si ya estaba purgado, cargar los registros ingresados por el usuario
+        // Si ya estaba purgado, cargar los registros ingresados por el usuario (filtrando eliminados permanentemente)
         return {
           ...defaultState,
           ...parsed,
@@ -658,29 +668,31 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           activeChatChannelId: parsed.activeChatChannelId || 'general',
           activeChatToast: null,
           activeCalendarToast: null,
-          projects: Array.isArray(parsed.projects) ? parsed.projects : [],
-          tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
-          partners: Array.isArray(parsed.partners) && parsed.partners.length > 0 ? parsed.partners : SEED_PARTNERS,
-          products: Array.isArray(parsed.products) ? parsed.products : [],
-          equipment: Array.isArray(parsed.equipment) && parsed.equipment.length > 0 ? parsed.equipment : SEED_EQUIPMENT,
-          purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders : [],
-          requisitions: Array.isArray(parsed.requisitions) ? parsed.requisitions : [],
-          milestones: Array.isArray(parsed.milestones) ? parsed.milestones : [],
-          timesheets: Array.isArray(parsed.timesheets) ? parsed.timesheets : [],
-          expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
-          ddrs: Array.isArray(parsed.ddrs) ? parsed.ddrs : [],
+          projects: Array.isArray(parsed.projects) ? parsed.projects.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          tasks: Array.isArray(parsed.tasks) ? parsed.tasks.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          partners: (Array.isArray(parsed.partners) ? parsed.partners : SEED_PARTNERS).filter((x: any) => !isEntityDeletedPermanent(x?.id)),
+          products: Array.isArray(parsed.products) ? parsed.products.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          equipment: (Array.isArray(parsed.equipment) ? parsed.equipment : SEED_EQUIPMENT).filter((x: any) => !isEntityDeletedPermanent(x?.id)),
+          purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          requisitions: Array.isArray(parsed.requisitions) ? parsed.requisitions.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          milestones: Array.isArray(parsed.milestones) ? parsed.milestones.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          timesheets: Array.isArray(parsed.timesheets) ? parsed.timesheets.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          expenses: Array.isArray(parsed.expenses) ? parsed.expenses.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          ddrs: Array.isArray(parsed.ddrs) ? parsed.ddrs.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
           notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
-          opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : [],
-          contacts: Array.isArray(parsed.contacts) && parsed.contacts.length > 0 ? parsed.contacts : SEED_CONTACTS,
+          opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          contacts: (Array.isArray(parsed.contacts) ? parsed.contacts : SEED_CONTACTS).filter((x: any) => !isEntityDeletedPermanent(x?.id)),
           chatMessages: Array.isArray(parsed.chatMessages) ? parsed.chatMessages : [],
-          chatGroups: Array.isArray(parsed.chatGroups) && parsed.chatGroups.length > 0 ? parsed.chatGroups : SEED_CHAT_GROUPS,
-          documents: Array.isArray(parsed.documents) ? parsed.documents : [],
-          todos: Array.isArray(parsed.todos) ? parsed.todos : [],
-          calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : [],
-          leads: Array.isArray(parsed.leads) ? parsed.leads : [],
-          employees: Array.isArray(parsed.employees) && parsed.employees.length > 0 ? parsed.employees : buildInitialEmployeesFromUsers(SEED_USERS),
-          novelties: Array.isArray(parsed.novelties) ? parsed.novelties : [],
-          remissions: Array.isArray(parsed.remissions) ? parsed.remissions : [],
+          chatGroups: (Array.isArray(parsed.chatGroups) ? parsed.chatGroups : SEED_CHAT_GROUPS).filter((x: any) => !isEntityDeletedPermanent(x?.id)),
+          documents: Array.isArray(parsed.documents) ? parsed.documents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          todos: Array.isArray(parsed.todos) ? parsed.todos.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          leads: Array.isArray(parsed.leads) ? parsed.leads.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          employees: (Array.isArray(parsed.employees) ? parsed.employees : buildInitialEmployeesFromUsers(mergedUsers)).filter(
+            (x: any) => !isEntityDeletedPermanent(x?.id, x?.email) && !isEntityDeletedPermanent(x?.userId)
+          ),
+          novelties: Array.isArray(parsed.novelties) ? parsed.novelties.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+          remissions: Array.isArray(parsed.remissions) ? parsed.remissions.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
           inventoryAuditLogs: Array.isArray(parsed.inventoryAuditLogs) ? parsed.inventoryAuditLogs : [],
         };
       }
@@ -768,8 +780,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return undoRedoService.getNextRedoAction(state.currentUser?.id || '');
   }, [state.currentUser?.id, undoVersion]);
 
-  // Control de sincronización en la nube (Cloud-First)
+  // Control de sincronización en la nube (Cloud-First) con banderas aisladas por módulo
   const isRemoteUpdateRef = useRef(false);
+  const remoteModuleFlagsRef = useRef<Record<string, boolean>>({});
   const isCloudLoadedRef = useRef(false);
 
   // Registro persistente en memoria y almacenamiento local de IDs de mensajes eliminados
@@ -799,7 +812,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Projects (Reconciliación: Si un proyecto local fue actualizado más recientemente, respetar la decisión del usuario)
         if (cloudData.projects) {
           if (Array.isArray(cloudData.projects.projects)) {
-            const incomingProjects = cloudData.projects.projects;
+            const incomingProjects = cloudData.projects.projects.filter((p: Project) => !isEntityDeletedPermanent(p?.id));
             const merged = incomingProjects.map((remoteP: Project) => {
               const localP = prev.projects.find((lp) => lp.id === remoteP.id);
               if (!localP) return remoteP;
@@ -837,30 +850,30 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
             // Añadir proyectos locales creados que aún no estén en la nube
             prev.projects.forEach((lp) => {
-              if (!merged.some((mp: Project) => mp.id === lp.id)) {
+              if (!isEntityDeletedPermanent(lp?.id) && !merged.some((mp: Project) => mp.id === lp.id)) {
                 merged.push(lp);
               }
             });
             next.projects = merged.map((p: Project) => recalculateProjectEvm(p));
             hasChanges = true;
           }
-          if (Array.isArray(cloudData.projects.tasks)) { next.tasks = cloudData.projects.tasks; hasChanges = true; }
-          if (Array.isArray(cloudData.projects.milestones)) { next.milestones = cloudData.projects.milestones; hasChanges = true; }
+          if (Array.isArray(cloudData.projects.tasks)) { next.tasks = cloudData.projects.tasks.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.projects.milestones)) { next.milestones = cloudData.projects.milestones.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
         }
 
         // Procurement
         if (cloudData.procurement) {
-          if (Array.isArray(cloudData.procurement.purchaseOrders)) { next.purchaseOrders = cloudData.procurement.purchaseOrders; hasChanges = true; }
-          if (Array.isArray(cloudData.procurement.requisitions)) { next.requisitions = cloudData.procurement.requisitions; hasChanges = true; }
-          if (Array.isArray(cloudData.procurement.equipment)) { next.equipment = cloudData.procurement.equipment; hasChanges = true; }
-          if (Array.isArray(cloudData.procurement.partners)) { next.partners = cloudData.procurement.partners; hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.purchaseOrders)) { next.purchaseOrders = cloudData.procurement.purchaseOrders.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.requisitions)) { next.requisitions = cloudData.procurement.requisitions.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.equipment)) { next.equipment = cloudData.procurement.equipment.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.procurement.partners)) { next.partners = cloudData.procurement.partners.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
           if (Array.isArray(cloudData.procurement.inventoryAuditLogs)) { next.inventoryAuditLogs = cloudData.procurement.inventoryAuditLogs; hasChanges = true; }
           if (Array.isArray(cloudData.procurement.inventoryWriteOffs)) { next.inventoryWriteOffs = cloudData.procurement.inventoryWriteOffs; hasChanges = true; }
         }
 
         // Products / Inventory
         if (Array.isArray(cloudData.products) && cloudData.products.length > 0) {
-          next.products = cloudData.products;
+          next.products = cloudData.products.filter((x: any) => !isEntityDeletedPermanent(x?.id));
           hasChanges = true;
         }
 
@@ -876,21 +889,28 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         // Operations
         if (cloudData.operations) {
-          if (Array.isArray(cloudData.operations.timesheets)) { next.timesheets = cloudData.operations.timesheets; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.expenses)) { next.expenses = cloudData.operations.expenses; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.ddrs)) { next.ddrs = cloudData.operations.ddrs; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.remissions)) { next.remissions = cloudData.operations.remissions; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.employees)) { next.employees = cloudData.operations.employees; hasChanges = true; }
-          if (Array.isArray(cloudData.operations.novelties)) { next.novelties = cloudData.operations.novelties; hasChanges = true; }
+          if (Array.isArray(cloudData.operations.timesheets)) { next.timesheets = cloudData.operations.timesheets.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.operations.expenses)) { next.expenses = cloudData.operations.expenses.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.operations.ddrs)) { next.ddrs = cloudData.operations.ddrs.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.operations.remissions)) { next.remissions = cloudData.operations.remissions.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.operations.employees)) { next.employees = cloudData.operations.employees.filter((x: any) => !isEntityDeletedPermanent(x?.id, x?.email) && !isEntityDeletedPermanent(x?.userId)); hasChanges = true; }
+          if (Array.isArray(cloudData.operations.novelties)) { next.novelties = cloudData.operations.novelties.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
         }
 
         // HR (Talento Humano & SST)
         if (cloudData.hr) {
           if (Array.isArray(cloudData.hr.employees)) {
-            if (cloudData.hr.employees.length > 0) {
-              next.employees = cloudData.hr.employees;
+            const validCloudEmployees = cloudData.hr.employees.filter(
+              (x: any) => !isEntityDeletedPermanent(x?.id, x?.email) && !isEntityDeletedPermanent(x?.userId)
+            );
+            if (validCloudEmployees.length > 0) {
+              next.employees = validCloudEmployees;
             } else if (!next.employees || next.employees.length === 0) {
-              const autoSeeded = buildInitialEmployeesFromUsers(next.users && next.users.length > 0 ? next.users : SEED_USERS);
+              const autoSeeded = buildInitialEmployeesFromUsers(
+                (next.users && next.users.length > 0 ? next.users : SEED_USERS).filter(
+                  (u) => !isEntityDeletedPermanent(u.id, u.email)
+                )
+              );
               next.employees = autoSeeded;
               syncModuleToCloud('hr', {
                 employees: autoSeeded,
@@ -902,25 +922,41 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
             hasChanges = true;
           }
-          if (Array.isArray(cloudData.hr.novelties)) { next.novelties = cloudData.hr.novelties; hasChanges = true; }
-          if (Array.isArray(cloudData.hr.sstInspections)) { next.sstInspections = cloudData.hr.sstInspections; hasChanges = true; }
-          if (Array.isArray(cloudData.hr.jobPositions) && cloudData.hr.jobPositions.length > 0) { next.jobPositions = cloudData.hr.jobPositions; hasChanges = true; }
-          if (Array.isArray(cloudData.hr.candidates)) { next.candidates = cloudData.hr.candidates; hasChanges = true; }
+          if (Array.isArray(cloudData.hr.novelties)) { next.novelties = cloudData.hr.novelties.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.hr.sstInspections)) { next.sstInspections = cloudData.hr.sstInspections.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.hr.jobPositions) && cloudData.hr.jobPositions.length > 0) { next.jobPositions = cloudData.hr.jobPositions.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.hr.candidates)) { next.candidates = cloudData.hr.candidates.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
         }
 
         // Commercial
         if (cloudData.commercial) {
-          if (Array.isArray(cloudData.commercial.opportunities)) { next.opportunities = cloudData.commercial.opportunities; hasChanges = true; }
-          if (Array.isArray(cloudData.commercial.contacts)) { next.contacts = cloudData.commercial.contacts; hasChanges = true; }
-          if (Array.isArray(cloudData.commercial.leads)) { next.leads = cloudData.commercial.leads; hasChanges = true; }
+          if (Array.isArray(cloudData.commercial.opportunities)) { next.opportunities = cloudData.commercial.opportunities.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.commercial.contacts)) { next.contacts = cloudData.commercial.contacts.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.commercial.leads)) { next.leads = cloudData.commercial.leads.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
         }
 
         // Productivity
         if (cloudData.productivity) {
-          if (Array.isArray(cloudData.productivity.todos)) { next.todos = cloudData.productivity.todos; hasChanges = true; }
-          if (Array.isArray(cloudData.productivity.calendarEvents)) { next.calendarEvents = cloudData.productivity.calendarEvents; hasChanges = true; }
-          if (Array.isArray(cloudData.productivity.documents)) { next.documents = cloudData.productivity.documents; hasChanges = true; }
-          if (Array.isArray(cloudData.productivity.chatGroups)) { next.chatGroups = cloudData.productivity.chatGroups; hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.todos)) { next.todos = cloudData.productivity.todos.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.calendarEvents)) { next.calendarEvents = cloudData.productivity.calendarEvents.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.documents)) { next.documents = cloudData.productivity.documents.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.chatGroups)) { next.chatGroups = cloudData.productivity.chatGroups.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+        }
+
+        // Reconciliación Analítica Transversal al cargar desde Cloud (SAP/Odoo Single Source of Truth)
+        if (Array.isArray(next.projects) && next.projects.length > 0) {
+          const activeTrm = getStoredTRM() || 4150;
+          next.projects = next.projects.map((p) =>
+            recalculateProjectEvm(
+              reconcileProjectAnalyticalCosts(p, {
+                purchaseOrders: next.purchaseOrders,
+                expenses: next.expenses,
+                timesheets: next.timesheets,
+                remissions: next.remissions,
+                trm: activeTrm,
+              })
+            )
+          );
         }
 
         // Reconciliación bidireccional inmediata con Firestore:
@@ -962,10 +998,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         if (idbState.users && Array.isArray(idbState.users) && idbState.users.length > 0) {
-          const mergedUsers = prev.users.map((pu) => {
-            const idbUser = idbState.users.find((iu) => iu.id === pu.id);
-            return idbUser ? { ...pu, ...idbUser } : pu;
-          });
+          const mergedUsers = prev.users
+            .filter((pu) => !isEntityDeletedPermanent(pu.id, pu.email))
+            .map((pu) => {
+              const idbUser = idbState.users.find((iu) => iu.id === pu.id && !isEntityDeletedPermanent(iu.id, iu.email));
+              return idbUser ? { ...pu, ...idbUser } : pu;
+            });
           const updatedCurrent =
             (prev.currentUser?.id && mergedUsers.find((u) => u.id === prev.currentUser.id)) ||
             prev.currentUser ||
@@ -987,43 +1025,51 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // 2. Suscribirse a usuarios en Cloud Firestore (multi-usuario en tiempo real)
-    const unsubUsers = subscribeToCloudUsers((cloudUsers) => {
-      if (!isMounted || !cloudUsers || cloudUsers.length === 0) return;
+    const unsubUsers = subscribeToCloudUsers((cloudUsers, removedIds) => {
+      if (!isMounted) return;
       setState((prev) => {
-        const mergedUsers = prev.users.map((localUser) => {
-          const cloudMatch = cloudUsers.find(
-            (cu) => cu.id === localUser.id || cu.email?.toLowerCase() === localUser.email?.toLowerCase()
-          );
-          if (cloudMatch) {
-            return {
-              ...localUser,
-              ...cloudMatch,
-              // Preservar datos locales si la nube aún no los ha populado o son más detallados
-              role: cloudMatch.role || localUser.role,
-              roleLabel: cloudMatch.roleLabel || localUser.roleLabel,
-              jobPositionId: cloudMatch.jobPositionId || localUser.jobPositionId,
-              jobPosition: cloudMatch.jobPosition || localUser.jobPosition,
-              nationalId: cloudMatch.nationalId || localUser.nationalId || (localUser as any)?.cedula || '',
-              birthDate: cloudMatch.birthDate || localUser.birthDate,
-              bloodType: cloudMatch.bloodType || localUser.bloodType,
-              phone: cloudMatch.phone || localUser.phone,
-              address: cloudMatch.address || localUser.address,
-              city: cloudMatch.city || localUser.city,
-              emergencyContactName: cloudMatch.emergencyContactName || localUser.emergencyContactName,
-              emergencyContactPhone: cloudMatch.emergencyContactPhone || localUser.emergencyContactPhone,
-              photoUrl: cloudMatch.photoUrl || localUser.photoUrl,
-              verifiedSkills: cloudMatch.verifiedSkills && cloudMatch.verifiedSkills.length > 0 ? cloudMatch.verifiedSkills : localUser.verifiedSkills,
-              certifications: cloudMatch.certifications && cloudMatch.certifications.length > 0 ? cloudMatch.certifications : localUser.certifications,
-              professionalProfile: cloudMatch.professionalProfile || localUser.professionalProfile,
-              lucianaImprovementPlan: cloudMatch.lucianaImprovementPlan || localUser.lucianaImprovementPlan,
-              jobReadinessScore: cloudMatch.jobReadinessScore !== undefined ? cloudMatch.jobReadinessScore : localUser.jobReadinessScore,
-            };
-          }
-          return localUser;
-        });
+        const removedSet = new Set((removedIds || []).map((r) => String(r).toLowerCase()));
+        const mergedUsers = prev.users
+          .filter(
+            (localUser) =>
+              !removedSet.has(localUser.id.toLowerCase()) &&
+              !isEntityDeletedPermanent(localUser.id, localUser.email)
+          )
+          .map((localUser) => {
+            const cloudMatch = (cloudUsers || []).find(
+              (cu) => cu.id === localUser.id || cu.email?.toLowerCase() === localUser.email?.toLowerCase()
+            );
+            if (cloudMatch) {
+              return {
+                ...localUser,
+                ...cloudMatch,
+                // Preservar datos locales si la nube aún no los ha populado o son más detallados
+                role: cloudMatch.role || localUser.role,
+                roleLabel: cloudMatch.roleLabel || localUser.roleLabel,
+                jobPositionId: cloudMatch.jobPositionId || localUser.jobPositionId,
+                jobPosition: cloudMatch.jobPosition || localUser.jobPosition,
+                nationalId: cloudMatch.nationalId || localUser.nationalId || (localUser as any)?.cedula || '',
+                birthDate: cloudMatch.birthDate || localUser.birthDate,
+                bloodType: cloudMatch.bloodType || localUser.bloodType,
+                phone: cloudMatch.phone || localUser.phone,
+                address: cloudMatch.address || localUser.address,
+                city: cloudMatch.city || localUser.city,
+                emergencyContactName: cloudMatch.emergencyContactName || localUser.emergencyContactName,
+                emergencyContactPhone: cloudMatch.emergencyContactPhone || localUser.emergencyContactPhone,
+                photoUrl: cloudMatch.photoUrl || localUser.photoUrl,
+                verifiedSkills: cloudMatch.verifiedSkills && cloudMatch.verifiedSkills.length > 0 ? cloudMatch.verifiedSkills : localUser.verifiedSkills,
+                certifications: cloudMatch.certifications && cloudMatch.certifications.length > 0 ? cloudMatch.certifications : localUser.certifications,
+                professionalProfile: cloudMatch.professionalProfile || localUser.professionalProfile,
+                lucianaImprovementPlan: cloudMatch.lucianaImprovementPlan || localUser.lucianaImprovementPlan,
+                jobReadinessScore: cloudMatch.jobReadinessScore !== undefined ? cloudMatch.jobReadinessScore : localUser.jobReadinessScore,
+              };
+            }
+            return localUser;
+          });
 
         // Incorporar usuarios creados en otros dispositivos que aún no estaban en prev.users
-        cloudUsers.forEach((cu) => {
+        (cloudUsers || []).forEach((cu) => {
+          if (isEntityDeletedPermanent(cu.id, cu.email)) return;
           const exists = mergedUsers.some(
             (mu) => mu.id === cu.id || (mu.email && cu.email && mu.email.toLowerCase() === cu.email.toLowerCase())
           );
@@ -1031,6 +1077,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             mergedUsers.push(cu);
           }
         });
+
+        const updatedEmployees = prev.employees.filter(
+          (emp) =>
+            !removedSet.has(String(emp.id).toLowerCase()) &&
+            !removedSet.has(String(emp.userId || '').toLowerCase()) &&
+            !isEntityDeletedPermanent(emp.id, emp.email) &&
+            !isEntityDeletedPermanent(emp.userId)
+        );
 
         const updatedCurrent =
           (prev.currentUser?.id && mergedUsers.find((u) => u.id === prev.currentUser.id)) ||
@@ -1040,6 +1094,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...prev,
           users: mergedUsers,
+          employees: updatedEmployees,
           currentUser: updatedCurrent,
         };
       });
@@ -1136,51 +1191,64 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 4. Suscribirse a Proyectos, Tareas e Hitos en tiempo real
     const unsubProjects = subscribeToCloudModule('projects', (data) => {
       if (!isMounted || !data) return;
-      isRemoteUpdateRef.current = true;
+      remoteModuleFlagsRef.current['projects'] = true;
       setState((prev) => {
-        let mergedProjects = prev.projects;
+        let mergedProjects = prev.projects.filter((p) => !isEntityDeletedPermanent(p?.id));
         if (Array.isArray(data.projects)) {
-          mergedProjects = data.projects.map((remoteP: Project) => {
-            const localP = prev.projects.find((lp) => lp.id === remoteP.id);
-            if (!localP) return remoteP;
+          mergedProjects = data.projects
+            .filter((remoteP: Project) => !isEntityDeletedPermanent(remoteP?.id))
+            .map((remoteP: Project) => {
+              const localP = prev.projects.find((lp) => lp.id === remoteP.id);
+              if (!localP) return remoteP;
 
-            // Comparar marcas de tiempo: Si el local es más reciente que el remoto, priorizar el estado local
-            const localTime = localP.updatedAt ? new Date(localP.updatedAt).getTime() : 0;
-            const remoteTime = (remoteP as any).updatedAt ? new Date((remoteP as any).updatedAt).getTime() : 0;
+              // Comparar marcas de tiempo: Si el local es más reciente que el remoto, priorizar el estado local
+              const localTime = localP.updatedAt ? new Date(localP.updatedAt).getTime() : 0;
+              const remoteTime = (remoteP as any).updatedAt ? new Date((remoteP as any).updatedAt).getTime() : 0;
 
-            if (localTime > remoteTime) {
+              if (localTime > remoteTime) {
+                return {
+                  ...remoteP,
+                  ...localP,
+                };
+              }
+
               return {
                 ...remoteP,
-                ...localP,
+                projectItems: (remoteP as any).projectItems !== undefined
+                  ? (remoteP as any).projectItems
+                  : (localP as any).projectItems,
+                costMatrix: (remoteP as any).costMatrix !== undefined
+                  ? (remoteP as any).costMatrix
+                  : (localP as any).costMatrix,
+                billingItems: (remoteP as any).billingItems !== undefined
+                  ? (remoteP as any).billingItems
+                  : (localP as any).billingItems,
+                offerBudget: (remoteP as any).offerBudget !== undefined
+                  ? (remoteP as any).offerBudget
+                  : (localP as any).offerBudget,
+                staffAssignments: (remoteP as any).staffAssignments !== undefined
+                  ? (remoteP as any).staffAssignments
+                  : (localP as any).staffAssignments,
               };
-            }
-
-            return {
-              ...remoteP,
-              projectItems: (remoteP as any).projectItems !== undefined
-                ? (remoteP as any).projectItems
-                : (localP as any).projectItems,
-              costMatrix: (remoteP as any).costMatrix !== undefined
-                ? (remoteP as any).costMatrix
-                : (localP as any).costMatrix,
-              billingItems: (remoteP as any).billingItems !== undefined
-                ? (remoteP as any).billingItems
-                : (localP as any).billingItems,
-              offerBudget: (remoteP as any).offerBudget !== undefined
-                ? (remoteP as any).offerBudget
-                : (localP as any).offerBudget,
-              staffAssignments: (remoteP as any).staffAssignments !== undefined
-                ? (remoteP as any).staffAssignments
-                : (localP as any).staffAssignments,
-            };
-          });
+            });
         }
 
+        const currentTrm = getStoredTRM() || 4200;
         return {
           ...prev,
-          projects: mergedProjects.map((p: Project) => recalculateProjectEvm(p)),
-          tasks: Array.isArray(data.tasks) ? data.tasks : prev.tasks,
-          milestones: Array.isArray(data.milestones) ? data.milestones : prev.milestones,
+          projects: mergedProjects.map((p: Project) =>
+            recalculateProjectEvm(
+              reconcileProjectAnalyticalCosts(p, {
+                purchaseOrders: prev.purchaseOrders,
+                expenses: prev.expenses,
+                timesheets: prev.timesheets,
+                remissions: prev.remissions,
+                trm: currentTrm,
+              })
+            )
+          ),
+          tasks: Array.isArray(data.tasks) ? data.tasks.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.tasks,
+          milestones: Array.isArray(data.milestones) ? data.milestones.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.milestones,
         };
       });
     });
@@ -1188,25 +1256,42 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 5. Suscribirse a Abastecimiento, Compras y Requisiciones en tiempo real (excluyendo inventario pesado)
     const unsubProcurement = subscribeToCloudModule('procurement', (data) => {
       if (!isMounted || !data) return;
-      isRemoteUpdateRef.current = true;
-      setState((prev) => ({
-        ...prev,
-        purchaseOrders: Array.isArray(data.purchaseOrders) ? data.purchaseOrders : prev.purchaseOrders,
-        requisitions: Array.isArray(data.requisitions) ? data.requisitions : prev.requisitions,
-        equipment: Array.isArray(data.equipment) && data.equipment.length > 0 ? data.equipment : prev.equipment,
-        partners: Array.isArray(data.partners) && data.partners.length > 0 ? data.partners : prev.partners,
-        inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
-        inventoryWriteOffs: Array.isArray(data.inventoryWriteOffs) ? data.inventoryWriteOffs : prev.inventoryWriteOffs,
-      }));
+      remoteModuleFlagsRef.current['procurement'] = true;
+      setState((prev) => {
+        const nextPOs = Array.isArray(data.purchaseOrders)
+          ? data.purchaseOrders.filter((x: any) => !isEntityDeletedPermanent(x?.id))
+          : prev.purchaseOrders;
+        const currentTrm = getStoredTRM() || 4200;
+        const reconciledProjects = prev.projects.map((p) =>
+          recalculateProjectEvm(
+            reconcileProjectAnalyticalCosts(p, {
+              purchaseOrders: nextPOs,
+              expenses: prev.expenses,
+              timesheets: prev.timesheets,
+              remissions: prev.remissions,
+              trm: currentTrm,
+            })
+          )
+        );
+        return {
+          ...prev,
+          projects: reconciledProjects,
+          purchaseOrders: nextPOs,
+          requisitions: Array.isArray(data.requisitions) ? data.requisitions.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.requisitions,
+          equipment: Array.isArray(data.equipment) && data.equipment.length > 0 ? data.equipment.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.equipment,
+          partners: Array.isArray(data.partners) && data.partners.length > 0 ? data.partners.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.partners,
+          inventoryAuditLogs: Array.isArray(data.inventoryAuditLogs) ? data.inventoryAuditLogs : prev.inventoryAuditLogs,
+          inventoryWriteOffs: Array.isArray(data.inventoryWriteOffs) ? data.inventoryWriteOffs : prev.inventoryWriteOffs,
+        };
+      });
     });
 
     // 5.1 Suscribirse al Catálogo de Inventario en Cloud Firestore (particionado por lotes seguros)
     const unsubInventory = subscribeToCloudInventory((remoteProducts) => {
       if (!isMounted || !Array.isArray(remoteProducts)) return;
-      isRemoteUpdateRef.current = true;
       setState((prev) => ({
         ...prev,
-        products: remoteProducts,
+        products: remoteProducts.filter((x: any) => !isEntityDeletedPermanent(x?.id)),
       }));
     });
 
@@ -1226,52 +1311,72 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 5.2 Suscribirse a Talento Humano & SST en Cloud Firestore
     const unsubHr = subscribeToCloudModule('hr', (data) => {
       if (!isMounted || !data) return;
-      isRemoteUpdateRef.current = true;
+      remoteModuleFlagsRef.current['hr'] = true;
       setState((prev) => ({
         ...prev,
-        employees: Array.isArray(data.employees) && data.employees.length > 0 ? data.employees : prev.employees,
-        novelties: Array.isArray(data.novelties) ? data.novelties : prev.novelties,
-        sstInspections: Array.isArray(data.sstInspections) ? data.sstInspections : prev.sstInspections,
-        jobPositions: Array.isArray(data.jobPositions) && data.jobPositions.length > 0 ? data.jobPositions : prev.jobPositions,
-        candidates: Array.isArray(data.candidates) ? data.candidates : prev.candidates,
+        employees: Array.isArray(data.employees) && data.employees.length > 0
+          ? data.employees.filter((x: any) => !isEntityDeletedPermanent(x?.id, x?.email) && !isEntityDeletedPermanent(x?.userId))
+          : prev.employees.filter((x: any) => !isEntityDeletedPermanent(x?.id, x?.email) && !isEntityDeletedPermanent(x?.userId)),
+        novelties: Array.isArray(data.novelties) ? data.novelties.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.novelties,
+        sstInspections: Array.isArray(data.sstInspections) ? data.sstInspections.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.sstInspections,
+        jobPositions: Array.isArray(data.jobPositions) && data.jobPositions.length > 0 ? data.jobPositions.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.jobPositions,
+        candidates: Array.isArray(data.candidates) ? data.candidates.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.candidates,
       }));
     });
 
     // 6. Suscribirse a Operaciones en Campo (Horas, Gastos, DDRs, Remisiones) en tiempo real
     const unsubOperations = subscribeToCloudModule('operations', (data) => {
       if (!isMounted || !data) return;
-      isRemoteUpdateRef.current = true;
-      setState((prev) => ({
-        ...prev,
-        timesheets: Array.isArray(data.timesheets) ? data.timesheets : prev.timesheets,
-        expenses: Array.isArray(data.expenses) ? data.expenses : prev.expenses,
-        ddrs: Array.isArray(data.ddrs) ? data.ddrs : prev.ddrs,
-        remissions: Array.isArray(data.remissions) ? data.remissions : prev.remissions,
-      }));
+      remoteModuleFlagsRef.current['operations'] = true;
+      setState((prev) => {
+        const nextTimesheets = Array.isArray(data.timesheets) ? data.timesheets.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.timesheets;
+        const nextExpenses = Array.isArray(data.expenses) ? data.expenses.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.expenses;
+        const nextRemissions = Array.isArray(data.remissions) ? data.remissions.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.remissions;
+        const currentTrm = getStoredTRM() || 4200;
+        const reconciledProjects = prev.projects.map((p) =>
+          recalculateProjectEvm(
+            reconcileProjectAnalyticalCosts(p, {
+              purchaseOrders: prev.purchaseOrders,
+              expenses: nextExpenses,
+              timesheets: nextTimesheets,
+              remissions: nextRemissions,
+              trm: currentTrm,
+            })
+          )
+        );
+        return {
+          ...prev,
+          projects: reconciledProjects,
+          timesheets: nextTimesheets,
+          expenses: nextExpenses,
+          ddrs: Array.isArray(data.ddrs) ? data.ddrs.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.ddrs,
+          remissions: nextRemissions,
+        };
+      });
     });
 
     // 7. Suscribirse a Comercial (CRM, Oportunidades, Contactos) en tiempo real
     const unsubCommercial = subscribeToCloudModule('commercial', (data) => {
       if (!isMounted || !data) return;
-      isRemoteUpdateRef.current = true;
+      remoteModuleFlagsRef.current['commercial'] = true;
       setState((prev) => ({
         ...prev,
-        opportunities: Array.isArray(data.opportunities) ? data.opportunities : prev.opportunities,
-        contacts: Array.isArray(data.contacts) && data.contacts.length > 0 ? data.contacts : prev.contacts,
-        leads: Array.isArray(data.leads) ? data.leads : prev.leads,
+        opportunities: Array.isArray(data.opportunities) ? data.opportunities.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.opportunities,
+        contacts: Array.isArray(data.contacts) && data.contacts.length > 0 ? data.contacts.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.contacts,
+        leads: Array.isArray(data.leads) ? data.leads.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.leads,
       }));
     });
 
     // 8. Suscribirse a Productividad (Tareas To-Do, Calendario, Documentos, Canales de Chat) en tiempo real
     const unsubProductivity = subscribeToCloudModule('productivity', (data) => {
       if (!isMounted || !data) return;
-      isRemoteUpdateRef.current = true;
+      remoteModuleFlagsRef.current['productivity'] = true;
       setState((prev) => ({
         ...prev,
-        todos: Array.isArray(data.todos) ? data.todos : prev.todos,
-        calendarEvents: Array.isArray(data.calendarEvents) ? data.calendarEvents : prev.calendarEvents,
-        documents: Array.isArray(data.documents) ? data.documents : prev.documents,
-        chatGroups: Array.isArray(data.chatGroups) && data.chatGroups.length > 0 ? data.chatGroups : prev.chatGroups,
+        todos: Array.isArray(data.todos) ? data.todos.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.todos,
+        calendarEvents: Array.isArray(data.calendarEvents) ? data.calendarEvents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.calendarEvents,
+        documents: Array.isArray(data.documents) ? data.documents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.documents,
+        chatGroups: Array.isArray(data.chatGroups) && data.chatGroups.length > 0 ? data.chatGroups.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.chatGroups,
       }));
     });
 
@@ -1290,92 +1395,116 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // SINCRONIZADOR REACTIVO MODULAR: Cualquier adición, edición o eliminación local se transmite a la nube
+  // SINCRONIZADORES REACTIVOS AISLADOS POR MÓDULO:
+  // Evita que un snapshot entrante de un módulo cancele el guardado pendiente de otro módulo y reduce escrituras en Firestore en un 83%.
   useEffect(() => {
-    // Si la actualización vino desde la nube, no rebotarla
-    if (isRemoteUpdateRef.current) {
-      isRemoteUpdateRef.current = false;
+    if (isRemoteUpdateRef.current || remoteModuleFlagsRef.current['projects']) {
+      remoteModuleFlagsRef.current['projects'] = false;
       return;
     }
-
-    // PROTECCIÓN CRÍTICA ANTI-SOBRESCRITURA DE ARRANQUE:
-    // Nunca transmitir un estado local vacío a la nube hasta haber completado la carga inicial desde Firestore
-    if (!isCloudLoadedRef.current) {
-      return;
-    }
-
+    if (!isCloudLoadedRef.current) return;
     const timer = setTimeout(() => {
-      const currentUserId = state.currentUser?.id || 'USR-01';
-
       syncModuleToCloud('projects', {
         projects: state.projects,
         tasks: state.tasks,
         milestones: state.milestones,
-      }, currentUserId);
+      }, state.currentUser?.id || 'USR-01');
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [state.projects, state.tasks, state.milestones, state.currentUser?.id]);
 
+  useEffect(() => {
+    if (isRemoteUpdateRef.current || remoteModuleFlagsRef.current['procurement']) {
+      remoteModuleFlagsRef.current['procurement'] = false;
+      return;
+    }
+    if (!isCloudLoadedRef.current) return;
+    const timer = setTimeout(() => {
       syncModuleToCloud('procurement', {
         purchaseOrders: state.purchaseOrders,
         requisitions: state.requisitions,
         equipment: state.equipment,
         partners: state.partners,
         inventoryAuditLogs: state.inventoryAuditLogs,
-      }, currentUserId);
+        inventoryWriteOffs: state.inventoryWriteOffs,
+      }, state.currentUser?.id || 'USR-01');
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [state.purchaseOrders, state.requisitions, state.equipment, state.partners, state.inventoryAuditLogs, state.inventoryWriteOffs, state.currentUser?.id]);
 
-      // Sincronización del catálogo de inventario con particionamiento seguro de Firestore (<1MB por chunk)
-      // Sincronización de catálogo de inventario desacoplada del tick general para proteger cuota de escrituras Firestore
-
+  useEffect(() => {
+    if (isRemoteUpdateRef.current || remoteModuleFlagsRef.current['operations']) {
+      remoteModuleFlagsRef.current['operations'] = false;
+      return;
+    }
+    if (!isCloudLoadedRef.current) return;
+    const timer = setTimeout(() => {
       syncModuleToCloud('operations', {
         timesheets: state.timesheets,
         expenses: state.expenses,
         ddrs: state.ddrs,
         remissions: state.remissions,
-      }, currentUserId);
+      }, state.currentUser?.id || 'USR-01');
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [state.timesheets, state.expenses, state.ddrs, state.remissions, state.currentUser?.id]);
 
+  useEffect(() => {
+    if (isRemoteUpdateRef.current || remoteModuleFlagsRef.current['hr']) {
+      remoteModuleFlagsRef.current['hr'] = false;
+      return;
+    }
+    if (!isCloudLoadedRef.current) return;
+    const timer = setTimeout(() => {
       syncModuleToCloud('hr', {
         employees: state.employees,
         novelties: state.novelties || [],
         sstInspections: state.sstInspections || [],
         jobPositions: state.jobPositions || [],
         candidates: state.candidates || [],
-      }, currentUserId);
+      }, state.currentUser?.id || 'USR-01');
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [state.employees, state.novelties, state.sstInspections, state.jobPositions, state.candidates, state.currentUser?.id]);
 
+  useEffect(() => {
+    if (isRemoteUpdateRef.current || remoteModuleFlagsRef.current['commercial']) {
+      remoteModuleFlagsRef.current['commercial'] = false;
+      return;
+    }
+    if (!isCloudLoadedRef.current) return;
+    const timer = setTimeout(() => {
       syncModuleToCloud('commercial', {
         opportunities: state.opportunities,
         contacts: state.contacts,
         leads: state.leads,
-      }, currentUserId);
+      }, state.currentUser?.id || 'USR-01');
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [state.opportunities, state.contacts, state.leads, state.currentUser?.id]);
 
+  useEffect(() => {
+    if (isRemoteUpdateRef.current || remoteModuleFlagsRef.current['productivity']) {
+      remoteModuleFlagsRef.current['productivity'] = false;
+      return;
+    }
+    if (!isCloudLoadedRef.current) return;
+    const timer = setTimeout(() => {
       syncModuleToCloud('productivity', {
         todos: state.todos,
         calendarEvents: state.calendarEvents,
         documents: state.documents,
         chatGroups: state.chatGroups,
-      }, currentUserId);
-    }, 1500);
-
+      }, state.currentUser?.id || 'USR-01');
+    }, 600);
     return () => clearTimeout(timer);
-  }, [
-    state.projects,
-    state.tasks,
-    state.milestones,
-    state.purchaseOrders,
-    state.requisitions,
-    state.equipment,
-    state.partners,
-    state.timesheets,
-    state.expenses,
-    state.ddrs,
-    state.remissions,
-    state.employees,
-    state.opportunities,
-    state.contacts,
-    state.leads,
-    state.todos,
-    state.calendarEvents,
-    state.documents,
-    state.chatGroups,
-    state.currentUser?.id,
-  ]);
+  }, [state.todos, state.calendarEvents, state.documents, state.chatGroups, state.currentUser?.id]);
+
+  useEffect(() => {
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+    }
+  });
 
   const notify = useCallback(
     (type: AppNotification['type'], title: string, message: string, extra?: Partial<AppNotification>) => {
@@ -1583,9 +1712,47 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
+      // Sincronización bidireccional con Talento Humano (EmployeeRecord)
+      const updatedEmployees = prev.employees.map((emp) => {
+        const isMatch =
+          emp.id === userId ||
+          emp.userId === userId ||
+          (targetUser && emp.name.toLowerCase() === (targetUser as User).name.toLowerCase());
+        if (!isMatch) return emp;
+
+        let newSalary = emp.baseSalaryCOP;
+        if (data.jobPosition?.salaryRange && typeof data.jobPosition.salaryRange === 'object') {
+          const mid = Math.round((data.jobPosition.salaryRange.min + data.jobPosition.salaryRange.max) / 2);
+          if (mid > 0 && (!newSalary || newSalary === 0)) {
+            newSalary = mid;
+          }
+        }
+
+        return {
+          ...emp,
+          name: data.name || emp.name,
+          fullName: data.name || emp.fullName,
+          role: data.roleLabel || data.position || emp.role,
+          position: data.roleLabel || data.position || emp.position,
+          department: data.department || emp.department,
+          documentId: data.nationalId || emp.documentId,
+          emergencyPhone: data.emergencyContactPhone || emp.emergencyPhone,
+          heightCertExpiry: data.hseqExpiresAt || emp.heightCertExpiry,
+          heightCertStatus:
+            data.hseqStatus === 'valid'
+              ? ('vigente' as const)
+              : data.hseqStatus === 'expired'
+              ? ('vencido' as const)
+              : emp.heightCertStatus,
+          competencyIds: data.competencies || emp.competencyIds,
+          baseSalaryCOP: newSalary,
+        };
+      });
+
       return {
         ...prev,
         users: updatedUsers,
+        employees: updatedEmployees,
         currentUser: updatedCurrent,
       };
     });
@@ -1675,6 +1842,64 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
 
     return newUser;
+  }, []);
+
+  const deleteUserAccount = useCallback((userId: string) => {
+    setState((prev) => {
+      const targetUser = prev.users.find((u) => u.id === userId);
+      const targetEmail = targetUser?.email?.toLowerCase().trim();
+
+      // Registrar tombstone permanente (ID, correo y ficha de empleado vinculada)
+      markEntityAsDeletedPermanent([
+        userId,
+        targetEmail,
+        targetUser?.employeeId,
+        `EMP-${userId}`,
+      ]);
+
+      // Eliminar permanentemente de Google Cloud Firestore
+      deleteUserFromCloud(userId, targetEmail).catch((err) => {
+        console.warn('[CloudSync] Error eliminando usuario de Cloud Firestore:', err);
+      });
+
+      const updatedUsers = prev.users.filter(
+        (u) =>
+          u.id !== userId &&
+          (!targetEmail || u.email?.toLowerCase().trim() !== targetEmail)
+      );
+
+      const updatedEmployees = prev.employees.filter(
+        (emp) =>
+          emp.id !== userId &&
+          emp.userId !== userId &&
+          (!targetEmail || emp.email?.toLowerCase().trim() !== targetEmail)
+      );
+
+      // Sincronizar módulo HR con el empleado ya purgado
+      syncModuleToCloud(
+        'hr',
+        {
+          employees: updatedEmployees,
+          novelties: prev.novelties || [],
+          sstInspections: prev.sstInspections || [],
+          jobPositions: prev.jobPositions || [],
+          candidates: prev.candidates || [],
+        },
+        prev.currentUser?.id || 'USR-01'
+      ).catch(console.warn);
+
+      const updatedCurrent =
+        prev.currentUser.id === userId
+          ? updatedUsers[0] || prev.currentUser
+          : prev.currentUser;
+
+      return {
+        ...prev,
+        users: updatedUsers,
+        employees: updatedEmployees,
+        currentUser: updatedCurrent,
+      };
+    });
   }, []);
 
   const toggleUserStatus = useCallback((userId: string) => {
@@ -1840,6 +2065,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // MÉTODOS DE BORRADO INDIVIDUAL
   const deleteProject = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.projects.find((p) => p.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -1873,6 +2099,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteOpportunity = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.opportunities.find((o) => o.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -1903,6 +2130,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteContact = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.contacts.find((c) => c.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -1926,6 +2154,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deletePurchaseOrder = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.purchaseOrders.find((po) => po.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -2079,6 +2308,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteRequisition = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.requisitions.find((r) => r.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -2093,24 +2323,16 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       setState((prev) => ({
         ...prev,
-        requisitions: prev.requisitions.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                isDeleted: true,
-                deletedAt: new Date().toISOString(),
-                deletedBy: prev.currentUser?.id || 'USR-SYSTEM',
-              }
-            : r
-        ),
+        requisitions: prev.requisitions.filter((r) => r.id !== id),
       }));
-      notify('info', 'Requisición Eliminada', 'La requisición interna ha sido retirada.');
+      notify('info', 'Requisición Eliminada', 'La requisición interna ha sido retirada permanentemente.');
     },
     [state.requisitions, state.currentUser, notify]
   );
 
   const deleteProduct = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.products.find((p) => p.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -2135,6 +2357,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deletePartner = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       setState((prev) => ({
         ...prev,
         partners: prev.partners.filter((p) => p.id !== id),
@@ -2146,6 +2369,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteExpense = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.expenses.find((e) => e.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -2222,6 +2446,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteTimesheet = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.timesheets.find((t) => t.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -2306,6 +2531,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteDDR = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       setState((prev) => ({
         ...prev,
         ddrs: prev.ddrs.filter((d) => d.id !== id),
@@ -2317,6 +2543,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMilestone = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.milestones.find((m) => m.id === id);
       setState((prev) => {
         const updatedProjects = target?.projectId
@@ -2343,6 +2570,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteEmployee = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       setState((prev) => {
         const nextEmployees = prev.employees.filter((e) => e.id !== id);
         syncModuleToCloud('hr', {
@@ -5521,6 +5749,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteDocument = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       setState((prev) => {
         const docToDelete = prev.documents.find((d) => d.id === id);
         if (docToDelete) {
@@ -5662,6 +5891,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteTodo = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       const target = state.todos.find((t) => t.id === id);
       if (target && state.currentUser) {
         undoRedoService.recordAction({
@@ -5711,6 +5941,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteCalendarEvent = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       setState((prev) => ({
         ...prev,
         calendarEvents: prev.calendarEvents.filter((e) => e.id !== id),
@@ -5759,13 +5990,133 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateProject = useCallback((id: string, data: Partial<Project>) => {
     setState((prev) => {
       const nowStr = new Date().toISOString();
-      const updatedProjects = prev.projects.map((p) => (p.id === id ? { ...p, ...data, updatedAt: nowStr } : p));
+      const activeTrm = getStoredTRM() || 4150;
+      let updatedMilestones = [...(prev.milestones || [])];
+
+      const updatedProjects = prev.projects.map((p) => {
+        if (p.id !== id) return p;
+
+        const mergedProject: Project = { ...p, ...data, updatedAt: nowStr };
+
+        // 1. Sincronización bidireccional: project.billingItems <-> state.milestones (Facturación DIAN)
+        if (Array.isArray(data.billingItems)) {
+          const billingList = data.billingItems;
+          mergedProject.totalInvoiced = billingList
+            .filter((b) => b.status === 'invoiced' || b.status === 'paid' || Boolean(b.invoiceNumber))
+            .reduce((acc, b) => acc + (Number(b.subtotal) || 0), 0);
+          mergedProject.totalPaid = billingList
+            .filter((b) => b.status === 'paid')
+            .reduce((acc, b) => acc + (Number(b.paidAmount || b.subtotal) || 0), 0);
+
+          billingList.forEach((bItem, idx) => {
+            const existingMsIdx = updatedMilestones.findIndex(
+              (m) =>
+                m.id === bItem.id ||
+                m.billingItemId === bItem.id ||
+                (bItem.invoiceNumber && m.invoiceNumber === bItem.invoiceNumber && (m.projectId === p.id || m.projectCode === p.code))
+            );
+            const copVal = Number(bItem.subtotal) || 0;
+            const contractBase = Number(mergedProject.contractAmount || mergedProject.budgetPV || 0);
+            const computedPct = bItem.milestonePercentage || (contractBase > 0 ? Math.round((copVal / contractBase) * 100) : 100);
+
+            if (existingMsIdx >= 0) {
+              const existingMs = updatedMilestones[existingMsIdx];
+              updatedMilestones[existingMsIdx] = {
+                ...existingMs,
+                title: bItem.milestoneName || bItem.observations || existingMs.title,
+                percentage: computedPct,
+                amountCOP: copVal,
+                amountUSD: Math.round(copVal / activeTrm),
+                dueDate: bItem.dueDate || bItem.invoiceDate || existingMs.dueDate,
+                invoiceNumber: bItem.invoiceNumber || existingMs.invoiceNumber,
+                invoiceIssued: bItem.status === 'invoiced' || bItem.status === 'paid' || existingMs.invoiceIssued,
+                isPaid: bItem.status === 'paid' || existingMs.isPaid,
+                paidAt: bItem.paymentDate || existingMs.paidAt,
+                paymentAmountCOP: bItem.paidAmount || (bItem.status === 'paid' ? copVal : existingMs.paymentAmountCOP),
+                acceptanceActSigned: bItem.acceptanceActSigned ?? existingMs.acceptanceActSigned,
+                billingItemId: bItem.id,
+              };
+            } else if (copVal > 0) {
+              updatedMilestones.unshift({
+                id: bItem.id || `MS-${Date.now()}-${idx}`,
+                projectId: p.id,
+                projectCode: p.code,
+                projectName: mergedProject.name,
+                clientId: mergedProject.clientId,
+                clientNit: mergedProject.clientNit,
+                clientName: mergedProject.clientName,
+                milestoneIndex: idx + 1,
+                title: bItem.milestoneName || bItem.observations || `Factura ${bItem.invoiceNumber || idx + 1} - ${mergedProject.code}`,
+                percentage: computedPct,
+                amountCOP: copVal,
+                amountUSD: Math.round(copVal / activeTrm),
+                dueDate: bItem.dueDate || bItem.invoiceDate || mergedProject.endDate,
+                acceptanceActSigned: Boolean(bItem.acceptanceActSigned),
+                invoiceIssued: bItem.status === 'invoiced' || bItem.status === 'paid' || Boolean(bItem.invoiceNumber && !bItem.invoiceNumber.startsWith('FAC-PEND')),
+                invoiceNumber: bItem.invoiceNumber,
+                billingItemId: bItem.id,
+                isPaid: bItem.status === 'paid',
+                paidAt: bItem.paymentDate,
+                paymentAmountCOP: bItem.paidAmount,
+              });
+            }
+          });
+        }
+
+        // 2. Sincronización automática de Órdenes de Cambio / Otrosí aprobados -> ProjectItemFolder + Hito de Facturación
+        const rawChangeOrders: any[] = (data as any).changeOrders || (mergedProject as any).changeOrders || [];
+        const approvedChanges = rawChangeOrders.filter((co: any) => co.status === 'aprobada');
+        if (approvedChanges.length > 0) {
+          const currentFolders = ensureProjectItems(mergedProject);
+          approvedChanges.forEach((co: any) => {
+            const folderCode = co.orderNumber || `AD-${String(currentFolders.length + 1).padStart(2, '0')}`;
+            const existsFolder = currentFolders.some((f: any) => f.code === folderCode || f.id === `item-co-${co.id}`);
+            if (!existsFolder) {
+              currentFolders.push({
+                id: `item-co-${co.id}`,
+                code: folderCode,
+                name: co.title || `Otrosí ${folderCode}`,
+                budgetPlanned: Number(co.amountAddedCOP || 0),
+                status: 'activo',
+                createdAt: co.approvalDate || nowStr,
+              });
+            }
+
+            const msId = `MS-CO-${co.id}`;
+            const existsMs = updatedMilestones.some((m) => m.id === msId);
+            if (!existsMs && Number(co.amountAddedCOP) > 0) {
+              updatedMilestones.unshift({
+                id: msId,
+                projectId: p.id,
+                projectCode: p.code,
+                projectName: mergedProject.name,
+                clientId: mergedProject.clientId,
+                clientNit: mergedProject.clientNit,
+                clientName: mergedProject.clientName,
+                milestoneIndex: updatedMilestones.filter((m) => m.projectId === p.id).length + 1,
+                title: `Otrosí / Orden de Cambio ${folderCode}: ${co.title}`,
+                percentage: 100,
+                amountCOP: Number(co.amountAddedCOP),
+                amountUSD: Number(co.amountAddedUSD) || Math.round(Number(co.amountAddedCOP) / activeTrm),
+                dueDate: mergedProject.endDate,
+                acceptanceActSigned: false,
+                invoiceIssued: false,
+                isPaid: false,
+              });
+            }
+          });
+          mergedProject.projectItems = currentFolders;
+        }
+
+        return recalculateProjectEvm(mergedProject);
+      });
+
       const targetUpdated = updatedProjects.find((p) => p.id === id);
 
       // Persistencia inmediata ultra-rápida en local storage e IndexedDB sin depender del debounce
       try {
         if (typeof localStorage !== 'undefined') {
-          const currentState = { ...prev, projects: updatedProjects };
+          const currentState = { ...prev, projects: updatedProjects, milestones: updatedMilestones };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(currentState));
         }
       } catch (err) {}
@@ -5775,7 +6126,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncModuleToCloud('projects', {
           projects: updatedProjects,
           tasks: prev.tasks,
-          milestones: prev.milestones,
+          milestones: updatedMilestones,
         }, prev.currentUser?.id || 'USR-01').catch(console.warn);
 
         // Agente Guardián: Respaldo continuo automático en Google Cloud Firestore e IndexedDB
@@ -5793,6 +6144,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...prev,
         projects: updatedProjects,
+        milestones: updatedMilestones,
       };
     });
     notify('success', 'Proyecto Actualizado', 'Los cambios en la ficha técnica y matriz presupuestal fueron guardados.');
@@ -5807,6 +6159,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notify]);
 
   const deleteTask = useCallback((id: string) => {
+    markEntityAsDeletedPermanent([id]);
     setState((prev) => ({
       ...prev,
       tasks: prev.tasks.filter((t) => t.id !== id),
@@ -5859,7 +6212,46 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateEmployee = useCallback((id: string, data: Partial<EmployeeRecord>) => {
     setState((prev) => {
+      const targetEmp = prev.employees.find((e) => e.id === id);
       const nextEmployees = prev.employees.map((e) => (e.id === id ? { ...e, ...data } : e));
+
+      // Sincronización bidireccional 1:1 con Usuarios del ERP (Certificaciones HSEQ, Cargo, Departamento y Alturas)
+      let syncedUser: User | null = null;
+      const nextUsers = prev.users.map((u) => {
+        const isMatch =
+          u.id === id ||
+          u.employeeId === id ||
+          (targetEmp?.userId && u.id === targetEmp.userId) ||
+          (targetEmp?.name && u.name.toLowerCase() === targetEmp.name.toLowerCase());
+        if (!isMatch) return u;
+
+        const updatedUser: User = {
+          ...u,
+          name: data.name || u.name,
+          roleLabel: data.role || u.roleLabel,
+          department: data.department || u.department,
+          nationalId: data.documentId || u.nationalId,
+          bloodType: (data as any).bloodType || u.bloodType,
+          emergencyContactPhone: data.emergencyPhone || u.emergencyContactPhone,
+          hseqExpiresAt: data.heightCertExpiry || u.hseqExpiresAt,
+          hseqStatus:
+            data.heightCertStatus === 'vigente'
+              ? 'valid'
+              : data.heightCertStatus === 'vencido'
+              ? 'expired'
+              : u.hseqStatus,
+          canWorkHeights:
+            data.heightCertStatus !== undefined ? data.heightCertStatus === 'vigente' : u.canWorkHeights,
+          competencies: data.competencyIds || (data as any).competencies || u.competencies,
+        };
+        syncedUser = updatedUser;
+        return updatedUser;
+      });
+
+      if (syncedUser) {
+        syncUserToCloud(syncedUser).catch(console.warn);
+      }
+
       syncModuleToCloud('hr', {
         employees: nextEmployees,
         novelties: prev.novelties || [],
@@ -5870,9 +6262,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...prev,
         employees: nextEmployees,
+        users: nextUsers,
       };
     });
-    notify('success', 'Empleado Actualizado', 'Registro de talento humano y SST guardado.');
+    notify('success', 'Empleado Actualizado', 'Registro de talento humano, usuarios y SST sincronizados.');
   }, [notify]);
 
   const createEmployee = useCallback(
@@ -6026,6 +6419,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deletePayrollNovelty = useCallback(
     (id: string) => {
+      markEntityAsDeletedPermanent([id]);
       setState((prev) => {
         const updatedNovelties = (prev.novelties || []).filter((n) => n.id !== id);
         syncModuleToCloud('hr', {
@@ -6122,6 +6516,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const deleteSstInspection = useCallback((id: string) => {
+    markEntityAsDeletedPermanent([id]);
     setState((prev) => ({
       ...prev,
       sstInspections: prev.sstInspections.filter((i) => i.id !== id),
@@ -6142,6 +6537,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const deleteJobPosition = useCallback((id: string) => {
+    markEntityAsDeletedPermanent([id]);
     setState((prev) => ({
       ...prev,
       jobPositions: prev.jobPositions.filter((p) => p.id !== id),
@@ -6526,6 +6922,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateUserPreferences,
         resetUserPassword,
         createUserAccount,
+        deleteUserAccount,
         toggleUserStatus,
         setActiveModule,
         navigateWithContext,

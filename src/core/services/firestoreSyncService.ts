@@ -94,19 +94,126 @@ export async function syncUserToCloud(user: User): Promise<boolean> {
   }
 }
 
+const DELETED_ENTITIES_STORAGE_KEY = 'ITK_DELETED_ENTITY_IDS_V1';
+
+export function getDeletedEntityIds(): Set<string> {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DELETED_ENTITIES_STORAGE_KEY) : null;
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr.map((x) => String(x)));
+    }
+  } catch (e) {
+    console.warn('[FirestoreSync] Error leyendo registro de eliminados:', e);
+  }
+  return new Set<string>();
+}
+
+export function markEntityAsDeletedPermanent(idsOrEmails: (string | undefined)[]): void {
+  try {
+    const set = getDeletedEntityIds();
+    let changed = false;
+    idsOrEmails.forEach((val) => {
+      if (!val) return;
+      const clean = String(val).trim();
+      if (clean && !set.has(clean)) {
+        set.add(clean);
+        changed = true;
+      }
+      const lower = clean.toLowerCase();
+      if (lower && !set.has(lower)) {
+        set.add(lower);
+        changed = true;
+      }
+    });
+    if (changed && typeof localStorage !== 'undefined') {
+      const list = Array.from(set);
+      localStorage.setItem(DELETED_ENTITIES_STORAGE_KEY, JSON.stringify(list));
+      const db = getFirebaseDb();
+      if (db) {
+        const regRef = doc(db, 'erp_modules', 'deleted_registry');
+        setDoc(regRef, { deletedIds: list, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
+      }
+    }
+  } catch (e) {
+    console.warn('[FirestoreSync] Error guardando registro de eliminados:', e);
+  }
+}
+
+export function isEntityDeletedPermanent(id?: string, email?: string): boolean {
+  const set = getDeletedEntityIds();
+  if (id && (set.has(id) || set.has(id.toLowerCase()))) return true;
+  if (email && (set.has(email) || set.has(email.toLowerCase().trim()))) return true;
+  return false;
+}
+
 /**
- * Load all users from Cloud Firestore
+ * Elimina permanentemente un usuario de Cloud Firestore y registra su tombstone
+ * para que nunca vuelva a recrearse desde semillas ni cachés locales.
+ */
+export async function deleteUserFromCloud(userId: string, email?: string): Promise<boolean> {
+  markEntityAsDeletedPermanent([userId, email, `EMP-${userId}`]);
+  const db = getFirebaseDb();
+  if (!db || !userId) return false;
+
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, { isDeleted: true, isActive: false, accountStatus: 'desactivada' }, { merge: true }).catch(() => {});
+    await deleteDoc(userRef).catch(() => {});
+
+    if (email) {
+      const cleanEmail = email.toLowerCase().trim();
+      const usersCol = collection(db, 'users');
+      const snap = await getDocs(usersCol);
+      const deletions: Promise<any>[] = [];
+      snap.forEach((d) => {
+        const data = d.data() as any;
+        if (d.id === userId || (data?.email && String(data.email).toLowerCase().trim() === cleanEmail)) {
+          markEntityAsDeletedPermanent([d.id, data?.email]);
+          deletions.push(deleteDoc(doc(db, 'users', d.id)).catch(() => {}));
+        }
+      });
+      await Promise.all(deletions);
+    }
+    return true;
+  } catch (err) {
+    console.warn('[FirestoreSync] Error eliminando usuario de Cloud:', err);
+    return false;
+  }
+}
+
+/**
+ * Load all users from Cloud Firestore (excluyendo usuarios eliminados permanentemente)
  */
 export async function loadUsersFromCloud(): Promise<User[]> {
   const db = getFirebaseDb();
   if (!db) return [];
 
   try {
+    // Sincronizar primero el registro global de eliminados si existe en la nube
+    try {
+      const regSnap = await getDoc(doc(db, 'erp_modules', 'deleted_registry'));
+      if (regSnap.exists()) {
+        const cloudDeleted = regSnap.data()?.deletedIds;
+        if (Array.isArray(cloudDeleted) && cloudDeleted.length > 0) {
+          const localSet = getDeletedEntityIds();
+          cloudDeleted.forEach((id: string) => localSet.add(String(id)));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(DELETED_ENTITIES_STORAGE_KEY, JSON.stringify(Array.from(localSet)));
+          }
+        }
+      }
+    } catch {}
+
     const usersCol = collection(db, 'users');
     const snap = await getDocs(usersCol);
     const users: User[] = [];
     snap.forEach((d) => {
-      const data = d.data() as User;
+      const data = d.data() as User & { isDeleted?: boolean };
+      if (data?.isDeleted || isEntityDeletedPermanent(data?.id || d.id, data?.email)) {
+        markEntityAsDeletedPermanent([d.id, data?.id, data?.email]);
+        return;
+      }
       if (data && data.id && data.name && data.email) {
         users.push(data);
       }
@@ -134,7 +241,7 @@ export async function syncLocalCustomUsersToCloud(localUsers: User[]): Promise<n
 
     let pushed = 0;
     for (const u of localUsers) {
-      if (!u?.id) continue;
+      if (!u?.id || isEntityDeletedPermanent(u.id, u.email)) continue;
       const c = cloudMap.get(u.id);
 
       // Si el usuario local tiene foto o datos modificados que la nube aún no tiene
@@ -165,10 +272,10 @@ export async function syncLocalCustomUsersToCloud(localUsers: User[]): Promise<n
 }
 
 /**
- * Subscribe to real-time updates for users
+ * Subscribe to real-time updates for users (incluyendo bajas permanentes)
  */
 export function subscribeToCloudUsers(
-  onUpdate: (users: User[]) => void
+  onUpdate: (users: User[], removedIds?: string[]) => void
 ): Unsubscribe | null {
   const db = getFirebaseDb();
   if (!db) return null;
@@ -179,14 +286,31 @@ export function subscribeToCloudUsers(
       usersCol,
       (snap) => {
         const users: User[] = [];
+        const removedIds: string[] = [];
+
+        snap.docChanges().forEach((change) => {
+          if (change.type === 'removed') {
+            const dData = change.doc.data() as any;
+            markEntityAsDeletedPermanent([change.doc.id, dData?.id, dData?.email]);
+            removedIds.push(change.doc.id);
+          }
+        });
+
         snap.forEach((d) => {
-          const data = d.data() as User;
+          const data = d.data() as User & { isDeleted?: boolean };
+          if (data?.isDeleted || isEntityDeletedPermanent(data?.id || d.id, data?.email)) {
+            markEntityAsDeletedPermanent([d.id, data?.id, data?.email]);
+            removedIds.push(d.id);
+            if (data?.id) removedIds.push(data.id);
+            return;
+          }
           if (data && data.id && data.name && data.email) {
             users.push(data);
           }
         });
-        if (users.length > 0) {
-          onUpdate(users);
+
+        if (users.length > 0 || removedIds.length > 0) {
+          onUpdate(users, removedIds);
         }
       },
       (error) => {

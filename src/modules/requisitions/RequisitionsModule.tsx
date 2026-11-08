@@ -8,19 +8,23 @@ import {
   ArrowRight,
   ShoppingCart,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { InternalRequisition } from '../../types';
 import { LightTable } from '../../components/ui/LightTable';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { CreateRequisitionModal } from '../procurement/components/CreateRequisitionModal';
 import { RequisitionDetailModal } from '../procurement/components/RequisitionDetailModal';
 
 
 export const RequisitionsModule: React.FC = () => {
-  const { requisitions, setActiveModule, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
+  const { requisitions, deleteRequisition, setActiveModule, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [reqToDelete, setReqToDelete] = useState<InternalRequisition | null>(null);
+  const activeRequisitions = requisitions.filter((r) => !(r as any).isDeleted);
   const [initialModalData, setInitialModalData] = useState<{
     projectId?: string;
     category?: string;
@@ -91,13 +95,13 @@ export const RequisitionsModule: React.FC = () => {
       <div className="bg-white rounded-xl p-3.5 sm:p-5 space-y-3.5">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Solicitudes Realizadas ({requisitions.length})</h3>
+            <h3 className="text-base font-bold text-slate-900">Solicitudes Realizadas ({activeRequisitions.length})</h3>
             <p className="text-xs text-slate-500">Trazabilidad desde el pedido en terreno hasta la recepción en almacén</p>
           </div>
         </div>
 
         <LightTable
-          data={requisitions}
+          data={activeRequisitions}
           keyExtractor={(req) => req.id}
           onRowClick={(req) => {
             setSelectedReqForDetail(req);
@@ -227,41 +231,70 @@ export const RequisitionsModule: React.FC = () => {
             },
             {
               key: 'actions',
-              header: 'Seguimiento',
+              header: 'Seguimiento / Acciones',
               align: 'right',
-              render: (req) => {
-                if (req.generatedPoNumber) {
-                  return (
+              render: (req) => (
+                <div className="flex items-center justify-end gap-2">
+                  {req.generatedPoNumber ? (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveModule('compras');
                       }}
-                      className="text-xs text-[#00668F] font-bold hover:underline flex items-center gap-1 ml-auto cursor-pointer"
+                      className="text-xs text-[#00668F] font-bold hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <span>Ver Compra {req.generatedPoNumber}</span>
                       <ArrowRight size={13} />
                     </button>
-                  );
-                }
-                return (
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateWithContext('compras', 'create_po_from_req', { requisition: req });
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00668F] hover:bg-[#005073] text-white text-[11px] font-bold transition-all cursor-pointer"
+                      title="Convertir esta SOLPED en Orden de Compra"
+                    >
+                      <ShoppingCart size={12} />
+                      <span>Convertir en OC</span>
+                    </button>
+                  )}
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigateWithContext('compras', 'create_po_from_req', { requisition: req });
+                      setReqToDelete(req);
                     }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00668F] hover:bg-[#005073] text-white text-[11px] font-bold transition-all cursor-pointer ml-auto"
-                    title="Convertir esta SOLPED en Orden de Compra"
+                    className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition-colors cursor-pointer"
+                    title="Eliminar Requisición Permanentemente"
                   >
-                    <ShoppingCart size={12} />
-                    <span>Convertir en OC</span>
+                    <Trash2 size={13} />
                   </button>
-                );
-              },
+                </div>
+              ),
             },
           ]}
         />
       </div>
+
+      {/* Modal de Confirmación Escrita Obligatoria ('BORRAR') para Eliminar SOLPED */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(reqToDelete)}
+        title="Eliminar Requisición (SOLPED)"
+        itemName={reqToDelete ? `${reqToDelete.reqNumber} - ${reqToDelete.projectName || reqToDelete.projectCode}` : ''}
+        description="Esta acción retirará permanentemente la solicitud de materiales del sistema y de la nube."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (reqToDelete) {
+            deleteRequisition(reqToDelete.id);
+            setReqToDelete(null);
+          }
+        }}
+        onCancel={() => setReqToDelete(null)}
+      />
 
       {/* Modal de Detalle, Edición y Notificación a Wilson Alzate */}
       <RequisitionDetailModal

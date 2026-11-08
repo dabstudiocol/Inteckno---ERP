@@ -60,7 +60,7 @@
             },
             {
               "key": "Permissions-Policy",
-              "value": "geolocation=(), camera=(self), microphone=()"
+              "value": "geolocation=(self), camera=(self), microphone=(self)"
             }
           ]
         },
@@ -127,7 +127,7 @@
             },
             {
               "key": "Permissions-Policy",
-              "value": "geolocation=(), camera=(self), microphone=()"
+              "value": "geolocation=(self), camera=(self), microphone=(self)"
             }
           ]
         },

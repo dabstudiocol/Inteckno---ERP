@@ -1127,19 +1127,43 @@ export const INITIAL_JOB_POSITIONS: JobPosition[] = [
 // Obtiene el catálogo de cargos oficiales almacenado o el inicial fusionado
 export function getStoredJobPositions(): JobPosition[] {
   try {
-    const savedRaw = localStorage.getItem('itk_job_positions');
-    if (!savedRaw) return INITIAL_JOB_POSITIONS;
-    const saved: JobPosition[] = JSON.parse(savedRaw);
-    if (!Array.isArray(saved) || saved.length === 0) return INITIAL_JOB_POSITIONS;
+    let deletedSet = new Set<string>();
+    try {
+      const rawDel = localStorage.getItem('ITK_DELETED_ENTITY_IDS_V1');
+      if (rawDel) {
+        const parsedDel = JSON.parse(rawDel);
+        if (Array.isArray(parsedDel)) {
+          deletedSet = new Set(parsedDel.map((x) => String(x).toUpperCase()));
+        }
+      }
+    } catch {}
 
-    // Merge inteligente: asegurar que todos los cargos del organigrama oficial estén presentes
-    const existingKeys = new Set(
-      saved.map((p) => (p.code || p.id || '').toUpperCase())
+    const savedRaw = localStorage.getItem('itk_job_positions');
+    if (!savedRaw) {
+      return INITIAL_JOB_POSITIONS.filter(
+        (p) => !deletedSet.has(String(p.id || '').toUpperCase()) && !deletedSet.has(String(p.code || '').toUpperCase())
+      );
+    }
+    const saved: JobPosition[] = JSON.parse(savedRaw);
+    if (!Array.isArray(saved) || saved.length === 0) {
+      return INITIAL_JOB_POSITIONS.filter(
+        (p) => !deletedSet.has(String(p.id || '').toUpperCase()) && !deletedSet.has(String(p.code || '').toUpperCase())
+      );
+    }
+
+    // Merge inteligente: asegurar que todos los cargos del organigrama oficial estén presentes (salvo los eliminados permanentemente)
+
+    const filteredSaved = saved.filter(
+      (p) => !deletedSet.has(String(p.id || '').toUpperCase()) && !deletedSet.has(String(p.code || '').toUpperCase())
     );
-    const merged = [...saved];
+    const existingKeys = new Set(
+      filteredSaved.map((p) => (p.code || p.id || '').toUpperCase())
+    );
+    const merged = [...filteredSaved];
     for (const initPos of INITIAL_JOB_POSITIONS) {
       const codeKey = (initPos.code || '').toUpperCase();
       const idKey = (initPos.id || '').toUpperCase();
+      if (deletedSet.has(codeKey) || deletedSet.has(idKey)) continue;
       if (!existingKeys.has(codeKey) && !existingKeys.has(idKey)) {
         merged.push(initPos);
         existingKeys.add(codeKey);
@@ -1211,8 +1235,9 @@ const parseBulletList = (text: string): string[] => {
 };
 
 export const CargosModule: React.FC = () => {
-  const { currentUser, users, notify, updateUserProfile, saveJobPosition, saveCandidate } = useErp();
+  const { currentUser, users, notify, updateUserProfile, saveJobPosition, deleteJobPosition, saveCandidate } = useErp();
   const [positionToDelete, setPositionToDelete] = useState<JobPosition | null>(null);
+  const [candidateToDelete, setCandidateToDelete] = useState<JobApplicationCandidate | null>(null);
 
   // Control RBAC
   const canManage = AUTHORIZED_MANAGEMENT_ROLES.includes(currentUser?.role);
@@ -1609,11 +1634,23 @@ export const CargosModule: React.FC = () => {
     notify('success', 'Cargo Creado', `La posición ${newPos.code} - ${newPos.title} ha sido registrada con sus 8 pilares.`);
   };
 
-  // Eliminar cargo
+  // Eliminar cargo permanentemente
   const handleDeletePosition = (posId: string) => {
     if (!canManage) return;
-    setJobPositions(jobPositions.filter((p) => p.id !== posId));
-    notify('success', 'Cargo Eliminado', 'La posición ha sido retirada de la estructura organizacional.');
+    const target = jobPositions.find((p) => p.id === posId);
+    try {
+      const rawDel = localStorage.getItem('ITK_DELETED_ENTITY_IDS_V1');
+      const arr: string[] = rawDel ? JSON.parse(rawDel) : [];
+      const nextDel = Array.from(new Set([...arr, posId.toLowerCase(), (target?.code || '').toLowerCase()].filter(Boolean)));
+      localStorage.setItem('ITK_DELETED_ENTITY_IDS_V1', JSON.stringify(nextDel));
+    } catch {}
+    deleteJobPosition(posId);
+    const nextList = jobPositions.filter((p) => p.id !== posId);
+    setJobPositions(nextList);
+    try {
+      localStorage.setItem('itk_job_positions', JSON.stringify(nextList));
+    } catch {}
+    notify('success', 'Cargo Eliminado', 'La posición ha sido retirada permanentemente de la estructura organizacional.');
   };
 
   // Cambiar estado de vacante
@@ -2115,15 +2152,7 @@ export const CargosModule: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm(`¿Deseas eliminar al candidato ${cand.candidateName}?`)) {
-                              setCandidates((prev) => {
-                                const updated = prev.filter((c) => c.id !== cand.id);
-                                localStorage.setItem('itk_candidates', JSON.stringify(updated));
-                                return updated;
-                              });
-                            }
-                          }}
+                          onClick={() => setCandidateToDelete(cand)}
                           title="Eliminar candidato"
                           className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
                         >
@@ -2923,7 +2952,8 @@ export const CargosModule: React.FC = () => {
         <ConfirmDeleteModal
           isOpen={Boolean(positionToDelete)}
           title={`Eliminar Cargo: ${positionToDelete.title}`}
-          description={`¿Estás seguro de eliminar el cargo ${positionToDelete.code}? Esta acción afectará la estructura de perfiles de Inteckno.`}
+          itemName={`${positionToDelete.code} - ${positionToDelete.title}`}
+          description={`¿Estás seguro de eliminar permanentemente el cargo ${positionToDelete.code}? Esta acción afectará la estructura de perfiles de Inteckno.`}
           onClose={() => setPositionToDelete(null)}
           onConfirm={() => {
             handleDeletePosition(positionToDelete.id);
@@ -2933,6 +2963,26 @@ export const CargosModule: React.FC = () => {
           confirmWord="BORRAR"
         />
       )}
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(candidateToDelete)}
+        title="Eliminar Postulante / Candidato"
+        itemName={candidateToDelete ? `${candidateToDelete.candidateName} (${candidateToDelete.candidateEmail || 'Postulante'})` : ''}
+        description="Esta acción retirará permanentemente al candidato del proceso de selección."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (candidateToDelete) {
+            setCandidates((prev) => {
+              const updated = prev.filter((c) => c.id !== candidateToDelete.id);
+              localStorage.setItem('itk_candidates', JSON.stringify(updated));
+              return updated;
+            });
+            setCandidateToDelete(null);
+          }
+        }}
+        onCancel={() => setCandidateToDelete(null)}
+      />
 
       <UniversalModuleConfigModal
         isOpen={isConfigModalOpen}

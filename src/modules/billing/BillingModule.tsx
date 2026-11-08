@@ -16,11 +16,13 @@ import {
   FileCheck2,
   Receipt,
   Users,
+  Trash2,
 } from 'lucide-react';
 import { useErp } from '../../core/storage/erpStore';
 import { BillingMilestone, DianRutData } from '../../types';
 import { getStoredTRM, formatCOP, formatUSD } from '../../core/services/trmService';
 import { LightTable } from '../../components/ui/LightTable';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { BusinessRulesEngine } from '../../core/rules/businessRules';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
@@ -48,6 +50,7 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
     issueMilestoneInvoice, 
     markMilestonePaid,
     createMilestone,
+    deleteMilestone,
     notify,
     navigateWithContext,
     navigationContext,
@@ -55,6 +58,7 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
   } = useErp();
   const currentTrm = getStoredTRM();
   const [activeTab, setActiveTab] = useState<BillingSubTab>(initialView === 'acts' ? 'acts' : 'milestones');
+  const [milestoneToDelete, setMilestoneToDelete] = useState<BillingMilestone | null>(null);
 
   const carteraInvoices = React.useMemo(() => {
     const todayTime = new Date().getTime();
@@ -555,37 +559,42 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                   header: 'Gestión / Recaudo',
                   align: 'right',
                   render: (m) => {
+                    let primaryAction: React.ReactNode = (
+                      <span className="text-[11px] text-gray-400 font-medium">
+                        Pendiente de Firma
+                      </span>
+                    );
                     if (m.acceptanceActSigned && !m.invoiceIssued) {
-                      return (
+                      primaryAction = (
                         <button
+                          type="button"
                           onClick={() => setInvoiceModalMilestone(m)}
-                          className="px-4 py-1.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-xs active:scale-95 ml-auto block cursor-pointer"
+                          className="px-4 py-1.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
                         >
                           Expedir Factura
                         </button>
                       );
-                    }
-                    if (m.invoiceIssued && !m.isPaid) {
+                    } else if (m.invoiceIssued && !m.isPaid) {
                       const prj = projects.find((p) => p.id === m.projectId || p.code === m.projectCode);
                       const trm = prj?.trmApplied || getStoredTRM();
                       const initialCOP = m.amountCOP || Math.round((m.amountUSD || 0) * trm);
-                      return (
+                      primaryAction = (
                         <button
+                          type="button"
                           onClick={() => {
                             setPaymentModalMilestone(m);
                             setPaymentRef('');
                             setPaymentAmountCOP(initialCOP);
                             setPaymentDate(new Date().toISOString().split('T')[0]);
                           }}
-                          className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 ml-auto cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
                         >
                           <DollarSign size={13} />
                           <span>Registrar Pago</span>
                         </button>
                       );
-                    }
-                    if (m.isPaid) {
-                      return (
+                    } else if (m.isPaid) {
+                      primaryAction = (
                         <div className="text-right">
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                             <CheckCircle2 size={12} /> Recaudado
@@ -597,9 +606,20 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                       );
                     }
                     return (
-                      <span className="text-[11px] text-gray-400 font-medium">
-                        Pendiente de Firma
-                      </span>
+                      <div className="flex items-center justify-end gap-2">
+                        {primaryAction}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMilestoneToDelete(m);
+                          }}
+                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition-colors cursor-pointer"
+                          title="Eliminar Hito / Factura Permanentemente"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     );
                   },
                 },
@@ -702,25 +722,35 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                           )}
                         </td>
                         <td className="p-3 text-right">
-                          {!m.acceptanceActSigned ? (
+                          <div className="flex items-center justify-end gap-2">
+                            {!m.acceptanceActSigned ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActSigningMilestone(m);
+                                  setActSignerName(m.clientName || '');
+                                  setActSignerId('');
+                                  setActAgreed(false);
+                                }}
+                                className="px-3.5 py-1.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5 active:scale-95"
+                              >
+                                <FileCheck2 size={13} />
+                                <span>Firmar Acta</span>
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 font-medium">
+                                {m.invoiceIssued ? 'Factura Emitida' : 'Lista para Facturar'}
+                              </span>
+                            )}
                             <button
                               type="button"
-                              onClick={() => {
-                                setActSigningMilestone(m);
-                                setActSignerName(m.clientName || '');
-                                setActSignerId('');
-                                setActAgreed(false);
-                              }}
-                              className="px-3.5 py-1.5 rounded-full bg-[#00668F] hover:bg-[#005073] text-white text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5 active:scale-95"
+                              onClick={() => setMilestoneToDelete(m)}
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition-colors cursor-pointer"
+                              title="Eliminar Hito / Acta Permanentemente"
                             >
-                              <FileCheck2 size={13} />
-                              <span>Firmar Acta</span>
+                              <Trash2 size={13} />
                             </button>
-                          ) : (
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              {m.invoiceIssued ? 'Factura Emitida' : 'Lista para Facturar'}
-                            </span>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -852,26 +882,36 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
                           )}
                         </td>
                         <td className="p-3 text-right">
-                          {inv.isPaid ? (
-                            <div className="text-[10px] text-gray-500">
-                              <span className="block font-semibold text-emerald-700">Ref: {inv.paymentReference || 'Consignación'}</span>
-                              <span>{inv.paidAt?.split('T')[0]}</span>
-                            </div>
-                          ) : (
+                          <div className="flex items-center justify-end gap-2">
+                            {inv.isPaid ? (
+                              <div className="text-[10px] text-gray-500">
+                                <span className="block font-semibold text-emerald-700">Ref: {inv.paymentReference || 'Consignación'}</span>
+                                <span>{inv.paidAt?.split('T')[0]}</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPaymentModalMilestone(inv);
+                                  setPaymentRef('');
+                                  setPaymentAmountCOP(inv.amountCOP || 0);
+                                  setPaymentDate(new Date().toISOString().split('T')[0]);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <CheckCircle2 size={13} />
+                                <span>Registrar Recaudo</span>
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => {
-                                setPaymentModalMilestone(inv);
-                                setPaymentRef('');
-                                setPaymentAmountCOP(inv.amountCOP || 0);
-                                setPaymentDate(new Date().toISOString().split('T')[0]);
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer inline-flex items-center gap-1"
+                              onClick={() => setMilestoneToDelete(inv)}
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition-colors cursor-pointer"
+                              title="Eliminar Factura / Hito Permanentemente"
                             >
-                              <CheckCircle2 size={13} />
-                              <span>Registrar Recaudo</span>
+                              <Trash2 size={13} />
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1195,6 +1235,23 @@ export const BillingModule: React.FC<BillingModuleProps> = ({ initialView }) => 
         onClose={() => setIsConfigModalOpen(false)}
         moduleId="contabilidad"
         moduleTitle="Facturación y Contabilidad"
+      />
+
+      {/* Modal de Confirmación Escrita Obligatoria ('BORRAR') para Eliminar Hito / Factura */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(milestoneToDelete)}
+        title="Eliminar Hito / Factura Contractual"
+        itemName={milestoneToDelete ? `${milestoneToDelete.title} (${milestoneToDelete.projectCode})` : ''}
+        description="Esta acción retirará permanentemente el hito de facturación del módulo contable y del proyecto asociado."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (milestoneToDelete) {
+            deleteMilestone(milestoneToDelete.id);
+            setMilestoneToDelete(null);
+          }
+        }}
+        onCancel={() => setMilestoneToDelete(null)}
       />
     </div>
   );

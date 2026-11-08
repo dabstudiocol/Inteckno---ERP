@@ -15,6 +15,7 @@ import { Project } from '../../../../types';
 import { ConfirmDeleteModal } from '../../../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../../../components/common/DetailModal';
 import { CreatableSelect } from '../../../../components/common/CreatableSelect';
+import { useErp } from '../../../../core/storage/erpStore';
 
 export interface DeliverableDocument {
   id: string;
@@ -38,6 +39,8 @@ export const TabDocumentosEntregables: React.FC<TabDocumentosEntregablesProps> =
   project,
   onUpdateProject,
 }) => {
+  const { addDocument } = useErp();
+
   const [documents, setDocuments] = useState<DeliverableDocument[]>(() => {
     return (project.dynamicData?.deliverables as DeliverableDocument[]) || [];
   });
@@ -77,6 +80,18 @@ export const TabDocumentosEntregables: React.FC<TabDocumentosEntregablesProps> =
 
     const updated = [newDoc, ...documents];
     setDocuments(updated);
+
+    // Sincronizar con el repositorio documental global del ERP para habilitar compuerta EN 1709 en Facturación
+    addDocument({
+      title: `${newDoc.code ? `[${newDoc.code}] ` : ''}${newDoc.title}`,
+      category: newDoc.category === 'plano' ? 'planos' : newDoc.category === 'informe_tecnico' ? 'certificados_hseq' : 'manuales_stc',
+      projectCode: project.code,
+      author: newDoc.author || project.supervisorName || 'Ingeniería ITK',
+      version: newDoc.version || 'Rev. 0',
+      size: '1.2 MB',
+      accessLevel: 'ingenieria',
+      fileUrl: newDoc.fileUrl || undefined,
+    } as any);
 
     if (onUpdateProject) {
       onUpdateProject({

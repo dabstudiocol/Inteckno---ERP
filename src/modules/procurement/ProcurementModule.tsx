@@ -83,7 +83,10 @@ export const ProcurementModule: React.FC = () => {
     deleteRequisition,
     createPartner,
     updatePartner,
+    deletePartner,
   } = useErp();
+
+  const [supplierToDelete, setSupplierToDelete] = useState<Partner | null>(null);
 
   const currentTrm = getStoredTRM();
 
@@ -1114,17 +1117,34 @@ export const ProcurementModule: React.FC = () => {
               },
               {
                 key: 'actions',
-                header: 'Ficha FCPR01',
+                header: 'Ficha FCPR01 / Acciones',
                 align: 'right',
                 render: (s) => (
-                  <button
-                    onClick={() => setSelectedSupplierForFcpr01(s)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-[#003650] hover:text-white text-slate-700 text-[11px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
-                    title="Ver Ficha de Calidad FCPR01 Oficial"
-                  >
-                    <FileText size={12} />
-                    <span>Ficha FCPR01</span>
-                  </button>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSupplierForFcpr01(s);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-[#003650] hover:text-white text-slate-700 text-[11px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+                      title="Ver Ficha de Calidad FCPR01 Oficial"
+                    >
+                      <FileText size={12} />
+                      <span>Ficha FCPR01</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSupplierToDelete(s);
+                      }}
+                      className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition-colors cursor-pointer"
+                      title="Eliminar Proveedor Permanentemente"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 ),
               },
             ]}
@@ -1351,8 +1371,10 @@ export const ProcurementModule: React.FC = () => {
         isOpen={Boolean(poToDelete)}
         title="¿Eliminar Orden de Compra?"
         itemName={poToDelete ? `${poToDelete.orderNumber} - ${poToDelete.supplierName} (${formatCOP(poToDelete.totalAmountCOP)})` : ''}
-        description="Esta acción retirará la orden de compra del sistema. Si los artículos ya fueron recibidos o imputados, se recomienda validar antes de proceder."
+        description="Esta acción retirará permanentemente la orden de compra del sistema y reversará sus costos."
         confirmText="Eliminar Orden"
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         onConfirm={() => {
           if (poToDelete) {
             deletePurchaseOrder(poToDelete.id);
@@ -1367,8 +1389,10 @@ export const ProcurementModule: React.FC = () => {
         isOpen={Boolean(reqToDelete)}
         title="¿Eliminar Requisición de Compra / SOLPED?"
         itemName={reqToDelete ? `${reqToDelete.reqNumber} - ${reqToDelete.projectName}` : ''}
-        description="Esta acción eliminará la requisición interna y sus ítems del flujo de compras."
+        description="Esta acción eliminará permanentemente la requisición interna y sus ítems del flujo de compras."
         confirmText="Eliminar Requisición"
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
         onConfirm={() => {
           if (reqToDelete) {
             deleteRequisition(reqToDelete.id);
@@ -1376,6 +1400,24 @@ export const ProcurementModule: React.FC = () => {
           }
         }}
         onCancel={() => setReqToDelete(null)}
+      />
+
+      {/* MODAL BLINDADO POKA-YOKE: ELIMINAR PROVEEDOR */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(supplierToDelete)}
+        title="Eliminar Proveedor Homologado"
+        itemName={supplierToDelete ? `${supplierToDelete.name} (NIT: ${supplierToDelete.taxId})` : ''}
+        description="Esta acción retirará permanentemente al proveedor del catálogo de abastecimiento."
+        confirmText="Eliminar Proveedor"
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (supplierToDelete) {
+            deletePartner(supplierToDelete.id);
+            setSupplierToDelete(null);
+          }
+        }}
+        onCancel={() => setSupplierToDelete(null)}
       />
 
       {/* MODAL OFICIAL FORMATO DE CALIDAD FCPR01 PROVEEDORES ITK */}

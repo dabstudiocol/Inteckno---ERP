@@ -131,16 +131,35 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
       }
 
       if (req.items && req.items.length > 0) {
-        const mappedItems: PoItemRow[] = req.items.map((it, idx) => {
-          const prod = products.find((p) => p.id === it.productId || p.sku === it.productSku);
+        const enrichedReqItems = req.items.map((it) => {
+          const prod = products.find(
+            (p) =>
+              (it.productId && p.id === it.productId) ||
+              (it.productSku && p.sku.toLowerCase() === it.productSku.trim().toLowerCase())
+          );
+          const avail = prod ? Math.max(0, prod.availableStock || 0) : 0;
+          const reqQty = Math.max(1, Number(it.qtyRequested) || 1);
+          const netShortage =
+            it.qtyToPurchase !== undefined
+              ? it.qtyToPurchase
+              : Math.max(0, reqQty - Math.min(reqQty, avail));
+          return { it, prod, netShortage, reqQty };
+        });
+
+        const hasShortages = enrichedReqItems.some((e) => e.netShortage > 0);
+        const targetRows = hasShortages
+          ? enrichedReqItems.filter((e) => e.netShortage > 0)
+          : enrichedReqItems;
+
+        const mappedItems: PoItemRow[] = targetRows.map(({ it, prod, netShortage, reqQty }, idx) => {
           const cop = prod?.costPriceCOP || (it.unitCostUSD ? Math.round(it.unitCostUSD * currentTrm) : 0);
           return {
             id: `req-row-${idx}-${Date.now()}`,
-            productId: it.productId,
-            sku: it.productSku,
+            productId: prod?.id || it.productId,
+            sku: prod?.sku || it.productSku,
             name: it.productName,
             unit: it.unit || 'unid',
-            qty: it.qtyToPurchase || it.qtyRequested || 1,
+            qty: netShortage > 0 ? netShortage : reqQty,
             unitPriceCOP: cop,
             unitPriceUSD: Number((cop / currentTrm).toFixed(2)),
             historicalPriceCOP: cop,

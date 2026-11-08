@@ -47,6 +47,7 @@ import {
 import { useErp } from '../../core/storage/erpStore';
 import { User, UserRole, JobPosition, AuditLogEntry } from '../../types';
 import { UniversalModuleConfigModal } from '../../components/common/UniversalModuleConfigModal';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { useModuleCatalog } from '../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 import { getStoredJobPositions } from './CargosModule';
@@ -108,11 +109,14 @@ export const UserManagementModule: React.FC = () => {
     updateUserProfile,
     resetUserPassword,
     createUserAccount,
+    deleteUserAccount,
     todos,
     projects,
     addTodo,
     notify,
   } = useErp();
+
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   // Control estricto de acceso RBAC al módulo
   const canAccessModule = [
@@ -1364,9 +1368,19 @@ export const UserManagementModule: React.FC = () => {
                                   }}
                                   disabled={isCurrent}
                                   title={isCurrent ? 'No puedes cambiar tu propio estado' : `Cambiar estado (actual: ${status})`}
-                                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-gray-600 hover:text-rose-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-gray-600 hover:text-amber-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   <Lock size={13} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setUserToDelete(u)}
+                                  disabled={isCurrent}
+                                  title={isCurrent ? 'No puedes eliminar tu propia cuenta activa' : 'Eliminar Usuario Permanentemente'}
+                                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  <Trash2 size={13} />
                                 </button>
                               </div>
                             </td>
@@ -1534,6 +1548,15 @@ export const UserManagementModule: React.FC = () => {
                             title={`Cambiar estado de la cuenta`}
                           >
                             <Lock size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setUserToDelete(u)}
+                            disabled={isCurrent}
+                            className="p-1.5 text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 rounded-lg cursor-pointer disabled:opacity-40"
+                            title={isCurrent ? 'No puedes eliminar tu propia cuenta activa' : 'Eliminar Usuario Permanentemente'}
+                          >
+                            <Trash2 size={14} />
                           </button>
                         </div>
 
@@ -3005,24 +3028,73 @@ export const UserManagementModule: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setEditingUser(null)}
-                className="px-3.5 py-2 text-xs text-gray-600 hover:bg-slate-100 rounded-xl cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs"
-              >
-                Guardar Cambios
-              </button>
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+              {editingUser.id !== currentUser?.id ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = editingUser;
+                    setEditingUser(null);
+                    setUserToDelete(target);
+                  }}
+                  className="px-3.5 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-600 hover:text-white rounded-xl cursor-pointer flex items-center gap-1.5 transition-colors"
+                >
+                  <Trash2 size={14} />
+                  <span>Eliminar Usuario</span>
+                </button>
+              ) : (
+                <div />
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-3.5 py-2 text-xs text-gray-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#00668F] hover:bg-[#005273] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
             </div>
           </form>
         </div>
       )}
+
+      {/* Modal de Confirmación Escrita Obligatoria ('BORRAR') para Eliminar Usuario */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(userToDelete)}
+        title="Eliminar Usuario Permanentemente"
+        itemName={userToDelete ? `${userToDelete.name} (${userToDelete.email})` : ''}
+        description="Esta acción eliminará de forma definitiva e irreversible la cuenta del usuario, sus accesos y su ficha vinculada en el ERP y en Google Cloud Firestore."
+        requireConfirmWord={true}
+        confirmWord="BORRAR"
+        onConfirm={() => {
+          if (!userToDelete) return;
+          const target = userToDelete;
+          deleteUserAccount(target.id);
+          recordAuditEvent({
+            action: 'account_deactivated',
+            performedByUserId: currentUser?.id || 'USR-001',
+            performedByName: currentUser?.name || 'Administrador TI',
+            targetUserId: target.id,
+            targetUserName: target.name,
+            details: `Eliminación definitiva e irreversible de la cuenta ${target.email}`,
+            module: 'usuarios',
+          });
+          notify(
+            'info',
+            'Usuario Eliminado Permanentemente',
+            `La cuenta de ${target.name} (${target.email}) fue eliminada de forma definitiva del ERP y de la nube.`
+          );
+          setUserToDelete(null);
+        }}
+        onCancel={() => setUserToDelete(null)}
+      />
 
       {/* Modal Informativo y de Acción: Tenant Microsoft 365 / Azure Entra ID */}
       {isM365TenantModalOpen && (
