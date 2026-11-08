@@ -177,6 +177,79 @@ export function normalizeChannelId(channelId: string): string {
   return channelId;
 }
 
+export function isProjectLinkedChatGroup(g: ChatGroup): {
+  isProjectChannel: boolean;
+  extractedCode?: string;
+  extractedName?: string;
+} {
+  if (!g) return { isProjectChannel: false };
+  const descMatch = g.description?.match(/Canal oficial del proyecto\s+(.+?)\s+para bit/i);
+  const extractedCode = g.linkedProjectId || (descMatch ? descMatch[1].trim() : undefined);
+  const hasCableCarEmoji = Boolean(g.name && (g.name.startsWith('🚠') || g.name.includes('🚠')));
+  const extractedName = hasCableCarEmoji ? g.name.replace(/🚠/g, '').trim() : undefined;
+  const isProjectChannel = Boolean(
+    g.linkedProjectId ||
+    g.category === 'proyecto' ||
+    descMatch ||
+    hasCableCarEmoji
+  );
+  return { isProjectChannel, extractedCode, extractedName };
+}
+
+export function sanitizeAndFilterChatGroups(
+  rawGroups: ChatGroup[],
+  activeProjects: Project[],
+  purgeOrphans = true
+): ChatGroup[] {
+  if (!Array.isArray(rawGroups)) return [];
+  const seenKeys = new Set<string>();
+  const orphanIdsToPurge: string[] = [];
+  const result: ChatGroup[] = [];
+
+  for (const g of rawGroups) {
+    if (!g || !g.id || isEntityDeletedPermanent(g.id)) continue;
+
+    const { isProjectChannel, extractedCode, extractedName } = isProjectLinkedChatGroup(g);
+
+    if (isProjectChannel && purgeOrphans) {
+      const matchedProject = (activeProjects || []).find((p) => {
+        if (!p || isEntityDeletedPermanent(p.id)) return false;
+        if (extractedCode && (p.code === extractedCode || p.id === extractedCode)) return true;
+        if (extractedName && p.name && p.name.trim().toLowerCase() === extractedName.toLowerCase()) return true;
+        if (p.code && g.description && g.description.includes(p.code)) return true;
+        return false;
+      });
+
+      if (!matchedProject) {
+        orphanIdsToPurge.push(g.id);
+        continue;
+      }
+
+      g.linkedProjectId = matchedProject.code;
+      g.category = 'proyecto';
+    }
+
+    const dedupeKey = isProjectChannel
+      ? `prj:${(g.linkedProjectId || extractedCode || g.name || '').trim().toLowerCase()}`
+      : g.isDirect
+      ? `dm:${normalizeChannelId(g.id)}`
+      : `grp:${(g.name || '').trim().toLowerCase()}::${(g.description || '').trim().toLowerCase()}`;
+
+    if (seenKeys.has(dedupeKey)) {
+      orphanIdsToPurge.push(g.id);
+      continue;
+    }
+    seenKeys.add(dedupeKey);
+    result.push(g);
+  }
+
+  if (orphanIdsToPurge.length > 0) {
+    markEntityAsDeletedPermanent(orphanIdsToPurge);
+  }
+
+  return result;
+}
+
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme: 'light',
   soundEnabled: true,
@@ -435,7 +508,8 @@ export interface ErpContextType extends ErpState {
   updateChatMessage: (id: string, data: Partial<ChatMessage>) => void;
   deleteChatMessage: (id: string) => void;
   deleteChatMessageForMe: (id: string, userId?: string) => void;
-  createChatGroup: (name: string, description: string, members: string[]) => string;
+  createChatGroup: (name: string, description: string, members: string[], extra?: Partial<ChatGroup>) => string;
+  deleteChatGroup: (groupId: string) => void;
   addMembersToChatGroup: (groupId: string, newMembers: string[]) => void;
   getOrCreateDirectChat: (partnerId: string) => string;
   addDocument: (doc: Omit<DocumentItem, 'id' | 'date'>) => void;
@@ -683,7 +757,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
           contacts: (Array.isArray(parsed.contacts) ? parsed.contacts : SEED_CONTACTS).filter((x: any) => !isEntityDeletedPermanent(x?.id)),
           chatMessages: Array.isArray(parsed.chatMessages) ? parsed.chatMessages : [],
-          chatGroups: (Array.isArray(parsed.chatGroups) ? parsed.chatGroups : SEED_CHAT_GROUPS).filter((x: any) => !isEntityDeletedPermanent(x?.id)),
+          chatGroups: sanitizeAndFilterChatGroups(
+            Array.isArray(parsed.chatGroups) ? parsed.chatGroups : SEED_CHAT_GROUPS,
+            Array.isArray(parsed.projects) ? parsed.projects.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
+            true
+          ),
           documents: Array.isArray(parsed.documents) ? parsed.documents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
           todos: Array.isArray(parsed.todos) ? parsed.todos.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
           calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : [],
@@ -940,8 +1018,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (Array.isArray(cloudData.productivity.todos)) { next.todos = cloudData.productivity.todos.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
           if (Array.isArray(cloudData.productivity.calendarEvents)) { next.calendarEvents = cloudData.productivity.calendarEvents.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
           if (Array.isArray(cloudData.productivity.documents)) { next.documents = cloudData.productivity.documents.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
-          if (Array.isArray(cloudData.productivity.chatGroups)) { next.chatGroups = cloudData.productivity.chatGroups.filter((x: any) => !isEntityDeletedPermanent(x?.id)); hasChanges = true; }
+          if (Array.isArray(cloudData.productivity.chatGroups)) {
+            next.chatGroups = sanitizeAndFilterChatGroups(cloudData.productivity.chatGroups, next.projects, true);
+            hasChanges = true;
+          }
         }
+        next.chatGroups = sanitizeAndFilterChatGroups(next.chatGroups, next.projects, true);
 
         // Reconciliación Analítica Transversal al cargar desde Cloud (SAP/Odoo Single Source of Truth)
         if (Array.isArray(next.projects) && next.projects.length > 0) {
@@ -1234,21 +1316,23 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         const currentTrm = getStoredTRM() || 4200;
+        const nextProjects = mergedProjects.map((p: Project) =>
+          recalculateProjectEvm(
+            reconcileProjectAnalyticalCosts(p, {
+              purchaseOrders: prev.purchaseOrders,
+              expenses: prev.expenses,
+              timesheets: prev.timesheets,
+              remissions: prev.remissions,
+              trm: currentTrm,
+            })
+          )
+        );
         return {
           ...prev,
-          projects: mergedProjects.map((p: Project) =>
-            recalculateProjectEvm(
-              reconcileProjectAnalyticalCosts(p, {
-                purchaseOrders: prev.purchaseOrders,
-                expenses: prev.expenses,
-                timesheets: prev.timesheets,
-                remissions: prev.remissions,
-                trm: currentTrm,
-              })
-            )
-          ),
+          projects: nextProjects,
           tasks: Array.isArray(data.tasks) ? data.tasks.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.tasks,
           milestones: Array.isArray(data.milestones) ? data.milestones.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.milestones,
+          chatGroups: sanitizeAndFilterChatGroups(prev.chatGroups, nextProjects, true),
         };
       });
     });
@@ -1376,7 +1460,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         todos: Array.isArray(data.todos) ? data.todos.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.todos,
         calendarEvents: Array.isArray(data.calendarEvents) ? data.calendarEvents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.calendarEvents,
         documents: Array.isArray(data.documents) ? data.documents.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.documents,
-        chatGroups: Array.isArray(data.chatGroups) && data.chatGroups.length > 0 ? data.chatGroups.filter((x: any) => !isEntityDeletedPermanent(x?.id)) : prev.chatGroups,
+        chatGroups: Array.isArray(data.chatGroups) && data.chatGroups.length > 0
+          ? sanitizeAndFilterChatGroups(data.chatGroups, prev.projects, true)
+          : sanitizeAndFilterChatGroups(prev.chatGroups, prev.projects, true),
       }));
     });
 
@@ -2087,12 +2173,52 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           state.currentUser.name
         ).catch(console.warn);
       }
-      setState((prev) => ({
-        ...prev,
-        projects: prev.projects.filter((p) => p.id !== id),
-        tasks: prev.tasks.filter((t) => t.projectId !== id),
-      }));
-      notify('info', 'Proyecto Eliminado', 'El proyecto y sus actividades asociadas han sido retirados.');
+
+      setState((prev) => {
+        const remainingProjects = prev.projects.filter((p) => p.id !== id);
+        const linkedGroupIds = prev.chatGroups
+          .filter((g) => {
+            if (g.linkedProjectId === id || (target?.code && g.linkedProjectId === target.code)) return true;
+            if (target?.code && g.description?.includes(target.code)) return true;
+            if (target?.name && g.name?.replace(/🚠/g, '').trim().toLowerCase() === target.name.trim().toLowerCase()) return true;
+            return false;
+          })
+          .map((g) => g.id);
+
+        if (linkedGroupIds.length > 0) {
+          markEntityAsDeletedPermanent(linkedGroupIds);
+        }
+
+        const nextChatGroups = sanitizeAndFilterChatGroups(
+          prev.chatGroups.filter((g) => !linkedGroupIds.includes(g.id)),
+          remainingProjects,
+          true
+        );
+
+        const nextChatMessages = prev.chatMessages.filter((m) => !linkedGroupIds.includes(m.channel));
+
+        if (isCloudLoadedRef.current) {
+          syncModuleToCloud(
+            'productivity',
+            {
+              todos: prev.todos,
+              calendarEvents: prev.calendarEvents,
+              documents: prev.documents,
+              chatGroups: nextChatGroups,
+            },
+            prev.currentUser?.id || 'USR-01'
+          ).catch(console.warn);
+        }
+
+        return {
+          ...prev,
+          projects: remainingProjects,
+          tasks: prev.tasks.filter((t) => t.projectId !== id),
+          chatGroups: nextChatGroups,
+          chatMessages: nextChatMessages,
+        };
+      });
+      notify('info', 'Proyecto Eliminado', 'El proyecto, sus actividades y su canal de conversación asociado han sido retirados.');
     },
     [state.projects, state.currentUser, notify]
   );
@@ -5483,6 +5609,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               chatGroups: [data.group, ...prev.chatGroups],
             };
           });
+        } else if (data.type === 'CHAT_GROUP_DELETED') {
+          if (data.groupId) {
+            markEntityAsDeletedPermanent([data.groupId]);
+            setState((prev) => ({
+              ...prev,
+              chatGroups: prev.chatGroups.filter((g) => g.id !== data.groupId),
+              chatMessages: prev.chatMessages.filter((m) => m.channel !== data.groupId),
+            }));
+          }
         } else if (data.type === 'CHAT_MESSAGE_DELETED') {
           deletedChatIdsRef.current.add(data.messageId);
           setState((prev) => ({
@@ -5541,7 +5676,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ]);
 
   const createChatGroup = useCallback(
-    (name: string, description: string, members: string[]) => {
+    (name: string, description: string, members: string[], extra?: Partial<ChatGroup>) => {
+      const existing = state.chatGroups.find(
+        (g) =>
+          (extra?.linkedProjectId && g.linkedProjectId === extra.linkedProjectId) ||
+          (g.name.trim().toLowerCase() === name.trim().toLowerCase() &&
+            g.description.trim().toLowerCase() === description.trim().toLowerCase())
+      );
+      if (existing) {
+        return existing.id;
+      }
+
       const id = `grp-${Date.now()}`;
       const newGroup: ChatGroup = {
         id,
@@ -5552,6 +5697,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         members: Array.from(new Set([state.currentUser.id, ...members])),
         isCustom: true,
         avatarColor: '#00668F',
+        ...extra,
       };
       setState((prev) => ({
         ...prev,
@@ -5569,8 +5715,96 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return id;
     },
-    [state.currentUser.id, notify]
+    [state.chatGroups, state.currentUser.id, notify]
   );
+
+  const deleteChatGroup = useCallback(
+    (groupId: string) => {
+      if (!groupId) return;
+      markEntityAsDeletedPermanent([groupId]);
+
+      const msgsInGroup = state.chatMessages.filter(
+        (m) => m.channel === groupId || normalizeChannelId(m.channel) === normalizeChannelId(groupId)
+      );
+      msgsInGroup.forEach((m) => {
+        deletedChatIdsRef.current.add(m.id);
+        deleteChatMessageFromCloud(m.id).catch(() => {});
+      });
+      try {
+        localStorage.setItem(
+          'ITK_DELETED_CHAT_IDS',
+          JSON.stringify(Array.from(deletedChatIdsRef.current).slice(-300))
+        );
+      } catch {}
+
+      setState((prev) => {
+        const nextGroups = prev.chatGroups.filter((g) => g.id !== groupId);
+        const nextMessages = prev.chatMessages.filter(
+          (m) => m.channel !== groupId && normalizeChannelId(m.channel) !== normalizeChannelId(groupId)
+        );
+        const nextActiveId =
+          prev.activeChatChannelId === groupId
+            ? nextGroups[0]?.id || 'general'
+            : prev.activeChatChannelId;
+
+        syncModuleToCloud(
+          'productivity',
+          {
+            todos: prev.todos,
+            calendarEvents: prev.calendarEvents,
+            documents: prev.documents,
+            chatGroups: nextGroups,
+          },
+          prev.currentUser?.id || 'USR-01'
+        ).catch(console.warn);
+
+        return {
+          ...prev,
+          chatGroups: nextGroups,
+          chatMessages: nextMessages,
+          activeChatChannelId: nextActiveId,
+        };
+      });
+
+      try {
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const bc = new BroadcastChannel(ERP_BROADCAST_CHANNEL);
+          bc.postMessage({ type: 'CHAT_GROUP_DELETED', groupId });
+          bc.close();
+        }
+      } catch (e) {}
+
+      notify('info', 'Canal / Grupo Eliminado', 'El grupo de conversación y su historial de mensajes fueron eliminados permanentemente.');
+    },
+    [state.chatMessages, notify]
+  );
+
+  // Reconciliación reactiva automática de canales de proyectos huérfanos o duplicados
+  useEffect(() => {
+    const cleaned = sanitizeAndFilterChatGroups(state.chatGroups, state.projects, true);
+    if (cleaned.length !== state.chatGroups.length) {
+      setState((prev) => {
+        const nextCleaned = sanitizeAndFilterChatGroups(prev.chatGroups, prev.projects, true);
+        if (nextCleaned.length === prev.chatGroups.length) return prev;
+        if (isCloudLoadedRef.current) {
+          syncModuleToCloud(
+            'productivity',
+            {
+              todos: prev.todos,
+              calendarEvents: prev.calendarEvents,
+              documents: prev.documents,
+              chatGroups: nextCleaned,
+            },
+            prev.currentUser?.id || 'USR-01'
+          ).catch(console.warn);
+        }
+        return {
+          ...prev,
+          chatGroups: nextCleaned,
+        };
+      });
+    }
+  }, [state.projects, state.chatGroups]);
 
   const addMembersToChatGroup = useCallback(
     (groupId: string, newMembers: string[]) => {
@@ -6998,6 +7232,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteChatMessage,
         deleteChatMessageForMe,
         createChatGroup,
+        deleteChatGroup,
         addMembersToChatGroup,
         getOrCreateDirectChat,
         addDocument,

@@ -60,6 +60,7 @@ import {
 import { useErp, normalizeChannelId } from '../../core/storage/erpStore';
 import { ChatMessage, ChatGroup } from '../../types';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import {
   transcribeAndExtractVoiceNote,
   analyzeInspectionImage,
@@ -305,6 +306,7 @@ export const ConversacionesModule: React.FC = () => {
     deleteChatMessage,
     deleteChatMessageForMe,
     createChatGroup,
+    deleteChatGroup,
     addMembersToChatGroup,
     getOrCreateDirectChat,
     users,
@@ -339,6 +341,15 @@ export const ConversacionesModule: React.FC = () => {
       setMobileChatView('chat');
     }
   }, [activeChatChannelId]);
+
+  // Si el canal activo fue eliminado, conmutar automáticamente al primer canal disponible
+  useEffect(() => {
+    if (chatGroups.length > 0 && !chatGroups.some((g) => g.id === activeGroupId)) {
+      setActiveGroupId(chatGroups[0].id);
+    }
+  }, [chatGroups, activeGroupId]);
+
+  const [groupToDelete, setGroupToDelete] = useState<ChatGroup | null>(null);
 
   // Autopista Determinista de Navegación Inter-Módulo (Regla 16)
   useEffect(() => {
@@ -2059,7 +2070,11 @@ export const ConversacionesModule: React.FC = () => {
   // CANALES OFICIALES VINCULADOS A PROYECTOS STC
   // =========================================================================
   const handleSelectOrCreateProjectChannel = (projectCode: string, projectName: string) => {
-    const existing = chatGroups.find((g) => g.linkedProjectId === projectCode);
+    const existing = chatGroups.find(
+      (g) =>
+        g.linkedProjectId === projectCode ||
+        (g.description && g.description.includes(`Canal oficial del proyecto ${projectCode}`))
+    );
     if (existing) {
       setActiveGroupId(existing.id);
       setMobileChatView('chat');
@@ -2067,13 +2082,12 @@ export const ConversacionesModule: React.FC = () => {
       const newGid = createChatGroup(
         `🚠 ${projectName}`,
         `Canal oficial del proyecto ${projectCode} para bitácora técnica, inspecciones y cuadrillas.`,
-        users.map((u) => u.id)
+        users.map((u) => u.id),
+        {
+          linkedProjectId: projectCode,
+          category: 'proyecto',
+        }
       );
-      const g = chatGroups.find((x) => x.id === newGid);
-      if (g) {
-        g.linkedProjectId = projectCode;
-        g.category = 'proyecto';
-      }
       setActiveGroupId(newGid);
       setMobileChatView('chat');
       notify('success', 'Canal de Proyecto Vinculado', `Canal creado para ${projectName}.`);
@@ -2438,7 +2452,7 @@ export const ConversacionesModule: React.FC = () => {
                     const displayColor = group.isDirect && partner ? partner.avatarColor : '#0284C7';
 
                     return (
-                      <button
+                      <div
                         key={group.id}
                         onClick={() => {
                           setActiveGroupId(group.id);
@@ -2448,7 +2462,7 @@ export const ConversacionesModule: React.FC = () => {
                           setAttachedFile(null);
                           setMobileChatView('chat');
                         }}
-                        className={`w-full text-left p-3.5 rounded-2xl transition-all cursor-pointer flex flex-col gap-1 ${
+                        className={`group/chan w-full text-left p-3.5 rounded-2xl transition-all cursor-pointer flex flex-col gap-1 relative ${
                           isActive
                             ? isEmergencyChannel
                               ? 'bg-rose-700 text-white'
@@ -2506,6 +2520,21 @@ export const ConversacionesModule: React.FC = () => {
                                 {lastMsg ? lastMsg.timestamp.replace('Hoy ', '') : `${groupMessages.length} msgs`}
                               </span>
                             )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setGroupToDelete(group);
+                              }}
+                              title={`Eliminar canal "${displayName}"`}
+                              className={`p-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+                                isActive
+                                  ? 'bg-white/15 hover:bg-rose-600 text-white'
+                                  : 'bg-white/70 hover:bg-rose-600 text-rose-600 hover:text-white opacity-85 group-hover/chan:opacity-100'
+                              }`}
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         </div>
 
@@ -2520,9 +2549,19 @@ export const ConversacionesModule: React.FC = () => {
                         >
                           {lastMsg ? `${lastMsg.senderName.split(' ')[0]}: ${lastMsg.text}` : group.description}
                         </p>
-                      </button>
+                      </div>
                     );
                   })}
+
+                  {displayedGroups.length === 0 && (
+                    <div className="p-6 text-center rounded-2xl bg-[#EBF2FA] space-y-2">
+                      <MessageSquare size={26} className="mx-auto text-[#0284C7]" />
+                      <p className="text-xs font-extrabold text-[#050C1A]">No hay canales activos en esta vista</p>
+                      <p className="text-[11px] font-semibold text-[#334155]">
+                        Usa los botones superiores <strong>+ Grupo</strong> o <strong>Directo</strong> para iniciar una nueva conversación.
+                      </p>
+                    </div>
+                  )}
 
                   {/* VINCULACIÓN DIRECTA DE PROYECTOS STC */}
                   {chatTab === 'proyectos' && projects && (
@@ -2647,6 +2686,18 @@ export const ConversacionesModule: React.FC = () => {
                 <Info size={14} />
                 <span className="hidden sm:inline">Info</span>
               </button>
+
+              {chatGroups.some((g) => g.id === currentGroup.id) && (
+                <button
+                  type="button"
+                  onClick={() => setGroupToDelete(currentGroup)}
+                  title="Eliminar este canal o grupo de conversación"
+                  className="p-2 sm:px-3 sm:py-2 rounded-2xl bg-[#FADBD8] hover:bg-[#E11D48] text-[#880E25] hover:text-white text-xs font-extrabold transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 size={14} />
+                  <span className="hidden lg:inline">Eliminar</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -4170,7 +4221,22 @@ export const ConversacionesModule: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="flex items-center justify-between pt-2">
+              {chatGroups.some((g) => g.id === currentGroup.id) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsGroupInfoModalOpen(false);
+                    setGroupToDelete(currentGroup);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#FADBD8] hover:bg-[#E11D48] text-[#880E25] hover:text-white text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Trash2 size={14} />
+                  <span>Eliminar Canal / Grupo</span>
+                </button>
+              ) : (
+                <div />
+              )}
               <button
                 onClick={() => setIsGroupInfoModalOpen(false)}
                 className="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold cursor-pointer hover:bg-black"
@@ -5087,6 +5153,22 @@ export const ConversacionesModule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL DE CONFIRMACIÓN TRIPLE DE SEGURIDAD PARA ELIMINAR CANAL / GRUPO */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(groupToDelete)}
+        title="¿Eliminar Canal / Grupo de Conversación?"
+        itemName={groupToDelete ? groupToDelete.name : ''}
+        description="Esta acción eliminará de forma permanente este canal o grupo de conversación y todo su historial de mensajes tanto del ERP como de Google Cloud Firestore."
+        confirmText="Eliminar Canal"
+        onConfirm={() => {
+          if (groupToDelete) {
+            deleteChatGroup(groupToDelete.id);
+            setGroupToDelete(null);
+          }
+        }}
+        onCancel={() => setGroupToDelete(null)}
+      />
     </div>
   );
 };
