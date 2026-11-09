@@ -191,8 +191,6 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
     }
   }, [isOpen, initialRequisitionId]);
 
-  if (!isOpen) return null;
-
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
   const selectedSupplier = partners.find((p) => p.id === selectedSupplierId);
 
@@ -238,6 +236,8 @@ export const RegisterPurchaseOrderModal: React.FC<Props> = ({
 
     return list;
   }, [selectedProject, supplierCategoriesOptions]);
+
+  if (!isOpen) return null;
 
   // Cálculos de Totales
   const totalAmountCOP = items.reduce(

@@ -40,8 +40,6 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
 }) => {
   const erpStore = useErp();
 
-  if (!isOpen) return null;
-
   const safePOs: PurchaseOrder[] = Array.isArray(propPOs)
     ? propPOs
     : Array.isArray(erpStore.purchaseOrders)
@@ -94,6 +92,8 @@ export const WarehouseReceiptModal: React.FC<WarehouseReceiptModalProps> = ({
       setHasUnsavedChanges(false);
     }
   }, [selectedPOId]);
+
+  if (!isOpen) return null;
 
   const updateItemQty = (sku: string, qty: number, pendingMax: number) => {
     setHasUnsavedChanges(true);

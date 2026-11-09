@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Building2, 
   Calendar, 
@@ -505,8 +505,8 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
           </div>
         </div>
 
-        {/* Fila 4: Fechas y Presupuesto */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Fila 4: Fechas (Inicio y Estimada de Entrega) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
               Fecha de Inicio *
@@ -530,28 +530,6 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full text-xs px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Presupuesto Inicial de Costos (BAC) COP
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">$</span>
-              <input
-                type="text"
-                required
-                value={budgetCOP ? budgetCOP.toLocaleString('es-CO') : ''}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/\D/g, '');
-                  setBudgetCOP(raw ? Number(raw) : 0);
-                }}
-                placeholder="0 (Se consolida con los ITEMS)"
-                className="w-full text-xs font-mono pl-7 pr-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
-              />
-            </div>
-            <span className="text-[11px] text-slate-400 mt-0.5 block">
-              Equivalente: {formatUSD(budgetCOP > 0 ? Math.round(budgetCOP / currentTrm) : 0)} USD (TRM {currentTrm.toLocaleString('es-CO')})
-            </span>
           </div>
         </div>
 

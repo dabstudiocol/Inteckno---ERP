@@ -32,8 +32,6 @@ export const BomExtractorDiffModal: React.FC<BomExtractorDiffModalProps> = ({
 }) => {
   const { projects, createRequisition, currentUser } = useErp();
 
-  if (!isOpen) return null;
-
   const [selectedProjectId, setSelectedProjectId] = useState<string>(defaultProjectId || projects[0]?.id || '');
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
 
@@ -54,6 +52,8 @@ export const BomExtractorDiffModal: React.FC<BomExtractorDiffModalProps> = ({
 
   // Solo los ítems que requieren compra (delta > 0)
   const itemsToPurchase = diffResult.changes.filter((c) => c.deltaQty && c.deltaQty > 0);
+
+  if (!isOpen) return null;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

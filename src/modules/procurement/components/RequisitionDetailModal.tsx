@@ -110,8 +110,6 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
     }
   }, [requisition, urgencyOptions, requisitionTypeOptions]);
 
-  if (!isOpen || !requisition) return null;
-
   const handleItemChange = (index: number, field: keyof InternalRequisitionItem, value: any) => {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
@@ -178,6 +176,8 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
     () => resolvedItems.reduce((acc, it) => acc + (it.qtyToPurchase || 0), 0),
     [resolvedItems]
   );
+
+  if (!isOpen || !requisition) return null;
 
   const handleSaveChanges = (
     newStatus?: InternalRequisition['status'],

@@ -3390,6 +3390,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ============================================================================
   const createProject = useCallback(
     (prjData: Omit<Project, 'id' | 'spi' | 'cpi' | 'cv' | 'earnedValueEV' | 'actualCostAC'>): Project => {
+      const nowIso = new Date().toISOString();
       const newProject: Project = {
         ...prjData,
         id: `PRJ-${Date.now()}`,
@@ -3398,6 +3399,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         spi: 1.0,
         cpi: 1.0,
         cv: 0,
+        createdAt: prjData.createdAt || nowIso,
+        updatedAt: nowIso,
       };
       newProject.projectItems = ensureProjectItems(newProject);
       if (state.currentUser) {
@@ -3411,10 +3414,45 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           newData: newProject,
         });
       }
-      setState((prev) => ({
-        ...prev,
-        projects: [newProject, ...prev.projects],
-      }));
+
+      setState((prev) => {
+        const nextProjects = [newProject, ...prev.projects];
+
+        // Persistencia inmediata local síncrona
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const currentState = { ...prev, projects: nextProjects };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentState));
+          }
+        } catch (err) {}
+
+        // Persistencia inmediata durable en IndexedDB
+        saveStateToIdb({ ...prev, projects: nextProjects }).catch(console.warn);
+
+        // Sincronización cloud proactiva inmediata sin esperar el debounce de 600ms
+        if (isCloudLoadedRef.current) {
+          syncModuleToCloud('projects', {
+            projects: nextProjects,
+            tasks: prev.tasks,
+            milestones: prev.milestones,
+          }, prev.currentUser?.id || 'USR-01').catch(console.warn);
+
+          // Agente Guardián: Respaldo continuo de seguridad (Regla 14)
+          createSystemBackup(
+            'projects',
+            `Creación de proyecto ${newProject.code} (${newProject.name})`,
+            newProject,
+            prev.currentUser?.id || 'USR-01',
+            prev.currentUser?.name || 'Sistema Inteckno'
+          ).catch(console.warn);
+        }
+
+        return {
+          ...prev,
+          projects: nextProjects,
+        };
+      });
+
       notify('success', 'Proyecto Registrado', `${newProject.code}: ${newProject.name} activo.`);
       return newProject;
     },
