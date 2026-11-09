@@ -671,10 +671,12 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                   </div>
                 </div>
 
-                {/* Presupuesto y Plazo */}
+                {/* Presupuesto y Plazo: Colombia-First (COP Principal) + Moneda Original del País */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 bg-slate-50/70 p-3 rounded-2xl text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-bold">Presupuesto Estimado</span>
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">
+                      Presupuesto Estimado
+                    </span>
                     {opp.country === 'Colombia' && opp.budgetLocal ? (
                       <>
                         <span className="text-sm sm:text-base font-black text-slate-900 block truncate">
@@ -686,18 +688,22 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                       </>
                     ) : (
                       <>
+                        {/* Principal en COP para Inteckno */}
                         <span className="text-sm sm:text-base font-black text-slate-900 block truncate">
-                          ${opp.budgetUSD.toLocaleString()} <span className="text-xs font-normal text-slate-500">USD</span>
+                          {localBudgetFormatted}
                         </span>
-                        <span className="text-[10.5px] text-emerald-700 block font-semibold truncate">
-                          ≈ {opp.budgetLocal || localBudgetFormatted}
+                        {/* Moneda original de la licitación / país */}
+                        <span className="text-[10.5px] text-[#00668F] block font-semibold truncate">
+                          ≈ {opp.budgetLocal || `$${opp.budgetUSD.toLocaleString()} USD`}
                         </span>
                       </>
                     )}
                   </div>
 
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-bold">Cierre / Presentación</span>
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">
+                      Cierre / Presentación
+                    </span>
                     <span className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1 mt-0.5">
                       <Calendar size={13} className="text-slate-400 shrink-0" />
                       <span>{opp.deadline}</span>
@@ -935,10 +941,10 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                 ) : (
                   <>
                     <span className="text-sm font-black text-slate-900 block mt-0.5">
-                      ${verifyingOpportunity.budgetUSD.toLocaleString()} USD
+                      {formatBudgetCOP(verifyingOpportunity.budgetUSD, currentRates)}
                     </span>
-                    <span className="text-[10.5px] text-emerald-700 font-semibold block">
-                      ≈ {verifyingOpportunity.budgetLocal || formatBudgetCOP(verifyingOpportunity.budgetUSD, currentRates)}
+                    <span className="text-[10.5px] text-[#00668F] font-semibold block">
+                      ≈ {verifyingOpportunity.budgetLocal || `$${verifyingOpportunity.budgetUSD.toLocaleString()} USD`}
                     </span>
                   </>
                 )}
