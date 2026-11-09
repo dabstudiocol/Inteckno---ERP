@@ -1552,9 +1552,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState((prev) => {
         let mergedProjects = prev.projects.filter((p) => !isEntityDeletedPermanent(p?.id));
         if (Array.isArray(data.projects)) {
-          mergedProjects = data.projects
-            .filter((remoteP: Project) => !isEntityDeletedPermanent(remoteP?.id))
-            .map((remoteP: Project) => {
+          const remoteProjectsList = data.projects.filter((remoteP: Project) => !isEntityDeletedPermanent(remoteP?.id));
+          mergedProjects = remoteProjectsList.map((remoteP: Project) => {
               const localP = prev.projects.find((lp) => lp.id === remoteP.id);
               if (!localP) return remoteP;
 
@@ -1588,6 +1587,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   : (localP as any).staffAssignments,
               };
             });
+
+          // PRESERVACIÓN CRÍTICA (Fusión Protectora No Destructiva - Regla 14):
+          // Si el cliente local tiene proyectos creados que aún no están en la lista remota de la nube,
+          // JAMÁS descartarlos. Mantenerlos en memoria y reenviarlos a la nube.
+          prev.projects.forEach((lp) => {
+            if (!isEntityDeletedPermanent(lp?.id) && !mergedProjects.some((mp: Project) => mp.id === lp.id)) {
+              mergedProjects.unshift(lp);
+            }
+          });
         }
 
         const currentTrm = getStoredTRM() || 4200;
@@ -3458,23 +3466,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Persistencia inmediata durable en IndexedDB
         saveStateToIdb({ ...prev, projects: nextProjects }).catch(console.warn);
 
-        // Sincronización cloud proactiva inmediata sin esperar el debounce de 600ms
-        if (isCloudLoadedRef.current) {
-          syncModuleToCloud('projects', {
-            projects: nextProjects,
-            tasks: prev.tasks,
-            milestones: prev.milestones,
-          }, prev.currentUser?.id || 'USR-01').catch(console.warn);
+        // Sincronización cloud proactiva inmediata incondicional
+        syncModuleToCloud('projects', {
+          projects: nextProjects,
+          tasks: prev.tasks,
+          milestones: prev.milestones,
+        }, prev.currentUser?.id || 'USR-01').catch(console.warn);
 
-          // Agente Guardián: Respaldo continuo de seguridad (Regla 14)
-          createSystemBackup(
-            'projects',
-            `Creación de proyecto ${newProject.code} (${newProject.name})`,
-            newProject,
-            prev.currentUser?.id || 'USR-01',
-            prev.currentUser?.name || 'Sistema Inteckno'
-          ).catch(console.warn);
-        }
+        // Agente Guardián: Respaldo continuo de seguridad (Regla 14)
+        createSystemBackup(
+          'projects',
+          `Creación de proyecto ${newProject.code} (${newProject.name})`,
+          newProject,
+          prev.currentUser?.id || 'USR-01',
+          prev.currentUser?.name || 'Sistema Inteckno'
+        ).catch(console.warn);
 
         return {
           ...prev,
@@ -6720,24 +6726,22 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } catch (err) {}
 
-      // Sincronización proactiva hacia Cloud Firestore inmediata para cambios en finanzas/presupuesto/items
-      if (isCloudLoadedRef.current) {
-        syncModuleToCloud('projects', {
-          projects: updatedProjects,
-          tasks: prev.tasks,
-          milestones: updatedMilestones,
-        }, prev.currentUser?.id || 'USR-01').catch(console.warn);
+      // Sincronización proactiva hacia Cloud Firestore inmediata incondicional para cambios en finanzas/presupuesto/items
+      syncModuleToCloud('projects', {
+        projects: updatedProjects,
+        tasks: prev.tasks,
+        milestones: updatedMilestones,
+      }, prev.currentUser?.id || 'USR-01').catch(console.warn);
 
-        // Agente Guardián: Respaldo continuo automático en Google Cloud Firestore e IndexedDB
-        if (targetUpdated) {
-          createSystemBackup(
-            'projects',
-            `Actualización de proyecto ${targetUpdated.code || id}: ITEMS, matriz o presupuesto`,
-            targetUpdated,
-            prev.currentUser?.id || 'USR-01',
-            prev.currentUser?.name || 'Sistema Inteckno'
-          ).catch(console.warn);
-        }
+      // Agente Guardián: Respaldo continuo automático en Google Cloud Firestore e IndexedDB
+      if (targetUpdated) {
+        createSystemBackup(
+          'projects',
+          `Actualización de proyecto ${targetUpdated.code || id}: ITEMS, matriz o presupuesto`,
+          targetUpdated,
+          prev.currentUser?.id || 'USR-01',
+          prev.currentUser?.name || 'Sistema Inteckno'
+        ).catch(console.warn);
       }
 
       return {
