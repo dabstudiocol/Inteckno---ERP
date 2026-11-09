@@ -3585,63 +3585,56 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
+        // FASE 3: Desacoplamiento de Hojas de Horas hacia applyProjectCostEntry
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === targetTs.projectId || prj.code === targetTs.projectCode) {
             const laborCOP = targetTs.totalCostCOP || ((targetTs.hours || 0) * hourlyRateCOP);
-            const newAC = (prj.actualCostAC || 0) + laborCOP;
-            const newCV = (prj.earnedValueEV || 0) - newAC;
-            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-            const existingMatrix = (prj as any).costMatrix || [];
-            const newCostItem = {
-              id: `cost-ts-${targetTs.id}`,
-              itemCode: targetTs.itemCode || undefined,
-              category: 'mano_obra_itk' as const,
-              concept: `Mano de Obra ITK - ${targetTs.userName || 'Técnico'} (${targetTs.hours}h @ $${hourlyRateCOP.toLocaleString('es-CO')}/h - ${targetTs.taskName || 'Labores'})`,
+            const res = applyProjectCostEntry(prj, {
+              originType: 'TIMESHEET',
+              originId: targetTs.id,
+              originLineId: targetTs.taskId || 'TS-LINE-01',
+              entryNature: 'ACTUAL',
+              itemCode: targetTs.itemCode,
+              projectItemId: targetTs.costMatrixItemId,
+              category: 'mano_obra_itk',
+              concept: `Mano de Obra ITK - ${targetTs.userName || 'Técnico'} (${targetTs.hours}h @ ${hourlyRateCOP.toLocaleString('es-CO')}/h - ${targetTs.taskName || 'Labores'})`,
               unit: 'Horas',
-              plannedQuantity: targetTs.hours || 0,
-              plannedUnitCost: hourlyRateCOP,
-              plannedTotal: laborCOP,
-              actualQuantity: targetTs.hours || 0,
-              actualUnitCost: hourlyRateCOP,
-              actualTotal: laborCOP,
-              variance: 0,
-              spendingNature: 'PRESUPUESTO' as const,
-              costType: 'directo' as const,
+              quantity: targetTs.hours || 0,
+              unitCostCOP: hourlyRateCOP,
+              totalCostCOP: laborCOP,
+              costType: 'directo',
               date: targetTs.date || new Date().toISOString().split('T')[0],
               observations: `Radicado desde módulo de Registro de Horas. Aprobado por supervisión.`,
-            };
-                // Las horas registradas desde la pestaña del proyecto ya viven en project.timesheetEntries y ya actualizaron el WBS
-                const existingTimesheets: any[] = (prj as any).timesheetEntries || [];
-                const fromProjectTab = targetTs.origin === 'proyecto';
-                const updatedTsEntries = fromProjectTab
-                  ? existingTimesheets
-                  : [
-                      {
-                        id: targetTs.id,
-                        projectId: prj.id,
-                        taskId: targetTs.taskId || '',
-                        taskName: targetTs.taskName || '',
-                        taskCode: '',
-                        userId: targetTs.userId,
-                        userName: targetTs.userName,
-                        userRole: targetTs.userRole,
-                        date: targetTs.date,
-                        hours: targetTs.hours || 0,
-                        isEndTask: false,
-                        isCertValid: true,
-                        workDescription: targetTs.description || '',
-                        status: 'aprobado',
-                        createdAt: new Date().toISOString(),
-                      },
-                      ...existingTimesheets,
-                    ];
+            });
+
+            // Sincronizar entrada en project.timesheetEntries
+            const existingTimesheets: any[] = (res.project as any).timesheetEntries || [];
+            const fromProjectTab = targetTs.origin === 'proyecto';
+            const updatedTsEntries = fromProjectTab
+              ? existingTimesheets
+              : [
+                  {
+                    id: targetTs.id,
+                    projectId: prj.id,
+                    taskId: targetTs.taskId || '',
+                    taskName: targetTs.taskName || '',
+                    taskCode: '',
+                    userId: targetTs.userId,
+                    userName: targetTs.userName,
+                    userRole: targetTs.userRole,
+                    date: targetTs.date,
+                    hours: targetTs.hours || 0,
+                    isEndTask: false,
+                    isCertValid: true,
+                    workDescription: targetTs.description || '',
+                    status: 'aprobado',
+                    createdAt: new Date().toISOString(),
+                  },
+                  ...existingTimesheets,
+                ];
 
             return {
-              ...prj,
-              actualCostAC: newAC,
-              cv: newCV,
-              cpi: newCPI,
-              costMatrix: [...existingMatrix, newCostItem],
+              ...res.project,
               timesheetEntries: updatedTsEntries,
             };
           }
@@ -3677,6 +3670,23 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           tasks: updatedTasks,
         };
       });
+      // Publicación en EventBus persistente de dominio
+      const targetTs = state.timesheets.find((t) => t.id === id);
+      if (targetTs) {
+        domainEventBus.publish({
+          type: 'TIMESHEET_SUBMITTED',
+          payload: {
+            timesheetId: targetTs.id,
+            userId: targetTs.userId,
+            hours: targetTs.hours || 0,
+          },
+        }, {
+          actorId: state.currentUser?.id || 'USR-SYSTEM',
+          correlationId: `CORR-TS-${targetTs.id}`,
+          eventId: `evt-ts-appr-${targetTs.id}`,
+        }).catch(console.warn);
+      }
+
       notify('success', 'Horas Aprobadas y Costo Imputado', 'Registro de horas validado y liquidado en la matriz del proyecto.');
     },
     [notify]
