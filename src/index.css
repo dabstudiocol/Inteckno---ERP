@@ -516,13 +516,13 @@ body,
   overflow-x: hidden !important;
 }
 
-/* Pastillas, Badges y Etiquetas: Nunca quebrarse en múltiples líneas y centrado vertical perfecto */
+/* Pastillas, Badges y Etiquetas: En escritorio mantienen nowrap, pero en pantallas pequeñas permiten ajuste flexible si es necesario */
 span.badge,
 span.pill,
 .badge,
 .pill,
-span[class*="badge"],
-span[class*="rounded-full"]:not([class*="h-"]):not([role="progressbar"]) {
+span[class*="badge"]:not(.hidden):not([class*="hidden"]),
+span[class*="rounded-full"]:not(.hidden):not([class*="hidden"]):not([class*="h-"]):not([role="progressbar"]) {
   white-space: nowrap !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -530,6 +530,14 @@ span[class*="rounded-full"]:not([class*="h-"]):not([role="progressbar"]) {
   line-height: 1 !important;
   flex-shrink: 0 !important;
   font-weight: 800 !important;
+}
+
+@media (max-width: 640px) {
+  span[class*="badge"]:not([class*="shrink-0"]),
+  span[class*="rounded-full"]:not([class*="shrink-0"]):not([class*="h-"]):not([role="progressbar"]) {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
 }
 
 /* Barras de Progreso e Indicadores de Avance */

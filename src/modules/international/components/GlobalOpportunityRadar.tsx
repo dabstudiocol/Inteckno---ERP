@@ -148,6 +148,11 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
   // Ejecución de Escaneo con IA adaptada a los filtros y países configurados
   const handleScanWithAi = async () => {
     setIsScanning(true);
+    notify?.(
+      'info',
+      'Rastreando Oportunidades & Licitaciones',
+      'Consultando en tiempo real SECOP II y bases de datos oficiales de contratación...'
+    );
     try {
       const activeCountriesNames = configuredCountries.map((c) => c.name);
       const res = await scanOpportunitiesWithAi(
@@ -159,8 +164,26 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
       );
       setOpportunities(res.opportunities);
       setAiScanSummary(res.summary);
+      if (res.newCount > 0) {
+        notify?.(
+          'success',
+          'Nuevas Oportunidades Sincronizadas',
+          `Se incorporaron ${res.newCount} nuevos procesos oficiales de contratación al Radar.`
+        );
+      } else {
+        notify?.(
+          'success',
+          'Radar Actualizado al Minuto',
+          `Se verificaron las fuentes oficiales. ${res.opportunities.length} licitaciones vigentes al día.`
+        );
+      }
     } catch (e) {
       console.error('Error al escanear con IA:', e);
+      notify?.(
+        'warning',
+        'Error de Conexión',
+        'No se pudo conectar con el portal de datos. Mostrando catálogo verificado.'
+      );
     } finally {
       setIsScanning(false);
     }
@@ -307,30 +330,30 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
         </div>
 
         {/* Métricas Resumidas */}
-        <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
-          <div className="bg-slate-50 px-4 py-3 rounded-2xl min-w-[130px]">
-            <span className="text-[11px] text-slate-400 block font-bold uppercase tracking-wider">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full md:w-auto md:flex md:items-center">
+          <div className="bg-slate-50 px-3.5 py-2.5 rounded-2xl min-w-0 md:min-w-[130px]">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 block font-bold uppercase tracking-wider truncate">
               Volumen Filtrado
             </span>
-            <span className="text-lg font-black text-slate-900">
+            <span className="text-base sm:text-lg font-black text-slate-900 truncate block">
               ${(totalMarketVolumeUSD / 1000).toFixed(0)}k <span className="text-xs font-normal text-slate-500">USD</span>
             </span>
           </div>
 
-          <div className="bg-emerald-50/70 px-4 py-3 rounded-2xl min-w-[130px]">
-            <span className="text-[11px] text-emerald-700 block font-bold uppercase tracking-wider">
-              Alta Afinidad (&gt;90%)
+          <div className="bg-emerald-50/70 px-3.5 py-2.5 rounded-2xl min-w-0 md:min-w-[130px]">
+            <span className="text-[10px] sm:text-[11px] text-emerald-700 block font-bold uppercase tracking-wider truncate">
+              Afinidad (&gt;90%)
             </span>
-            <span className="text-lg font-black text-emerald-800">
+            <span className="text-base sm:text-lg font-black text-emerald-800 truncate block">
               {highMatchCount} Oportunidades
             </span>
           </div>
 
-          <div className="bg-sky-50 px-4 py-3 rounded-2xl min-w-[110px]">
-            <span className="text-[11px] text-[#00668F] block font-bold uppercase tracking-wider">
+          <div className="bg-sky-50 px-3.5 py-2.5 rounded-2xl min-w-0 md:min-w-[110px] col-span-2 sm:col-span-1">
+            <span className="text-[10px] sm:text-[11px] text-[#00668F] block font-bold uppercase tracking-wider truncate">
               Mercados
             </span>
-            <span className="text-lg font-black text-[#00668F]">
+            <span className="text-base sm:text-lg font-black text-[#00668F] truncate block">
               {uniqueCountriesCount} Países
             </span>
           </div>
@@ -338,23 +361,23 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
           <button
             type="button"
             onClick={() => setIsConfigModalOpen(true)}
-            className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-[#00668F] hover:bg-slate-50 hover:border-[#00668F]/30 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
+            className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-[#00668F] hover:bg-slate-50 hover:border-[#00668F]/30 transition-all flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer shrink-0 col-span-2 sm:col-span-1 md:col-auto"
             title="Configuración de Módulo"
           >
             <Settings size={16} />
-            <span className="hidden sm:inline">Configuración</span>
+            <span className="sm:inline">Configuración</span>
           </button>
         </div>
       </div>
 
       {/* Barra Informativa de TRM del Día Actual */}
-      <div className="bg-white rounded-2xl px-5 py-2.5 shadow-2xs border border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 overflow-x-auto py-0.5">
+      <div className="bg-white rounded-2xl px-3.5 sm:px-5 py-2.5 shadow-2xs border border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto py-0.5 w-full sm:w-auto scrollbar-none">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-extrabold text-slate-800">TRM Oficial del Día:</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-600 font-medium">
+          <div className="flex items-center gap-2 text-slate-600 font-medium shrink-0">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-lg font-bold shrink-0">
               🇨🇴 1 USD = ${Math.round(currentRates.COP).toLocaleString('es-CO')} COP
             </span>
@@ -380,7 +403,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
           type="button"
           onClick={handleRefreshTrm}
           disabled={isRefreshingTrm}
-          className="text-[11px] font-bold text-[#00668F] hover:bg-sky-50 px-2.5 py-1 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+          className="text-[11px] font-bold text-[#00668F] hover:bg-sky-50 px-2.5 py-1 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 self-end sm:self-auto"
         >
           <RefreshCw size={12} className={isRefreshingTrm ? 'animate-spin' : ''} />
           <span>{isRefreshingTrm ? 'Actualizando...' : 'Actualizar TRM'}</span>
@@ -389,10 +412,10 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
 
       {/* Barra de Búsqueda y Filtros Principales */}
       <div className="bg-white rounded-xl p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto flex-1">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto flex-1">
             {/* Campo de búsqueda */}
-            <div className="relative flex-1 min-w-[220px]">
+            <div className="relative flex-1 min-w-[200px]">
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -403,28 +426,26 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
               />
             </div>
 
-            {/* Filtro por País (Alimentado dinámicamente de la configuración) */}
-            <div className="w-[180px]">
+            {/* Filtro por País */}
+            <div className="w-full sm:w-[160px] md:w-[180px]">
               <CreatableSelect
                 value={selectedCountry}
                 onChange={(val) => setSelectedCountry(val || 'Todos')}
                 options={availableCountries}
                 placeholder="País..."
                 allowCustomText={false}
-                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-2xl text-xs text-slate-700 font-medium border border-slate-200"
               />
             </div>
 
             {/* Filtro por Categoría */}
-            <div className="w-[200px]">
+            <div className="w-full sm:w-[170px] md:w-[200px]">
               <CreatableSelect
                 value={selectedCategory}
                 onChange={(val) => setSelectedCategory(val || 'Todas')}
                 options={availableCategories}
                 placeholder="Categoría..."
                 allowCustomText={false}
-                
                 inputClassName="bg-slate-50 py-1.5 px-3 rounded-2xl text-xs text-slate-700 font-medium border border-slate-200"
               />
             </div>
@@ -433,7 +454,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
             <button
               type="button"
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`px-3 py-1.5 rounded-2xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-2 sm:py-1.5 rounded-2xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
                 showAdvancedFilters || priceRange !== 'todos' || deadlineFilter !== 'todos' || matchFilter !== 'todos'
                   ? 'bg-sky-100 text-[#00668F]'
                   : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
@@ -452,7 +473,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
             type="button"
             onClick={handleScanWithAi}
             disabled={isScanning}
-            className="w-full md:w-auto px-4 py-2 bg-[#00668F] hover:bg-[#005073] text-white rounded-2xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+            className="w-full lg:w-auto px-4 py-2.5 sm:py-2 bg-[#00668F] hover:bg-[#005073] text-white rounded-2xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 shrink-0"
           >
             <RefreshCw size={13} className={isScanning ? 'animate-spin' : ''} />
             <span>{isScanning ? 'Rastreando Fuentes Oficiales...' : 'Rastrear Nuevas Oportunidades IA'}</span>
@@ -619,14 +640,14 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
             >
               <div className="space-y-3">
                 {/* Cabecera: País, Categoría y Match Score */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
                     <span className="text-base">{opp.flag}</span>
                     <span className="text-xs font-bold text-slate-800">{opp.country}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold break-words">
                       {opp.categoryLabel}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold flex items-center gap-1">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold flex items-center gap-1 shrink-0">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       {opp.status === 'abierta' ? 'Vigente' : 'Próxima'}
                     </span>
@@ -643,32 +664,32 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
 
                 {/* Título de la Oportunidad */}
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 leading-snug">{opp.title}</h3>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words">{opp.title}</h3>
                   <div className="flex items-center gap-1.5 text-xs text-[#00668F] font-semibold mt-1">
-                    <Building2 size={13} />
-                    <span>{opp.entity}</span>
+                    <Building2 size={13} className="shrink-0" />
+                    <span className="break-words">{opp.entity}</span>
                   </div>
                 </div>
 
                 {/* Presupuesto y Plazo */}
-                <div className="grid grid-cols-2 gap-3 bg-slate-50/70 p-3 rounded-2xl text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 bg-slate-50/70 p-3 rounded-2xl text-xs">
                   <div>
                     <span className="text-[10px] text-slate-400 block font-bold">Presupuesto Estimado</span>
                     {opp.country === 'Colombia' && opp.budgetLocal ? (
                       <>
-                        <span className="text-base font-black text-slate-900 block">
+                        <span className="text-sm sm:text-base font-black text-slate-900 block truncate">
                           {opp.budgetLocal}
                         </span>
-                        <span className="text-[10.5px] text-[#00668F] block font-semibold">
+                        <span className="text-[10.5px] text-[#00668F] block font-semibold truncate">
                           ≈ ${opp.budgetUSD.toLocaleString()} USD
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-base font-black text-slate-900 block">
+                        <span className="text-sm sm:text-base font-black text-slate-900 block truncate">
                           ${opp.budgetUSD.toLocaleString()} <span className="text-xs font-normal text-slate-500">USD</span>
                         </span>
-                        <span className="text-[10.5px] text-emerald-700 block font-semibold">
+                        <span className="text-[10.5px] text-emerald-700 block font-semibold truncate">
                           ≈ {opp.budgetLocal || localBudgetFormatted}
                         </span>
                       </>
@@ -677,20 +698,20 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
 
                   <div>
                     <span className="text-[10px] text-slate-400 block font-bold">Cierre / Presentación</span>
-                    <span className="text-sm font-bold text-slate-800 flex items-center gap-1 mt-0.5">
-                      <Calendar size={13} className="text-slate-400" />
-                      {opp.deadline}
+                    <span className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                      <Calendar size={13} className="text-slate-400 shrink-0" />
+                      <span>{opp.deadline}</span>
                     </span>
                     {opp.procurementCode && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[10px] text-slate-700 font-mono font-bold bg-white px-2 py-0.5 rounded-lg truncate">
+                      <div className="flex items-center gap-1.5 mt-1 min-w-0">
+                        <span className="text-[10px] text-slate-700 font-mono font-bold bg-white px-2 py-0.5 rounded-lg truncate max-w-[160px] sm:max-w-[200px]">
                           {opp.procurementCode}
                         </span>
                         <button
                           type="button"
                           onClick={(e) => handleCopyCode(opp.procurementCode!, e)}
                           title="Copiar código del expediente"
-                          className="text-slate-400 hover:text-[#00668F] cursor-pointer transition-colors"
+                          className="text-slate-400 hover:text-[#00668F] cursor-pointer transition-colors shrink-0"
                         >
                           {isCodeCopied ? (
                             <Check size={12} className="text-emerald-600" />
@@ -731,14 +752,14 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
               </div>
 
               {/* Botones de Acción de la Tarjeta */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100/60">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-100/60">
+                <div className="flex flex-wrap items-center gap-2">
                   {/* ENLACE DIRECTO A LA LICITACIÓN OFICIAL (100% Real y Verificado) */}
                   <a
                     href={directTargetUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-3 py-1.5 bg-[#00668F] hover:bg-[#005073] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-transform active:scale-95 shadow-2xs"
+                    className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 bg-[#00668F] hover:bg-[#005073] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-transform active:scale-95 shadow-2xs"
                   >
                     <span>Abrir Licitación Oficial</span>
                     <ExternalLink size={13} />
@@ -748,14 +769,14 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                   <button
                     type="button"
                     onClick={() => setVerifyingOpportunity(opp)}
-                    className="text-xs font-bold text-slate-600 hover:text-[#00668F] hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="flex-1 sm:flex-none text-xs font-bold text-slate-600 hover:text-[#00668F] hover:bg-slate-100 px-2.5 py-2 sm:py-1.5 rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <FileText size={13} />
                     <span>Ficha & Pliego</span>
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => {
@@ -765,7 +786,7 @@ export const GlobalOpportunityRadar: React.FC<GlobalOpportunityRadarProps> = ({
                         handleConvertToCrm(opp);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`w-full sm:w-auto justify-center px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       isConverted
                         ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'

@@ -990,34 +990,29 @@ export const AppShell: React.FC<AppShellProps> = ({
       <main className="flex-1 w-full max-w-full min-w-0 bg-[#EBF1F8] flex flex-col h-full overflow-hidden relative transition-all duration-300">
         
         {/* Encabezado Superior Flotante Claro y Curvo */}
-        <header className="mx-2.5 sm:mx-4 mt-2.5 sm:mt-3 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-2xl flex items-center justify-between bg-white sticky top-2.5 z-20">
-          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+        <header className="mx-2 sm:mx-4 mt-2 sm:mt-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl flex items-center justify-between bg-white sticky top-2 z-20 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
             {/* Botón Hamburger para Móvil / Tablet */}
             <button
               type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
               title="Abrir menú de módulos"
-              className="md:hidden w-10 h-10 rounded-2xl bg-[#E0F2FE] text-[#0284C7] hover:bg-[#0284C7] hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+              className="md:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#E0F2FE] text-[#0284C7] hover:bg-[#0284C7] hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0"
             >
-              <Menu size={19} />
+              <Menu size={18} />
             </button>
 
             {/* Botón Plegar en Escritorio */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               title={isSidebarCollapsed ? 'Expandir panel lateral' : 'Plegar panel lateral'}
-              className="hidden md:flex w-10 h-10 rounded-2xl bg-[#EBF2FA] text-[#0284C7] hover:bg-[#0284C7] hover:text-white items-center justify-center transition-all active:scale-95 cursor-pointer"
+              className="hidden md:flex w-10 h-10 rounded-2xl bg-[#EBF2FA] text-[#0284C7] hover:bg-[#0284C7] hover:text-white items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0"
             >
               {isSidebarCollapsed ? <ChevronRight size={19} /> : <ChevronLeft size={19} />}
             </button>
 
-            <div className="min-w-0 flex items-center gap-2.5">
-              {activeHub && (
-                <span className="hidden lg:inline-flex items-center px-3 py-1 rounded-full bg-[#E0F2FE] text-[#0369A1] text-[10px] font-black uppercase tracking-widest shrink-0">
-                  {activeHub.label}
-                </span>
-              )}
-              <h1 className="text-base sm:text-xl font-black text-[#050C1A] tracking-tight truncate">
+            <div className="min-w-0 flex items-center">
+              <h1 className="text-sm sm:text-xl font-black text-[#050C1A] tracking-tight truncate">
                 {activeTitle}
               </h1>
             </div>
@@ -1028,11 +1023,11 @@ export const AppShell: React.FC<AppShellProps> = ({
             {/* TRM Oficial Colombia en Vivo */}
             {showTrmBadge && (
               <div
-                className="flex items-center gap-1.5 h-10 px-3.5 rounded-2xl bg-[#DCF5E6] text-[#0D5C31] text-xs font-extrabold select-none"
+                className="hidden sm:flex items-center gap-1.5 h-10 px-3.5 rounded-2xl bg-[#DCF5E6] text-[#0D5C31] text-xs font-extrabold select-none shrink-0"
                 title="Tasa Representativa del Mercado Oficial (Haga clic para ver o ajustar)"
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
-                <span className="hidden sm:inline text-[10px] text-[#0D5C31] font-black uppercase tracking-wider">TRM:</span>
+                <span className="hidden md:inline text-[10px] text-[#0D5C31] font-black uppercase tracking-wider">TRM:</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -1057,7 +1052,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             )}
 
             {/* Botones Deshacer y Rehacer */}
-            <div className="flex items-center gap-1 bg-[#EBF2FA] rounded-2xl p-1">
+            <div className="hidden sm:flex items-center gap-1 bg-[#EBF2FA] rounded-2xl p-1">
               <button
                 type="button"
                 onClick={handleOpenUndo}
@@ -1091,7 +1086,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               type="button"
               onClick={() => setIsModuleConfigOpen(true)}
               title={`Configurar opciones desplegables y catálogos de ${activeTitle}`}
-              className="flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-2xl bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-xs font-extrabold transition-all active:scale-95 cursor-pointer group"
+              className="hidden sm:flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-2xl bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-xs font-extrabold transition-all active:scale-95 cursor-pointer group"
             >
               <Settings size={15} className="group-hover:rotate-90 transition-transform duration-500 shrink-0" />
               <span className="hidden sm:inline">Configurar Módulo</span>
