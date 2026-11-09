@@ -3730,73 +3730,55 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             )
           : prev.requisitions;
 
-        // 2. Imputar costo a la Matriz Financiera del Proyecto (Comprometido vs Real Devengado)
-        const isReceived = newPo.status === 'received';
+        // 2. Desacoplamiento de Matriz: Toda afectación económica pasa por applyProjectCostEntry
+        // createPurchaseOrder registra COMMITTED (Costo Comprometido), NUNCA costo real ejecutado.
         const currentTrm = getStoredTRM();
         const costCOP = poData.totalAmountCOP || (poData.currency === 'USD' ? Math.round((poData.totalAmountUSD || 0) * currentTrm) : (poData.totalAmountUSD || 0));
+        const poCategory = (poData.costCategory as any) || 'repuestos_fabricacion';
+        const effectiveCostType = poData.costType || (['subcontratos_gruas', 'viaticos_transporte'].includes(poCategory) ? 'indirecto' : 'directo');
+        const poLines = (poData.items && poData.items.length > 0) ? poData.items : [{
+          id: 'line-1',
+          originLineId: 'line-1',
+          productId: 'gen',
+          sku: 'GEN',
+          name: poData.notes || 'Ítems de OC',
+          qty: 1,
+          orderedQty: 1,
+          receivedQty: 0,
+          unitPriceUSD: 0,
+          unitPriceCOP: costCOP,
+          subtotalUSD: 0,
+          subtotalCOP: costCOP,
+        }];
+
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === poData.projectId || prj.code === poData.projectCode) {
-            const newAC = isReceived ? (prj.actualCostAC || 0) + costCOP : (prj.actualCostAC || 0);
-            const newCommitted = !isReceived ? (prj.committedCostPO || 0) + costCOP : (prj.committedCostPO || 0);
-            const newCV = (prj.earnedValueEV || 0) - newAC;
-            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-            const existingMatrix: any[] = (prj as any).costMatrix || [];
-            let updatedCostMatrix: any[];
+            let currentProject = prj;
+            poLines.forEach((it, idx) => {
+              const lineId = it.originLineId || it.id || it.sku || `line-${idx + 1}`;
+              const lineAmount = it.subtotalCOP || (Number(it.qty || 1) * Number(it.unitPriceCOP || 0)) || Math.round(costCOP / poLines.length);
 
-            // Si la OC fue asociada a un rubro/ITEM existente de la matriz
-            if (poData.costMatrixItemId && existingMatrix.some((m) => m.id === poData.costMatrixItemId)) {
-              updatedCostMatrix = existingMatrix.map((item) => {
-                if (item.id === poData.costMatrixItemId) {
-                  const newActualQty = isReceived ? (item.actualQuantity || 0) + 1 : (item.actualQuantity || 0);
-                  const newActualTotal = isReceived ? (item.actualTotal || 0) + costCOP : (item.actualTotal || 0);
-                  return {
-                    ...item,
-                    actualQuantity: newActualQty,
-                    actualTotal: newActualTotal,
-                    actualUnitCost: newActualQty > 0 ? Math.round(newActualTotal / newActualQty) : item.actualUnitCost,
-                    variance: (item.plannedTotal || 0) - newActualTotal,
-                    costType: poData.costType || item.costType || 'directo',
-                    observations: item.observations
-                      ? `${item.observations} | ${isReceived ? 'Imputado' : 'Comprometido'} por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`
-                      : `${isReceived ? 'Imputado' : 'Comprometido'} por OC ${orderNumber} (${poData.supplierName || 'Proveedor'})`,
-                  };
-                }
-                return item;
-              });
-            } else {
-              // Si no existe, crear el registro de costo imputado con su itemCode si fue provisto
-              const poCategory = (poData.costCategory as any) || 'repuestos_fabricacion';
-              const effectiveCostType = poData.costType || (['subcontratos_gruas', 'viaticos_transporte'].includes(poCategory) ? 'indirecto' : 'directo');
-              const newMatrixItem = {
-                id: `cost-po-${newPo.id}`,
-                itemCode: poData.itemCode || undefined,
+              const result = applyProjectCostEntry(currentProject, {
+                originType: 'PURCHASE_ORDER',
+                originId: newPo.id,
+                originLineId: lineId,
+                entryNature: 'COMMITTED',
+                itemCode: it.itemCode || poData.itemCode,
+                projectItemId: it.costMatrixItemId || poData.costMatrixItemId,
                 category: poCategory,
-                concept: `OC ${orderNumber} - ${poData.supplierName || 'Proveedor'}`,
+                concept: `OC ${orderNumber} - ${it.name || poData.supplierName || 'Proveedor'} [Comprometido]`,
                 unit: 'unid',
-                plannedQuantity: 1,
-                plannedUnitCost: costCOP,
-                plannedTotal: costCOP,
-                actualQuantity: isReceived ? 1 : 0,
-                actualUnitCost: isReceived ? costCOP : 0,
-                actualTotal: isReceived ? costCOP : 0,
-                variance: isReceived ? 0 : costCOP,
+                quantity: Number(it.orderedQty || it.qty || 1),
+                unitCostCOP: Number(it.unitPriceCOP) || lineAmount,
+                totalCostCOP: lineAmount,
                 costType: effectiveCostType,
                 date: poData.date || new Date().toISOString().split('T')[0],
-                observations: isReceived
-                  ? `Orden de compra cumplida y recibida (${poData.supplierName || 'Proveedor'}).`
-                  : `[Comprometido] Orden de compra emitida a ${poData.supplierName || 'Proveedor'}.`,
-              };
-              updatedCostMatrix = [...existingMatrix, newMatrixItem];
-            }
+                observations: `[Comprometido] Orden de compra emitida a ${poData.supplierName || 'Proveedor'}.`,
+              });
 
-            return {
-              ...prj,
-              actualCostAC: newAC,
-              committedCostPO: newCommitted,
-              cv: newCV,
-              cpi: newCPI,
-              costMatrix: updatedCostMatrix,
-            };
+              currentProject = result.project;
+            });
+            return currentProject;
           }
           return prj;
         });
