@@ -458,7 +458,8 @@ export type ErpModuleKey =
   | 'operations'
   | 'commercial'
   | 'productivity'
-  | 'hr';
+  | 'hr'
+  | 'domain_events';
 
 const lastLocalWriteTimestamps: Record<string, string> = {};
 const lastSyncedModuleHashes: Record<string, string> = {};

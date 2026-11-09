@@ -6,7 +6,8 @@
  * Facturación y WBS. Cero datos arbitrarios o valores por defecto del 50% o 100%.
  */
 
-import { Project, WBSTask, PurchaseOrder, ExpenseEntry, TimesheetEntry, DispatchRemission } from '../../types';
+import { Project, WBSTask, PurchaseOrder, ExpenseEntry, TimesheetEntry, DispatchRemission, CostMatrixItem } from '../../types';
+import { CostOriginType, CostEntryNature } from '../../types/ProjectSchema';
 
 export interface ProjectFinancialMetrics {
   // Avance
@@ -357,3 +358,148 @@ export function reconcileProjectAnalyticalCosts(
   };
 }
 
+
+
+// ============================================================================
+// FASE 1: DESACOPLAMIENTO DE MUTACIONES Y SERVICIO FINANCIERO DE DOMINIO
+// ============================================================================
+
+export interface ProjectCostEntryInput {
+  originType: CostOriginType;
+  originId: string;
+  originLineId: string;
+  entryNature: CostEntryNature;
+  itemCode?: string;
+  projectItemId?: string;
+  category: CostMatrixItem['category'];
+  concept: string;
+  unit: string;
+  quantity: number;
+  unitCostCOP: number;
+  totalCostCOP: number;
+  costType?: 'directo' | 'indirecto';
+  date?: string;
+  invoiceNumber?: string;
+  observations?: string;
+  isReversal?: boolean;
+  reversalOfId?: string;
+  reversalReason?: string;
+}
+
+export type ApplyCostResultStatus = 'applied' | 'ignored_duplicate' | 'error';
+
+export interface ApplyCostResult {
+  status: ApplyCostResultStatus;
+  project: Project;
+  affectedItem?: CostMatrixItem;
+  idempotencyKey: string;
+  message?: string;
+}
+
+/**
+ * Aplica una entrada de costo al proyecto de forma idempotente, inmutable y trazable.
+ * Clave de idempotencia compuesta:
+ * - Normal:   originType::originId::originLineId
+ * - Reversión: REVERSAL::originType::originId::originLineId
+ */
+export function applyProjectCostEntry(
+  project: Project,
+  entry: ProjectCostEntryInput
+): ApplyCostResult {
+  const baseKey = `${entry.originType}::${entry.originId}::${entry.originLineId}`;
+  const idempotencyKey = entry.isReversal ? `REVERSAL::${baseKey}` : baseKey;
+
+  const currentMatrix: CostMatrixItem[] = Array.isArray(project.costMatrix)
+    ? [...project.costMatrix]
+    : [];
+
+  // Verificación de Idempotencia Estricta
+  const duplicate = currentMatrix.find((it) => it.idempotencyKey === idempotencyKey);
+  if (duplicate) {
+    return {
+      status: 'ignored_duplicate',
+      project,
+      affectedItem: duplicate,
+      idempotencyKey,
+      message: `Entrada ya registrada previamente con clave ${idempotencyKey}. Duplicado ignorado sin efecto contable.`,
+    };
+  }
+
+  const itemId = `cst-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  const effectiveCost = Math.round(Number(entry.totalCostCOP) || 0);
+
+  const newMatrixItem: CostMatrixItem = {
+    id: itemId,
+    projectItemId: entry.projectItemId,
+    itemCode: entry.itemCode || 'ITEM 01',
+    category: entry.category,
+    concept: entry.concept,
+    unit: entry.unit || 'unid',
+    plannedQuantity: entry.entryNature === 'COMMITTED' ? entry.quantity : 0,
+    plannedUnitCost: entry.entryNature === 'COMMITTED' ? entry.unitCostCOP : 0,
+    plannedTotal: entry.entryNature === 'COMMITTED' ? effectiveCost : 0,
+    actualQuantity: entry.entryNature === 'ACTUAL' || entry.entryNature === 'REVERSAL' ? entry.quantity : 0,
+    actualUnitCost: entry.unitCostCOP,
+    actualTotal: entry.entryNature === 'ACTUAL' || entry.entryNature === 'REVERSAL' ? effectiveCost : 0,
+    variance: entry.entryNature === 'ACTUAL' ? -effectiveCost : 0,
+    costType: entry.costType || 'directo',
+    date: entry.date || new Date().toISOString().split('T')[0],
+    invoiceNumber: entry.invoiceNumber || '',
+    observations: entry.observations || `Imputado por ${entry.originType} ${entry.originId}`,
+    sourceType: entry.originType === 'PURCHASE_ORDER' ? 'purchase_order'
+      : entry.originType === 'EXPENSE' ? 'expense'
+      : entry.originType === 'TIMESHEET' ? 'timesheet'
+      : entry.originType === 'DISPATCH_REMISSION' || entry.originType === 'RETURN_REMISSION' ? 'remission'
+      : 'manual',
+    sourceId: entry.originId,
+    sourceCode: entry.originLineId,
+    originType: entry.originType,
+    originId: entry.originId,
+    originLineId: entry.originLineId,
+    entryNature: entry.entryNature,
+    idempotencyKey,
+    isReversal: Boolean(entry.isReversal),
+    reversalOfId: entry.reversalOfId,
+    reversalReason: entry.reversalReason,
+    committedAmount: entry.entryNature === 'COMMITTED' ? effectiveCost : 0,
+  };
+
+  const updatedMatrix = [...currentMatrix, newMatrixItem];
+
+  // Recálculo Determinista de Métricas EVM del Proyecto
+  let deltaAC = 0;
+  let deltaCommitted = 0;
+
+  if (entry.entryNature === 'ACTUAL') {
+    deltaAC = effectiveCost;
+    // Si la entrada actual cancela o liquida un compromiso previo
+    deltaCommitted = -Math.min(effectiveCost, Number(project.committedCostPO || 0));
+  } else if (entry.entryNature === 'COMMITTED') {
+    deltaCommitted = effectiveCost;
+  } else if (entry.entryNature === 'REVERSAL') {
+    deltaAC = -effectiveCost;
+  }
+
+  const newAC = Math.max(0, (Number(project.actualCostAC) || 0) + deltaAC);
+  const newCommittedPO = Math.max(0, (Number(project.committedCostPO) || 0) + deltaCommitted);
+  const earnedVal = Number(project.earnedValueEV) || 0;
+  const newCV = earnedVal - newAC;
+  const newCPI = newAC > 0 ? Number((earnedVal / newAC).toFixed(2)) : (project.cpi || 1);
+
+  const updatedProject: Project = {
+    ...project,
+    costMatrix: updatedMatrix,
+    actualCostAC: newAC,
+    committedCostPO: newCommittedPO,
+    cv: newCV,
+    cpi: newCPI,
+  };
+
+  return {
+    status: 'applied',
+    project: updatedProject,
+    affectedItem: newMatrixItem,
+    idempotencyKey,
+    message: `Entrada contable aplicada exitosamente bajo clave ${idempotencyKey}.`,
+  };
+}

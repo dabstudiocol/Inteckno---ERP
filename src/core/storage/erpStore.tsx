@@ -78,7 +78,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { getStoredTRM } from '../services/trmService';
 import { getProjectTaxRate } from '../services/taxService';
 import { getLaborRates } from '../services/moduleConfigService';
-import { reconcileProjectAnalyticalCosts } from '../services/projectFinancialEngine';
+import { reconcileProjectAnalyticalCosts, applyProjectCostEntry } from '../services/projectFinancialEngine';
 import {
   User,
   Project,
@@ -3958,83 +3958,56 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         });
 
+        // FASE 1: DESACOPLAMIENTO DE MUTACIONES DIRECTAS SOBRE project.costMatrix
+        // Toda afectación económica pasa por applyProjectCostEntry con clave de idempotencia compuesta inmutable.
         let updatedProjects = prev.projects;
         if (po.projectId || po.projectCode) {
-          const costCOP = po.totalAmountCOP || 0;
+          const poCategory = (po.costCategory as any) || 'repuestos_fabricacion';
+          const effectiveCostType = po.costType || (['subcontratos_gruas', 'viaticos_transporte'].includes(poCategory) ? 'indirecto' : 'directo');
+          const poLines = (po.items && po.items.length > 0) ? po.items : [{
+            id: 'line-1',
+            originLineId: 'line-1',
+            productId: 'gen',
+            sku: 'GEN',
+            name: po.notes || 'Ítems de OC',
+            qty: 1,
+            orderedQty: 1,
+            receivedQty: 1,
+            unitPriceUSD: 0,
+            unitPriceCOP: po.totalAmountCOP || 0,
+            subtotalUSD: 0,
+            subtotalCOP: po.totalAmountCOP || 0,
+          }];
+
           updatedProjects = prev.projects.map((prj) => {
             if (prj.id === po.projectId || prj.code === po.projectCode) {
-              const newCommitted = Math.max(0, (prj.committedCostPO || 0) - costCOP);
-              const newAC = (prj.actualCostAC || 0) + costCOP;
-              const newCV = (prj.earnedValueEV || 0) - newAC;
-              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-              const existingMatrix: any[] = (prj as any).costMatrix || [];
-              let updatedCostMatrix: any[];
+              let currentProject = prj;
+              poLines.forEach((it, idx) => {
+                const lineId = it.originLineId || it.id || it.sku || `line-${idx + 1}`;
+                const lineAmount = it.subtotalCOP || (Number(it.qty || 1) * Number(it.unitPriceCOP || 0)) || (po.totalAmountCOP ? Math.round(po.totalAmountCOP / poLines.length) : 0);
 
-              if (po.costMatrixItemId && existingMatrix.some((m) => m.id === po.costMatrixItemId)) {
-                updatedCostMatrix = existingMatrix.map((item) => {
-                  if (item.id === po.costMatrixItemId) {
-                    const newQty = (item.actualQuantity || 0) + 1;
-                    const newTotal = (item.actualTotal || 0) + costCOP;
-                    return {
-                      ...item,
-                      actualQuantity: newQty,
-                      actualTotal: newTotal,
-                      actualUnitCost: newQty > 0 ? Math.round(newTotal / newQty) : item.actualUnitCost,
-                      variance: (item.plannedTotal || 0) - newTotal,
-                      observations: item.observations
-                        ? `${item.observations} | Recibida OC ${po.orderNumber}`
-                        : `Recibida OC ${po.orderNumber}`,
-                    };
-                  }
-                  return item;
+                const result = applyProjectCostEntry(currentProject, {
+                  originType: 'PURCHASE_ORDER',
+                  originId: po.id,
+                  originLineId: lineId,
+                  entryNature: 'ACTUAL',
+                  itemCode: it.itemCode || po.itemCode,
+                  projectItemId: it.costMatrixItemId || po.costMatrixItemId,
+                  category: poCategory,
+                  concept: `OC ${po.orderNumber} - ${it.name || po.supplierName || 'Proveedor'}`,
+                  unit: 'unid',
+                  quantity: Number(it.receivedQty || it.qty || 1),
+                  unitCostCOP: Number(it.unitPriceCOP) || lineAmount,
+                  totalCostCOP: lineAmount,
+                  costType: effectiveCostType,
+                  date: po.date || new Date().toISOString().split('T')[0],
+                  invoiceNumber: (po as any).invoiceNumber || po.orderNumber,
+                  observations: `Imputado por recepción de OC ${po.orderNumber} (${po.supplierName || 'Proveedor'}).`,
                 });
-              } else {
-                let foundMatch = false;
-                updatedCostMatrix = existingMatrix.map((item) => {
-                  if (item.id === `cost-po-${po.id}` || (item.concept && po.orderNumber && item.concept.includes(`OC ${po.orderNumber}`))) {
-                    foundMatch = true;
-                    return {
-                      ...item,
-                      actualTotal: costCOP,
-                      actualQuantity: 1,
-                      actualUnitCost: costCOP,
-                      variance: 0,
-                      observations: `Imputado por OC ${po.orderNumber} (Cumplida y Recibida).`,
-                    };
-                  }
-                  return item;
-                });
-                if (!foundMatch) {
-                  const poCategory = (po.costCategory as any) || 'repuestos_fabricacion';
-                  const effectiveCostType = po.costType || (['subcontratos_gruas', 'viaticos_transporte'].includes(poCategory) ? 'indirecto' : 'directo');
-                  updatedCostMatrix.push({
-                    id: `cost-po-${po.id}`,
-                    itemCode: po.itemCode || undefined,
-                    category: poCategory,
-                    concept: `OC ${po.orderNumber} - ${po.supplierName || 'Proveedor'}`,
-                    unit: 'unid',
-                    plannedQuantity: 1,
-                    plannedUnitCost: costCOP,
-                    plannedTotal: costCOP,
-                    actualQuantity: 1,
-                    actualUnitCost: costCOP,
-                    actualTotal: costCOP,
-                    variance: 0,
-                    costType: effectiveCostType,
-                    date: po.date || new Date().toISOString().split('T')[0],
-                    observations: `Imputado por OC ${po.orderNumber} (Cumplida y Recibida).`,
-                  });
-                }
-              }
 
-              return {
-                ...prj,
-                actualCostAC: newAC,
-                committedCostPO: newCommitted,
-                cv: newCV,
-                cpi: newCPI,
-                costMatrix: updatedCostMatrix,
-              };
+                currentProject = result.project;
+              });
+              return currentProject;
             }
             return prj;
           });
@@ -4152,6 +4125,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         state.currentUser?.id || 'USR-001',
         state.currentUser?.name || 'Recepción Bodega ITK'
       ).catch(console.warn);
+
+      // Publicación en EventBus persistente de dominio (Fase 1: Outbox + Idempotente)
+      domainEventBus.publish({
+        type: 'PURCHASE_ORDER_RECEIVED',
+        payload: {
+          poId: po.id,
+          projectCode: po.projectCode || po.projectId,
+          totalAmount: po.totalAmountCOP || 0,
+          lines: (po.items || []).map((it, idx) => ({
+            originLineId: it.originLineId || it.id || it.sku || `line-${idx + 1}`,
+            amountCOP: it.subtotalCOP || (Number(it.qty || 1) * Number(it.unitPriceCOP || 0)),
+            sku: it.sku,
+          })),
+        },
+      }, {
+        actorId: state.currentUser?.id || 'USR-SYSTEM',
+        correlationId: `CORR-PO-${po.id}`,
+        eventId: `evt-po-recv-${po.id}`,
+      }).catch(console.warn);
 
       notify('success', 'Mercancía Recibida en Bodega', `${po.orderNumber}: Repuestos ingresados a bodega e inventario.`);
       return { success: true };

@@ -798,6 +798,8 @@ export interface EquipmentTool {
 }
 
 export interface PurchaseOrderItem {
+  id?: string; // ID único inmutable de la línea de orden de compra
+  originLineId?: string; // originLineId estable para idempotencia contable
   productId: string;
   sku: string;
   name: string;

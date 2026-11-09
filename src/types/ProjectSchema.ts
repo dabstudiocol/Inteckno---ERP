@@ -307,6 +307,21 @@ export interface ProjectChangeOrder {
 // 6. MATRIZ DE COSTOS Y PRESUPUESTO
 // ---------------------------------------------------------------------------
 
+export type CostOriginType = 
+  | 'PURCHASE_ORDER' 
+  | 'DISPATCH_REMISSION' 
+  | 'RETURN_REMISSION' 
+  | 'EXPENSE' 
+  | 'TIMESHEET' 
+  | 'DIRECT_ADJUSTMENT';
+
+export type CostEntryNature = 
+  | 'COMMITTED' 
+  | 'ACTUAL' 
+  | 'PROVISIONAL' 
+  | 'ADJUSTMENT' 
+  | 'REVERSAL';
+
 export interface CostMatrixItem {
   id: string;
   // ITEM contractual u operativo al que pertenece el rubro (ej. "ITEM 11", "ITEM 01", "AD-25")
@@ -356,6 +371,16 @@ export interface CostMatrixItem {
   sourceId?: string; // ID inmutable del documento origen (PO, EXP, TS, REM)
   sourceCode?: string; // Código legible del documento origen (ej. PO-2026-001, REM-OUT-2026-001)
   committedAmount?: number; // Costo comprometido en tránsito / en campo antes de recepción o liquidación
+
+  // Desacoplamiento & Trazabilidad Fase 1 (EventBus & Idempotencia Compuesta)
+  originType?: CostOriginType;
+  originId?: string;
+  originLineId?: string;
+  entryNature?: CostEntryNature;
+  idempotencyKey?: string; // originType::originId::originLineId o REVERSAL::...
+  isReversal?: boolean;
+  reversalOfId?: string;
+  reversalReason?: string;
 }
 
 // Facturación asociada a un ITEM (Hojas de Facturación Inteckno)
