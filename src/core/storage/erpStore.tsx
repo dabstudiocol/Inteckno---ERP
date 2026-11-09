@@ -63,12 +63,41 @@ export function recalculateProjectEvm(p: Project): Project {
     0
   );
   const actualCostAC = Math.max(Number(p.actualCostAC || 0), matrixActual);
-  const contractVal = Number((p as any).contractAmount || p.budgetPV || 0);
-  const eac = Math.max(actualCostAC, matrixPlanned);
+
+  // Sincronización bidireccional de Presupuesto Planificado (PV):
+  // 1. Si la matriz de costos de ejecución tiene rubros planeados > 0, es la fuente primaria.
+  // 2. Si no, si el Consolidado de Oferta (offerBudget) tiene rubros presupuestados, se sincroniza con totalBudgetedCost.
+  // 3. Fallback: el valor previo de budgetPV.
+  const offerBudgetRaw = (p as any).offerBudget;
+  const offerItems = Array.isArray(offerBudgetRaw)
+    ? offerBudgetRaw
+    : Array.isArray(offerBudgetRaw?.items)
+    ? offerBudgetRaw.items
+    : [];
+  const offerBudgetCost = offerBudgetRaw?.totalBudgetedCost !== undefined
+    ? Number(offerBudgetRaw.totalBudgetedCost)
+    : offerItems.reduce((acc: number, it: any) => acc + (Number(it.budgetPlanned) || 0), 0);
+
+  const syncedBudgetPV = matrixPlanned > 0
+    ? matrixPlanned
+    : (offerBudgetCost > 0 ? offerBudgetCost : Number(p.budgetPV || 0));
+
+  // Si el proyecto no tenía contractAmount definido o estaba en 0, y la oferta tiene grandTotalOffer / subtotal, sincronizar contractAmount
+  const offerGrandTotal = Number(offerBudgetRaw?.grandTotalOffer) || Number(offerBudgetRaw?.subtotal) || 0;
+  const syncedContractAmount = Number((p as any).contractAmount) > 0 
+    ? Number((p as any).contractAmount) 
+    : (offerGrandTotal > 0 ? offerGrandTotal : syncedBudgetPV);
+
+  const contractVal = syncedContractAmount;
+  const effectivePlanned = matrixPlanned > 0 ? matrixPlanned : syncedBudgetPV;
+  const eac = Math.max(actualCostAC, effectivePlanned);
   const computedMarginPct =
     eac > 0 && contractVal > 0 ? Number((((contractVal - eac) / contractVal) * 100).toFixed(2)) : 'N/D';
+
   return {
     ...p,
+    budgetPV: syncedBudgetPV,
+    contractAmount: syncedContractAmount,
     projectItems: items,
     actualCostAC,
     ...( { computedEAC: eac, computedMarginPct } as any ),

@@ -42,6 +42,7 @@ import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { DetailModal } from '../../components/common/DetailModal';
 import { TemplateManagerModal } from '../../components/common/TemplateManagerModal';
 import { formatCOP, getStoredTRM } from '../../core/services/trmService';
+import { calculateProjectFinancials } from '../../core/services/projectFinancialEngine';
 import { CreatableSelect } from '../../components/common/CreatableSelect';
 
 
@@ -442,7 +443,11 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             <div className="text-right hidden sm:block">
               <span className="text-[10px] text-slate-400 block uppercase font-medium">Presupuesto Planificado</span>
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                {formatCOP(selectedProject.budgetPV || 0)}
+                {formatCOP(
+                  calculateProjectFinancials(selectedProject, projectTasks).plannedCostPV ||
+                  selectedProject.budgetPV ||
+                  0
+                )}
               </span>
             </div>
 
@@ -664,7 +669,7 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
             { label: 'Ubicación / Sitio', value: detailProject.location || 'No especificada' },
             { label: 'Fecha Inicio Plan', value: detailProject.startDate || 'Pendiente' },
             { label: 'Fecha Fin Plan', value: detailProject.endDate || 'Pendiente' },
-            { label: 'Presupuesto Planificado (PV)', value: formatCOP(detailProject.budgetPV || 0), isMono: true },
+            { label: 'Presupuesto Planificado (PV)', value: formatCOP(calculateProjectFinancials(detailProject, (tasks || []).filter(t => t.projectId === detailProject.id)).plannedCostPV || detailProject.budgetPV || 0), isMono: true },
             { label: 'Valor Ganado (EV)', value: formatCOP(detailProject.earnedValueEV || 0), isMono: true },
             { label: 'Costo Real Incurrido (AC)', value: formatCOP(detailProject.actualCostAC || 0), isMono: true },
             { label: 'Índice SPI (Cronograma)', value: detailProject.spi ? detailProject.spi.toFixed(2) : '1.00', isMono: true },
@@ -939,7 +944,11 @@ export const ProjectsModule: React.FC<ProjectsModuleProps> = ({ initialView }) =
                         <div className="mt-0.5">Fin: <span className="font-mono font-bold text-[#0F172A]">{proj.endDate || '-'}</span></div>
                       </td>
                       <td className="py-3 px-2.5 font-extrabold text-[#0F172A] whitespace-nowrap tabular-nums">
-                        {formatCOP(proj.budgetPV || 0)}
+                        {formatCOP(
+                          calculateProjectFinancials(proj, (tasks || []).filter(t => t.projectId === proj.id)).plannedCostPV ||
+                          proj.budgetPV ||
+                          0
+                        )}
                       </td>
                       <td className="py-3 px-2.5 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">

@@ -438,6 +438,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
+      budgetPV: newOfferBudget.totalBudgetedCost,
+      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
   };
@@ -454,6 +456,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
+      budgetPV: newOfferBudget.totalBudgetedCost,
+      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
   };
@@ -464,6 +468,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
+      budgetPV: newOfferBudget.totalBudgetedCost,
+      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
   };
@@ -689,6 +695,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
+      budgetPV: newOfferBudget.totalBudgetedCost,
+      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
 
@@ -714,6 +722,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
+      budgetPV: newOfferBudget.totalBudgetedCost,
+      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
 
@@ -729,6 +739,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
+      budgetPV: newOfferBudget.totalBudgetedCost,
+      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
 
@@ -2477,7 +2489,12 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             newItems[idx] = { ...newItems[idx], description: e.target.value };
                             const updated = { ...offerBudget, items: newItems };
                             setOfferBudget(updated);
-                            onUpdateProject?.({ ...project, offerBudget: updated as any } as any);
+                            onUpdateProject?.({
+                              ...project,
+                              budgetPV: updated.totalBudgetedCost,
+                              contractAmount: project.contractAmount || updated.grandTotalOffer || updated.subtotal,
+                              offerBudget: updated as any,
+                            } as any);
                           }}
                           className="w-full px-2.5 py-1.5 bg-slate-50 border border-transparent hover:border-slate-200 focus:border-[#00668F] focus:bg-white rounded-lg text-xs transition-all resize-none leading-relaxed"
                         />
