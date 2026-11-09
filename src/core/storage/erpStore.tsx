@@ -4729,38 +4729,43 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         });
 
-        // Imputar a la matriz de costos del proyecto si es para un Proyecto STC y hay materiales consumibles
+        // FASE 2: Desacoplamiento de Remisiones hacia applyProjectCostEntry
+        // Registra PROVISIONAL para materiales entregados en obra
         const updatedProjects = prev.projects.map((prj) => {
           if ((prj.id === remData.projectId || prj.code === remData.projectCode) && dispatchTotalCOP > 0) {
-            const newAC = (prj.actualCostAC || 0) + dispatchTotalCOP;
-            const newCV = (prj.earnedValueEV || 0) - newAC;
-            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-            const existingMatrix = (prj as any).costMatrix || [];
-            const newCostItem = {
-              id: `cost-rem-out-${remissionNumber}`,
-              itemCode: remData.itemCode || remData.items[0]?.itemCode || undefined,
-              category: 'repuestos_fabricacion' as const,
-              concept: `Salida de Almacén (${remissionNumber}): ${consumedItemsDesc.join(', ')}`,
-              unit: 'Global',
-              plannedQuantity: 1,
-              plannedUnitCost: dispatchTotalCOP,
-              plannedTotal: dispatchTotalCOP,
-              actualQuantity: 1,
-              actualUnitCost: dispatchTotalCOP,
-              actualTotal: dispatchTotalCOP,
-              variance: 0,
-              costType: 'directo' as const,
-              hasIva: false,
-              date: remData.departureDate || new Date().toISOString().split('T')[0],
-              observations: `Despacho por Remisión de Salida ${remissionNumber} a cargo de ${remData.responsibleTechnicianName}.`,
-            };
-            return {
-              ...prj,
-              actualCostAC: newAC,
-              cv: newCV,
-              cpi: newCPI,
-              costMatrix: [...existingMatrix, newCostItem],
-            };
+            let currentPrj = prj;
+            remData.items.forEach((it, idx) => {
+              const prod = prev.products.find((p) => p.id === it.productId || p.sku === it.sku);
+              const isTool = prev.equipment.some((eq) => eq.id === it.productId || eq.code === it.sku);
+              if (!isTool) {
+                const qty = Number(it.qtyDispatched) || 0;
+                const unitCostCOP = (it.approvedCostCOP !== undefined && it.approvedCostCOP !== null)
+                  ? Number(it.approvedCostCOP)
+                  : (it.unitCostCOP || prod?.costPriceCOP || 0);
+                const itemTotalCOP = qty * unitCostCOP;
+                if (itemTotalCOP > 0) {
+                  const lineId = (it as any).id || it.sku || `line-${idx + 1}`;
+                  const res = applyProjectCostEntry(currentPrj, {
+                    originType: 'DISPATCH_REMISSION',
+                    originId: newRemission.id,
+                    originLineId: lineId,
+                    entryNature: 'PROVISIONAL',
+                    itemCode: it.itemCode || remData.itemCode,
+                    category: 'repuestos_fabricacion',
+                    concept: `Salida Almacén (${remissionNumber}) - ${it.name || it.sku}`,
+                    unit: 'unid',
+                    quantity: qty,
+                    unitCostCOP,
+                    totalCostCOP: itemTotalCOP,
+                    costType: 'directo',
+                    date: remData.departureDate || new Date().toISOString().split('T')[0],
+                    observations: `[Provisional] Salida a obra por Remisión ${remissionNumber}. Responsable: ${remData.responsibleTechnicianName}.`,
+                  });
+                  currentPrj = res.project;
+                }
+              }
+            });
+            return currentPrj;
           }
           return prj;
         });
@@ -4924,83 +4929,59 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return eq;
         });
 
-        // Si se consumieron artículos, imputar el costo al proyecto y registrar en su Matriz de Costos sin doble conteo
-        const consumedItemsList = updatedItems.filter((it) => it.qtyConsumed > 0);
-        const consumedNames = consumedItemsList.map((it) => `${it.name} (x${it.qtyConsumed})`).join(', ');
+        // FASE 2: Liquidación de Consumo Neto Real mediante applyProjectCostEntry
+        // Registra ACTUAL por los ítems consumidos y por el desgaste de herramientas
         const updatedProjects = prev.projects.map((prj) => {
           if (prj.id === remission.projectId || prj.code === remission.projectCode) {
-            const existingMatrix = (prj as any).costMatrix || [];
-            // Verificar si hubo una imputación previa en la salida (createDispatchRemission)
-            const dispatchItem = existingMatrix.find(
-              (m: any) =>
-                m.id === `cost-rem-out-${remission.remissionNumber}` ||
-                (m.concept && m.concept.includes(`Salida de Almacén (${remission.remissionNumber})`))
-            );
+            let currentPrj = prj;
 
-            let newAC: number;
-            let newCostMatrix: any[];
-
-            if (dispatchItem) {
-              // Reversar el valor provisional de la salida y fijar el consumo neto real
-              const previousDispatchCOP = dispatchItem.actualTotal || 0;
-              newAC = Math.max(0, (prj.actualCostAC || 0) - previousDispatchCOP + consumedCostCOP + totalEquipmentUsageCostCOP);
-
-              if (consumedCostCOP > 0) {
-                newCostMatrix = existingMatrix.map((item: any) =>
-                  item.id === dispatchItem.id
-                    ? {
-                        ...item,
-                        concept: `Consumo Neto Bodega (${remission.remissionNumber} / Ret: ${returnNumber}): ${consumedNames}`,
-                        plannedUnitCost: consumedCostCOP,
-                        plannedTotal: consumedCostCOP,
-                        actualUnitCost: consumedCostCOP,
-                        actualTotal: consumedCostCOP,
-                        observations: `Liquidación final de consumo. Retornaron ${totalReturned} ítems.`,
-                      }
-                    : item
-                );
-              } else {
-                // Todo retornó intacto: se retira el rubro provisional de la salida
-                newCostMatrix = existingMatrix.filter((item: any) => item.id !== dispatchItem.id);
+            // 1. Imputar consumo de materiales
+            updatedItems.forEach((it, idx) => {
+              if (it.qtyConsumed > 0) {
+                const itemTotalCOP = Math.round(Number(it.qtyConsumed) * Number(it.unitCostCOP || 0));
+                const lineId = (it as any).id || it.sku || `line-${idx + 1}`;
+                const res = applyProjectCostEntry(currentPrj, {
+                  originType: 'RETURN_REMISSION',
+                  originId: returnNumber,
+                  originLineId: lineId,
+                  entryNature: 'ACTUAL',
+                  itemCode: it.itemCode || remission.itemCode,
+                  category: 'repuestos_fabricacion',
+                  concept: `Consumo Almacén (${remission.remissionNumber} / Ret: ${returnNumber}) - ${it.name}`,
+                  unit: 'unid',
+                  quantity: it.qtyConsumed,
+                  unitCostCOP: Number(it.unitCostCOP || 0),
+                  totalCostCOP: itemTotalCOP,
+                  costType: 'directo',
+                  date: returnDate || new Date().toISOString().split('T')[0],
+                  invoiceNumber: returnNumber,
+                  observations: `Liquidación final de consumo neto en obra (${returnNotes || 'Sin notas adicionales'}).`,
+                });
+                currentPrj = res.project;
               }
-            } else {
-              // No había registro previo de salida: imputar directamente el costo consumido en COP
-              newAC = (prj.actualCostAC || 0) + consumedCostCOP + totalEquipmentUsageCostCOP;
-              newCostMatrix = consumedCostCOP > 0
-                ? [
-                    ...existingMatrix,
-                    {
-                      id: `cost-rem-${Date.now()}`,
-                      category: 'repuestos_fabricacion' as const,
-                      concept: `Consumo de Bodega (${returnNumber}): ${consumedNames}`,
-                      unit: 'Global',
-                      plannedQuantity: 0,
-                      plannedUnitCost: 0,
-                      plannedTotal: 0,
-                      actualQuantity: 1,
-                      actualUnitCost: consumedCostCOP,
-                      actualTotal: consumedCostCOP,
-                      variance: -consumedCostCOP,
-                      spendingNature: 'PRESUPUESTO' as const,
-                      costType: 'directo' as const,
-                      date: returnDate || new Date().toISOString().split('T')[0],
-                      invoiceNumber: returnNumber,
-                      observations: returnNotes || `Imputación automática por consumo en remisión ${remission.remissionNumber}`,
-                    },
-                  ]
-                : existingMatrix;
-            }
+            });
 
-            const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-            const newCV = (prj.earnedValueEV || 0) - newAC;
+            // 2. Imputar uso/desgaste de herramientas especiales NDT
+            equipmentUsageCostItems.forEach((toolCost: any, tIdx: number) => {
+              const res = applyProjectCostEntry(currentPrj, {
+                originType: 'RETURN_REMISSION',
+                originId: returnNumber,
+                originLineId: `tool-usage-${tIdx + 1}`,
+                entryNature: 'ACTUAL',
+                category: 'consumibles_taller',
+                concept: toolCost.concept,
+                unit: toolCost.unit || 'Días',
+                quantity: toolCost.actualQuantity || 1,
+                unitCostCOP: toolCost.actualUnitCost || toolCost.actualTotal,
+                totalCostCOP: toolCost.actualTotal,
+                costType: 'directo',
+                date: returnDate || new Date().toISOString().split('T')[0],
+                observations: toolCost.observations,
+              });
+              currentPrj = res.project;
+            });
 
-            return {
-              ...prj,
-              actualCostAC: newAC,
-              cpi: newCPI,
-              cv: newCV,
-              costMatrix: [...newCostMatrix, ...equipmentUsageCostItems],
-            };
+            return currentPrj;
           }
           return prj;
         });
@@ -5167,67 +5148,29 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             targetExp.category === 'servicios_tecnicos' ? 'subcontratos_gruas' : 'imprevistos_contingencia'
           ) as any;
 
+          // FASE 2: Desacoplamiento de Gastos hacia applyProjectCostEntry
+          // Registra ACTUAL con idempotencia inmutable basada en originId: targetExp.id
           updatedProjects = prev.projects.map((prj) => {
             if (prj.id === targetExp.projectId || prj.code === targetExp.projectCode) {
-              const existingMatrix = (prj as any).costMatrix || [];
-              const alreadyInjected = existingMatrix.some((c: any) => c.id === `cost-exp-${targetExp.id}`);
-              if (alreadyInjected) return prj;
-
-              const newAC = (prj.actualCostAC || 0) + amountCOP;
-              const newCV = (prj.earnedValueEV || 0) - newAC;
-              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
-
-              const newCostItem = {
-                id: `cost-exp-${targetExp.id}`,
-                itemCode: targetExp.itemCode || undefined,
+              const res = applyProjectCostEntry(prj, {
+                originType: 'EXPENSE',
+                originId: targetExp.id,
+                originLineId: targetExp.invoiceNumber || 'EXP-LINE-01',
+                entryNature: 'ACTUAL',
+                itemCode: targetExp.itemCode,
+                projectItemId: targetExp.costMatrixItemId,
                 category: mappedCategory,
                 concept: `${targetExp.isPettyCash ? '[Caja Menor] ' : '[Gasto Legalizado] '}${targetExp.description}${targetExp.supplierName ? ` - ${targetExp.supplierName}` : ''}`,
                 unit: 'Global',
-                plannedQuantity: 0,
-                plannedUnitCost: 0,
-                plannedTotal: 0,
-                actualQuantity: 1,
-                actualUnitCost: amountCOP,
-                actualTotal: amountCOP,
-                variance: -amountCOP,
-                spendingNature: 'PRESUPUESTO' as const,
-                costType: 'directo' as const,
+                quantity: 1,
+                unitCostCOP: amountCOP,
+                totalCostCOP: amountCOP,
+                costType: 'directo',
                 date: targetExp.date || new Date().toISOString().split('T')[0],
                 invoiceNumber: targetExp.invoiceNumber || '',
-                receiptPhotos: targetExp.receiptPhotoUrl ? [targetExp.receiptPhotoUrl] : [],
-                observations: `Radicado por ${targetExp.userName}. Categoría original: ${targetExp.category}.`,
-              };
-
-              let updatedCostMatrix: any[];
-              if (targetExp.costMatrixItemId && existingMatrix.some((m: any) => m.id === targetExp.costMatrixItemId)) {
-                updatedCostMatrix = existingMatrix.map((item: any) => {
-                  if (item.id === targetExp.costMatrixItemId) {
-                    const newActualQty = (item.actualQuantity || 0) + 1;
-                    const newActualTotal = (item.actualTotal || 0) + amountCOP;
-                    return {
-                      ...item,
-                      actualQuantity: newActualQty,
-                      actualTotal: newActualTotal,
-                      actualUnitCost: newActualQty > 0 ? Math.round(newActualTotal / newActualQty) : item.actualUnitCost,
-                      variance: (item.plannedTotal || 0) - newActualTotal,
-                      observations: item.observations
-                        ? `${item.observations} | Gasto: ${targetExp.description}`
-                        : `Gasto: ${targetExp.description}`,
-                    };
-                  }
-                  return item;
-                });
-              } else {
-                updatedCostMatrix = [...existingMatrix, newCostItem];
-              }
-
-              return {
-                ...prj,
-                actualCostAC: newAC,
-                cv: newCV,
-                cpi: newCPI,
-                costMatrix: updatedCostMatrix,
-              };
+                observations: `Radicado por ${targetExp.userName}. Aprobado por contabilidad (${currentUserName}).`,
+              });
+              return res.project;
             }
             return prj;
           });
