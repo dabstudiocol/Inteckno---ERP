@@ -314,7 +314,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   currentTrm,
   onUpdateProject,
 }) => {
-  const { timesheets, currentUser, createRequisition, setActiveModule, notify, employees = [] } = useErp();
+  const { timesheets, currentUser, createRequisition, setActiveModule, notify, employees = [], navigateWithContext } = useErp();
 
   // Permiso de visualización de datos sensibles de ganancia y margen
   const canViewFinancialProfit =
@@ -3072,6 +3072,54 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                                     status: 'verified',
                                   }}
                                 />
+                                {(c.originType === 'PURCHASE_ORDER' || c.id.startsWith('cost-po-')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigateWithContext('compras', 'open_po_receipt', { poId: c.originId || c.sourceId })}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-colors cursor-pointer"
+                                    title="Ir a la Orden de Compra origen en Abastecimiento"
+                                  >
+                                    <ShoppingCart size={10} />
+                                    <span>OC</span>
+                                    <ExternalLink size={10} />
+                                  </button>
+                                )}
+                                {(c.originType === 'DISPATCH_REMISSION' || c.originType === 'RETURN_REMISSION' || c.id.startsWith('cost-rem-')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigateWithContext('inventario', 'create_dispatch', { projectId: project.id, projectCode: project.code })}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors cursor-pointer"
+                                    title="Ir a Remisiones en Almacén"
+                                  >
+                                    <Truck size={10} />
+                                    <span>Remisión</span>
+                                    <ExternalLink size={10} />
+                                  </button>
+                                )}
+                                {(c.originType === 'EXPENSE' || c.id.startsWith('cost-exp-')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigateWithContext('gastos', 'create_expense', { projectId: project.id })}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition-colors cursor-pointer"
+                                    title="Ir al comprobante de gastos en Operaciones"
+                                  >
+                                    <Receipt size={10} />
+                                    <span>Gasto</span>
+                                    <ExternalLink size={10} />
+                                  </button>
+                                )}
+                                {(c.originType === 'TIMESHEET' || c.id.startsWith('cost-ts-')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigateWithContext('horas', 'filter_project', { projectId: project.id, projectCode: project.code })}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 hover:bg-blue-100 text-[#00668F] border border-blue-200 transition-colors cursor-pointer"
+                                    title="Ir a Planilla de Horas de este proyecto"
+                                  >
+                                    <Clock size={10} />
+                                    <span>Horas</span>
+                                    <ExternalLink size={10} />
+                                  </button>
+                                )}
                               </div>
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono text-slate-700">
@@ -3285,6 +3333,30 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                                     status: 'verified',
                                   }}
                                 />
+                                {(c.originType === 'EXPENSE' || c.id.startsWith('cost-exp-')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigateWithContext('gastos', 'create_expense', { projectId: project.id })}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition-colors cursor-pointer"
+                                    title="Ir al comprobante de gastos en Operaciones"
+                                  >
+                                    <Receipt size={10} />
+                                    <span>Gasto</span>
+                                    <ExternalLink size={10} />
+                                  </button>
+                                )}
+                                {(c.originType === 'PURCHASE_ORDER' || c.id.startsWith('cost-po-')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigateWithContext('compras', 'open_po_receipt', { poId: c.originId || c.sourceId })}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-colors cursor-pointer"
+                                    title="Ir a la Orden de Compra origen en Abastecimiento"
+                                  >
+                                    <ShoppingCart size={10} />
+                                    <span>OC</span>
+                                    <ExternalLink size={10} />
+                                  </button>
+                                )}
                               </div>
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono text-slate-700">
