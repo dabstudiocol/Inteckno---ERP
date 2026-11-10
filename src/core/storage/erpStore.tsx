@@ -4300,59 +4300,39 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if ((po.projectId || po.projectCode) && (deltaCostCOP > 0 || allCompleted)) {
           updatedProjects = prev.projects.map((prj) => {
             if (prj.id === po.projectId || prj.code === po.projectCode) {
-              const transferAmount = allCompleted
-                ? Math.max(deltaCostCOP, (prj.committedCostPO || 0))
-                : deltaCostCOP;
-              const newCommitted = Math.max(0, (prj.committedCostPO || 0) - transferAmount);
-              const newAC = (prj.actualCostAC || 0) + deltaCostCOP;
-              const newCV = (prj.earnedValueEV || 0) - newAC;
-              const newCPI = newAC > 0 ? Number(((prj.earnedValueEV || 0) / newAC).toFixed(2)) : prj.cpi;
+              const poCategory = (po as any).category || (po.isEquipmentPurchase ? 'herramientas_equipos' : 'repuestos_fabricacion');
+              const effectiveCostType = po.costType || (po.isEquipmentPurchase ? 'indirecto' : 'directo');
 
-              const existingMatrix: any[] = (prj as any).costMatrix || [];
-              let updatedCostMatrix: any[];
-              if (po.costMatrixItemId && existingMatrix.some((m) => m.id === po.costMatrixItemId)) {
-                updatedCostMatrix = existingMatrix.map((item) => {
-                  if (item.id === po.costMatrixItemId) {
-                    const newQty = (item.actualQuantity || 0) + 1;
-                    const newTotal = (item.actualTotal || 0) + deltaCostCOP;
-                    return {
-                      ...item,
-                      actualQuantity: newQty,
-                      actualTotal: newTotal,
-                      actualUnitCost: newQty > 0 ? Math.round(newTotal / newQty) : item.actualUnitCost,
-                      variance: (item.plannedTotal || 0) - newTotal,
-                      observations: item.observations
-                        ? `${item.observations} | Recepción ${allCompleted ? 'completa' : 'parcial'} OC ${po.orderNumber}`
-                        : `Recepción ${allCompleted ? 'completa' : 'parcial'} OC ${po.orderNumber}`,
-                    };
-                  }
-                  return item;
-                });
-              } else {
-                updatedCostMatrix = existingMatrix.map((item) => {
-                  if (item.id === `cost-po-${po.id}` || (item.concept && po.orderNumber && item.concept.includes(`OC ${po.orderNumber}`))) {
-                    const newTotal = (item.actualTotal || 0) + deltaCostCOP;
-                    return {
-                      ...item,
-                      actualTotal: newTotal,
-                      actualQuantity: 1,
-                      actualUnitCost: newTotal,
-                      variance: Math.max(0, (item.plannedTotal || 0) - newTotal),
-                      observations: `Imputado por OC ${po.orderNumber} (${allCompleted ? 'Cumplida y Recibida' : 'Recepción Parcial'}).`,
-                    };
-                  }
-                  return item;
-                });
-              }
+              let currentProject = prj;
+              itemReceipts.forEach((r, idx) => {
+                if (r.receivedQty <= 0) return;
+                const it = po.items.find((pItem) => pItem.sku === r.sku);
+                const unitCOP = it?.unitPriceCOP || (po.totalAmountCOP && po.items.length > 0 ? Math.round(po.totalAmountCOP / po.items.length) : 0);
+                const lineAmount = Math.round(r.receivedQty * unitCOP);
 
-              return {
-                ...prj,
-                actualCostAC: newAC,
-                committedCostPO: newCommitted,
-                cv: newCV,
-                cpi: newCPI,
-                costMatrix: updatedCostMatrix,
-              };
+                const result = applyProjectCostEntry(currentProject, {
+                  originType: 'PURCHASE_ORDER',
+                  originId: po.id,
+                  originLineId: `receipt-${po.id}-${it?.sku || idx + 1}`,
+                  entryNature: 'ACTUAL',
+                  itemCode: it?.itemCode || po.itemCode,
+                  projectItemId: it?.costMatrixItemId || po.costMatrixItemId,
+                  category: poCategory,
+                  concept: `OC ${po.orderNumber} - ${it?.name || r.sku} (${po.supplierName || 'Proveedor'})`,
+                  unit: (it as any)?.unit || 'unid',
+                  quantity: Number(r.receivedQty || 1),
+                  unitCostCOP: Number(unitCOP) || lineAmount,
+                  totalCostCOP: lineAmount,
+                  costType: effectiveCostType,
+                  date: po.date || new Date().toISOString().split('T')[0],
+                  invoiceNumber: (po as any).invoiceNumber || po.orderNumber,
+                  observations: `Recepción parcial de OC ${po.orderNumber} (${po.supplierName || 'Proveedor'}).`,
+                });
+
+                currentProject = result.project;
+              });
+
+              return currentProject;
             }
             return prj;
           });
