@@ -449,7 +449,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     onUpdateProject?.({
       ...project,
       budgetPV: newOfferBudget.totalBudgetedCost,
-      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
+      contractAmount: newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
   };
@@ -467,7 +467,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     onUpdateProject?.({
       ...project,
       budgetPV: newOfferBudget.totalBudgetedCost,
-      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
+      contractAmount: newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
   };
@@ -706,7 +706,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     onUpdateProject?.({
       ...project,
       budgetPV: newOfferBudget.totalBudgetedCost,
-      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
+      contractAmount: newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
 
@@ -733,7 +733,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     onUpdateProject?.({
       ...project,
       budgetPV: newOfferBudget.totalBudgetedCost,
-      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
+      contractAmount: newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
 
@@ -750,7 +750,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     onUpdateProject?.({
       ...project,
       budgetPV: newOfferBudget.totalBudgetedCost,
-      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
+      contractAmount: newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
 
@@ -1048,7 +1048,15 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   });
 
   // Cálculos financieros contractuales basados en la realidad de Inteckno S.A.S.
-  const rawContractAmount = project.contractAmount || project.budgetPV || 0;
+  // El Valor Contractual oficial proviene del Gran Total de Oferta (con IVA incluido) cuando está formulado,
+  // garantizando sincronía exacta entre la cotización del proyecto y las tarjetas de control.
+  const activeOfferGrandTotal = Number(offerBudget.grandTotalOffer) > 0 
+    ? Number(offerBudget.grandTotalOffer) 
+    : (Number(offerBudget.subtotal) || 0);
+
+  const rawContractAmount = activeOfferGrandTotal > 0
+    ? activeOfferGrandTotal
+    : (project.contractAmount || project.budgetPV || 0);
   const currency = project.currency || 'COP';
   const contractAmountCOP = currency === 'USD' 
     ? rawContractAmount * currentTrm 
@@ -2502,7 +2510,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                             onUpdateProject?.({
                               ...project,
                               budgetPV: updated.totalBudgetedCost,
-                              contractAmount: project.contractAmount || updated.grandTotalOffer || updated.subtotal,
+                              contractAmount: updated.grandTotalOffer || updated.subtotal,
                               offerBudget: updated as any,
                             } as any);
                           }}

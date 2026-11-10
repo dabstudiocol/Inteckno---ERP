@@ -82,11 +82,16 @@ export function recalculateProjectEvm(p: Project): Project {
     ? matrixPlanned
     : (offerBudgetCost > 0 ? offerBudgetCost : Number(p.budgetPV || 0));
 
-  // Si el proyecto no tenía contractAmount definido o estaba en 0, y la oferta tiene grandTotalOffer / subtotal, sincronizar contractAmount
-  const offerGrandTotal = Number(offerBudgetRaw?.grandTotalOffer) || Number(offerBudgetRaw?.subtotal) || 0;
-  const syncedContractAmount = Number((p as any).contractAmount) > 0 
-    ? Number((p as any).contractAmount) 
-    : (offerGrandTotal > 0 ? offerGrandTotal : syncedBudgetPV);
+  // El Gran Total de la Oferta (subtotal + IVA) es el Valor Contractual oficial generado por la cotización/presupuesto
+  const offerGrandTotal = Number(offerBudgetRaw?.grandTotalOffer) > 0
+    ? Number(offerBudgetRaw.grandTotalOffer)
+    : (Number(offerBudgetRaw?.subtotal) || 0);
+
+  // Si existe Consolidado de Oferta con total formulado, este manda como Valor Contractual oficial del proyecto.
+  // Si no, recurrir a contractAmount previo o a budgetPV.
+  const syncedContractAmount = offerGrandTotal > 0
+    ? offerGrandTotal
+    : (Number((p as any).contractAmount) > 0 ? Number((p as any).contractAmount) : syncedBudgetPV);
 
   const contractVal = syncedContractAmount;
   const effectivePlanned = matrixPlanned > 0 ? matrixPlanned : syncedBudgetPV;
