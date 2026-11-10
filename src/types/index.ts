@@ -374,6 +374,9 @@ export interface Project {
   quoteCode?: string; // Código de Cotización Comercial ITK-AAAAMM-XXX
   contractCode?: string; // Código de Contrato / Orden de Compra Cliente
   clientCountry?: string; // País de Ejecución de la Obra / Servicio
+  country?: string; // Alias canónico de clientCountry
+  progressPercent?: number; // % de avance físico calculado
+  timesheetEntries?: any[]; // Entradas de horas vinculadas
   serviceTypeId?: string; // ID foráneo del servicio técnico especializado (ej: SRV-005)
   contractAddendums?: {
     id: string;
