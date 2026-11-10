@@ -109,6 +109,7 @@ import { getProjectTaxRate } from '../services/taxService';
 import { getLaborRates } from '../services/moduleConfigService';
 import { reconcileProjectAnalyticalCosts, applyProjectCostEntry } from '../services/projectFinancialEngine';
 import { calculateStockReceipt, detectPrecisionEquipmentForCalib } from '../services/procurementOperationsService';
+import { checkMetrologyDispatchBlock, calculateRemissionReturn, calculateRestockedProducts } from '../services/remissionOperationsService';
 import {
   User,
   Project,
@@ -4596,27 +4597,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'id' | 'remissionNumber' | 'status' | 'totalDispatchedItems' | 'totalReturnedItems' | 'totalConsumedValueUSD' | 'totalConsumedValueCOP'
       >
     ) => {
-      // 1. BLOQUEO PREVENTIVO DE CALIBRACIÓN VENCIDA PARA EQUIPOS ESPECIALES NDT
-      const expiredToolsInDispatch: EquipmentTool[] = [];
-      const nowMs = Date.now();
-
-      for (const item of remData.items) {
-        const foundEq = state.equipment.find((e) => e.id === item.productId || e.code === item.sku);
-        if (foundEq) {
-          const isExpired = !foundEq.isCalibrated || (foundEq.calibrationExpiry && new Date(foundEq.calibrationExpiry).getTime() < nowMs);
-          if (isExpired) {
-            expiredToolsInDispatch.push(foundEq);
-          }
-        }
-      }
-
-      if (expiredToolsInDispatch.length > 0) {
-        const toolNames = expiredToolsInDispatch.map((t) => `${t.name} (${t.code} - Venció: ${t.calibrationExpiry})`).join(', ');
-        notify(
-          'urgent',
-          'BLOQUEO METROLÓGICO NDT',
-          `No es posible autorizar la salida: el equipo [${toolNames}] tiene su Certificado de Calibración VENCIDO. Debe recalibrarse según norma ISO/IEC 17025.`
-        );
+      // 1. BLOQUEO PREVENTIVO DE CALIBRACIÓN VENCIDA PARA EQUIPOS ESPECIALES NDT (Desacoplado)
+      const metrologyCheck = checkMetrologyDispatchBlock(state.equipment, remData.items);
+      if (metrologyCheck.hasExpiredTools) {
+        notify('urgent', 'BLOQUEO METROLÓGICO NDT', metrologyCheck.errorMessage || 'Equipo con calibración vencida.');
         return { success: false, remissionNumber: '' };
       }
 
@@ -4832,45 +4816,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const remission = state.remissions.find((r) => r.id === remissionId);
       if (!remission) return { success: false, consumedCostUSD: 0, consumedCostCOP: 0 };
 
-      let consumedCostUSD = 0;
-      let consumedCostCOP = 0;
-      let totalReturned = 0;
+      // Liquidación matemática del retorno mediante el servicio de dominio desacoplado
+      const {
+        updatedItems,
+        consumedCostUSD,
+        consumedCostCOP,
+        totalReturned,
+        allReturned,
+      } = calculateRemissionReturn(remission.items, returnedItems);
 
-      const updatedItems: RemissionItem[] = remission.items.map((item) => {
-        const retInfo = returnedItems.find((r) => r.id === item.id);
-        const qtyReturned = retInfo ? Math.min(item.qtyDispatched, Math.max(0, Number(retInfo.qtyReturned) || 0)) : item.qtyDispatched;
-        const qtyConsumed = Math.max(0, item.qtyDispatched - qtyReturned);
-
-        totalReturned += qtyReturned;
-        consumedCostUSD += qtyConsumed * item.unitCostUSD;
-        consumedCostCOP += qtyConsumed * item.unitCostCOP;
-
-        return {
-          ...item,
-          qtyReturned,
-          qtyConsumed,
-          condition: retInfo?.condition || (qtyConsumed > 0 ? 'consumido' : 'bueno'),
-          notes: retInfo?.notes || item.notes,
-        };
-      });
-
-      const allReturned = updatedItems.every((it) => it.qtyConsumed === 0);
       const returnNumber = `REM-IN-2026-${String(state.remissions.filter((r) => r.actualReturnDate).length + 1).padStart(3, '0')}`;
 
       setState((prev) => {
         // Reintegrar al inventario los ítems que retornaron
-        const updatedProducts = prev.products.map((p) => {
-          const retItem = updatedItems.find((it) => it.productId === p.id || it.sku === p.sku);
-          if (retItem && retItem.qtyReturned > 0) {
-            const newStock = p.realStock + retItem.qtyReturned;
-            return {
-              ...p,
-              realStock: newStock,
-              availableStock: Math.max(0, newStock - p.reservedStock),
-            };
-          }
-          return p;
-        });
+        const updatedProducts = calculateRestockedProducts(prev.products, updatedItems);
 
         // Reintegrar equipos y calcular costo por uso / depreciación inyectado al proyecto (Eje 5)
         let totalEquipmentUsageCostCOP = 0;
