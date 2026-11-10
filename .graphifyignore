@@ -1,0 +1,23 @@
+# Graphify Exclusions - Inteckno ERP
+# Exclude standalone config files, test suites, external scripts, and auxiliary tools
+# so the architecture graph focuses purely on the unified ERP runtime (src/)
+
+# Scripts y utilidades CLI externas al bundle del navegador
+scripts/
+tests/
+verify_rules.cjs
+
+# Configuración del entorno y bundlers
+tsconfig*.json
+functions/tsconfig*.json
+functions/lib/
+public/manifest.json
+public/sw.js
+*.ps1
+vite.config.ts
+
+# CI/CD y workflows de GitHub
+.github/
+
+# Backups y caches
+*.cache
