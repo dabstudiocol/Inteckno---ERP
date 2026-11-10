@@ -174,18 +174,29 @@ export const PurchaseOrderDetailDrawer: React.FC<Props> = ({
                 </span>
               )}
               {po.projectCode ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    navigateWithContext('proyectos', 'view_project', { projectId: po.projectId, tab: 'costs' });
-                  }}
-                  className="text-xs px-2.5 py-0.5 rounded-md bg-sky-500/30 hover:bg-sky-500/50 text-white font-bold flex items-center gap-1 transition-all cursor-pointer border border-sky-400/40"
-                  title="Ver en Matriz de Costos del Proyecto"
-                >
-                  <span>Proyecto: {po.projectCode}</span>
-                  <ArrowRight size={12} />
-                </button>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigateWithContext('proyectos', 'view_project', { 
+                        projectId: po.projectId, 
+                        tab: 'costs',
+                        itemCode: po.itemCode,
+                      });
+                    }}
+                    className="text-xs px-2.5 py-0.5 rounded-md bg-sky-500/30 hover:bg-sky-500/50 text-white font-bold flex items-center gap-1 transition-all cursor-pointer border border-sky-400/40"
+                    title={po.itemCode ? `Ver en Matriz de Costos (${po.itemCode})` : "Ver en Matriz de Costos del Proyecto"}
+                  >
+                    <span>Proyecto: {po.projectCode}</span>
+                    <ArrowRight size={12} />
+                  </button>
+                  {po.itemCode && (
+                    <span className="text-xs px-2 py-0.5 rounded-md bg-white/20 text-white font-mono font-bold">
+                      {po.itemCode}
+                    </span>
+                  )}
+                </div>
               ) : (
                 <span className="text-xs px-2.5 py-0.5 rounded-md bg-white/10 text-slate-200 truncate">
                   Gasto General / Oficina

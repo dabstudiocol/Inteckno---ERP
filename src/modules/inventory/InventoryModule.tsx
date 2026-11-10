@@ -3183,10 +3183,14 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({ initialTab }) 
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigateWithContext('proyectos', 'view_project', { projectId: rem.projectId, tab: 'costs' });
+                                navigateWithContext('proyectos', 'view_project', { 
+                                  projectId: rem.projectId, 
+                                  tab: 'costs',
+                                  itemCode: rem.itemCode,
+                                });
                               }}
                               className="font-bold text-[#00668F] hover:underline flex items-center gap-1 group text-xs cursor-pointer"
-                              title={`Ir al Proyecto ${rem.projectCode} (Matriz de Costos)`}
+                              title={rem.itemCode ? `Ir al Proyecto ${rem.projectCode} (ITEM ${rem.itemCode})` : `Ir al Proyecto ${rem.projectCode} (Matriz de Costos)`}
                             >
                               <span>{rem.projectCode}</span>
                               <ArrowRight size={10} className="opacity-60 group-hover:opacity-100 transition-opacity" />

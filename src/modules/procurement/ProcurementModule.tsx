@@ -634,18 +634,29 @@ export const ProcurementModule: React.FC = () => {
                     </div>
                     <div className="text-[11px] text-slate-500">
                       {po.projectCode ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigateWithContext('proyectos', 'view_project', { projectId: po.projectId, tab: 'costs' });
-                          }}
-                          className="text-[11px] font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
-                          title="Ver en Matriz de Costos del Proyecto"
-                        >
-                          <span>Centro Costos: {po.projectCode}</span>
-                          <ArrowRight size={11} />
-                        </button>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateWithContext('proyectos', 'view_project', { 
+                                projectId: po.projectId, 
+                                tab: 'costs',
+                                itemCode: po.itemCode,
+                              });
+                            }}
+                            className="text-[11px] font-bold text-[#00668F] hover:underline flex items-center gap-1 cursor-pointer"
+                            title={po.itemCode ? `Ver en Matriz de Costos (${po.itemCode})` : "Ver en Matriz de Costos del Proyecto"}
+                          >
+                            <span>Centro Costos: {po.projectCode}</span>
+                            <ArrowRight size={11} />
+                          </button>
+                          {po.itemCode && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-sky-100 text-[#00668F]">
+                              {po.itemCode}
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-[11px] text-slate-500">Gasto General / Oficina</span>
                       )}

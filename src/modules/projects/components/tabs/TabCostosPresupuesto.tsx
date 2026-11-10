@@ -314,7 +314,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   currentTrm,
   onUpdateProject,
 }) => {
-  const { timesheets, currentUser, createRequisition, setActiveModule, notify, employees = [], navigateWithContext } = useErp();
+  const { timesheets, currentUser, createRequisition, setActiveModule, notify, employees = [], navigateWithContext, navigationContext, clearNavigationContext } = useErp();
 
   // Permiso de visualización de datos sensibles de ganancia y margen
   const canViewFinancialProfit =
@@ -426,6 +426,16 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       setOfferBudget(recalculateOfferBudget(normalizedItems, Number(existing.totalBudgetedProfit) || 0));
     }
   }, [project]);
+
+  // Escuchar navegación contextual hacia un ITEM específico de la Matriz de Costos (Regla 16)
+  React.useEffect(() => {
+    if (navigationContext && (navigationContext.targetModule === 'proyectos' || navigationContext.targetModule === 'projects')) {
+      if (navigationContext.data?.itemCode) {
+        setSelectedFolderCode(navigationContext.data.itemCode);
+        setActiveMainView('items_costos');
+      }
+    }
+  }, [navigationContext]);
 
   // Recalcular fila y totales del Consolidado de Oferta según la estructura de 3 columnas
   const handleUpdateOfferBudgetValue = (index: number, val: number) => {

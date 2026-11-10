@@ -128,10 +128,14 @@ export const RequisitionsModule: React.FC = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigateWithContext('proyectos', 'view_project', { projectId: req.projectId, tab: 'costs' });
+                        navigateWithContext('proyectos', 'view_project', { 
+                          projectId: req.projectId, 
+                          tab: 'costs',
+                          itemCode: req.itemCode,
+                        });
                       }}
                       className="font-bold text-xs text-[#00668F] hover:underline cursor-pointer flex items-center gap-1"
-                      title="Ver Matriz de Costos del Proyecto"
+                      title={req.itemCode ? `Ver en Matriz de Costos (${req.itemCode})` : "Ver Matriz de Costos del Proyecto"}
                     >
                       <span>{req.projectCode}</span>
                       <ArrowRight size={12} />
