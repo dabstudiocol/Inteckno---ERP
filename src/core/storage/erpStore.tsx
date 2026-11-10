@@ -108,6 +108,7 @@ import { getStoredTRM } from '../services/trmService';
 import { getProjectTaxRate } from '../services/taxService';
 import { getLaborRates } from '../services/moduleConfigService';
 import { reconcileProjectAnalyticalCosts, applyProjectCostEntry } from '../services/projectFinancialEngine';
+import { calculateStockReceipt, detectPrecisionEquipmentForCalib } from '../services/procurementOperationsService';
 import {
   User,
   Project,
@@ -3982,46 +3983,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (po.status === 'received') return { success: false, error: 'La orden ya ha sido recibida previamente' };
 
       setState((prev) => {
-        const newProductsToAdd: Product[] = [];
-        const updatedProducts = prev.products.map((prod) => {
-          const poItem = po.items.find((it) => it.productId === prod.id || it.sku === prod.sku);
-          if (poItem) {
-            const addedStock = Number(poItem.qty) || 0;
-            const newStock = prod.realStock + addedStock;
-            return {
-              ...prod,
-              realStock: newStock,
-              availableStock: Math.max(0, newStock - prod.reservedStock),
-            };
-          }
-          return prod;
-        });
-
-        // Crear productos no existentes que hayan sido comprados y recibidos
-        po.items.forEach((it) => {
-          const existsInProducts = prev.products.some((p) => p.id === it.productId || p.sku === it.sku);
-          const alreadyAdded = newProductsToAdd.some((p) => p.id === it.productId || p.sku === it.sku);
-          if (!existsInProducts && !alreadyAdded && it.sku) {
-            const qty = Number(it.qty) || 1;
-            newProductsToAdd.push({
-              id: it.productId || `PRD-${Date.now()}-${it.sku}`,
-              sku: it.sku,
-              name: it.name || it.sku,
-              category: 'Repuestos & Fabricación STC',
-              unit: (it as any).unit || 'unid',
-              costPriceCOP: it.unitPriceCOP || 0,
-              costPriceUSD: it.unitPriceUSD || 0,
-              realStock: qty,
-              reservedStock: 0,
-              availableStock: qty,
-              minStock: 1,
-              isCriticalSpare: false,
-              isHomologatedITK: true,
-              locationName: 'Almacén Central Medellín (Sede Poblado)',
-              shelf: 'A-01',
-            });
-          }
-        });
+        // 1. Reconciliación de Stock usando el motor de Abastecimiento desacoplado
+        const { updatedProducts, newProductsToAdd } = calculateStockReceipt(prev.products, po.items);
 
         // FASE 1: DESACOPLAMIENTO DE MUTACIONES DIRECTAS SOBRE project.costMatrix
         // Toda afectación económica pasa por applyProjectCostEntry con clave de idempotencia compuesta inmutable.
@@ -4078,47 +4041,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
 
-        // Coreografía de Trazabilidad: Eje 5 (Activos y HSEQ)
-        // Si la OC compra una herramienta costosa/activo (ej. torquímetro), se registra en equipment con nextDueDate
-        // y se notifica a HSEQ para su control de calibración
-        const newEquipmentTools: EquipmentTool[] = [];
-        const newNotifications: any[] = [];
-
-        po.items.forEach((it, idx) => {
-          const isHighPrecision = /torquimetro|torqumetro|laser|lser|alineador|multimetro|multmetro|ensayo|end|ndt|vibrac/i.test(`${it.name} ${it.sku}`);
-          if (isHighPrecision || po.isEquipmentPurchase) {
-            const today = new Date();
-            const calibMonths = po.equipmentCalibPeriodMonths || 12;
-            const nextDue = new Date(today.getTime() + calibMonths * 30 * 24 * 60 * 60 * 1000);
-            const nextDueDateStr = nextDue.toISOString().split('T')[0];
-            const eqCode = `EQ-${it.sku || 'TOOL'}-${Date.now().toString().slice(-4)}`;
-
-            newEquipmentTools.push({
-              id: `EQ-${Date.now()}-${idx}`,
-              code: eqCode,
-              name: it.name || 'Herramienta de Precisión',
-              serialNumber: `SN-${Date.now().toString().slice(-6)}`,
-              type: 'herramienta_especial',
-              calibrationDate: today.toISOString().split('T')[0],
-              calibrationExpiry: nextDueDateStr,
-              nextDueDate: nextDueDateStr,
-              isCalibrated: true,
-              calibrationCertNumber: `CAL-${Date.now().toString().slice(-5)}`,
-              status: 'available',
-              dailyUsageCostCOP: Math.round((it.unitPriceCOP || 100000) * 0.03), // 3% depreciación/uso diario
-            });
-
-            newNotifications.push({
-              id: `notif-eq-${Date.now()}-${idx}`,
-              type: 'urgent',
-              title: 'Metrología y Calibración HSEQ',
-              message: `Herramienta de precisión recibida: ${it.name} (${eqCode}). Próxima calibración obligatoria: ${nextDueDateStr}. Revisar re-calibración antes de la fecha indicada.`,
-              targetRole: 'hseq',
-              timestamp: new Date().toISOString(),
-              read: false,
-            });
-          }
-        });
+        // Coreografía de Trazabilidad: Eje 5 (Activos y HSEQ) desacoplado
+        const { newEquipmentTools, newNotifications } = detectPrecisionEquipmentForCalib(po, po.items);
 
         return {
           ...prev,
