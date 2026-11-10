@@ -8,6 +8,7 @@
 
 import { Project, WBSTask, PurchaseOrder, ExpenseEntry, TimesheetEntry, DispatchRemission, CostMatrixItem } from '../../types';
 import { CostOriginType, CostEntryNature } from '../../types/ProjectSchema';
+import { getProjectTaxRate } from './taxService';
 
 export interface ProjectFinancialMetrics {
   // Avance
@@ -51,7 +52,9 @@ export function calculateProjectFinancials(
   const matrixActual = costMatrix.reduce((sum, item) => sum + (Number(item.actualTotal) || (Number(item.actualQuantity) * Number(item.actualUnitCost)) || 0), 0);
 
   if (matrixPlanned > 0) {
-    plannedCostPV = matrixPlanned;
+    // Si la matriz detallada incluye rubros con IVA, sumar el IVA calculado
+    const matrixIva = costMatrix.reduce((sum, item) => sum + (item.hasIva ? (Number(item.ivaAmount) || 0) : 0), 0);
+    plannedCostPV = matrixPlanned + matrixIva;
   } else {
     // Si la matriz no está formulada, recurrir al presupuesto de oferta o campo explícito
     const offerItems = Array.isArray(project.offerBudget) 
@@ -59,7 +62,14 @@ export function calculateProjectFinancials(
       : ((project.offerBudget as any)?.items || []);
     
     if (offerItems.length > 0) {
-      plannedCostPV = offerItems.reduce((sum: number, it: any) => sum + (Number(it.budgetPlanned) || 0), 0);
+      const projectCountry = (project as any).country || project.location || 'Colombia';
+      const taxRate = getProjectTaxRate(projectCountry).rate;
+      const baseCost = offerItems.reduce((sum: number, it: any) => sum + (Number(it.budgetPlanned) || 0), 0);
+      const taxableCost = offerItems
+        .filter((it: any) => it.hasIva !== false)
+        .reduce((sum: number, it: any) => sum + (Number(it.budgetPlanned) || 0), 0);
+      const ivaCost = Math.round(taxableCost * taxRate);
+      plannedCostPV = baseCost + ivaCost;
     } else {
       plannedCostPV = Number(project.budgetPV) || 0;
     }

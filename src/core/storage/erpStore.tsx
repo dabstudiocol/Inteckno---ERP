@@ -66,7 +66,7 @@ export function recalculateProjectEvm(p: Project): Project {
 
   // Sincronización bidireccional de Presupuesto Planificado (PV):
   // 1. Si la matriz de costos de ejecución tiene rubros planeados > 0, es la fuente primaria.
-  // 2. Si no, si el Consolidado de Oferta (offerBudget) tiene rubros presupuestados, se sincroniza con totalBudgetedCost.
+  // 2. Si no, si el Consolidado de Oferta (offerBudget) tiene rubros presupuestados, se sincroniza con los costos + IVA de los rubros gravados.
   // 3. Fallback: el valor previo de budgetPV.
   const offerBudgetRaw = (p as any).offerBudget;
   const offerItems = Array.isArray(offerBudgetRaw)
@@ -74,13 +74,24 @@ export function recalculateProjectEvm(p: Project): Project {
     : Array.isArray(offerBudgetRaw?.items)
     ? offerBudgetRaw.items
     : [];
-  const offerBudgetCost = offerBudgetRaw?.totalBudgetedCost !== undefined
+  
+  const projectCountry = (p as any).country || p.location || 'Colombia';
+  const taxRate = getProjectTaxRate(projectCountry).rate;
+  const baseCost = offerBudgetRaw?.totalBudgetedCost !== undefined
     ? Number(offerBudgetRaw.totalBudgetedCost)
     : offerItems.reduce((acc: number, it: any) => acc + (Number(it.budgetPlanned) || 0), 0);
+  const taxableCost = offerItems
+    .filter((it: any) => it.hasIva !== false)
+    .reduce((acc: number, it: any) => acc + (Number(it.budgetPlanned) || 0), 0);
+  const ivaCost = Math.round(taxableCost * taxRate);
+  const offerBudgetCostWithIva = baseCost + ivaCost;
 
-  const syncedBudgetPV = matrixPlanned > 0
-    ? matrixPlanned
-    : (offerBudgetCost > 0 ? offerBudgetCost : Number(p.budgetPV || 0));
+  const matrixIva = (items || []).reduce((sum: number, it: any) => sum + (it.hasIva ? (Number(it.ivaAmount) || 0) : 0), 0);
+  const matrixPlannedWithIva = matrixPlanned + matrixIva;
+
+  const syncedBudgetPV = matrixPlannedWithIva > 0
+    ? matrixPlannedWithIva
+    : (offerBudgetCostWithIva > 0 ? offerBudgetCostWithIva : Number(p.budgetPV || 0));
 
   // El Gran Total de la Oferta (subtotal + IVA) es el Valor Contractual oficial generado por la cotización/presupuesto
   const offerGrandTotal = Number(offerBudgetRaw?.grandTotalOffer) > 0

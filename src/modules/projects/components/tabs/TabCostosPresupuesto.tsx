@@ -1068,12 +1068,18 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const projectTaxRate = getProjectTaxRate(projectCountry);
 
     const totalIncurred = totalActual;
-  // Presupuesto de Costos Planificado (Consolidado de Oferta):
-  // El presupuesto plan corresponde a los costos presupuestados en el Consolidado de Oferta del proyecto (offerBudget.totalBudgetedCost).
+  // Presupuesto de Costos Planificado (Consolidado de Oferta con IVA incluido):
+  // El presupuesto plan corresponde a los costos de insumos y recursos + su IVA correspondiente.
   // Si aún no se ha desglosado la oferta pero se definió un presupuesto inicial al crear el proyecto (project.budgetPV), se usa este techo.
   const initialCostBudget = project.budgetPV || 0;
-  const activeCostBudgetPlan = offerBudget.totalBudgetedCost > 0 
-    ? offerBudget.totalBudgetedCost 
+  const offerTaxableCost = offerBudget.items
+    .filter((it) => it.hasIva !== false)
+    .reduce((acc, it) => acc + (Number(it.budgetPlanned) || 0), 0);
+  const offerCostIva = Math.round(offerTaxableCost * projectTaxRate.rate);
+  const offerCostWithIva = offerBudget.totalBudgetedCost > 0 ? (offerBudget.totalBudgetedCost + offerCostIva) : 0;
+
+  const activeCostBudgetPlan = offerCostWithIva > 0 
+    ? offerCostWithIva 
     : initialCostBudget;
 
   // Margen bruto proyectado = (Contrato - EAC) / Contrato.
