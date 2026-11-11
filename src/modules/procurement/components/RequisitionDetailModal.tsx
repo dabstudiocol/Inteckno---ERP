@@ -23,6 +23,7 @@ import { InternalRequisition, InternalRequisitionItem } from '../../../types';
 import { useErp } from '../../../core/storage/erpStore';
 import { useModuleCatalog } from '../../../core/services/moduleConfigService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
+import { SEED_USERS } from '../../../seed/intecknoData';
 
 interface RequisitionDetailModalProps {
   isOpen: boolean;
@@ -54,9 +55,10 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
   // Lista de aprobadores reconocidos dinámicamente desde usuarios del ERP
   const approverOptions = useMemo(() => {
     const keyApprovers: { id: string; name: string; shortName: string; role: string }[] = [];
-    (users || []).forEach((u) => {
+    const pool = (users && users.length > 0) ? users : SEED_USERS;
+    pool.forEach((u) => {
       // Excluir cuentas de servicio técnico / TI raíz para que la aprobación sea un responsable humano
-      if (u.id === 'USR-99' || u.name?.toLowerCase().includes('sistemas')) return;
+      if (u.id === 'USR-99' || u.name?.toLowerCase().includes('sistemas') || u.role === 'admin_sistemas') return;
 
       if (
         u.role.includes('gerente') ||
@@ -73,7 +75,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
         });
       }
     });
-    if (keyApprovers.length === 0 && currentUser) {
+    if (keyApprovers.length === 0 && currentUser && currentUser.role !== 'admin_sistemas' && !currentUser.name?.toLowerCase().includes('sistemas')) {
       keyApprovers.push({
         id: currentUser.id,
         name: currentUser.name,
@@ -105,15 +107,14 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
       setNotes(requisition.notes || '');
 
       // Selección inteligente del aprobador:
-      if (requisition.targetApproverId) {
+      if (requisition.targetApproverId && requisition.targetApproverId !== 'USR-99') {
         setSelectedApproverId(requisition.targetApproverId);
       } else if (
         requisition.projectCode === 'OFICINA-ADMIN' ||
         requisition.projectName?.toLowerCase().includes('oficina') ||
-        requisition.department?.toLowerCase().includes('sistemas') ||
         requisition.department?.toLowerCase().includes('admin')
       ) {
-        // Insumos generales, TI, oficina -> Clemencia García
+        // Insumos generales, dirección, oficina -> Clemencia García
         setSelectedApproverId('USR-04');
       } else {
         // Proyectos de ingeniería o campo STC -> Wilson Alzate
@@ -264,7 +265,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
         
         {/* Cabecera Modal */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-[#003650] text-white shrink-0">
@@ -334,8 +335,9 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
         {/* Contenido Desplazable */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 text-xs">
           
-          {/* Ficha Resumen de la Petición */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+        {/* Ficha Resumen de la Petición */}
+        <div className="space-y-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-3 border-b border-slate-200/80">
             <div>
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                 Solicitante
@@ -361,61 +363,62 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
                 {requisition.projectName || 'Oficina y Mantenimiento'}
               </span>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-              <div className="min-w-0">
-                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
-                  Fecha Requerida
-                </label>
-                <input
-                  type="date"
-                  value={neededDate}
-                  onChange={(e) => setNeededDate(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:outline-hidden focus:border-[#00668F]"
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            <div className="min-w-0">
+              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
+                Fecha Requerida
+              </label>
+              <input
+                type="date"
+                value={neededDate}
+                onChange={(e) => setNeededDate(e.target.value)}
+                className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:outline-hidden focus:border-[#00668F]"
+              />
+            </div>
 
-              <div className="min-w-0">
-                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
-                  Tipo de Requisición
-                </label>
-                <CreatableSelect
-                  options={requisitionTypeOptions.length > 0 ? (
-                    requisitionTypeOptions.map((t) => ({ id: t.name, name: t.name }))
-                  ) : [
-                    { id: 'Repuesto Crítico STC', name: 'Repuesto Crítico STC' },
-                    { id: 'Herramienta e Instrumentación', name: 'Herramienta e Instrumentación' },
-                    { id: 'EPP y Alturas', name: 'EPP y Alturas' },
-                    { id: 'Insumo y Consumible Químico', name: 'Insumo y Consumible Químico' },
-                    { id: 'Servicio Externo de Taller', name: 'Servicio Externo de Taller' },
-                  ]}
-                  value={requisitionType}
-                  onChange={(val) => setRequisitionType(val)}
-                  allowCustomText={true}
-                  placeholder="Seleccionar tipo..."
-                />
-              </div>
+            <div className="min-w-0">
+              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
+                Tipo de Requisición
+              </label>
+              <CreatableSelect
+                options={requisitionTypeOptions.length > 0 ? (
+                  requisitionTypeOptions.map((t) => ({ id: t.name, name: t.name }))
+                ) : [
+                  { id: 'Repuesto Crítico STC', name: 'Repuesto Crítico STC' },
+                  { id: 'Herramienta e Instrumentación', name: 'Herramienta e Instrumentación' },
+                  { id: 'EPP y Alturas', name: 'EPP y Alturas' },
+                  { id: 'Insumo y Consumible Químico', name: 'Insumo y Consumible Químico' },
+                  { id: 'Servicio Externo de Taller', name: 'Servicio Externo de Taller' },
+                ]}
+                value={requisitionType}
+                onChange={(val) => setRequisitionType(val)}
+                allowCustomText={true}
+                placeholder="Seleccionar tipo..."
+              />
+            </div>
 
-              <div className="min-w-0">
-                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
-                  Nivel de Urgencia
-                </label>
-                <CreatableSelect
-                  options={urgencyOptions.length > 0 ? (
-                    urgencyOptions.map((u) => ({ id: u.name, name: u.name }))
-                  ) : [
-                    { id: 'Inmediata (Parada de Operación STC)', name: 'Inmediata (Parada de Operación STC)' },
-                    { id: 'Alta (Requerida ≤ 24 Horas)', name: 'Alta (Requerida ≤ 24 Horas)' },
-                    { id: 'Normal (Atención en Ventana Regular)', name: 'Normal (Atención en Ventana Regular)' },
-                  ]}
-                  value={priority}
-                  onChange={(val) => setPriority(val)}
-                  allowCustomText={true}
-                  placeholder="Seleccionar prioridad..."
-                />
-              </div>
+            <div className="min-w-0">
+              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
+                Nivel de Urgencia
+              </label>
+              <CreatableSelect
+                options={urgencyOptions.length > 0 ? (
+                  urgencyOptions.map((u) => ({ id: u.name, name: u.name }))
+                ) : [
+                  { id: 'Inmediata (Parada de Operación STC)', name: 'Inmediata (Parada de Operación STC)' },
+                  { id: 'Alta (Requerida ≤ 24 Horas)', name: 'Alta (Requerida ≤ 24 Horas)' },
+                  { id: 'Normal (Atención en Ventana Regular)', name: 'Normal (Atención en Ventana Regular)' },
+                ]}
+                value={priority}
+                onChange={(val) => setPriority(val)}
+                allowCustomText={true}
+                placeholder="Seleccionar prioridad..."
+              />
             </div>
           </div>
+        </div>
 
           {/* Alerta si está pendiente de aprobación (Wilson, Clemencia, Gustavo u otro líder) */}
           {(requisition.status === 'pending_wilson_approval' || requisition.status === 'pending_approval') && (
@@ -658,12 +661,12 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleNotifyApprover}
-                disabled={isSubmitting}
-                className="px-3.5 py-2 rounded-lg bg-[#003650] hover:bg-[#00283c] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all whitespace-nowrap"
-                title={`Notificar formalmente a ${currentApprover.name}`}
+                disabled={isSubmitting || !currentApprover}
+                className="px-3.5 py-2 rounded-lg bg-[#003650] hover:bg-[#00283c] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                title={currentApprover ? `Notificar formalmente a ${currentApprover.name}` : 'Seleccionar aprobador'}
               >
                 <Send size={13} />
-                <span>Notificar a {currentApprover.shortName}</span>
+                <span>Notificar a {currentApprover?.shortName || 'Aprobador'}</span>
               </button>
             </div>
           </div>

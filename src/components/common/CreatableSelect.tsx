@@ -27,6 +27,7 @@ interface CreatableSelectProps {
   required?: boolean;
   helpText?: string;
   isClearable?: boolean;
+  menuPlacement?: 'bottom' | 'top' | 'auto';
   onOpenConfig?: () => void;
 }
 
@@ -46,6 +47,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   required = false,
   helpText,
   isClearable = true,
+  menuPlacement = 'auto',
   onOpenConfig,
 }) => {
   const effectiveAllowCustomText = allowCreate !== undefined ? allowCreate : allowCustomText;
@@ -94,6 +96,28 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     if (value === 'all') return '';
     return value || '';
   }, [selectedOption, value]);
+
+  // Cálculo de posición del menú desplegable (arriba o abajo para evitar recortes)
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      if (menuPlacement === 'top') {
+        setDropdownPosition('top');
+      } else if (menuPlacement === 'bottom') {
+        setDropdownPosition('bottom');
+      } else {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        // Si hay menos de 260px abajo y más espacio arriba, abrir hacia arriba
+        if (spaceBelow < 260 && rect.top > spaceBelow) {
+          setDropdownPosition('top');
+        } else {
+          setDropdownPosition('bottom');
+        }
+      }
+    }
+  }, [isOpen, menuPlacement]);
 
   // Sincronizar texto de búsqueda con etiqueta visible del valor seleccionado
   useEffect(() => {
@@ -278,7 +302,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
 
       {/* MENÚ DESPLEGABLE CON FILTRADO Y ESCRITURA LIBRE (Adaptable y Reactivo) */}
       {isOpen && !disabled && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-[#08172B] text-white rounded-2xl p-2 space-y-1 max-h-64 overflow-y-auto scrollbar-thin min-w-[260px] w-full sm:w-max max-w-md animate-in fade-in-50 zoom-in-95">
+        <div className={`absolute left-0 z-50 bg-[#08172B] text-white rounded-2xl p-2 space-y-1 max-h-64 overflow-y-auto scrollbar-thin min-w-[260px] w-full sm:w-max max-w-md animate-in fade-in-50 zoom-in-95 shadow-2xl border border-slate-700/50 ${
+          dropdownPosition === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+        }`}>
           {/* Indicador de escritura rápida */}
           {searchTerm.trim() && !exactMatch && effectiveAllowCustomText && (
             <div className="p-2 bg-[#0F2747] rounded-xl space-y-1.5">
