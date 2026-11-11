@@ -37,6 +37,16 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
 }) => {
   const { updateRequisition, setActiveModule, notify, currentUser, users, products, navigateWithContext } = useErp();
 
+  // Permiso estricto de negocio: Solo Compras, Gerencia o Administrador pueden convertir una SOLPED en Orden de Compra
+  const canUserAccessCompras = Boolean(
+    currentUser && (
+      currentUser.role === 'coord_compras' ||
+      currentUser.role === 'gerente_general' ||
+      currentUser.role === 'gerente_administrativa' ||
+      currentUser.role === 'admin_sistemas'
+    )
+  );
+
   // Catálogos dinámicos configurables por el usuario
   const urgencyOptions = useModuleCatalog('requisitions', 'urgencies');
   const requisitionTypeOptions = useModuleCatalog('requisitions', 'requisitionTypes');
@@ -45,10 +55,12 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
   const approverOptions = useMemo(() => {
     const keyApprovers: { id: string; name: string; shortName: string; role: string }[] = [];
     (users || []).forEach((u) => {
+      // Excluir cuentas de servicio técnico / TI raíz para que la aprobación sea un responsable humano
+      if (u.id === 'USR-99' || u.name?.toLowerCase().includes('sistemas')) return;
+
       if (
         u.role.includes('gerente') ||
         u.role.includes('director') ||
-        u.role.includes('admin') ||
         u.role.includes('lider') ||
         u.role.includes('coord') ||
         u.role.includes('super')
@@ -350,21 +362,21 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              <div className="min-w-0">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
                   Fecha Requerida
                 </label>
                 <input
                   type="date"
                   value={neededDate}
                   onChange={(e) => setNeededDate(e.target.value)}
-                  className="w-full h-8 px-2 rounded-lg border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:outline-hidden focus:border-[#003650]"
+                  className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:outline-hidden focus:border-[#00668F]"
                 />
               </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">
+              <div className="min-w-0">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
                   Tipo de Requisición
                 </label>
                 <CreatableSelect
@@ -384,8 +396,8 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">
+              <div className="min-w-0">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
                   Nivel de Urgencia
                 </label>
                 <CreatableSelect
@@ -606,24 +618,27 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                handleSaveChanges();
-                onClose();
-                navigateWithContext('compras', 'create_po_from_req', {
-                  requisition: {
-                    ...requisition,
-                    items: resolvedItems,
-                  },
-                });
-              }}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
-              title="Convertir esta SOLPED en Orden de Compra con las cantidades faltantes prellenadas"
-            >
-              <ShoppingCart size={14} />
-              <span>Generar OC desde SOLPED{totalQtyToPurchase > 0 ? ` (${totalQtyToPurchase} falt.)` : ''}</span>
-            </button>
+            {/* Botón de conversión a Orden de Compra: Exclusivo del Área de Compras y Dirección */}
+            {canUserAccessCompras && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleSaveChanges();
+                  onClose();
+                  navigateWithContext('compras', 'create_po_from_req', {
+                    requisition: {
+                      ...requisition,
+                      items: resolvedItems,
+                    },
+                  });
+                }}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                title="Convertir esta SOLPED en Orden de Compra con las cantidades faltantes prellenadas (Exclusivo Compras)"
+              >
+                <ShoppingCart size={14} />
+                <span>Generar OC desde SOLPED{totalQtyToPurchase > 0 ? ` (${totalQtyToPurchase} falt.)` : ''}</span>
+              </button>
+            )}
 
             {/* SELECTOR DE APROBADOR Y NOTIFICACIÓN FORMAL */}
             <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">

@@ -19,7 +19,17 @@ import { RequisitionDetailModal } from '../procurement/components/RequisitionDet
 
 
 export const RequisitionsModule: React.FC = () => {
-  const { requisitions, deleteRequisition, setActiveModule, navigationContext, clearNavigationContext, navigateWithContext } = useErp();
+  const { requisitions, deleteRequisition, setActiveModule, navigationContext, clearNavigationContext, navigateWithContext, currentUser } = useErp();
+
+  // Control de rol estricto: Solo Compras, Gerencia o Administrador pueden convertir una SOLPED en Orden de Compra
+  const canUserAccessCompras = Boolean(
+    currentUser && (
+      currentUser.role === 'coord_compras' ||
+      currentUser.role === 'gerente_general' ||
+      currentUser.role === 'gerente_administrativa' ||
+      currentUser.role === 'admin_sistemas'
+    )
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReqForDetail, setSelectedReqForDetail] = useState<InternalRequisition | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -251,7 +261,7 @@ export const RequisitionsModule: React.FC = () => {
                       <span>Ver Compra {req.generatedPoNumber}</span>
                       <ArrowRight size={13} />
                     </button>
-                  ) : (
+                  ) : canUserAccessCompras ? (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -259,11 +269,13 @@ export const RequisitionsModule: React.FC = () => {
                         navigateWithContext('compras', 'create_po_from_req', { requisition: req });
                       }}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00668F] hover:bg-[#005073] text-white text-[11px] font-bold transition-all cursor-pointer"
-                      title="Convertir esta SOLPED en Orden de Compra"
+                      title="Convertir esta SOLPED en Orden de Compra (Exclusivo Compras)"
                     >
                       <ShoppingCart size={12} />
                       <span>Convertir en OC</span>
                     </button>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 italic">En trámite de compra</span>
                   )}
                   <button
                     type="button"
