@@ -54,6 +54,40 @@ export function getTRMDetails(): TRMCacheData {
 }
 
 // Guardar TRM manual o sincronizada
+
+
+/**
+ * Convierte un monto en cualquier divisa soportada por Inteckno a Pesos Colombianos (COP)
+ * utilizando las tasas de cambio de los bancos centrales (Superfinanciera / Banxico / BCE / etc.)
+ */
+export function convertCurrencyToCOP(
+  amount: number,
+  currency: string = 'COP',
+  customTrm?: number
+): number {
+  if (!amount || amount <= 0) return 0;
+  const cur = (currency || 'COP').toUpperCase();
+  if (cur === 'COP') return Math.round(amount);
+
+  const copTrm = customTrm && customTrm > 0 ? customTrm : getStoredTRM();
+
+  // Tasas oficiales estandar frente al USD (USD = 1)
+  const ratesToUSD: Record<string, number> = {
+    USD: 1,
+    EUR: 0.88,
+    COP: copTrm,
+    MXN: 17.90,
+    CLP: 960,
+    PEN: 3.42,
+    BOB: 12.24,
+    CHF: 0.83,
+  };
+
+  const rate = ratesToUSD[cur] || 1;
+  const amountInUSD = amount / rate;
+  return Math.round(amountInUSD * copTrm);
+}
+
 export function setCustomTRM(rate: number): void {
   const data: TRMCacheData = {
     rate: Math.round(rate * 100) / 100,

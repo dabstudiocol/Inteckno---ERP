@@ -369,7 +369,7 @@ export interface Project {
   };
   projectCategory?: string;
   contractAmount?: number;
-  currency?: 'COP' | 'USD' | 'EUR';
+  currency?: 'COP' | 'USD' | 'EUR' | 'MXN' | 'CLP' | 'PEN' | 'BOB' | 'CHF';
   trmApplied?: number; // TRM fijada o pactada para el proyecto
   quoteCode?: string; // Código de Cotización Comercial ITK-AAAAMM-XXX
   contractCode?: string; // Código de Contrato / Orden de Compra Cliente

@@ -19,7 +19,8 @@ import {
 import { Project, Opportunity, User, Partner } from '../../../types';
 import { INTECKNO_PORTFOLIO } from '../../../core/config/portfolioCatalog';
 import { INTECKNO_CLIENTES_REALES } from '../../../core/config/intecknoDomainCatalog';
-import { formatUSD } from '../../../core/services/trmService';
+import { formatUSD, formatCOP, convertCurrencyToCOP } from '../../../core/services/trmService';
+import { OFFICIAL_COUNTRIES } from '../../../core/services/taxService';
 import { CreatableSelect } from '../../../components/common/CreatableSelect';
 
 interface ProjectDynamicFormProps {
@@ -103,6 +104,9 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   const [clientName, setClientName] = useState(initialData?.clientName || '');
   const [clientNit, setClientNit] = useState((initialData as any)?.clientNit || '');
   const [location, setLocation] = useState(initialData?.location || '');
+  const [country, setCountry] = useState<string>(
+    (initialData as any)?.country || (initialData as any)?.clientCountry || 'Colombia'
+  );
 
   const handleClientNameChange = (val: string) => {
     setClientName(val);
@@ -116,7 +120,17 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
   // 3. Parámetros Contractuales y Financieros Oficiales (ADN Inteckno)
   const [quoteCode, setQuoteCode] = useState(initialData?.quoteCode || '');
   const [contractCode, setContractCode] = useState(initialData?.contractCode || '');
-  const [currency, setCurrency] = useState<'COP' | 'USD' | 'EUR'>(initialData?.currency || 'COP');
+  const [currency, setCurrency] = useState<string>(initialData?.currency || 'COP');
+
+  const handleCountryChange = (selectedCountryName: string) => {
+    setCountry(selectedCountryName);
+    const matched = OFFICIAL_COUNTRIES.find(
+      c => c.name.toLowerCase() === selectedCountryName.trim().toLowerCase() || c.code.toLowerCase() === selectedCountryName.trim().toLowerCase()
+    );
+    if (matched) {
+      setCurrency(matched.currency);
+    }
+  };
   const [contractAmount, setContractAmount] = useState<number>(initialData?.contractAmount || 0);
   const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(initialData?.advancePaymentPercentage || 0);
   const [retentionGuaranteePercentage, setRetentionGuaranteePercentage] = useState<number>(initialData?.retentionGuaranteePercentage || 0);
@@ -273,12 +287,14 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
           : 'Mantenimiento'
       ) as any,
       location: location.trim(),
+      country: country.trim() || 'Colombia',
+      clientCountry: country.trim() || 'Colombia',
       costCenter: finalCode, // Cada proyecto es su propio centro de costos con el mismo código
       startDate,
       endDate: endDate || startDate,
       budgetPV: Number(budgetCOP) || 0,
       contractAmount: Number(contractAmount) || 0,
-      currency,
+      currency: currency as any,
       quoteCode: quoteCode.trim(),
       contractCode: contractCode.trim(),
       advancePaymentPercentage: Number(advancePaymentPercentage) || 0,
@@ -457,20 +473,20 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
           </div>
         </div>
 
-        {/* Fila 3: Líder de Proyecto con desplegable de personal de la empresa + escritura libre, Ubicación y Centro de Costos */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Fila 3: País de Ejecución (determina divisa nativa e impuestos) + Ubicación + Líder + Centro de Costos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <CreatableSelect
-              label="Líder / Director del Proyecto"
+              label="País de Ejecución *"
               required
-              value={supervisorName}
-              onChange={(val) => setSupervisorName(val)}
-              options={erpUsers.map(u => ({
-                id: u.id,
-                name: u.name,
-                code: u.roleLabel || u.department || undefined,
+              value={country}
+              onChange={(val) => handleCountryChange(val)}
+              options={OFFICIAL_COUNTRIES.map(c => ({
+                id: c.name,
+                name: `${c.flag} ${c.name}`,
+                code: `${c.currency} • ${c.taxName} ${c.taxLabel}`,
               }))}
-              placeholder="Seleccionar o escribir líder..."
+              placeholder="Seleccionar país..."
               allowCustomText={true}
             />
           </div>
@@ -489,6 +505,22 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
           </div>
 
           <div>
+            <CreatableSelect
+              label="Líder / Director del Proyecto *"
+              required
+              value={supervisorName}
+              onChange={(val) => setSupervisorName(val)}
+              options={erpUsers.map(u => ({
+                id: u.id,
+                name: u.name,
+                code: u.roleLabel || u.department || undefined,
+              }))}
+              placeholder="Seleccionar líder..."
+              allowCustomText={true}
+            />
+          </div>
+
+          <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
               Centro de Costos (Mismo Código)
             </label>
@@ -499,8 +531,8 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
               className="w-full text-xs font-mono px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 cursor-not-allowed"
               title="Cada proyecto es un centro de costos con su mismo código."
             />
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 block">
-              Sincronizado automáticamente (1 Proyecto = 1 Centro de Costos)
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 block truncate">
+              1 Proyecto = 1 Centro de Costos
             </span>
           </div>
         </div>
@@ -565,7 +597,20 @@ export const ProjectDynamicForm: React.FC<ProjectDynamicFormProps> = ({
                 className="w-full text-xs font-mono px-3 py-2 border rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00668F]"
               />
             </div>
-            
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Moneda Contractual (Autoseleccionada)
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={`${currency} (${country})`}
+                className="w-full text-xs font-mono font-bold px-3 py-2 border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-[#00668F] cursor-not-allowed"
+              />
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block truncate">
+                Toda la información financiera se proyecta en COP
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

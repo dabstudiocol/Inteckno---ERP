@@ -347,19 +347,27 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   // Helper para recalcular el Consolidado de Oferta
   // Si un rubro tiene hasIva === false, NO genera IVA.
   // El IVA se calcula exactamente sobre la base gravable presupuestada (rubros con IVA + su proporción de utilidad).
-  const recalculateOfferBudget = (items: ProjectOfferBudgetItem[], profit: number): ProjectOfferBudget => {
+  const recalculateOfferBudget = (
+    items: ProjectOfferBudgetItem[],
+    profit: number,
+    profitHasIva: boolean = true
+  ): ProjectOfferBudget => {
     const totalBudgetedCost = items.reduce((acc, it) => acc + (Number(it.budgetPlanned) || 0), 0);
     const subtotal = totalBudgetedCost + profit;
-    const taxRate = getProjectTaxRate((project as any).country || project.location).rate;
+    const projectCountry = (project as any).country || (project as any).clientCountry || project.location;
+    const taxRate = getProjectTaxRate(projectCountry).rate;
 
     // Base gravable: suma de costos que tienen IVA
     const taxableCost = items
       .filter((it) => it.hasIva !== false)
       .reduce((acc, it) => acc + (Number(it.budgetPlanned) || 0), 0);
     
-    // Proporción de la utilidad que corresponde a rubros gravados
-    const profitTaxableRatio = totalBudgetedCost > 0 ? (taxableCost / totalBudgetedCost) : (taxableCost > 0 ? 1 : 0);
-    const taxableProfit = profit * profitTaxableRatio;
+    // Proporción de la utilidad que corresponde a rubros gravados (solo si profitHasIva es true)
+    let taxableProfit = 0;
+    if (profitHasIva) {
+      const profitTaxableRatio = totalBudgetedCost > 0 ? (taxableCost / totalBudgetedCost) : (taxableCost > 0 ? 1 : 0);
+      taxableProfit = profit * profitTaxableRatio;
+    }
     const taxableBase = taxableCost + taxableProfit;
 
     const ivaAmount = Math.round(taxableBase * taxRate);
@@ -369,6 +377,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       items,
       totalBudgetedCost,
       totalBudgetedProfit: profit,
+      profitHasIva,
       subtotal,
       ivaAmount,
       grandTotalOffer,
@@ -388,12 +397,14 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         hasIva: it.hasIva !== false,
       }));
       const profit = Number(existing.totalBudgetedProfit) || 0;
-      return recalculateOfferBudget(normalizedItems, profit);
+      const profitHasIva = existing.profitHasIva !== false;
+      return recalculateOfferBudget(normalizedItems, profit, profitHasIva);
     }
     return {
       items: defaultOfferBudgetItems,
       totalBudgetedCost: 0,
       totalBudgetedProfit: 0,
+      profitHasIva: true,
       subtotal: 0,
       ivaAmount: 0,
       grandTotalOffer: 0,
@@ -423,7 +434,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
         ...it,
         hasIva: it.hasIva !== false,
       }));
-      setOfferBudget(recalculateOfferBudget(normalizedItems, Number(existing.totalBudgetedProfit) || 0));
+      const profitHasIva = existing.profitHasIva !== false;
+      setOfferBudget(recalculateOfferBudget(normalizedItems, Number(existing.totalBudgetedProfit) || 0, profitHasIva));
     }
   }, [project]);
 
@@ -444,7 +456,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       ...updatedItems[index],
       budgetPlanned: val,
     };
-    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0);
+    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0, offerBudget.profitHasIva !== false);
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
@@ -462,7 +474,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       ...current,
       hasIva: current.hasIva === false ? true : false,
     };
-    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0);
+    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0, offerBudget.profitHasIva !== false);
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
@@ -474,12 +486,25 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
   // Actualizar Utilidad Total Presupuestada (Fila resumen)
   const handleUpdateOfferProfit = (profitVal: number) => {
-    const newOfferBudget = recalculateOfferBudget(offerBudget.items, profitVal);
+    const newOfferBudget = recalculateOfferBudget(offerBudget.items, profitVal, offerBudget.profitHasIva !== false);
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
       budgetPV: newOfferBudget.totalBudgetedCost,
-      contractAmount: project.contractAmount || newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
+      contractAmount: newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
+      offerBudget: newOfferBudget as any,
+    } as any);
+  };
+
+  // Alternar si la Utilidad Presupuestada causa IVA o no
+  const handleToggleOfferProfitIva = () => {
+    const nextProfitHasIva = offerBudget.profitHasIva === false ? true : false;
+    const newOfferBudget = recalculateOfferBudget(offerBudget.items, offerBudget.totalBudgetedProfit || 0, nextProfitHasIva);
+    setOfferBudget(newOfferBudget);
+    onUpdateProject?.({
+      ...project,
+      budgetPV: newOfferBudget.totalBudgetedCost,
+      contractAmount: newOfferBudget.grandTotalOffer || newOfferBudget.subtotal,
       offerBudget: newOfferBudget as any,
     } as any);
   };
@@ -700,7 +725,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     };
 
     const updatedItems = [...offerBudget.items, newItem];
-    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0);
+    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0, offerBudget.profitHasIva !== false);
 
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
@@ -728,7 +753,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       hasIva: editingOfferItem.item.hasIva !== false,
     };
 
-    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0);
+    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0, offerBudget.profitHasIva !== false);
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
       ...project,
@@ -744,7 +769,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
   const handleConfirmDeleteOfferItem = () => {
     if (!offerItemToDelete) return;
     const updatedItems = offerBudget.items.filter((it) => it.id !== offerItemToDelete.id);
-    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0);
+    const newOfferBudget = recalculateOfferBudget(updatedItems, offerBudget.totalBudgetedProfit || 0, offerBudget.profitHasIva !== false);
 
     setOfferBudget(newOfferBudget);
     onUpdateProject?.({
@@ -2611,15 +2636,29 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                   </tr>
                 )}
 
-                {/* 2. Utilidad Total Presupuestada (Permite ingresar o ajustar la utilidad estimada de la oferta) */}
+                {/* 2. Utilidad Total Presupuestada (Permite ingresar o ajustar la utilidad estimada de la oferta y alternar IVA) */}
                 <tr className="bg-emerald-50/40 font-bold text-slate-800 border-b border-slate-200">
-                  <td colSpan={3} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-emerald-900">
+                  <td colSpan={2} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-emerald-900 align-middle">
                     <div className="flex items-center gap-2">
                       <span>Utilidad Total Presupuestada</span>
                       <span className="text-[10px] text-emerald-700 font-normal">
                         ({offerBudget.totalBudgetedCost > 0 ? ((offerBudget.totalBudgetedProfit / offerBudget.totalBudgetedCost) * 100).toFixed(1) : 0}% sobre costos)
                       </span>
                     </div>
+                  </td>
+                  <td className="py-2.5 px-3 text-center align-middle">
+                    <button
+                      type="button"
+                      onClick={handleToggleOfferProfitIva}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer inline-flex items-center gap-1 ${
+                        offerBudget.profitHasIva !== false
+                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 ring-1 ring-emerald-600/30'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200 line-through'
+                      }`}
+                      title={offerBudget.profitHasIva !== false ? 'La utilidad causa IVA (Haz clic para eximirla)' : 'Utilidad exenta de IVA (Haz clic para causarle IVA)'}
+                    >
+                      <span>{offerBudget.profitHasIva !== false ? `Con IVA (${projectTaxRate.label})` : 'Sin IVA'}</span>
+                    </button>
                   </td>
                   <td className="py-2 px-4 text-right">
                     <div className="flex justify-end">

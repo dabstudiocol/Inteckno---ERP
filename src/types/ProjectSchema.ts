@@ -436,6 +436,7 @@ export interface ProjectOfferBudget {
   totalBudgetedCost: number; // Costos Totales Presupuestados (Suma de la columna Valor Presupuestado)
   budgetedProfitPercent?: number; // % Utilidad Presupuestada (ej. 15%)
   totalBudgetedProfit: number; // Utilidad Total Presupuestada
+  profitHasIva?: boolean; // Selector explícito: ¿La utilidad causa IVA o está exenta? (default: true)
   subtotal: number; // Valor Subtotal (Costos Totales Presupuestados + Utilidad)
   ivaPercent?: number; // % IVA según país (ej. 19%)
   ivaAmount: number; // IVA calculado

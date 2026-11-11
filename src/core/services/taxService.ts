@@ -28,7 +28,41 @@ export const TAX_REGISTRY: Record<string, TaxRule> = {
   CR: { countryCode: 'CR', countryName: 'Costa Rica', taxName: 'IVA', rate: 0.13, label: '13%', authority: 'Hacienda' },
   GT: { countryCode: 'GT', countryName: 'Guatemala', taxName: 'IVA', rate: 0.12, label: '12%', authority: 'SAT' },
   AR: { countryCode: 'AR', countryName: 'Argentina', taxName: 'IVA', rate: 0.21, label: '21%', authority: 'AFIP' },
+  US: { countryCode: 'US', countryName: 'Estados Unidos', taxName: 'Sales Tax', rate: 0.07, label: '7%', authority: 'IRS' },
+  CH: { countryCode: 'CH', countryName: 'Suiza', taxName: 'MWST', rate: 0.081, label: '8.1%', authority: 'ESTV' },
 };
+
+/**
+ * Catálogo Oficial de Países Inteckno con su moneda nativa y bandera.
+ * Cuando se selecciona el país en el proyecto, el sistema autoconfigura la divisa contractual
+ * mientras proyecta las equivalencias en COP para control financiero consolidado.
+ */
+export interface CountryConfig {
+  code: string;
+  name: string;
+  currency: 'COP' | 'USD' | 'EUR' | 'MXN' | 'CLP' | 'PEN' | 'BOB' | 'CHF';
+  flag: string;
+  taxName: string;
+  taxRate: number;
+  taxLabel: string;
+}
+
+export const OFFICIAL_COUNTRIES: CountryConfig[] = [
+  { code: 'CO', name: 'Colombia', currency: 'COP', flag: '🇨🇴', taxName: 'IVA', taxRate: 0.19, taxLabel: '19%' },
+  { code: 'MX', name: 'México', currency: 'MXN', flag: '🇲🇽', taxName: 'IVA', taxRate: 0.16, taxLabel: '16%' },
+  { code: 'PA', name: 'Panamá', currency: 'USD', flag: '🇵🇦', taxName: 'ITBMS', taxRate: 0.07, taxLabel: '7%' },
+  { code: 'CL', name: 'Chile', currency: 'CLP', flag: '🇨🇱', taxName: 'IVA', taxRate: 0.19, taxLabel: '19%' },
+  { code: 'PE', name: 'Perú', currency: 'PEN', flag: '🇵🇪', taxName: 'IGV', taxRate: 0.18, taxLabel: '18%' },
+  { code: 'BO', name: 'Bolivia', currency: 'BOB', flag: '🇧🇴', taxName: 'IVA', taxRate: 0.13, taxLabel: '13%' },
+  { code: 'EC', name: 'Ecuador', currency: 'USD', flag: '🇪🇨', taxName: 'IVA', taxRate: 0.15, taxLabel: '15%' },
+  { code: 'ES', name: 'España', currency: 'EUR', flag: '🇪🇸', taxName: 'IVA', taxRate: 0.21, taxLabel: '21%' },
+  { code: 'DO', name: 'Rep. Dominicana', currency: 'USD', flag: '🇩🇴', taxName: 'ITBIS', taxRate: 0.18, taxLabel: '18%' },
+  { code: 'CR', name: 'Costa Rica', currency: 'USD', flag: '🇨🇷', taxName: 'IVA', taxRate: 0.13, taxLabel: '13%' },
+  { code: 'GT', name: 'Guatemala', currency: 'USD', flag: '🇬🇹', taxName: 'IVA', taxRate: 0.12, taxLabel: '12%' },
+  { code: 'AR', name: 'Argentina', currency: 'USD', flag: '🇦🇷', taxName: 'IVA', taxRate: 0.21, taxLabel: '21%' },
+  { code: 'US', name: 'Estados Unidos', currency: 'USD', flag: '🇺🇸', taxName: 'Sales Tax', taxRate: 0.07, taxLabel: '7%' },
+  { code: 'CH', name: 'Suiza', currency: 'CHF', flag: '🇨🇭', taxName: 'MWST', taxRate: 0.081, taxLabel: '8.1%' },
+];
 
 export function getProjectTaxRate(country?: string): {
   rate: number;
