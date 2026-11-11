@@ -1208,45 +1208,20 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     );
   };
 
-  // Acción de Cableado Relacional: Generar SOLPED desde la carpeta de un ITEM
+  // Accion de Cableado Relacional: Solicitar Insumo (SOLPED) desde la carpeta de un ITEM
   const handleCreateSolpedFromFolder = (folderCode: string) => {
     const itemDef = allAvailableItems.find((it) => it.code.toUpperCase() === folderCode.toUpperCase());
     const itemName = itemDef?.name || folderCode;
-    const result = createRequisition({
+    navigateWithContext('requisiciones', 'create_solped', {
       projectId: project.id,
       projectCode: project.code,
       projectName: project.name,
       itemCode: folderCode,
-      requesterId: currentUser?.id || 'USR-001',
-      requesterName: currentUser?.name || 'Líder de Proyecto',
-      department: 'Ingeniería de Obra',
-      neededDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-      priority: 'normal',
-      justification: `Requisición de materiales e insumos para ITEM ${folderCode}: ${itemName}`,
       category: 'repuestos_fabricacion',
+      itemConcept: 'Materiales e insumos para ' + folderCode + ' - ' + itemName,
+      justification: 'Requisicion de materiales e insumos para ITEM ' + folderCode + ': ' + itemName,
       destinationCity: project.location,
-      items: [
-        {
-          id: `req-item-${Date.now()}`,
-          productId: `PRD-${folderCode}`,
-          productName: `Materiales e insumos para ${folderCode} - ${itemName}`,
-          productSku: `SKU-${folderCode}`,
-          category: 'repuestos_fabricacion',
-          qtyRequested: 1,
-          qtyApproved: 1,
-          unit: 'Global',
-          unitCostUSD: 0,
-          totalCostUSD: 0,
-          itemCode: folderCode,
-        },
-      ],
     });
-
-    notify(
-      'success',
-      'SOLPED Generada',
-      `Se creó la requisición ${result.requisition?.reqNumber || ''} para el ITEM ${folderCode}.`
-    );
   };
 
     const itemsBudgetAllocatedSum = projectItems.reduce((acc, f) => acc + Number(f.budgetPlanned || 0), 0);
