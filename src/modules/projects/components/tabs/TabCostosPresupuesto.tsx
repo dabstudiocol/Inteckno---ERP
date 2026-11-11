@@ -1456,12 +1456,26 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
 
         {/* SECCIÓN INTERACTIVA: GRÁFICO DE DONA BENTO (ESTILO HAPPYHOUR / STIMULSOFT BI) */}
         {(() => {
+          // Utilidad con su respectivo componente de IVA contractual
+          const profitIva = offerBudget.totalBudgetedProfit > 0 ? Math.round(offerBudget.totalBudgetedProfit * projectTaxRate.rate) : 0;
+          const budgetedProfitVal = offerBudget.totalBudgetedProfit > 0 
+            ? (offerBudget.totalBudgetedProfit + profitIva)
+            : (grossProfitCOP > 0 ? (grossProfitCOP + Math.round(grossProfitCOP * projectTaxRate.rate)) : 0);
+
           // Porcentajes reales sobre el Valor Contractual Vigente (100%)
           const pctCost = contractAmountCOP > 0 ? Math.min(100, (totalIncurred / contractAmountCOP) * 100) : 0;
-          const budgetedProfitVal = offerBudget.totalBudgetedProfit > 0 ? offerBudget.totalBudgetedProfit : grossProfitCOP;
           const pctProfit = contractAmountCOP > 0 ? Math.min(100, Math.max(0, (budgetedProfitVal / contractAmountCOP) * 100)) : 0;
           const pctInvoiced = contractAmountCOP > 0 ? Math.min(100, (totalInvoiced / contractAmountCOP) * 100) : 0;
           const pctRemaining = Math.max(0, 100 - (pctCost + pctProfit));
+
+          // Saldo Contractual Disponible para Ejecución de Obra:
+          // Se parte del Presupuesto Planificado de Costos (con IVA incluido) menos los costos reales incurridos.
+          const remainingContractAvailable = Math.max(
+            0,
+            activeCostBudgetPlan > 0 
+              ? (activeCostBudgetPlan - totalIncurred) 
+              : (contractAmountCOP - (totalIncurred + budgetedProfitVal))
+          );
 
           // Datos para la dona interactiva con segmentos segmentados y estilizados
           const controlDonutData = [
@@ -1491,7 +1505,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
             },
             {
               name: 'Saldo Contractual Libre',
-              value: Math.max(0, contractAmountCOP - (totalIncurred + budgetedProfitVal)),
+              value: remainingContractAvailable,
               pct: pctRemaining,
               color: '#3b82f6', // Blue
               bg: 'bg-blue-500',
@@ -1647,7 +1661,7 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
                       </div>
                       <div className="flex items-center gap-2 font-mono">
                         <span className="text-slate-400 text-[11px]">{pctRemaining.toFixed(1)}%</span>
-                        <span className="font-bold text-blue-300">{formatCOP(Math.max(0, contractAmountCOP - (totalIncurred + budgetedProfitVal)))}</span>
+                        <span className="font-bold text-blue-300">{formatCOP(remainingContractAvailable)}</span>
                       </div>
                     </div>
                     <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden p-0.5">
