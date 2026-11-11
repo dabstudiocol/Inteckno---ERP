@@ -1148,9 +1148,9 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
       }
     });
 
-    // 3. Incluir cualquier ITEM que aparezca en la facturación existente del proyecto
+    // 3. Incluir cualquier ITEM contractual que aparezca en la facturación existente del proyecto (excluyendo HITO-*)
     billingItems.forEach((b) => {
-      if (b.itemCode) {
+      if (b.itemCode && !b.itemCode.toUpperCase().startsWith('HITO-')) {
         const upper = b.itemCode.toUpperCase();
         if (!map.has(upper)) {
           map.set(upper, {

@@ -23,16 +23,8 @@ export function ensureProjectItems(p: Project): any[] {
         createdAt: new Date().toISOString(),
       }));
     } else {
-      items = [
-        {
-          id: `item-${p.id}-1`,
-          code: 'ITEM 01',
-          name: p.name || 'Alcance Contractual Principal',
-          budgetPlanned: Number(p.budgetPV || 0),
-          status: 'activo' as const,
-          createdAt: new Date().toISOString(),
-        }
-      ];
+      // Regla 4: Cero mock data ni placeholder por defecto. Si no hay carpetas creadas, retornar lista limpia vacía.
+      items = [];
     }
   }
 
@@ -3269,16 +3261,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 status: 'activo' as const,
                 createdAt: new Date().toISOString(),
               })))
-            : [
-                {
-                  id: `item-${Date.now()}-1`,
-                  code: 'ITEM 01',
-                  name: customData?.name || opp.title,
-                  budgetPlanned: Number(customData?.budgetPV || (opp.estimatedValueUSD * (getStoredTRM() || 4150.00)) || 0),
-                  status: 'activo' as const,
-                  createdAt: new Date().toISOString(),
-                }
-              ]
+            : []
         ),
       };
 
