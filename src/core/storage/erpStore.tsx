@@ -185,6 +185,7 @@ import {
   atomicStockTransaction,
   deleteUserFromCloud,
   markEntityAsDeletedPermanent,
+  unmarkEntityAsDeletedPermanent,
   isEntityDeletedPermanent,
 } from '../services/firestoreSyncService';
 import { recordAuditEvent } from '../services/auditService';
@@ -2264,7 +2265,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createUserAccount = useCallback((userData: Omit<User, 'id'>): User => {
     const newId = `USR-${Math.floor(100 + Math.random() * 900)}`;
-    const initials = userData.name
+    const initials = (userData.name || '')
       .split(' ')
       .filter(Boolean)
       .slice(0, 2)
@@ -2287,19 +2288,52 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       competencyIds: userData.competencyIds || userData.competencies || ['SKILL-004'],
     };
 
+    // Desmarcar explícitamente cualquier tombstone previo si el email o cédula fueron eliminados antes
+    unmarkEntityAsDeletedPermanent([
+      newUser.id,
+      newUser.email,
+      newUser.employeeId,
+      newUser.nationalId,
+      `EMP-${newUser.id}`,
+    ]);
+
     const newEmpRecord = buildInitialEmployeesFromUsers([newUser])[0];
 
     syncUserToCloud(newUser).catch((err) => {
       console.warn('[CloudSync] Error sincronizando nuevo usuario:', err);
     });
 
-    setState((prev) => ({
-      ...prev,
-      users: [...prev.users, newUser],
-      employees: prev.employees.some((e) => e.id === newUser.id || e.userId === newUser.id)
-        ? prev.employees
-        : [...prev.employees, newEmpRecord],
-    }));
+    setState((prev) => {
+      // Filtrar por si ya existía algún registro con el mismo ID o email para evitar duplicados
+      const cleanUsers = prev.users.filter(
+        (u) => u.id !== newUser.id && u.email?.toLowerCase().trim() !== newUser.email?.toLowerCase().trim()
+      );
+      const nextUsers = [...cleanUsers, newUser];
+
+      const cleanEmployees = prev.employees.filter(
+        (e) =>
+          e.id !== newUser.id &&
+          e.userId !== newUser.id &&
+          e.email?.toLowerCase().trim() !== newUser.email?.toLowerCase().trim()
+      );
+      const nextEmployees = [...cleanEmployees, newEmpRecord];
+
+      const nextState = {
+        ...prev,
+        users: nextUsers,
+        employees: nextEmployees,
+      };
+
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+        }
+      } catch (err) {
+        console.warn('[ErpStore] Error guardando usuario en localStorage:', err);
+      }
+
+      return nextState;
+    });
 
     return newUser;
   }, []);

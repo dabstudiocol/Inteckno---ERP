@@ -140,6 +140,37 @@ export function markEntityAsDeletedPermanent(idsOrEmails: (string | undefined)[]
   }
 }
 
+export function unmarkEntityAsDeletedPermanent(idsOrEmails: (string | undefined)[]): void {
+  try {
+    const set = getDeletedEntityIds();
+    let changed = false;
+    idsOrEmails.forEach((val) => {
+      if (!val) return;
+      const clean = String(val).trim();
+      if (set.has(clean)) {
+        set.delete(clean);
+        changed = true;
+      }
+      const lower = clean.toLowerCase();
+      if (set.has(lower)) {
+        set.delete(lower);
+        changed = true;
+      }
+    });
+    if (changed && typeof localStorage !== 'undefined') {
+      const list = Array.from(set);
+      localStorage.setItem(DELETED_ENTITIES_STORAGE_KEY, JSON.stringify(list));
+      const db = getFirebaseDb();
+      if (db) {
+        const regRef = doc(db, 'erp_modules', 'deleted_registry');
+        setDoc(regRef, { deletedIds: list, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
+      }
+    }
+  } catch (e) {
+    console.warn('[FirestoreSync] Error desmarcando registro de eliminados:', e);
+  }
+}
+
 const PROTECTED_SYSTEM_IDENTIFIERS = new Set([
   'sistemas@inteckno.com',
   'usr-99',

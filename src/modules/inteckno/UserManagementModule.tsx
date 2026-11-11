@@ -703,108 +703,132 @@ export const UserManagementModule: React.FC = () => {
 
   // Confirmar y Ejecutar Aprovisionamiento Oficial
   const handleConfirmProvisioning = async () => {
-    if (!newUserData.name || !newUserData.email) return;
+    const cleanName = (newUserData.name || '').trim();
+    const cleanEmail = (newUserData.email || '').trim().toLowerCase();
+
+    if (!cleanName || !cleanEmail) {
+      notify('warning', 'Campos Faltantes', 'Por favor ingresa al menos el Nombre y el Correo corporativo del empleado.');
+      return;
+    }
 
     setIsProvisioningAi(true);
     try {
       const selectedJob = officialPositions.find((j) => j.id === newUserData.jobPositionId);
-      const initials = newUserData.name
+      const initials = cleanName
         .split(' ')
         .slice(0, 2)
         .map((w) => w[0])
         .join('')
         .toUpperCase();
 
-      // 1. Crear el usuario en el ERP
+      // 1. Crear el usuario en el ERP y persistirlo en tiempo real
       const created = createUserAccount({
-        name: newUserData.name.trim(),
-        email: newUserData.email.trim().toLowerCase(),
-        nationalId: newUserData.nationalId.trim(),
-        phone: newUserData.phone.trim(),
+        name: cleanName,
+        email: cleanEmail,
+        nationalId: (newUserData.nationalId || '').trim(),
+        phone: (newUserData.phone || '').trim(),
         photoUrl: newUserData.photoUrl || undefined,
-        role: newUserData.role,
-        roleLabel: newUserData.roleLabel,
-        department: newUserData.department,
+        role: newUserData.role || 'tecnico_stc',
+        roleLabel: newUserData.roleLabel || selectedJob?.title || 'Especialista ITK',
+        department: newUserData.department || selectedJob?.department || 'Operaciones de Campo',
         avatar: initials || 'IT',
         avatarColor: '#00668F',
-        password: newUserData.password,
-        forcePasswordChange: newUserData.forcePasswordChange,
+        password: newUserData.password || 'Inteckno2026*',
+        forcePasswordChange: newUserData.forcePasswordChange ?? true,
         accountStatus: 'activa',
         isActive: true,
-        canWorkHeights: newUserData.canWorkHeights,
+        canWorkHeights: newUserData.canWorkHeights ?? false,
         hseqStatus: newUserData.canWorkHeights ? 'valid' : 'pending',
-        hseqExpiresAt: newUserData.hseqExpiresAt,
-        bloodType: newUserData.bloodType,
-        birthDate: newUserData.birthDate,
-        address: newUserData.address,
-        city: newUserData.city,
-        emergencyContactName: newUserData.emergencyContactName,
-        emergencyContactPhone: newUserData.emergencyContactPhone,
-        jobPositionId: selectedJob?.id,
+        hseqExpiresAt: newUserData.hseqExpiresAt || '2027-12-31',
+        bloodType: newUserData.bloodType || 'O+',
+        birthDate: newUserData.birthDate || '1995-01-01',
+        address: newUserData.address || '',
+        city: newUserData.city || 'Medellín',
+        emergencyContactName: newUserData.emergencyContactName || '',
+        emergencyContactPhone: newUserData.emergencyContactPhone || '',
+        jobPositionId: selectedJob?.id || undefined,
         jobPosition: selectedJob,
         inductionPath: provisioningDraft?.inductionPath || 'Inducción Oficial Inteckno STC',
         onboardingCompleted: false,
         competencies: selectedJob?.technicalSkills || ['Inducción General STC'],
       });
 
-      // 2. Asignar actividades automáticas de bienvenida vía addTodo
-      const activities = provisioningDraft?.welcomeActivities || [
-        'Completar lectura y firma de Política SST y Reglamento Interno.',
-        'Entregar documentos de vinculación y certificado de alturas vigente a HSEQ.',
-      ];
+      // 2. Asignar actividades de bienvenida (con blindaje contra fallos)
+      try {
+        const activities = provisioningDraft?.welcomeActivities || [
+          'Completar lectura y firma de Política SST y Reglamento Interno.',
+          'Entregar documentos de vinculación y certificado de alturas vigente a HSEQ.',
+        ];
 
-      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      const inThreeDays = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        const inThreeDays = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
 
-      addTodo(
-        activities[0] || 'Completar lectura y firma de Política SST',
-        'alta',
-        tomorrow,
-        created.id,
-        created.name,
-        'HSEQ-TRANSVERSAL',
-        'Ruta de inducción SST obligatoria para nuevo ingreso a Inteckno S.A.S.'
-      );
-
-      if (activities[1]) {
         addTodo(
-          activities[1],
+          activities[0] || 'Completar lectura y firma de Política SST',
           'alta',
-          inThreeDays,
+          tomorrow,
           created.id,
           created.name,
-          'TALENTO-HUMANO',
-          'Entrega de soportes y registro en matriz de aptitud laboral.'
+          'HSEQ-TRANSVERSAL',
+          'Ruta de inducción SST obligatoria para nuevo ingreso a Inteckno S.A.S.'
         );
+
+        if (activities[1]) {
+          addTodo(
+            activities[1],
+            'alta',
+            inThreeDays,
+            created.id,
+            created.name,
+            'TALENTO-HUMANO',
+            'Entrega de soportes y registro en matriz de aptitud laboral.'
+          );
+        }
+      } catch (errTodo) {
+        console.warn('[UserProvisioning] Aviso no crítico en asignación de tareas:', errTodo);
       }
 
-      // 3. Envío de correo de bienvenida vía Microsoft 365 si está habilitado
+      // 3. Envío de correo de bienvenida vía Microsoft 365 si está habilitado (no bloqueante)
       if (newUserData.sendM365WelcomeEmail) {
-        await sendWelcomeEmailViaGraph(
-          newUserData.email,
-          newUserData.name,
-          newUserData.password,
-          newUserData.roleLabel,
-          activities
-        );
+        try {
+          const activities = provisioningDraft?.welcomeActivities || [
+            'Completar lectura y firma de Política SST y Reglamento Interno.',
+            'Entregar documentos de vinculación y certificado de alturas vigente a HSEQ.',
+          ];
+          await sendWelcomeEmailViaGraph(
+            cleanEmail,
+            cleanName,
+            newUserData.password || 'Inteckno2026*',
+            newUserData.roleLabel,
+            activities
+          );
+        } catch (errEmail) {
+          console.warn('[UserProvisioning] Aviso en envío M365 (no bloqueante):', errEmail);
+        }
       }
 
-      // 4. Registro en Auditoría
-      await recordAuditEvent({
-        action: 'user_created',
-        performedByUserId: currentUser?.id || 'USR-001',
-        performedByName: currentUser?.name || 'Administrador TI',
-        targetUserId: created.id,
-        targetUserName: created.name,
-        details: `Alta oficial de colaborador vinculado a cargo "${newUserData.roleLabel}" (${newUserData.department}). Ruta de inducción asignada y credenciales generadas.`,
-        newValue: `Rol: ${newUserData.role} | Cargo: ${newUserData.roleLabel} | Depto: ${newUserData.department}`,
-      });
+      // 4. Registro en Auditoría (no bloqueante)
+      try {
+        await recordAuditEvent({
+          action: 'user_created',
+          performedByUserId: currentUser?.id || 'USR-001',
+          performedByName: currentUser?.name || 'Administrador TI',
+          targetUserId: created.id,
+          targetUserName: created.name,
+          details: `Alta oficial de empleado vinculado a cargo "${newUserData.roleLabel}" (${newUserData.department}). Ruta de inducción asignada y credenciales generadas.`,
+          newValue: `Rol: ${newUserData.role} | Cargo: ${newUserData.roleLabel} | Depto: ${newUserData.department}`,
+        });
+        refreshAuditLogs();
+      } catch (errAudit) {
+        console.warn('[UserProvisioning] Aviso en auditoría (no bloqueante):', errAudit);
+      }
 
-      refreshAuditLogs();
-      notify('success', 'Empleado Aprovisionado con Éxito', `Usuario ${newUserData.name} creado y notificado con su ruta de inducción.`);
+      notify('success', 'Empleado Creado con Éxito', `Usuario ${cleanName} aprovisionado correctamente en el ERP.`);
       setIsCreatingUser(false);
+      setProvisioningDraft(null);
+      setCreateStep(1);
     } catch (err) {
-      console.warn('Error en aprovisionamiento:', err);
+      console.error('Error en aprovisionamiento:', err);
       notify('urgent', 'Error', 'Ocurrió un problema durante el aprovisionamiento.');
     } finally {
       setIsProvisioningAi(false);
