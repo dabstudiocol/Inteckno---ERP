@@ -366,7 +366,8 @@ export const TabCostosPresupuesto: React.FC<TabCostosPresupuestoProps> = ({
     let taxableProfit = 0;
     if (profitHasIva) {
       const profitTaxableRatio = totalBudgetedCost > 0 ? (taxableCost / totalBudgetedCost) : (taxableCost > 0 ? 1 : 0);
-      taxableProfit = profit * profitTaxableRatio;
+      void profitTaxableRatio; // La utilidad es independiente de los rubros: su selector Con/Sin IVA manda
+      taxableProfit = profit;
     }
     const taxableBase = taxableCost + taxableProfit;
 
