@@ -275,10 +275,10 @@ export function computeUserPendingActions(params: {
 
   // 8. TAREAS Y ACTIVIDADES ASIGNADAS AL USUARIO (To-Do)
   const myTodos = todos.filter((t) => {
-    if (t.completed) return false;
+    if (t.completed || t.status === 'completada') return false;
     const isAssigned =
       t.assignedToUserId === userId ||
-      (t.assignedToName && t.assignedToName.toLowerCase().includes(userName)) ||
+      (t.assignedToName && userName && t.assignedToName.trim().toLowerCase() === userName) ||
       (!t.assignedToUserId && t.userId === userId);
     return isAssigned;
   });

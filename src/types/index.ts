@@ -1597,6 +1597,7 @@ export interface TodoItem {
   completedBy?: string;
   calendarEventId?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 // 3. NEGOCIOS INTERNACIONALES

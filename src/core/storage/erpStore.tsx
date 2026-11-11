@@ -140,6 +140,7 @@ import {
   CalendarEvent,
   CalendarReminderToast,
   TodoItem,
+  TodoStatus,
   InternationalLead,
   EmployeeRecord,
   PayrollNovelty,
@@ -308,18 +309,42 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
  * Combina registros remotos con los locales sin borrar jamás registros creados localmente
  * que aún no hayan alcanzado la nube.
  */
-function mergeEntitiesNonDestructive<T extends { id?: string; email?: string }>(
+function mergeEntitiesNonDestructive<T extends { id?: string; email?: string; updatedAt?: string; completedAt?: string }>(
   remoteItems: T[] | undefined,
   localItems: T[] | undefined
 ): T[] {
   const result: T[] = [];
+  const localMap = new Map<string, T>();
+
+  if (Array.isArray(localItems)) {
+    for (const item of localItems) {
+      if (!item || !item.id || isEntityDeletedPermanent(item.id, item.email)) continue;
+      localMap.set(String(item.id), item);
+    }
+  }
+
   const seenIds = new Set<string>();
 
   if (Array.isArray(remoteItems)) {
-    for (const item of remoteItems) {
-      if (!item || !item.id || isEntityDeletedPermanent(item.id, item.email)) continue;
-      seenIds.add(String(item.id));
-      result.push(item);
+    for (const remote of remoteItems) {
+      if (!remote || !remote.id || isEntityDeletedPermanent(remote.id, remote.email)) continue;
+      const key = String(remote.id);
+      seenIds.add(key);
+
+      const local = localMap.get(key);
+      if (!local) {
+        result.push(remote);
+      } else {
+        // Reconciliación por marca de tiempo para preservar cambios locales más recientes
+        const localTime = new Date(local.updatedAt || local.completedAt || 0).getTime();
+        const remoteTime = new Date(remote.updatedAt || remote.completedAt || 0).getTime();
+
+        if (localTime > remoteTime) {
+          result.push({ ...remote, ...local });
+        } else {
+          result.push({ ...local, ...remote });
+        }
+      }
     }
   }
 
@@ -6550,48 +6575,79 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const updateTodo = useCallback((id: string, data: Partial<TodoItem>) => {
-    setState((prev) => ({
-      ...prev,
-      todos: prev.todos.map((t) => {
+    setState((prev) => {
+      const nowIso = new Date().toISOString();
+      const updatedTodos = prev.todos.map((t) => {
         if (t.id === id) {
-          const updated = { ...t, ...data };
+          const updated = { ...t, ...data, updatedAt: nowIso };
           if (data.status === 'completada' && !t.completed) {
             updated.completed = true;
-            updated.completedAt = updated.completedAt || new Date().toISOString();
+            updated.completedAt = updated.completedAt || nowIso;
             updated.completedBy = updated.completedBy || prev.currentUser.name;
           } else if (data.status && data.status !== 'completada') {
             updated.completed = false;
           } else if (data.completed !== undefined) {
             updated.status = data.completed ? 'completada' : 'pendiente';
             if (data.completed) {
-              updated.completedAt = updated.completedAt || new Date().toISOString();
+              updated.completedAt = updated.completedAt || nowIso;
               updated.completedBy = updated.completedBy || prev.currentUser.name;
             }
           }
           return updated;
         }
         return t;
-      }),
-    }));
+      });
+
+      // Sincronización inmediata a la nube y almacenamiento durable
+      if (isCloudLoadedRef.current) {
+        syncModuleToCloud('productivity', {
+          todos: updatedTodos,
+          calendarEvents: prev.calendarEvents,
+          documents: prev.documents,
+          chatGroups: prev.chatGroups,
+        }, prev.currentUser?.id || 'USR-01').catch(console.warn);
+      }
+
+      return {
+        ...prev,
+        todos: updatedTodos,
+      };
+    });
   }, []);
 
   const toggleTodo = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      todos: prev.todos.map((t) => {
+    setState((prev) => {
+      const nowIso = new Date().toISOString();
+      const updatedTodos = prev.todos.map((t) => {
         if (t.id === id) {
           const nextCompleted = !t.completed;
           return {
             ...t,
             completed: nextCompleted,
-            status: nextCompleted ? 'completada' : 'pendiente',
-            completedAt: nextCompleted ? new Date().toISOString() : undefined,
+            status: (nextCompleted ? 'completada' : 'pendiente') as TodoStatus,
+            completedAt: nextCompleted ? nowIso : undefined,
             completedBy: nextCompleted ? prev.currentUser.name : undefined,
+            updatedAt: nowIso,
           };
         }
         return t;
-      }),
-    }));
+      });
+
+      // Sincronización inmediata a la nube y almacenamiento durable
+      if (isCloudLoadedRef.current) {
+        syncModuleToCloud('productivity', {
+          todos: updatedTodos,
+          calendarEvents: prev.calendarEvents,
+          documents: prev.documents,
+          chatGroups: prev.chatGroups,
+        }, prev.currentUser?.id || 'USR-01').catch(console.warn);
+      }
+
+      return {
+        ...prev,
+        todos: updatedTodos,
+      };
+    });
   }, []);
 
   const deleteTodo = useCallback(
